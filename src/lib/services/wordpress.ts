@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { ERR_UPLOAD_MEDIA } from "@/lib/errors"
 
 export interface WordPressPost {
   id?: number
@@ -87,7 +88,7 @@ export function createWordPressClient(siteUrl: string, username: string, passwor
       })
 
       if (!response.ok) {
-        throw new Error("Failed to upload media")
+        throw new Error(ERR_UPLOAD_MEDIA)
       }
 
       return response.json()

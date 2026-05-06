@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth"
+import { t } from "@/lib/i18n"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -26,11 +27,11 @@ export default async function DashboardLayout({
   const user = session.user
   
   const navItems = [
-    { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { href: "/dashboard/documents", icon: FileText, label: "Documents" },
-    { href: "/dashboard/connectors", icon: Plug, label: "Connecteurs" },
-    { href: "/dashboard/sync", icon: ArrowRightLeft, label: "Synchronisation" },
-    { href: "/dashboard/settings", icon: Settings, label: "Paramètres" },
+    { href: "/dashboard", icon: LayoutDashboard, label: t("UI_DASHBOARD") },
+    { href: "/dashboard/documents", icon: FileText, label: t("UI_DOCS_LABEL") },
+    { href: "/dashboard/connectors", icon: Plug, label: t("UI_CONNECTORS") },
+    { href: "/dashboard/sync", icon: ArrowRightLeft, label: t("UI_SYNC") },
+    { href: "/dashboard/settings", icon: Settings, label: t("UI_SETTINGS") },
   ]
 
   return (
@@ -80,7 +81,7 @@ export default async function DashboardLayout({
               size="sm"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              Déconnexion
+              {t("UI_LOGOUT")}
             </Button>
           </form>
         </div>

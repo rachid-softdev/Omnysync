@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { ERR_DOC_NOT_FOUND, ERR_DOC_NOT_PUBLISHED, ERR_SYNC_NO_CHANGES, ERR_SYNC_SUCCESS, ERR_API_FAILED } from "@/lib/errors"
 import { detectContentChanges } from "./ai"
 import { getGoogleDocContent } from "./google-docs"
 import { getNotionPageContent } from "./notion"
@@ -9,7 +10,7 @@ import { createShopifyClient } from "./shopify"
 
 export interface SyncResult {
   success: boolean
-  message: string
+  error?: string
   documentId: string
   changesDetected?: boolean
 }
@@ -28,7 +29,7 @@ export async function performSync(
   })
 
   if (!document) {
-    return { success: false, message: "Document not found", documentId }
+    return { success: false, error: ERR_DOC_NOT_FOUND, documentId }
   }
 
   await prisma.document.update({
@@ -90,7 +91,7 @@ export async function performSync(
 
     return {
       success: true,
-      message: "Synchronization completed",
+      error: ERR_SYNC_SUCCESS,
       documentId,
     }
   } catch (error) {
@@ -112,7 +113,7 @@ export async function performSync(
 
     return {
       success: false,
-      message: (error as Error).message,
+      error: ERR_API_FAILED,
       documentId,
     }
   }
@@ -235,11 +236,11 @@ export async function detectAndSyncChanges(documentId: string): Promise<SyncResu
   })
 
   if (!document) {
-    return { success: false, message: "Document not found", documentId }
+    return { success: false, error: ERR_DOC_NOT_FOUND, documentId }
   }
 
   if (document.status !== "PUBLISHED") {
-    return { success: false, message: "Document not published yet", documentId }
+    return { success: false, error: ERR_DOC_NOT_PUBLISHED, documentId }
   }
 
   try {
@@ -259,7 +260,7 @@ export async function detectAndSyncChanges(documentId: string): Promise<SyncResu
     if (!result.hasChanges) {
       return {
         success: true,
-        message: "No changes detected",
+        error: ERR_SYNC_NO_CHANGES,
         documentId,
         changesDetected: false,
       }

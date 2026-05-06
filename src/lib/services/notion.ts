@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { ERR_FETCH_CONTENT } from "@/lib/errors"
 
 const NOTION_API = "https://api.notion.com/v1"
 
@@ -27,7 +28,7 @@ export async function listNotionPages(accessToken: string): Promise<NotionPage[]
   })
 
   if (!response.ok) {
-    throw new Error("Failed to fetch Notion pages")
+    throw new Error(ERR_FETCH_CONTENT)
   }
 
   const data = await response.json()
@@ -55,7 +56,7 @@ export async function getNotionPageContent(
   })
 
   if (!response.ok) {
-    throw new Error("Failed to fetch Notion page content")
+    throw new Error(ERR_FETCH_CONTENT)
   }
 
   const data = await response.json()

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { ERR_FETCH_CONTENT } from "@/lib/errors"
 
 const GOOGLE_DOCS_API = "https://docs.googleapis.com/v1"
 const GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3"
@@ -22,7 +23,7 @@ export async function listGoogleDocs(accessToken: string): Promise<GoogleDoc[]> 
   )
 
   if (!response.ok) {
-    throw new Error("Failed to fetch Google Docs")
+    throw new Error(ERR_FETCH_CONTENT)
   }
 
   const data = await response.json()
@@ -49,7 +50,7 @@ export async function getGoogleDocContent(
   )
 
   if (!response.ok) {
-    throw new Error("Failed to fetch Google Doc content")
+    throw new Error(ERR_FETCH_CONTENT)
   }
 
   const data = await response.json()

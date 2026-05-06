@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { ERR_UPLOAD_MEDIA } from "@/lib/errors"
 
 export interface GhostPost {
   id?: string
@@ -92,7 +93,7 @@ export function createGhostClient(siteUrl: string, adminApiKey: string) {
       })
 
       if (!response.ok) {
-        throw new Error("Failed to upload image")
+        throw new Error(ERR_UPLOAD_MEDIA)
       }
 
       return response.json()
