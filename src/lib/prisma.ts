@@ -5,6 +5,10 @@ import pg from "pg"
 const { Pool } = pg
 
 const prismaClientSingleton = () => {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is not defined in environment variables")
+  }
+  
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
   })
@@ -18,4 +22,6 @@ declare const globalThis: {
 
 export const prisma = globalThis.prismaGlobal ?? prismaClientSingleton()
 
-if (process.env.NODE_ENV !== "production") globalThis.prismaGlobal = prisma
+if (process.env.NODE_ENV !== "production") {
+  globalThis.prismaGlobal = prisma
+}
