@@ -1,0 +1,202 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  organizations UserOrganization[]
+  documents     Document[]
+  connectors    Connector[]
+  syncLogs      SyncLog[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       UserOrganization[]
+  connectors  Connector[]
+  documents   Document[]
+  syncLogs    SyncLog[]
+}
+
+model UserOrganization {
+  id             String         @id @default(cuid())
+  userId         String
+  organizationId String
+  role           OrganizationRole @default(MEMBER)
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Connector {
+  id             String           @id @default(cuid())
+  organizationId String
+  userId         String
+  type           ConnectorType
+  name           String
+  status         ConnectorStatus   @default(ACTIVE)
+  config         Json?
+  credentials    String?          @db.Text
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceDocuments Document[]      @relation("SourceConnector")
+  destDocuments   Document[]      @relation("DestConnector")
+}
+
+enum ConnectorType {
+  GOOGLE_DOCS
+  NOTION
+  WORDPRESS
+  GHOST
+  WEBFLOW
+  SHOPIFY
+}
+
+enum ConnectorStatus {
+  ACTIVE
+  DISCONNECTED
+  ERROR
+}
+
+model Document {
+  id             String         @id @default(cuid())
+  organizationId String
+  userId         String
+  sourceId       String?
+  sourceConnectorId String?
+  destConnectorId  String?
+
+  title          String
+  slug           String?
+  content        String?        @db.Text
+  htmlContent    String?        @db.Text
+  excerpt        String?
+  featuredImage  String?
+
+  status         DocumentStatus @default(DRAFT)
+  syncStatus     SyncStatus     @default(NOT_SYNCED)
+  lastSyncedAt   DateTime?
+
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String[]
+
+  categories     String[]
+  tags           String[]
+  author         String?
+
+  metadata       Json?
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  publishedAt    DateTime?
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceConnector Connector?     @relation("SourceConnector", fields: [sourceConnectorId], references: [id])
+  destConnector   Connector?     @relation("DestConnector", fields: [destConnectorId], references: [id])
+  syncLogs        SyncLog[]
+}
+
+enum DocumentStatus {
+  DRAFT
+  READY
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SyncStatus {
+  NOT_SYNCED
+  SYNCING
+  SYNCED
+  FAILED
+}
+
+model SyncLog {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String
+  documentId     String?
+
+  action         String
+  status         LogStatus
+  message        String?
+  details        Json?
+
+  createdAt      DateTime     @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document       Document?   @relation(fields: [documentId], references: [id], onDelete: SetNull)
+}
+
+enum LogStatus {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
