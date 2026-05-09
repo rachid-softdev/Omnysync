@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getUserOrgId } from "@/lib/auth/org"
 import { testWordPressConnection } from "@/lib/services/wordpress"
 import { testGhostConnection } from "@/lib/services/ghost"
 import { testWebflowConnection } from "@/lib/services/webflow"
@@ -8,14 +9,16 @@ import { testShopifyConnection } from "@/lib/services/shopify"
 
 export async function GET(req: NextRequest) {
   const session = await auth()
-  
+
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const orgId = await getUserOrgId(session.user.id)
+
   const connectors = await prisma.connector.findMany({
     where: {
-      userId: session.user.id,
+      organizationId: orgId,
     },
     orderBy: {
       createdAt: "desc",
@@ -27,15 +30,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await auth()
-  
+
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const orgId = await getUserOrgId(session.user.id)
   const body = await req.json()
   const { type, name, config, credentials } = body
 
-  let testResult = { success: false, error: "" }
+  let testResult: { success: boolean; error?: string } = { success: false }
 
   switch (type) {
     case "WORDPRESS":
@@ -54,6 +58,14 @@ export async function POST(req: NextRequest) {
     case "SHOPIFY":
       testResult = await testShopifyConnection(config.shopDomain, credentials.accessToken)
       break
+    case "GOOGLE_DOCS":
+      // Google Docs doesn't have a test connection unless we try listing docs
+      testResult = { success: true, error: "" }
+      break
+    case "NOTION":
+      // Notion doesn't need a separate test — we verify during listing
+      testResult = { success: true, error: "" }
+      break
   }
 
   if (!testResult.success) {
@@ -66,43 +78,66 @@ export async function POST(req: NextRequest) {
   let connector
 
   switch (type) {
-    case "WORDPRESS":
+    case "WORDPRESS": {
       const { saveWordPressConnector } = await import("@/lib/services/wordpress")
       connector = await saveWordPressConnector(
         session.user.id,
-        "",
+        orgId,
         config.siteUrl,
         credentials.username,
         credentials.password
       )
       break
-    case "GHOST":
+    }
+    case "GHOST": {
       const { saveGhostConnector } = await import("@/lib/services/ghost")
       connector = await saveGhostConnector(
         session.user.id,
-        "",
+        orgId,
         config.siteUrl,
         credentials.adminApiKey
       )
       break
-    case "WEBFLOW":
+    }
+    case "WEBFLOW": {
       const { saveWebflowConnector } = await import("@/lib/services/webflow")
       connector = await saveWebflowConnector(
         session.user.id,
-        "",
+        orgId,
         config.siteId,
         credentials.accessToken
       )
       break
-    case "SHOPIFY":
+    }
+    case "SHOPIFY": {
       const { saveShopifyConnector } = await import("@/lib/services/shopify")
       connector = await saveShopifyConnector(
         session.user.id,
-        "",
+        orgId,
         config.shopDomain,
         credentials.accessToken
       )
       break
+    }
+    case "GOOGLE_DOCS": {
+      const { saveGoogleDocsConnector } = await import("@/lib/services/google-docs")
+      connector = await saveGoogleDocsConnector(
+        session.user.id,
+        orgId,
+        credentials.accessToken,
+        credentials.refreshToken || ""
+      )
+      break
+    }
+    case "NOTION": {
+      const { saveNotionConnector } = await import("@/lib/services/notion")
+      connector = await saveNotionConnector(
+        session.user.id,
+        orgId,
+        credentials.accessToken
+      )
+      break
+    }
     default:
       return NextResponse.json({ error: "Invalid connector type" }, { status: 400 })
   }

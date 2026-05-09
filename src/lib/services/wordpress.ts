@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { ERR_UPLOAD_MEDIA } from "@/lib/errors"
+import { encrypt } from "@/lib/crypto"
 
 export interface WordPressPost {
   id?: number
@@ -10,7 +11,7 @@ export interface WordPressPost {
   categories?: number[]
   tags?: number[]
   featured_media?: number
-  meta?: Record<string, any>
+  meta?: Record<string, string | number | boolean | null>
 }
 
 export interface WordPressCategory {
@@ -107,8 +108,9 @@ export async function saveWordPressConnector(
   username: string,
   password: string
 ) {
-  const encryptedCredentials = Buffer.from(`${username}:${password}`).toString("base64")
-  
+  const rawCredentials = Buffer.from(`${username}:${password}`).toString("base64")
+  const encryptedCredentials = encrypt(rawCredentials)
+
   return prisma.connector.create({
     data: {
       userId,

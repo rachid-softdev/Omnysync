@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getUserOrgId } from "@/lib/auth/org"
 import { enqueueSyncJob } from "@/lib/services/queue"
 
 export async function GET(req: NextRequest) {
   const session = await auth()
-  
+
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const orgId = await getUserOrgId(session.user.id)
+
   const documents = await prisma.document.findMany({
     where: {
-      userId: session.user.id,
+      organizationId: orgId,
     },
     include: {
       sourceConnector: true,
@@ -34,13 +37,14 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await auth()
-  
+
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const orgId = await getUserOrgId(session.user.id)
   const body = await req.json()
-  const { sourceConnectorId, destConnectorId, sourceDocumentId, options } = body
+  const { sourceConnectorId, destConnectorId, sourceDocumentId, title, options } = body
 
   const sourceConnector = await prisma.connector.findUnique({
     where: { id: sourceConnectorId },
@@ -60,11 +64,11 @@ export async function POST(req: NextRequest) {
   const document = await prisma.document.create({
     data: {
       userId: session.user.id,
-      organizationId: session.user.id,
+      organizationId: orgId,
       sourceConnectorId,
       destConnectorId,
       sourceId: sourceDocumentId,
-      title: "New Document",
+      title: title || "New Document",
       status: "DRAFT",
       syncStatus: "NOT_SYNCED",
     },
@@ -73,7 +77,7 @@ export async function POST(req: NextRequest) {
   await prisma.syncLog.create({
     data: {
       userId: session.user.id,
-      organizationId: session.user.id,
+      organizationId: orgId,
       documentId: document.id,
       action: "sync_started",
       status: "INFO",

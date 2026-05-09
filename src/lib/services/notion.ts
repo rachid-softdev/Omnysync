@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { ERR_FETCH_CONTENT } from "@/lib/errors"
+import { encrypt } from "@/lib/crypto"
+import type { NotionSearchResponse, NotionBlocksResponse, NotionBlock } from "./types"
 
 const NOTION_API = "https://api.notion.com/v1"
 
@@ -31,11 +33,11 @@ export async function listNotionPages(accessToken: string): Promise<NotionPage[]
     throw new Error(ERR_FETCH_CONTENT)
   }
 
-  const data = await response.json()
-  
+  const data: NotionSearchResponse = await response.json()
+
   return data.results
-    .filter((page: any) => page.parent.type === "workspace" || page.parent.type === "database")
-    .map((page: any) => ({
+    .filter((page) => page.parent.type === "workspace" || page.parent.type === "database")
+    .map((page) => ({
       id: page.id,
       title: page.properties?.title?.title?.[0]?.plain_text || "Untitled",
       content: "",
@@ -59,36 +61,36 @@ export async function getNotionPageContent(
     throw new Error(ERR_FETCH_CONTENT)
   }
 
-  const data = await response.json()
-  
+  const data: NotionBlocksResponse = await response.json()
+
   let content = ""
-  
-  function extractText(block: any): string {
+
+  function extractText(block: NotionBlock): string {
     if (block.type === "paragraph") {
-      return block.paragraph.rich_text
-        ?.map((t: any) => t.plain_text)
+      return block.paragraph?.rich_text
+        ?.map((t) => t.plain_text)
         .join("") || ""
     }
     if (block.type === "heading_1") {
-      return `# ${block.heading_1.rich_text?.map((t: any) => t.plain_text).join("")}\n\n`
+      return `# ${block.heading_1?.rich_text?.map((t) => t.plain_text).join("")}\n\n`
     }
     if (block.type === "heading_2") {
-      return `## ${block.heading_2.rich_text?.map((t: any) => t.plain_text).join("")}\n\n`
+      return `## ${block.heading_2?.rich_text?.map((t) => t.plain_text).join("")}\n\n`
     }
     if (block.type === "heading_3") {
-      return `### ${block.heading_3.rich_text?.map((t: any) => t.plain_text).join("")}\n\n`
+      return `### ${block.heading_3?.rich_text?.map((t) => t.plain_text).join("")}\n\n`
     }
     if (block.type === "bulleted_list_item") {
-      return `- ${block.bulleted_list_item.rich_text?.map((t: any) => t.plain_text).join("")}\n`
+      return `- ${block.bulleted_list_item?.rich_text?.map((t) => t.plain_text).join("")}\n`
     }
     if (block.type === "numbered_list_item") {
-      return `1. ${block.numbered_list_item.rich_text?.map((t: any) => t.plain_text).join("")}\n`
+      return `1. ${block.numbered_list_item?.rich_text?.map((t) => t.plain_text).join("")}\n`
     }
     if (block.type === "code") {
-      return `\`\`\`${block.code.language || ""}\n${block.code.rich_text?.map((t: any) => t.plain_text).join("")}\n\`\`\`\n`
+      return `\`\`\`${block.code?.language || ""}\n${block.code?.rich_text?.map((t) => t.plain_text).join("")}\n\`\`\`\n`
     }
     if (block.type === "quote") {
-      return `> ${block.quote.rich_text?.map((t: any) => t.plain_text).join("")}\n\n`
+      return `> ${block.quote?.rich_text?.map((t) => t.plain_text).join("")}\n\n`
     }
     return ""
   }
@@ -128,7 +130,8 @@ export async function saveNotionConnector(
       type: "NOTION",
       name: "Notion",
       status: "ACTIVE",
-      config: { accessToken },
+      credentials: encrypt(accessToken),
+      config: {},
     },
   })
 }

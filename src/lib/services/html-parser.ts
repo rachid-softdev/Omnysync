@@ -1,3 +1,40 @@
+import type { GoogleDocElement } from "./types"
+
+interface TextStyleProps {
+  bold?: boolean
+  italic?: boolean
+  underline?: boolean
+  strikethrough?: boolean
+  link?: { url?: string }
+  baselineOffset?: string
+  fontSize?: { magnitude: number; unit: string }
+  weightedFontFamily?: { fontFamily: string }
+  foregroundColor?: { color?: { rgbColor?: { rgbColor: string } } }
+}
+
+interface TextElement {
+  textRun?: {
+    content?: string
+    textStyle?: TextStyleProps
+  }
+}
+
+interface ParagraphElement {
+  paragraph?: {
+    elements?: TextElement[]
+    paragraphStyle?: { namedStyleType?: string }
+  }
+  table?: {
+    tableRows?: Array<{
+      tableCells?: Array<{
+        content?: ParagraphElement[]
+      }>
+    }>
+  }
+  tableOfContents?: Record<string, unknown>
+  sectionBreak?: Record<string, unknown>
+}
+
 export interface ParsedContent {
   title: string
   html: string
@@ -7,7 +44,7 @@ export interface ParsedContent {
 }
 
 export function parseGoogleDocToHtml(
-  documentData: any,
+  documentData: { title?: string; body?: { content?: GoogleDocElement[] }; inlineObjects?: Record<string, unknown> },
   options: { cleanStyles?: boolean; addHeadingIds?: boolean } = {}
 ): ParsedContent {
   const { cleanStyles = true, addHeadingIds = true } = options
@@ -20,6 +57,7 @@ export function parseGoogleDocToHtml(
     title = documentData.title
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function processElement(element: any): string {
     if (!element) return ""
 

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { ERR_UPLOAD_MEDIA } from "@/lib/errors"
+import { encrypt } from "@/lib/crypto"
 
 export interface GhostPost {
   id?: string
@@ -115,7 +116,7 @@ export async function saveGhostConnector(
       name: `Ghost - ${new URL(siteUrl).hostname}`,
       status: "ACTIVE",
       config: { siteUrl },
-      credentials: adminApiKey,
+      credentials: encrypt(adminApiKey),
     },
   })
 }

@@ -1,7 +1,7 @@
 import { Client } from "@upstash/qstash"
 
 const qstash = new Client({
-  url: process.env.QSTASH_URL!,
+  baseUrl: process.env.QSTASH_URL!,
   token: process.env.QSTASH_TOKEN!,
 })
 
@@ -15,7 +15,7 @@ export type JobType =
 export interface Job {
   id: string
   type: JobType
-  payload: Record<string, any>
+  payload: Record<string, string | number | boolean | null>
   retries?: number
   priority?: number
 }
@@ -119,28 +119,16 @@ export async function enqueueChangeDetection(documentId: string) {
 export interface QueueMessage {
   jobId: string
   type: JobType
-  payload: Record<string, any>
+  payload: Record<string, string | number | boolean | null>
 }
 
+// Note: QStash SDK v2.x removed `receive` and `acknowledge` from the Client API.
+// These functions are kept as stubs for future migration to the new API.
 export async function receiveMessage(): Promise<QueueMessage | null> {
-  try {
-    const messages = await qstash.receive({
-      url: `${process.env.NEXTAUTH_URL}/api/queue`,
-      batchSize: 1,
-    })
-
-    if (messages.messages && messages.messages.length > 0) {
-      const message = messages.messages[0]
-      return JSON.parse(message.body as string) as QueueMessage
-    }
-
-    return null
-  } catch (error) {
-    console.error("Error receiving message:", error)
-    return null
-  }
+  console.warn("receiveMessage is not supported in QStash SDK v2.x")
+  return null
 }
 
 export async function acknowledgeMessage(messageId: string) {
-  await qstash.acknowledge(messageId)
+  console.warn("acknowledgeMessage is not supported in QStash SDK v2.x", messageId)
 }

@@ -1,5 +1,12 @@
 import { prisma } from "@/lib/prisma"
 import { ERR_FETCH_CONTENT } from "@/lib/errors"
+import { encrypt } from "@/lib/crypto"
+import type {
+  GoogleDriveFilesResponse,
+  GoogleDocBody,
+  GoogleDocElement,
+  GoogleDocTableRow,
+} from "./types"
 
 const GOOGLE_DOCS_API = "https://docs.googleapis.com/v1"
 const GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3"
@@ -26,8 +33,8 @@ export async function listGoogleDocs(accessToken: string): Promise<GoogleDoc[]> 
     throw new Error(ERR_FETCH_CONTENT)
   }
 
-  const data = await response.json()
-  return data.files.map((file: any) => ({
+  const data: GoogleDriveFilesResponse = await response.json()
+  return data.files.map((file) => ({
     id: file.id,
     title: file.name,
     content: "",
@@ -53,14 +60,14 @@ export async function getGoogleDocContent(
     throw new Error(ERR_FETCH_CONTENT)
   }
 
-  const data = await response.json()
-  
+  const data: GoogleDocBody = await response.json()
+
   let content = ""
   if (data.body && data.body.content) {
     for (const element of data.body.content) {
       if (element.paragraph) {
         content += element.paragraph.elements
-          ?.map((e: any) => e.textRun?.content || "")
+          ?.map((e) => e.textRun?.content || "")
           .join("") || ""
         content += "\n"
       }
@@ -68,7 +75,7 @@ export async function getGoogleDocContent(
         for (const row of element.table.tableRows || []) {
           for (const cell of row.tableCells || []) {
             content += cell.content
-              ?.map((c: any) => c.paragraph?.elements?.map((e: any) => e.textRun?.content || "").join(""))
+              ?.map((c) => c.paragraph?.elements?.map((e) => e.textRun?.content || "").join(""))
               .join(" ") || ""
             content += " | "
           }

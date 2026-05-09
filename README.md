@@ -1,36 +1,110 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Omnysync
 
-## Getting Started
+Plateforme SaaS d'automatisation et d'optimisation de contenu multi-plateformes.
+Synchronisez vos contenus de Google Docs et Notion vers WordPress, Ghost, Webflow et Shopify avec enrichissement IA.
 
-First, run the development server:
+## Stack technique
+
+- **Framework** : Next.js 16 (App Router)
+- **Langage** : TypeScript (strict mode)
+- **Style** : Tailwind CSS v4 + shadcn/ui (Radix Nova)
+- **Auth** : NextAuth.js v5 (Google OAuth)
+- **Base de données** : PostgreSQL + Prisma v7
+- **Queue** : Upstash QStash
+- **IA** : OpenAI (GPT-4o, DALL-E 3)
+- **Paiements** : Stripe
+- **Emails** : Resend
+- **Tests** : Vitest
+
+## Prérequis
+
+- Node.js 18+
+- PostgreSQL 14+
+- Compte Google Cloud (OAuth)
+- Compte Upstash (QStash)
+- Compte OpenAI
+- Compte Stripe (optionnel)
+- Compte Resend (optionnel)
+
+## Installation
+
+```bash
+git clone <repo-url>
+cd Omnysync
+npm install
+```
+
+## Variables d'environnement
+
+Copiez `.env.example` vers `.env.local` et remplissez les valeurs :
+
+```bash
+cp .env.example .env.local
+```
+
+Variables requises :
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | URL de connexion PostgreSQL |
+| `NEXTAUTH_SECRET` | Secret NextAuth (`openssl rand -base64 32`) |
+| `NEXTAUTH_URL` | URL de l'application (`http://localhost:3000`) |
+| `GOOGLE_CLIENT_ID` | Client ID Google OAuth |
+| `GOOGLE_CLIENT_SECRET` | Client Secret Google OAuth |
+| `ENCRYPTION_KEY` | Clé de chiffrement AES-256 (32+ caractères) |
+
+## Base de données
+
+```bash
+# Générer le client Prisma
+npx prisma generate
+
+# Appliquer les migrations
+npx prisma migrate dev
+```
+
+## Développement
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+L'application sera accessible sur `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tests
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Lancer les tests
+npm test
 
-## Learn More
+# Watch mode
+npm run test:watch
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Structure du projet
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+  app/                  # Pages et API routes (App Router)
+    (dashboard)/        # Route group pour le dashboard protégé
+    api/                # Routes API REST
+  components/           # Composants React
+    ui/                 # Composants shadcn/ui
+  lib/                  # Logique métier
+    auth/               # Authentification (NextAuth + orgs)
+    i18n/               # Internationalisation
+    services/           # Services (sync, AI, connecteurs)
+  types/                # Types TypeScript
+prisma/
+  schema.prisma         # Schéma de base de données
+  migrations/           # Migrations Prisma
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Fonctionnalités
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Sources** : Google Docs, Notion
+- **Destinations** : WordPress, Ghost, Webflow, Shopify
+- **Enrichissement IA** : SEO, images DALL-E, maillage interne
+- **Sync bidirectionnelle** : détection de changements et mise à jour
+- **Multi-tenant** : organisations pour les équipes
+- **Paiements** : abonnements Stripe (Free, Pro, Business)

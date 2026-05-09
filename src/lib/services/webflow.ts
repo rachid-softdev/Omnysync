@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/prisma"
 import { ERR_UPLOAD_MEDIA } from "@/lib/errors"
+import { encrypt } from "@/lib/crypto"
 
 export interface WebflowPost {
   name: string
   slug: string
   content: string
   status: "draft" | "published"
-  fields?: Record<string, any>
+  fields?: Record<string, string | boolean | undefined>
 }
 
 export interface WebflowCollection {
@@ -42,11 +43,11 @@ export function createWebflowClient(accessToken: string, siteId: string) {
       return request(`/sites/${siteId}/collections`)
     },
 
-    async getCollectionItems(collectionId: string): Promise<{ items: any[] }> {
+    async getCollectionItems(collectionId: string): Promise<{ items: Array<{ id: string; name: string; slug: string }> }> {
       return request(`/collections/${collectionId}/items`)
     },
 
-    async createItem(collectionId: string, item: WebflowPost): Promise<{ items: any[] }> {
+    async createItem(collectionId: string, item: WebflowPost): Promise<{ items: Array<{ id: string }> }> {
       return request(`/collections/${collectionId}/items`, {
         method: "POST",
         body: JSON.stringify({
@@ -62,7 +63,7 @@ export function createWebflowClient(accessToken: string, siteId: string) {
       })
     },
 
-    async updateItem(collectionId: string, itemId: string, item: Partial<WebflowPost>): Promise<{ items: any[] }> {
+    async updateItem(collectionId: string, itemId: string, item: Partial<WebflowPost>): Promise<{ items: Array<{ id: string }> }> {
       return request(`/collections/${collectionId}/items/${itemId}`, {
         method: "PUT",
         body: JSON.stringify({
@@ -114,7 +115,7 @@ export async function saveWebflowConnector(
       name: `Webflow - ${siteId}`,
       status: "ACTIVE",
       config: { siteId },
-      credentials: accessToken,
+      credentials: encrypt(accessToken),
     },
   })
 }

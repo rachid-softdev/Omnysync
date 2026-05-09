@@ -70,7 +70,7 @@ export async function generateAImage(prompt: string): Promise<string> {
     n: 1,
   })
 
-  return response.data[0].url || ""
+  return response.data?.[0]?.url || ""
 }
 
 export async function improveContent(

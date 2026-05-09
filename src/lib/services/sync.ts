@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { ERR_DOC_NOT_FOUND, ERR_DOC_NOT_PUBLISHED, ERR_SYNC_NO_CHANGES, ERR_SYNC_SUCCESS, ERR_API_FAILED } from "@/lib/errors"
+import { decrypt } from "@/lib/crypto"
+import { sendSyncCompleteEmail } from "@/lib/email"
 import { detectContentChanges } from "./ai"
 import { getGoogleDocContent } from "./google-docs"
 import { getNotionPageContent } from "./notion"
@@ -42,12 +44,14 @@ export async function performSync(
     let title = document.title
 
     if (document.sourceConnector?.type === "GOOGLE_DOCS") {
-      const credentials = JSON.parse(document.sourceConnector.credentials || "{}")
+      const raw = decrypt(document.sourceConnector.credentials || "{}")
+      const credentials = JSON.parse(raw)
       const docData = await getGoogleDocContent(document.sourceId!, credentials.accessToken)
       content = docData.content
       title = docData.title
     } else if (document.sourceConnector?.type === "NOTION") {
-      const config = JSON.parse(document.sourceConnector.config || "{}")
+      const raw = decrypt(String(document.sourceConnector.credentials || document.sourceConnector.config || "{}"))
+      const config = JSON.parse(raw)
       const pageData = await getNotionPageContent(document.sourceId!, config.accessToken)
       content = pageData.content
       title = pageData.title
@@ -59,7 +63,8 @@ export async function performSync(
     if (document.sourceConnector?.type === "NOTION") {
       htmlContent = parseMarkdownToHtml(content)
     } else if (document.sourceConnector?.type === "GOOGLE_DOCS" && document.sourceId) {
-      const credentials = JSON.parse(document.sourceConnector.credentials || "{}")
+      const raw = decrypt(document.sourceConnector.credentials || "{}")
+      const credentials = JSON.parse(raw)
       const fullDocData = await getGoogleDocContent(document.sourceId, credentials.accessToken)
       const parsed = parseGoogleDocToHtml(fullDocData)
       htmlContent = parsed.html
@@ -89,6 +94,12 @@ export async function performSync(
       },
     })
 
+    // Send success email
+    const user = await prisma.user.findUnique({ where: { id: document.userId } })
+    if (user?.email) {
+      sendSyncCompleteEmail(user.email, document.title, true).catch(console.error)
+    }
+
     return {
       success: true,
       error: ERR_SYNC_SUCCESS,
@@ -111,6 +122,12 @@ export async function performSync(
       },
     })
 
+    // Send failure email
+    const user = await prisma.user.findUnique({ where: { id: document.userId } })
+    if (user?.email) {
+      sendSyncCompleteEmail(user.email, document.title, false).catch(console.error)
+    }
+
     return {
       success: false,
       error: ERR_API_FAILED,
@@ -119,15 +136,19 @@ export async function performSync(
   }
 }
 
-async function publishToDestination(document: any, htmlContent: string) {
+async function publishToDestination(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  document: any,
+  htmlContent: string
+) {
   if (!document.destConnector) return
 
-  const credentials = document.destConnector.credentials || ""
+  const rawCredentials = decrypt(document.destConnector.credentials || "")
   const config = document.destConnector.config || {}
 
   if (document.destConnector.type === "WORDPRESS") {
     const { createWordPressClient } = await import("./wordpress")
-    const creds = Buffer.from(credentials, "base64").toString().split(":")
+    const creds = Buffer.from(rawCredentials, "base64").toString().split(":")
     const client = createWordPressClient(config.siteUrl, creds[0], creds[1])
 
     if (document.slug) {
@@ -151,7 +172,7 @@ async function publishToDestination(document: any, htmlContent: string) {
 
   if (document.destConnector.type === "GHOST") {
     const { createGhostClient } = await import("./ghost")
-    const client = createGhostClient(config.siteUrl, credentials)
+    const client = createGhostClient(config.siteUrl, rawCredentials)
 
     if (document.slug) {
       await client.updatePost(document.slug, {
@@ -174,7 +195,7 @@ async function publishToDestination(document: any, htmlContent: string) {
 
   if (document.destConnector.type === "WEBFLOW") {
     const { createWebflowClient } = await import("./webflow")
-    const client = createWebflowClient(credentials, config.siteId)
+    const client = createWebflowClient(rawCredentials, config.siteId)
 
     const slug = document.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
 
@@ -201,7 +222,7 @@ async function publishToDestination(document: any, htmlContent: string) {
 
   if (document.destConnector.type === "SHOPIFY") {
     const { createShopifyClient } = await import("./shopify")
-    const client = createShopifyClient(config.shopDomain, credentials)
+    const client = createShopifyClient(config.shopDomain, rawCredentials)
 
     const blogs = await client.getBlogs()
     const blogId = blogs.blogs[0]?.id
@@ -248,7 +269,8 @@ export async function detectAndSyncChanges(documentId: string): Promise<SyncResu
     let newTitle = document.title
 
     if (document.sourceConnector?.type === "GOOGLE_DOCS") {
-      const credentials = JSON.parse(document.sourceConnector.credentials || "{}")
+      const raw = decrypt(document.sourceConnector.credentials || "{}")
+      const credentials = JSON.parse(raw)
       const docData = await getGoogleDocContent(document.sourceId!, credentials.accessToken)
       newContent = docData.content
       newTitle = docData.title
@@ -277,11 +299,19 @@ export async function detectAndSyncChanges(documentId: string): Promise<SyncResu
       },
     })
 
+    if (!document.sourceConnectorId || !document.destConnectorId) {
+      return {
+        success: false,
+        error: "Missing connector IDs",
+        documentId,
+      }
+    }
+
     return performSync(documentId, document.sourceConnectorId, document.destConnectorId)
   } catch (error) {
     return {
       success: false,
-      message: (error as Error).message,
+      error: (error as Error).message,
       documentId,
     }
   }
@@ -297,8 +327,8 @@ export async function checkRemoteChanges(documentId: string) {
 
   if (!document || !document.destConnector) return null
 
-  const credentials = document.destConnector.credentials || ""
-  const config = document.destConnector.config || {}
+  const credentials = decrypt(document.destConnector.credentials || "")
+  const config = (document.destConnector.config || {}) as Record<string, string>
 
   if (document.destConnector.type === "WORDPRESS") {
     const { createWordPressClient } = await import("./wordpress")

@@ -1,5 +1,7 @@
 import { auth } from "@/lib/auth"
 import { t } from "@/lib/i18n"
+import { prisma } from "@/lib/prisma"
+import { getUserOrgId } from "@/lib/auth/org"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FileText, Plug, CheckCircle, AlertCircle, ArrowRight } from "lucide-react"
@@ -7,12 +9,31 @@ import Link from "next/link"
 
 export default async function DashboardPage() {
   const session = await auth()
-  
+
+  if (!session?.user?.id) {
+    return null
+  }
+
+  const orgId = await getUserOrgId(session.user.id)
+
+  const [docCount, connectorCount, syncedCount, errorCount, recentLogs] = await Promise.all([
+    prisma.document.count({ where: { organizationId: orgId } }),
+    prisma.connector.count({ where: { organizationId: orgId } }),
+    prisma.document.count({ where: { organizationId: orgId, syncStatus: "SYNCED" } }),
+    prisma.document.count({ where: { organizationId: orgId, syncStatus: "FAILED" } }),
+    prisma.syncLog.findMany({
+      where: { organizationId: orgId },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: { document: true },
+    }),
+  ])
+
   const stats = [
-    { label: t("UI_DOCS_LABEL"), value: "0", icon: FileText, color: "text-primary" },
-    { label: t("UI_CONNECTORS_LABEL"), value: "0", icon: Plug, color: "text-primary" },
-    { label: t("UI_SYNCED"), value: "0", icon: CheckCircle, color: "text-primary" },
-    { label: t("UI_ERRORS"), value: "0", icon: AlertCircle, color: "text-destructive" },
+    { label: t("UI_DOCS_LABEL"), value: docCount.toString(), icon: FileText, color: "text-primary" },
+    { label: t("UI_CONNECTORS_LABEL"), value: connectorCount.toString(), icon: Plug, color: "text-primary" },
+    { label: t("UI_SYNCED"), value: syncedCount.toString(), icon: CheckCircle, color: "text-primary" },
+    { label: t("UI_ERRORS"), value: errorCount.toString(), icon: AlertCircle, color: "text-destructive" },
   ]
 
   return (
@@ -53,7 +74,29 @@ export default async function DashboardPage() {
             <CardDescription>{t("UI_LAST_SYNCS")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground text-sm">{t("UI_NO_ACTIVITY")}</p>
+            {recentLogs.length === 0 ? (
+              <p className="text-muted-foreground text-sm">{t("UI_NO_ACTIVITY")}</p>
+            ) : (
+              <div className="space-y-3">
+                {recentLogs.map((log) => (
+                  <div key={log.id} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      {log.status === "SUCCESS" ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : log.status === "ERROR" ? (
+                        <AlertCircle className="w-4 h-4 text-destructive" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-muted-foreground" />
+                      )}
+                      <span>{log.message}</span>
+                    </div>
+                    <span className="text-muted-foreground text-xs">
+                      {log.createdAt.toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

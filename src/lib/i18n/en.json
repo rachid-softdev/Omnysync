@@ -87,7 +87,6 @@
   "UI_WELCOME": "Welcome",
   "UI_MANAGE_CONTENT": "Manage your content synchronizations",
   "UI_SYNC_HISTORY": "History and sync management",
-  "UI_NEW_SYNC": "New synchronization",
   "UI_MANAGE_DOCS": "Manage your synchronized documents",
   "UI_MANAGE_CONNECTORS": "Manage your sources and destinations",
   "UI_PROFILE": "Profile",

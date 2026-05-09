@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { encrypt } from "@/lib/crypto"
 
 export interface ShopifyArticle {
   title: string
@@ -91,7 +92,7 @@ export async function saveShopifyConnector(
       name: `Shopify - ${shopDomain}`,
       status: "ACTIVE",
       config: { shopDomain },
-      credentials: accessToken,
+      credentials: encrypt(accessToken),
     },
   })
 }
