@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { prisma } from "@/lib/prisma"
 import { headers } from "next/headers"
+import { getPlanFromPriceId } from "@/lib/auth/subscription"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "")
 
@@ -32,6 +33,8 @@ export async function POST(req: NextRequest) {
           const subscriptionData = await stripe.subscriptions.retrieve(subscriptionId) as unknown as Stripe.Subscription
 
           const sd = subscriptionData as any
+          const priceId = sd.items?.data?.[0]?.price?.id || ""
+          const plan = getPlanFromPriceId(priceId)
 
           await prisma.subscription.upsert({
             where: { userId },
@@ -39,14 +42,14 @@ export async function POST(req: NextRequest) {
               userId,
               stripeCustomerId: session.customer as string,
               stripeSubscriptionId: subscriptionId,
-              plan: "pro",
+              plan,
               status: sd.status,
               currentPeriodEnd: new Date(sd.current_period_end * 1000),
             },
             update: {
               stripeCustomerId: session.customer as string,
               stripeSubscriptionId: subscriptionId,
-              plan: "pro",
+              plan,
               status: sd.status,
               currentPeriodEnd: new Date(sd.current_period_end * 1000),
             },
@@ -76,6 +79,34 @@ export async function POST(req: NextRequest) {
             },
           })
         }
+        break
+      }
+
+      case "invoice.payment_failed": {
+        const invoice = event.data.object as Stripe.Invoice
+        const subscriptionId = invoice.subscription as string
+
+        if (subscriptionId) {
+          await prisma.subscription.update({
+            where: { stripeSubscriptionId: subscriptionId },
+            data: { status: "past_due" },
+          })
+          // TODO: Send email notification
+        }
+        break
+      }
+
+      case "invoice.upcoming": {
+        // Log for dunning reminder
+        const invoice = event.data.object as Stripe.Invoice
+        console.log("Upcoming invoice:", invoice.id, "for customer:", invoice.customer)
+        break
+      }
+
+      case "customer.subscription.trial_end": {
+        // Log for trial end warning
+        const subscription = event.data.object as Stripe.Subscription
+        console.log("Trial ending for subscription:", subscription.id, "at:", new Date(subscription.trial_end! * 1000))
         break
       }
     }

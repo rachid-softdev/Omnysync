@@ -3,15 +3,18 @@ import { t } from "@/lib/i18n"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { 
-  LayoutDashboard, 
-  FileText, 
-  Plug, 
-  Settings, 
+import {
+  LayoutDashboard,
+  FileText,
+  Plug,
+  Settings,
   LogOut,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Menu,
+  X,
 } from "lucide-react"
 import { signOut } from "@/lib/auth"
+import { MobileNav } from "@/components/mobile-nav"
 
 export default async function DashboardLayout({
   children,
@@ -19,13 +22,13 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const session = await auth()
-  
+
   if (!session?.user) {
     redirect("/auth/signin")
   }
 
   const user = session.user
-  
+
   const navItems = [
     { href: "/dashboard", icon: LayoutDashboard, label: t("UI_DASHBOARD") },
     { href: "/dashboard/documents", icon: FileText, label: t("UI_DOCS_LABEL") },
@@ -36,7 +39,8 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen flex">
-      <aside className="w-64 bg-card border-r border-border flex flex-col">
+      {/* Desktop sidebar - hidden on mobile */}
+      <aside className="hidden md:flex w-64 bg-card border-r border-border flex-col">
         <div className="p-6 border-b border-border">
           <h1 className="text-xl font-bold">Omnysync</h1>
         </div>
@@ -86,7 +90,9 @@ export default async function DashboardLayout({
           </form>
         </div>
       </aside>
-      <main className="flex-1 bg-background">
+      {/* Mobile navigation */}
+      <MobileNav navItems={navItems} user={user} />
+      <main className="flex-1 bg-background md:pt-0 pt-14">
         {children}
       </main>
     </div>

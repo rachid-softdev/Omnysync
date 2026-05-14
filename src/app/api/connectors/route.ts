@@ -6,6 +6,9 @@ import { testWordPressConnection } from "@/lib/services/wordpress"
 import { testGhostConnection } from "@/lib/services/ghost"
 import { testWebflowConnection } from "@/lib/services/webflow"
 import { testShopifyConnection } from "@/lib/services/shopify"
+import { createConnectorSchema } from "@/lib/validations"
+import { apiError, sanitizeError } from "@/lib/api-error"
+import { checkConnectorLimit } from "@/lib/auth/subscription"
 
 export async function GET(req: NextRequest) {
   const session = await auth()
@@ -37,7 +40,20 @@ export async function POST(req: NextRequest) {
 
   const orgId = await getUserOrgId(session.user.id)
   const body = await req.json()
-  const { type, name, config, credentials } = body
+
+  // Validate input with Zod schema
+  const parsed = createConnectorSchema.safeParse(body)
+  if (!parsed.success) {
+    return apiError(parsed.error.errors[0]?.message || "Invalid connector data", 400)
+  }
+
+  const { type, name, config, credentials } = parsed.data
+
+  // Check connector limit based on plan
+  const withinLimit = await checkConnectorLimit(session.user.id)
+  if (!withinLimit) {
+    return apiError("Connector limit exceeded. Please upgrade your plan.", 429, "CONNECTOR_LIMIT_EXCEEDED")
+  }
 
   let testResult: { success: boolean; error?: string } = { success: false }
 
