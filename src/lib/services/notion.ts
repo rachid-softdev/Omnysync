@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { ERR_FETCH_CONTENT } from "@/lib/errors"
 import { encrypt } from "@/lib/crypto"
+import { fetchWithRetry } from "@/lib/http-client"
 import type { NotionSearchResponse, NotionBlocksResponse, NotionBlock } from "./types"
 
 const NOTION_API = "https://api.notion.com/v1"
@@ -14,12 +15,11 @@ export interface NotionPage {
 }
 
 export async function listNotionPages(accessToken: string): Promise<NotionPage[]> {
-  const response = await fetch(`${NOTION_API}/v1/search`, {
+  const data = await fetchWithRetry<NotionSearchResponse>(`${NOTION_API}/v1/search`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Notion-Version": "2022-06-28",
-      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       filter: {
@@ -28,12 +28,6 @@ export async function listNotionPages(accessToken: string): Promise<NotionPage[]
       },
     }),
   })
-
-  if (!response.ok) {
-    throw new Error(ERR_FETCH_CONTENT)
-  }
-
-  const data: NotionSearchResponse = await response.json()
 
   return data.results
     .filter((page) => page.parent.type === "workspace" || page.parent.type === "database")
@@ -50,18 +44,12 @@ export async function getNotionPageContent(
   pageId: string,
   accessToken: string
 ): Promise<NotionPage> {
-  const response = await fetch(`${NOTION_API}/v1/blocks/${pageId}/children`, {
+  const data = await fetchWithRetry<NotionBlocksResponse>(`${NOTION_API}/v1/blocks/${pageId}/children`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Notion-Version": "2022-06-28",
     },
   })
-
-  if (!response.ok) {
-    throw new Error(ERR_FETCH_CONTENT)
-  }
-
-  const data: NotionBlocksResponse = await response.json()
 
   let content = ""
 
@@ -99,14 +87,12 @@ export async function getNotionPageContent(
     content += extractText(block)
   }
 
-  const pageResponse = await fetch(`${NOTION_API}/v1/pages/${pageId}`, {
+  const pageData = await fetchWithRetry<Record<string, unknown>>(`${NOTION_API}/v1/pages/${pageId}`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Notion-Version": "2022-06-28",
     },
   })
-
-  const pageData = await pageResponse.json()
   const title = pageData.properties?.title?.title?.[0]?.plain_text || "Untitled"
 
   return {

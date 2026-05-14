@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getUserOrgId } from "@/lib/auth/org"
 import { enqueueSyncJob } from "@/lib/services/queue"
+import { checkSyncLimit } from "@/lib/auth/subscription"
+import { createSyncSchema } from "@/lib/validations"
+import { apiError, sanitizeError } from "@/lib/api-error"
 
 export async function GET(req: NextRequest) {
   const session = await auth()
@@ -39,12 +42,24 @@ export async function POST(req: NextRequest) {
   const session = await auth()
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return apiError("Unauthorized", 401)
   }
 
   const orgId = await getUserOrgId(session.user.id)
   const body = await req.json()
-  const { sourceConnectorId, destConnectorId, sourceDocumentId, title, options } = body
+
+  const parsed = createSyncSchema.safeParse(body)
+  if (!parsed.success) {
+    return apiError(parsed.error.errors[0]?.message || "Invalid request", 400)
+  }
+
+  const { sourceConnectorId, destConnectorId, sourceDocumentId, title } = parsed.data
+
+  // Check sync limit before creating document
+  const withinLimit = await checkSyncLimit(session.user.id)
+  if (!withinLimit) {
+    return apiError("Sync limit exceeded. Please upgrade your plan to continue syncing.", 429, "SYNC_LIMIT_EXCEEDED")
+  }
 
   const sourceConnector = await prisma.connector.findUnique({
     where: { id: sourceConnectorId },
@@ -55,10 +70,7 @@ export async function POST(req: NextRequest) {
   })
 
   if (!sourceConnector || !destConnector) {
-    return NextResponse.json(
-      { error: "Invalid connectors" },
-      { status: 400 }
-    )
+    return apiError("Invalid connectors", 400)
   }
 
   const document = await prisma.document.create({

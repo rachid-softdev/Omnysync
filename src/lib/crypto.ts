@@ -3,16 +3,22 @@ import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "crypt
 const ALGORITHM = "aes-256-gcm"
 const IV_LENGTH = 16
 const AUTH_TAG_LENGTH = 16
-const SALT = "omnysync-encryption-salt-v1"
+
+function getSalt(): string {
+  const salt = process.env.ENCRYPTION_SALT
+  if (!salt) {
+    throw new Error("ENCRYPTION_SALT environment variable is required for credential encryption")
+  }
+  return salt
+}
 
 function getKey(): Buffer {
   const encryptionKey = process.env.ENCRYPTION_KEY
-
   if (!encryptionKey) {
     throw new Error("ENCRYPTION_KEY environment variable is required for credential encryption")
   }
 
-  return scryptSync(encryptionKey, SALT, 32)
+  return scryptSync(encryptionKey, getSalt(), 32)
 }
 
 export function encrypt(plaintext: string): string {

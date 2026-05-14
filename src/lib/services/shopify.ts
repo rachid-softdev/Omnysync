@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { encrypt } from "@/lib/crypto"
+import { fetchWithRetry } from "@/lib/http-client"
 
 export interface ShopifyArticle {
   title: string
@@ -24,17 +25,10 @@ export function createShopifyClient(shopDomain: string, accessToken: string) {
   }
 
   async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(`${baseUrl}${endpoint}`, {
+    return fetchWithRetry<T>(`${baseUrl}${endpoint}`, {
       ...options,
       headers: { ...headers, ...options.headers },
     })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
-      throw new Error(error.errors?.[0]?.message || `Shopify API error: ${response.status}`)
-    }
-
-    return response.json()
   }
 
   return {

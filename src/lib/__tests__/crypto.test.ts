@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest"
 import { encrypt, decrypt } from "../crypto"
 
-// Set encryption key for tests
+// Set encryption key and salt for tests
 process.env.ENCRYPTION_KEY = "test-encryption-key-32bytes-minimum"
+process.env.ENCRYPTION_SALT = "test-salt-16-chars"
 
 describe("crypto", () => {
   it("encrypts and decrypts a string", () => {

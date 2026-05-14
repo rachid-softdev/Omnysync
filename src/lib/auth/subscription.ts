@@ -51,3 +51,23 @@ export async function checkSyncLimit(userId: string): Promise<boolean> {
 
   return syncCount < limits.syncsPerMonth
 }
+
+export function getPlanFromPriceId(priceId: string): Plan {
+  const proPriceId = process.env.STRIPE_PRICE_PRO_MONTHLY
+  const businessPriceId = process.env.STRIPE_PRICE_BUSINESS_MONTHLY
+
+  if (priceId === proPriceId) return "pro"
+  if (priceId === businessPriceId) return "business"
+  return "free"
+}
+
+export async function checkConnectorLimit(userId: string): Promise<boolean> {
+  const plan = await getUserPlan(userId)
+  const limits = getPlanLimits(plan)
+
+  const connectorCount = await prisma.connector.count({
+    where: { userId },
+  })
+
+  return connectorCount < limits.connectors
+}
