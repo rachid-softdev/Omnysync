@@ -2,14 +2,17 @@ import { Check, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
+import { useTranslations } from "@/lib/i18n/useTranslations"
 
 export default function PricingPage() {
+  const { t } = useTranslations()
+
   const plans = [
     {
-      name: "Free",
-      price: "0€",
-      period: "pour toujours",
-      description: "Pour découvrir la plateforme",
+      nameKey: "plan_free_name",
+      priceKey: "plan_free_price",
+      periodKey: "plan_free_period",
+      descriptionKey: "plan_free_description",
       features: [
         "5 synchronisations par mois",
         "2 connecteurs",
@@ -17,15 +20,15 @@ export default function PricingPage() {
         "WordPress & Ghost",
         "Support par email",
       ],
-      cta: "Commencer gratuitement",
+      ctaKey: "cta_start_free",
       href: "/auth/signin",
       highlighted: false,
     },
     {
-      name: "Pro",
-      price: "29€",
-      period: "par mois",
-      description: "Pour les créateurs de contenu",
+      nameKey: "plan_pro_name",
+      priceKey: "plan_pro_price",
+      periodKey: "plan_pro_period",
+      descriptionKey: "plan_pro_description",
       features: [
         "100 synchronisations par mois",
         "10 connecteurs",
@@ -35,15 +38,15 @@ export default function PricingPage() {
         "Détection de changements",
         "Support prioritaire",
       ],
-      cta: "Commencer l'essai",
+      ctaKey: "cta_start_trial",
       href: "/api/stripe/checkout",
       highlighted: true,
     },
     {
-      name: "Business",
-      price: "99€",
-      period: "par mois",
-      description: "Pour les agences et équipes",
+      nameKey: "plan_business_name",
+      priceKey: "plan_business_price",
+      periodKey: "plan_business_period",
+      descriptionKey: "plan_business_description",
       features: [
         "Synchronisations illimitées",
         "Connecteurs illimités",
@@ -53,7 +56,7 @@ export default function PricingPage() {
         "API access",
         "Support dédié",
       ],
-      cta: "Contacter les ventes",
+      ctaKey: "cta_contact_sales",
       href: "mailto:sales@omnysync.com",
       highlighted: false,
     },
@@ -63,30 +66,30 @@ export default function PricingPage() {
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-24">
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold mb-4">Tarifs simples et transparents</h1>
+          <h1 className="text-5xl font-bold mb-4">{t('pricing_title')}</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Choisissez le plan qui correspond à vos besoins. Passez à un plan supérieur à tout moment.
+            {t('pricing_subtitle')}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {plans.map((plan) => (
             <Card
-              key={plan.name}
+              key={plan.nameKey}
               className={plan.highlighted ? "border-primary shadow-lg relative" : ""}
             >
               {plan.highlighted && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
-                  Populaire
+                  {t('popular_badge')}
                 </div>
               )}
               <CardHeader>
-                <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                <CardTitle className="text-2xl">{t(plan.nameKey)}</CardTitle>
                 <div className="mt-2">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  <span className="text-muted-foreground ml-1">/{plan.period}</span>
+                  <span className="text-4xl font-bold">{t(plan.priceKey)}</span>
+                  <span className="text-muted-foreground ml-1">/{t(plan.periodKey)}</span>
                 </div>
-                <CardDescription>{plan.description}</CardDescription>
+                <CardDescription>{t(plan.descriptionKey)}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <ul className="space-y-3">
@@ -112,14 +115,14 @@ export default function PricingPage() {
                   }}>
                     <Button className="w-full" variant={plan.highlighted ? "default" : "outline"}>
                       <Zap className="w-4 h-4 mr-2" />
-                      {plan.cta}
+                      {t(plan.ctaKey)}
                     </Button>
                   </form>
                 ) : (
                   <Link href={plan.href}>
                     <Button className="w-full" variant={plan.highlighted ? "default" : "outline"}>
-                      {plan.name === "Business" && <Zap className="w-4 h-4 mr-2" />}
-                      {plan.cta}
+                      {plan.nameKey === "plan_business_name" && <Zap className="w-4 h-4 mr-2" />}
+                      {t(plan.ctaKey)}
                     </Button>
                   </Link>
                 )}

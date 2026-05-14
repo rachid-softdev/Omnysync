@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { ERR_UPLOAD_MEDIA } from "@/lib/errors"
 import { encrypt } from "@/lib/crypto"
+import { fetchWithRetry } from "@/lib/http-client"
 
 export interface WordPressPost {
   id?: number
@@ -35,17 +36,10 @@ export function createWordPressClient(siteUrl: string, username: string, passwor
   }
 
   async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(`${baseUrl}/wp-json/wp/v2${endpoint}`, {
+    return fetchWithRetry<T>(`${baseUrl}/wp-json/wp/v2${endpoint}`, {
       ...options,
       headers: { ...headers, ...options.headers },
     })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
-      throw new Error(error.message || `WordPress API error: ${response.status}`)
-    }
-
-    return response.json()
   }
 
   return {

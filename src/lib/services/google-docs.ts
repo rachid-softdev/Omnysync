@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { ERR_FETCH_CONTENT } from "@/lib/errors"
 import { encrypt } from "@/lib/crypto"
+import { fetchWithTimeout, fetchWithRetry } from "@/lib/http-client"
 import type {
   GoogleDriveFilesResponse,
   GoogleDocBody,
@@ -20,7 +21,7 @@ export interface GoogleDoc {
 }
 
 export async function listGoogleDocs(accessToken: string): Promise<GoogleDoc[]> {
-  const response = await fetch(
+  const data = await fetchWithRetry<GoogleDriveFilesResponse>(
     `${GOOGLE_DRIVE_API}/files?q=mimeType='application/vnd.google-apps.document'&fields=files(id,name,createdTime,modifiedTime)`,
     {
       headers: {
@@ -29,11 +30,6 @@ export async function listGoogleDocs(accessToken: string): Promise<GoogleDoc[]> 
     }
   )
 
-  if (!response.ok) {
-    throw new Error(ERR_FETCH_CONTENT)
-  }
-
-  const data: GoogleDriveFilesResponse = await response.json()
   return data.files.map((file) => ({
     id: file.id,
     title: file.name,
@@ -47,7 +43,7 @@ export async function getGoogleDocContent(
   documentId: string,
   accessToken: string
 ): Promise<GoogleDoc> {
-  const response = await fetch(
+  const data = await fetchWithRetry<GoogleDocBody>(
     `${GOOGLE_DOCS_API}/documents/${documentId}`,
     {
       headers: {
@@ -55,12 +51,6 @@ export async function getGoogleDocContent(
       },
     }
   )
-
-  if (!response.ok) {
-    throw new Error(ERR_FETCH_CONTENT)
-  }
-
-  const data: GoogleDocBody = await response.json()
 
   let content = ""
   if (data.body && data.body.content) {
@@ -105,7 +95,7 @@ export async function saveGoogleDocsConnector(
       type: "GOOGLE_DOCS",
       name: "Google Docs",
       status: "ACTIVE",
-      credentials: JSON.stringify({ accessToken, refreshToken }),
+      credentials: encrypt(JSON.stringify({ accessToken, refreshToken })),
     },
   })
 }
@@ -118,7 +108,7 @@ export async function updateConnectorCredentials(
   return prisma.connector.update({
     where: { id: connectorId },
     data: {
-      credentials: JSON.stringify({ accessToken, refreshToken }),
+      credentials: encrypt(JSON.stringify({ accessToken, refreshToken })),
     },
   })
 }

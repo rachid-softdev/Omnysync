@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { ERR_UPLOAD_MEDIA } from "@/lib/errors"
 import { encrypt } from "@/lib/crypto"
+import { fetchWithRetry } from "@/lib/http-client"
 
 export interface GhostPost {
   id?: string
@@ -37,18 +38,11 @@ export function createGhostClient(siteUrl: string, adminApiKey: string) {
   }
 
   async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(`${baseUrl}/ghost/api/admin/api/canary/admin${endpoint}`, {
+    const data = await fetchWithRetry<Record<string, unknown>>(`${baseUrl}/ghost/api/admin/api/canary/admin${endpoint}`, {
       ...options,
       headers: { ...headers, ...options.headers },
     })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
-      throw new Error(error.errors?.[0]?.message || `Ghost API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return data[Object.keys(data)[0]]
+    return data[Object.keys(data)[0]] as T
   }
 
   return {

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { ERR_UPLOAD_MEDIA } from "@/lib/errors"
 import { encrypt } from "@/lib/crypto"
+import { fetchWithRetry } from "@/lib/http-client"
 
 export interface WebflowPost {
   name: string
@@ -25,17 +26,10 @@ export function createWebflowClient(accessToken: string, siteId: string) {
   }
 
   async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(`${baseUrl}${endpoint}`, {
+    return fetchWithRetry<T>(`${baseUrl}${endpoint}`, {
       ...options,
       headers: { ...headers, ...options.headers },
     })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
-      throw new Error(error.message || `Webflow API error: ${response.status}`)
-    }
-
-    return response.json()
   }
 
   return {
