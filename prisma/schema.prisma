@@ -23,6 +23,7 @@ model User {
   connectors    Connector[]
   syncLogs      SyncLog[]
   subscription  Subscription?
+  auditLogs     AuditLog[]
 }
 
 model Account {
@@ -79,6 +80,7 @@ model Organization {
   documents     Document[]
   syncLogs      SyncLog[]
   webhookEndpoints WebhookEndpoint[]
+  auditLogs     AuditLog[]
 }
 
 model UserOrganization {
@@ -181,6 +183,7 @@ model Document {
   sourceConnector Connector?   @relation("SourceConnector", fields: [sourceConnectorId], references: [id])
   destConnector   Connector?   @relation("DestConnector", fields: [destConnectorId], references: [id])
   syncLogs        SyncLog[]
+  approvalRequests ApprovalRequest[]
 }
 
 enum DocumentStatus {
@@ -276,4 +279,51 @@ enum WebhookType {
   GHOST
   WEBFLOW
   SHOPIFY
+}
+
+// Audit Trail - Logging de toutes les actions sensibles
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  action         String   // "document.created", "connector.deleted", "member.invited"
+  targetType     String   // "document", "connector", "member", "org", "sync"
+  targetId       String?
+  details        Json?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now()) @db.Timestamptz
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([userId, createdAt])
+}
+
+// Approval Portal - Demandes d'approbation avant publication
+model ApprovalRequest {
+  id          String           @id @default(cuid())
+  documentId  String
+  token       String           @unique
+  status      ApprovalStatus   @default(PENDING)
+  requestedBy String
+  approvedBy  String?
+  approvedAt  DateTime?
+  comments    String?
+  expiresAt   DateTime
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([documentId, status])
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
 }

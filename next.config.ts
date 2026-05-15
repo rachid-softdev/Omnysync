@@ -1,6 +1,8 @@
 import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
+  // Disable turbopack for this project due to fs import issues
+  serverExternalPackages: ["fs", "path"],
   output: 'standalone',
   async headers() {
     return [
