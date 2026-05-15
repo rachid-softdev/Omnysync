@@ -279,3 +279,20 @@ export async function getAirtableRecordContent(
     metadata: doc.metadata,
   }
 }
+
+/**
+ * Teste la connexion à Airtable
+ */
+export async function testAirtableConnection(
+  apiKey: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await listAirtableBases(apiKey)
+    return { success: true }
+  } catch (error) {
+    return {
+      success: false,
+      error: (error as Error).message,
+    }
+  }
+}
