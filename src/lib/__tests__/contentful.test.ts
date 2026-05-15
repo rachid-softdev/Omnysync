@@ -2,8 +2,12 @@ import { describe, it, expect, vi } from "vitest"
 
 // Mock prisma before imports
 vi.mock("@/lib/prisma", () => ({
-  prisma: { connector: { findUnique: vi.fn(), create: vi.fn() } },
+  prisma: {
+    connector: { findUnique: vi.fn(), create: vi.fn() },
+  },
 }))
+
+// Mock fetchWithRetry
 vi.mock("@/lib/http-client", () => ({
   fetchWithRetry: vi.fn(),
 }))
@@ -17,6 +21,7 @@ describe("contentful service", () => {
       vi.mocked(fetchWithRetry).mockResolvedValueOnce({
         items: [{ id: "space1", name: "My Space" }],
       })
+
       const result = await testContentfulConnection("valid-token")
       expect(result.success).toBe(true)
     })
@@ -24,6 +29,7 @@ describe("contentful service", () => {
     it("returns failure when API call fails", async () => {
       const { fetchWithRetry } = await import("@/lib/http-client")
       vi.mocked(fetchWithRetry).mockRejectedValueOnce(new Error("Unauthorized"))
+
       const result = await testContentfulConnection("invalid-token")
       expect(result.success).toBe(false)
       expect(result.error).toBeTruthy()
@@ -39,6 +45,7 @@ describe("contentful service", () => {
           { id: "space2", name: "Space 2" },
         ],
       })
+
       const spaces = await listContentfulSpaces("valid-token")
       expect(spaces).toHaveLength(2)
       expect(spaces[0].name).toBe("Space 1")
@@ -53,8 +60,12 @@ describe("contentful service", () => {
         content: "",
         createdAt: "2026-05-01T00:00:00Z",
         updatedAt: "2026-05-15T00:00:00Z",
-        fields: { title: "My Article", body: "Article body content" },
+        fields: {
+          title: "My Article",
+          body: "Article body content",
+        },
       }
+
       const doc = contentfulEntryToDocument(entry)
       expect(doc.title).toBe("My Article")
       expect(doc.content).toBe("Article body content")
@@ -68,8 +79,12 @@ describe("contentful service", () => {
         content: "",
         createdAt: "2026-05-01T00:00:00Z",
         updatedAt: "2026-05-15T00:00:00Z",
-        fields: { title: "Product", description: "Product description text" },
+        fields: {
+          title: "Product",
+          description: "Product description text",
+        },
       }
+
       const doc = contentfulEntryToDocument(entry)
       expect(doc.content).toBe("Product description text")
     })
@@ -81,8 +96,12 @@ describe("contentful service", () => {
         content: "",
         createdAt: "2026-05-01T00:00:00Z",
         updatedAt: "2026-05-15T00:00:00Z",
-        fields: { title: "Data", customField: "value" },
+        fields: {
+          title: "Data",
+          customField: "value",
+        },
       }
+
       const doc = contentfulEntryToDocument(entry)
       expect(doc.content).toContain("customField")
     })
