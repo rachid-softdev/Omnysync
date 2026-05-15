@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loader2, CheckCircle, XCircle } from "lucide-react"
+import { useTranslations } from "@/lib/i18n/useTranslations"
 
 const PLATFORM_FIELDS: Record<string, { label: string; key: string; type: string; placeholder: string }[]> = {
   WORDPRESS: [
@@ -25,6 +26,18 @@ const PLATFORM_FIELDS: Record<string, { label: string; key: string; type: string
     { label: "Domaine", key: "shopDomain", type: "text", placeholder: "ma-boutique.myshopify.com" },
     { label: "Access Token", key: "accessToken", type: "password", placeholder: "shpat_..." },
   ],
+  AIRTABLE: [
+    { label: "API Key", key: "apiKey", type: "password", placeholder: "key..." },
+    { label: "Base ID (optionnel)", key: "baseId", type: "text", placeholder: "app..." },
+  ],
+  CONTENTFUL: [
+    { label: "Access Token", key: "accessToken", type: "password", placeholder: "token..." },
+    { label: "Space ID (optionnel)", key: "spaceId", type: "text", placeholder: "space ID" },
+  ],
+  MEDIUM: [
+    { label: "Access Token", key: "accessToken", type: "password", placeholder: "token..." },
+    { label: "Publication ID (optionnel)", key: "publicationId", type: "text", placeholder: "publication ID" },
+  ],
 }
 
 interface ConnectorDialogProps {
@@ -35,6 +48,7 @@ interface ConnectorDialogProps {
 }
 
 export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDialogProps) {
+  const { t } = useTranslations()
   const [fields, setFields] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -56,20 +70,37 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
     const config: Record<string, string> = {}
     const credentials: Record<string, string> = {}
 
-    // Separate config vs credentials
-    if (type === "WORDPRESS") {
-      config.siteUrl = fields.siteUrl || ""
-      credentials.username = fields.username || ""
-      credentials.password = fields.password || ""
-    } else if (type === "GHOST") {
-      config.siteUrl = fields.siteUrl || ""
-      credentials.adminApiKey = fields.adminApiKey || ""
-    } else if (type === "WEBFLOW") {
-      config.siteId = fields.siteId || ""
-      credentials.accessToken = fields.accessToken || ""
-    } else if (type === "SHOPIFY") {
-      config.shopDomain = fields.shopDomain || ""
-      credentials.accessToken = fields.accessToken || ""
+    // Séparer config vs credentials selon le type
+    switch (type) {
+      case "WORDPRESS":
+        config.siteUrl = fields.siteUrl || ""
+        credentials.username = fields.username || ""
+        credentials.password = fields.password || ""
+        break
+      case "GHOST":
+        config.siteUrl = fields.siteUrl || ""
+        credentials.adminApiKey = fields.adminApiKey || ""
+        break
+      case "WEBFLOW":
+        config.siteId = fields.siteId || ""
+        credentials.accessToken = fields.accessToken || ""
+        break
+      case "SHOPIFY":
+        config.shopDomain = fields.shopDomain || ""
+        credentials.accessToken = fields.accessToken || ""
+        break
+      case "AIRTABLE":
+        config.baseId = fields.baseId || ""
+        credentials.apiKey = fields.apiKey || ""
+        break
+      case "CONTENTFUL":
+        config.spaceId = fields.spaceId || ""
+        credentials.accessToken = fields.accessToken || ""
+        break
+      case "MEDIUM":
+        config.publicationId = fields.publicationId || ""
+        credentials.accessToken = fields.accessToken || ""
+        break
     }
 
     try {
@@ -101,15 +132,31 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
     GHOST: "Ghost",
     WEBFLOW: "Webflow",
     SHOPIFY: "Shopify",
+    AIRTABLE: "Airtable",
+    CONTENTFUL: "Contentful",
+    MEDIUM: "Medium",
+  }
+
+  const connectorDescriptions: Record<string, string> = {
+    WORDPRESS: "Connectez votre site WordPress via REST API",
+    GHOST: "Connectez votre blog Ghost via l'API Admin",
+    WEBFLOW: "Connectez votre CMS Webflow",
+    SHOPIFY: "Connectez votre boutique Shopify",
+    AIRTABLE: "Syncronisez vos bases Airtable",
+    CONTENTFUL: "Connectez votre espace Contentful",
+    MEDIUM: "Publiez vos articles sur Medium",
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div className="bg-card border border-border rounded-xl shadow-xl p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold mb-4">Connecter {connectorName[type] || type}</h3>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">Connecter {connectorName[type] || type}</h3>
+          <p className="text-sm text-muted-foreground">{connectorDescriptions[type]}</p>
+        </div>
 
         {success ? (
-          <div className="flex flex-col items-center gap-3 py-4">
+          <div className="flex flex-col items-center gap-3 py-8">
             <CheckCircle className="w-10 h-10 text-green-500" />
             <p className="text-sm text-muted-foreground">Connecté avec succès !</p>
           </div>
@@ -139,7 +186,7 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
                 Annuler
               </Button>
               <Button className="flex-1" onClick={handleConnect} disabled={loading}>
-                {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Connecter
               </Button>
             </div>

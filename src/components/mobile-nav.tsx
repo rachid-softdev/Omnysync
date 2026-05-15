@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Menu, X, LogOut } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { signOut } from "@/lib/auth"
+import { logoutAction } from "@/lib/actions"
 import { t } from "@/lib/i18n"
 
 interface NavItem {
@@ -108,21 +108,15 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             </div>
           </div>
-          <form
-            action={async () => {
-              "use server"
-              await signOut({ redirectTo: "/" })
-            }}
-          >
-            <Button
+          <Button
               variant="ghost"
               className="w-full justify-start text-muted-foreground hover:text-foreground"
               size="sm"
+              onClick={() => logoutAction()}
             >
               <LogOut className="w-4 h-4 mr-2" />
               {t("UI_LOGOUT")}
             </Button>
-          </form>
         </div>
       </div>
     </>
