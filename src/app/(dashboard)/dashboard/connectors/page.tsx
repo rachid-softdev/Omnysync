@@ -15,8 +15,8 @@ interface Connector {
   status: string
 }
 
-const sourceTypes = ["GOOGLE_DOCS", "NOTION"] as const
-const destTypes = ["WORDPRESS", "GHOST", "WEBFLOW", "SHOPIFY"] as const
+const sourceTypes = ["GOOGLE_DOCS", "NOTION", "AIRTABLE", "CONTENTFUL"] as const
+const destTypes = ["WORDPRESS", "GHOST", "WEBFLOW", "SHOPIFY", "MEDIUM"] as const
 
 const connectorNames: Record<string, string> = {
   GOOGLE_DOCS: "Google Docs",
@@ -25,6 +25,9 @@ const connectorNames: Record<string, string> = {
   GHOST: "Ghost",
   WEBFLOW: "Webflow",
   SHOPIFY: "Shopify",
+  AIRTABLE: "Airtable",
+  CONTENTFUL: "Contentful",
+  MEDIUM: "Medium",
 }
 
 const connectorIcons: Record<string, string> = {
@@ -34,6 +37,21 @@ const connectorIcons: Record<string, string> = {
   GHOST: "👻",
   WEBFLOW: "🌐",
   SHOPIFY: "🛒",
+  AIRTABLE: "📊",
+  CONTENTFUL: "🏗️",
+  MEDIUM: "📰",
+}
+
+const connectorDescriptions: Record<string, string> = {
+  GOOGLE_DOCS: "Récupérez le contenu depuis Google Docs",
+  NOTION: "Importez vos pages Notion",
+  WORDPRESS: "Publiez sur WordPress via REST API",
+  GHOST: "Export vers Ghost via Admin API",
+  WEBFLOW: "Sync vers Webflow CMS",
+  SHOPIFY: "Créez des articles Shopify",
+  AIRTABLE: "Synchronisez vos bases Airtable",
+  CONTENTFUL: "Publiez vers Contentful",
+  MEDIUM: "Publiez sur Medium",
 }
 
 export default function ConnectorsPage() {
@@ -118,26 +136,33 @@ export default function ConnectorsPage() {
 
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">{t("UI_SOURCES")}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sourceTypes.map((type) => {
+        <p className="text-sm text-muted-foreground mb-4">
+          Connectez vos sources de contenu pour importer des documents
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...sourceTypes].map((type) => {
             const isConnected = connectedTypes.has(type)
             return (
               <Card key={type} className="hover:shadow-md transition-shadow">
-                <CardContent className="flex items-center gap-4 p-6">
-                  <span className="text-3xl">{connectorIcons[type]}</span>
-                  <div className="flex-1">
-                    <p className="font-medium">{connectorNames[type]}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {isConnected ? t("UI_CONNECTED") : t("UI_NOT_CONNECTED")}
-                    </p>
-                  </div>
+                <CardContent className="flex flex-col items-center text-center p-6">
+                  <span className="text-4xl mb-3">{connectorIcons[type]}</span>
+                  <p className="font-semibold">{connectorNames[type]}</p>
+                  <p className="text-xs text-muted-foreground mt-1 mb-4">
+                    {connectorDescriptions[type]}
+                  </p>
                   <Button
                     variant={isConnected ? "outline" : "default"}
                     size="sm"
                     onClick={() => handleConnect(type)}
+                    className="w-full"
                   >
-                    {isConnected ? "Reconnecter" : "Connecter"}
+                    {isConnected ? "Connecté" : "Connecter"}
                   </Button>
+                  {isConnected && (
+                    <Badge variant="secondary" className="mt-2">
+                      Actif
+                    </Badge>
+                  )}
                 </CardContent>
               </Card>
             )
@@ -147,32 +172,65 @@ export default function ConnectorsPage() {
 
       <div>
         <h2 className="text-xl font-semibold mb-4">{t("UI_DESTINATIONS")}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {destTypes.map((type) => {
+        <p className="text-sm text-muted-foreground mb-4">
+          Configurez vos destinations pour publier vos contenus synchronisés
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          {[...destTypes].map((type) => {
             const isConnected = connectedTypes.has(type)
             return (
               <Card key={type} className="hover:shadow-md transition-shadow">
-                <CardContent className="flex items-center gap-4 p-6">
-                  <span className="text-3xl">{connectorIcons[type]}</span>
-                  <div className="flex-1">
-                    <p className="font-medium">{connectorNames[type]}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {isConnected ? t("UI_CONNECTED") : t("UI_NOT_CONNECTED")}
-                    </p>
-                  </div>
+                <CardContent className="flex flex-col items-center text-center p-6">
+                  <span className="text-4xl mb-3">{connectorIcons[type]}</span>
+                  <p className="font-semibold">{connectorNames[type]}</p>
+                  <p className="text-xs text-muted-foreground mt-1 mb-4">
+                    {connectorDescriptions[type]}
+                  </p>
                   <Button
                     variant={isConnected ? "outline" : "default"}
                     size="sm"
                     onClick={() => handleConnect(type)}
+                    className="w-full"
                   >
-                    {isConnected ? "Reconnecter" : "Connecter"}
+                    {isConnected ? "Configuré" : "Configurer"}
                   </Button>
+                  {isConnected && (
+                    <Badge variant="secondary" className="mt-2">
+                      Actif
+                    </Badge>
+                  )}
                 </CardContent>
               </Card>
             )
           })}
         </div>
       </div>
+
+      {/* Connecteurs déjà configurés */}
+      {connectors.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Mes connecteurs</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {connectors.map((connector) => (
+              <Card key={connector.id}>
+                <CardContent className="flex items-center gap-4 p-4">
+                  <span className="text-2xl">{connectorIcons[connector.type]}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{connector.name}</p>
+                    <p className="text-sm text-muted-foreground">{connectorNames[connector.type]}</p>
+                  </div>
+                  <Badge 
+                    variant={connector.status === "ACTIVE" ? "default" : "destructive"}
+                    className="capitalize"
+                  >
+                    {connector.status.toLowerCase()}
+                  </Badge>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       <ConnectorDialog
         type={dialogType || ""}

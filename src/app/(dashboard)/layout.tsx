@@ -1,4 +1,3 @@
-import dynamic from "next/dynamic"
 import { auth } from "@/lib/auth"
 import { t } from "@/lib/i18n"
 import { redirect } from "next/navigation"
@@ -12,10 +11,8 @@ import {
   LogOut,
   ArrowRightLeft,
 } from "lucide-react"
-import { signOut } from "@/lib/auth"
-
-// Import dynamique de MobileNav pour éviter les problèmes SSR
-const MobileNav = dynamic(() => import("@/components/mobile-nav"), { ssr: false })
+import { logoutAction } from "@/lib/actions"
+import { MobileNav } from "@/components/mobile-nav"
 
 export default async function DashboardLayout({
   children,
@@ -75,21 +72,15 @@ export default async function DashboardLayout({
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             </div>
           </div>
-          <form
-            action={async () => {
-              "use server"
-              await signOut({ redirectTo: "/" })
-            }}
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-muted-foreground hover:text-foreground"
+            size="sm"
+            onClick={() => logoutAction()}
           >
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-muted-foreground hover:text-foreground"
-              size="sm"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              {trans("UI_LOGOUT")}
-            </Button>
-          </form>
+            <LogOut className="w-4 h-4 mr-2" />
+            {trans("UI_LOGOUT")}
+          </Button>
         </div>
       </aside>
       {/* Mobile navigation */}
