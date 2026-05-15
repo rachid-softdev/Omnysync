@@ -6,6 +6,9 @@ import { testWordPressConnection } from "@/lib/services/wordpress"
 import { testGhostConnection } from "@/lib/services/ghost"
 import { testWebflowConnection } from "@/lib/services/webflow"
 import { testShopifyConnection } from "@/lib/services/shopify"
+import { testMediumConnection } from "@/lib/services/medium"
+import { testAirtableConnection } from "@/lib/services/airtable"
+import { testContentfulConnection } from "@/lib/services/contentful"
 import { createConnectorSchema } from "@/lib/validations"
 import { apiError, sanitizeError } from "@/lib/api-error"
 import { checkConnectorLimit } from "@/lib/auth/subscription"
@@ -82,6 +85,15 @@ export async function POST(req: NextRequest) {
       // Notion doesn't need a separate test — we verify during listing
       testResult = { success: true, error: "" }
       break
+    case "MEDIUM":
+      testResult = await testMediumConnection(credentials.accessToken)
+      break
+    case "AIRTABLE":
+      testResult = await testAirtableConnection(credentials.apiKey)
+      break
+    case "CONTENTFUL":
+      testResult = await testContentfulConnection(credentials.accessToken)
+      break
   }
 
   if (!testResult.success) {
@@ -151,6 +163,36 @@ export async function POST(req: NextRequest) {
         session.user.id,
         orgId,
         credentials.accessToken
+      )
+      break
+    }
+    case "MEDIUM": {
+      const { saveMediumConnector } = await import("@/lib/services/medium")
+      connector = await saveMediumConnector(
+        session.user.id,
+        orgId,
+        credentials.accessToken,
+        config.publicationId ? { publicationId: config.publicationId } : {}
+      )
+      break
+    }
+    case "AIRTABLE": {
+      const { saveAirtableConnector } = await import("@/lib/services/airtable")
+      connector = await saveAirtableConnector(
+        session.user.id,
+        orgId,
+        credentials.apiKey,
+        { baseId: config.baseId, tableId: config.tableId }
+      )
+      break
+    }
+    case "CONTENTFUL": {
+      const { saveContentfulConnector } = await import("@/lib/services/contentful")
+      connector = await saveContentfulConnector(
+        session.user.id,
+        orgId,
+        credentials.accessToken,
+        { spaceId: config.spaceId, contentTypeId: config.contentTypeId }
       )
       break
     }

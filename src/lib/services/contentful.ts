@@ -343,3 +343,20 @@ export async function getContentfulEntryContent(
     metadata: doc.metadata,
   }
 }
+
+/**
+ * Teste la connexion à Contentful
+ */
+export async function testContentfulConnection(
+  accessToken: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await listContentfulSpaces(accessToken)
+    return { success: true }
+  } catch (error) {
+    return {
+      success: false,
+      error: (error as Error).message,
+    }
+  }
+}
