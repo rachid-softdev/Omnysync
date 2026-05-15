@@ -17,6 +17,155 @@ export interface SyncResult {
   changesDetected?: boolean
 }
 
+/**
+ * Enrichit le contenu avec les fonctionnalités IA
+ * Cette fonction est appelée pendant le processus de synchronisation
+ */
+async function enrichContentWithAI(
+  documentId: string,
+  htmlContent: string,
+  title: string
+): Promise<{
+  seoTitle: string
+  seoDescription: string
+  seoKeywords: string[]
+  excerpt: string
+}> {
+  const { generateSEO, generateExcerpt, findInterlinkingOpportunities } = await import("./ai")
+  
+  const enrichment = {
+    seoTitle: title,
+    seoDescription: "",
+    seoKeywords: [] as string[],
+    excerpt: "",
+  }
+
+  // 1. Generate SEO metadata
+  try {
+    await prisma.syncLog.create({
+      data: {
+        documentId,
+        action: "ai_seo_started",
+        status: "INFO",
+        message: "Génération des métadonnées SEO...",
+      },
+    })
+
+    const seo = await generateSEO(htmlContent, title)
+    enrichment.seoTitle = seo.title
+    enrichment.seoDescription = seo.description
+    enrichment.seoKeywords = seo.keywords
+
+    await prisma.syncLog.create({
+      data: {
+        documentId,
+        action: "ai_seo_completed",
+        status: "INFO",
+        message: `SEO généré: ${seo.title.substring(0, 50)}...`,
+      },
+    })
+  } catch (error) {
+    console.error("AI SEO generation failed:", error)
+    await prisma.syncLog.create({
+      data: {
+        documentId,
+        action: "ai_seo_failed",
+        status: "WARNING",
+        message: "Génération SEO échouée, utilisation du titre par défaut",
+      },
+    })
+  }
+
+  // 2. Generate excerpt
+  try {
+    const excerpt = await generateExcerpt(htmlContent, 160)
+    enrichment.excerpt = excerpt
+  } catch (error) {
+    console.error("AI excerpt generation failed:", error)
+    // Fallback: use first 160 chars of plain text
+    enrichment.excerpt = htmlContent.replace(/<[^>]+>/g, "").substring(0, 160)
+  }
+
+  // 3. Find interlinking opportunities (for published documents)
+  try {
+    const existingDocs = await prisma.document.findMany({
+      where: {
+        organizationId: (await prisma.document.findUnique({ where: { id: documentId } }))?.organizationId,
+        status: "PUBLISHED",
+        id: { not: documentId },
+      },
+      select: { title: true, slug: true, excerpt: true },
+      take: 10,
+    })
+
+    if (existingDocs.length > 0) {
+      const links = await findInterlinkingOpportunities(
+        htmlContent,
+        existingDocs.map((d) => ({ title: d.title, url: d.slug || "", excerpt: d.excerpt || "" }))
+      )
+      
+      if (links.links.length > 0) {
+        // Log the found links
+        await prisma.syncLog.create({
+          data: {
+            documentId,
+            action: "ai_interlinking_found",
+            status: "INFO",
+            message: `${links.links.length} opportunités de liens internes détectées`,
+          },
+        })
+      }
+    }
+  } catch (error) {
+    console.error("AI interlinking failed:", error)
+  }
+
+  return enrichment
+}
+
+/**
+ * Génère une image IA si le contenu contient un placeholder
+ * [AI-Image: prompt description]
+ */
+async function generateAIImages(documentId: string, htmlContent: string): Promise<string | null> {
+  const { generateAImage } = await import("./ai")
+
+  // Check for AI image placeholders in content
+  const aiImageRegex = /\[AI-Image:\s*([^\]]+)\]/gi
+  const matches = [...htmlContent.matchAll(aiImageRegex)]
+
+  if (matches.length === 0) {
+    return null
+  }
+
+  try {
+    const prompt = matches[0][1] // Get first prompt
+    const imageUrl = await generateAImage(prompt)
+
+    await prisma.syncLog.create({
+      data: {
+        documentId,
+        action: "ai_image_generated",
+        status: "INFO",
+        message: "Image générée via DALL-E 3",
+      },
+    })
+
+    return imageUrl
+  } catch (error) {
+    console.error("AI image generation failed:", error)
+    await prisma.syncLog.create({
+      data: {
+        documentId,
+        action: "ai_image_failed",
+        status: "WARNING",
+        message: "Génération d'image IA échouée",
+      },
+    })
+    return null
+  }
+}
+
 export async function performSync(
   documentId: string,
   sourceConnectorId: string,
@@ -39,9 +188,31 @@ export async function performSync(
     data: { syncStatus: "SYNCING" },
   })
 
+  // Log start of sync
+  await prisma.syncLog.create({
+    data: {
+      userId: document.userId,
+      organizationId: document.organizationId,
+      documentId,
+      action: "sync_started",
+      status: "INFO",
+      message: "Synchronisation démarrée",
+    },
+  })
+
   try {
     let content = ""
     let title = document.title
+
+    // Step 1: Retrieve content from source
+    await prisma.syncLog.create({
+      data: {
+        documentId,
+        action: "fetch_content_started",
+        status: "INFO",
+        message: "Récupération du contenu depuis la source...",
+      },
+    })
 
     if (document.sourceConnector?.type === "GOOGLE_DOCS") {
       const raw = decrypt(document.sourceConnector.credentials || "{}")
@@ -57,6 +228,25 @@ export async function performSync(
       title = pageData.title
     }
 
+    await prisma.syncLog.create({
+      data: {
+        documentId,
+        action: "fetch_content_completed",
+        status: "INFO",
+        message: `Contenu récupéré (${content.length} caractères)`,
+      },
+    })
+
+    // Step 2: Parse to HTML
+    await prisma.syncLog.create({
+      data: {
+        documentId,
+        action: "parsing_html_started",
+        status: "INFO",
+        message: "Conversion en HTML...",
+      },
+    })
+
     const { parseMarkdownToHtml, parseGoogleDocToHtml } = await import("./html-parser")
     let htmlContent = content
 
@@ -70,18 +260,75 @@ export async function performSync(
       htmlContent = parsed.html
     }
 
+    await prisma.syncLog.create({
+      data: {
+        documentId,
+        action: "parsing_html_completed",
+        status: "INFO",
+        message: "HTML généré avec succès",
+      },
+    })
+
+    // Step 3: AI Enrichment (NEW!)
+    await prisma.syncLog.create({
+      data: {
+        documentId,
+        action: "ai_enrichment_started",
+        status: "INFO",
+        message: "Enrichissement IA...",
+      },
+    })
+
+    const aiEnrichment = await enrichContentWithAI(documentId, htmlContent, title)
+
+    // Check for AI image generation
+    const aiImageUrl = await generateAIImages(documentId, htmlContent)
+
+    await prisma.syncLog.create({
+      data: {
+        documentId,
+        action: "ai_enrichment_completed",
+        status: "INFO",
+        message: "Enrichissement IA terminé",
+      },
+    })
+
+    // Step 4: Update document with content and AI enrichment
     await prisma.document.update({
       where: { id: documentId },
       data: {
         title,
         content,
         htmlContent,
-        syncStatus: "SYNCED",
-        lastSyncedAt: new Date(),
+        seoTitle: aiEnrichment.seoTitle,
+        seoDescription: aiEnrichment.seoDescription,
+        seoKeywords: aiEnrichment.seoKeywords,
+        excerpt: aiEnrichment.excerpt,
+        featuredImage: aiImageUrl || document.featuredImage,
+      },
+    })
+
+    // Step 5: Publish to destination
+    await prisma.syncLog.create({
+      data: {
+        documentId,
+        action: "publish_started",
+        status: "INFO",
+        message: "Publication vers la destination...",
       },
     })
 
     await publishToDestination(document, htmlContent)
+
+    // Step 6: Update status to synced
+    await prisma.document.update({
+      where: { id: documentId },
+      data: {
+        syncStatus: "SYNCED",
+        lastSyncedAt: new Date(),
+        status: "PUBLISHED",
+      },
+    })
 
     await prisma.syncLog.create({
       data: {
@@ -90,7 +337,7 @@ export async function performSync(
         documentId,
         action: "sync_completed",
         status: "SUCCESS",
-        message: "Document synchronized successfully",
+        message: "Document synchronisé avec succès (avec enrichissement IA)",
       },
     })
 
@@ -108,7 +355,7 @@ export async function performSync(
   } catch (error) {
     await prisma.document.update({
       where: { id: documentId },
-      data: { syncStatus: "FAILED" },
+      data: { syncStatus: "FAILED", lastSyncError: (error as Error).message },
     })
 
     await prisma.syncLog.create({
