@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic"
 import { auth } from "@/lib/auth"
 import { t } from "@/lib/i18n"
 import { redirect } from "next/navigation"
@@ -10,11 +11,11 @@ import {
   Settings,
   LogOut,
   ArrowRightLeft,
-  Menu,
-  X,
 } from "lucide-react"
 import { signOut } from "@/lib/auth"
-import { MobileNav } from "@/components/mobile-nav"
+
+// Import dynamique de MobileNav pour éviter les problèmes SSR
+const MobileNav = dynamic(() => import("@/components/mobile-nav"), { ssr: false })
 
 export default async function DashboardLayout({
   children,
@@ -28,13 +29,14 @@ export default async function DashboardLayout({
   }
 
   const user = session.user
+  const trans = t
 
   const navItems = [
-    { href: "/dashboard", icon: LayoutDashboard, label: t("UI_DASHBOARD") },
-    { href: "/dashboard/documents", icon: FileText, label: t("UI_DOCS_LABEL") },
-    { href: "/dashboard/connectors", icon: Plug, label: t("UI_CONNECTORS") },
-    { href: "/dashboard/sync", icon: ArrowRightLeft, label: t("UI_SYNC") },
-    { href: "/dashboard/settings", icon: Settings, label: t("UI_SETTINGS") },
+    { href: "/dashboard", icon: LayoutDashboard, label: trans("UI_DASHBOARD") },
+    { href: "/dashboard/documents", icon: FileText, label: trans("UI_DOCS_LABEL") },
+    { href: "/dashboard/connectors", icon: Plug, label: trans("UI_CONNECTORS") },
+    { href: "/dashboard/sync", icon: ArrowRightLeft, label: trans("UI_SYNC") },
+    { href: "/dashboard/settings", icon: Settings, label: trans("UI_SETTINGS") },
   ]
 
   return (
@@ -85,7 +87,7 @@ export default async function DashboardLayout({
               size="sm"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              {t("UI_LOGOUT")}
+              {trans("UI_LOGOUT")}
             </Button>
           </form>
         </div>

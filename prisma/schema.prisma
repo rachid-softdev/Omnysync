@@ -70,10 +70,15 @@ model Organization {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  users      UserOrganization[]
-  connectors Connector[]
-  documents  Document[]
-  syncLogs   SyncLog[]
+  // Quota limits (from subscription)
+  maxConnectors Int @default(2)
+  maxDocuments  Int @default(100)
+
+  users         UserOrganization[]
+  connectors    Connector[]
+  documents     Document[]
+  syncLogs      SyncLog[]
+  webhookEndpoints WebhookEndpoint[]
 }
 
 model UserOrganization {
@@ -119,6 +124,9 @@ enum ConnectorType {
   GHOST
   WEBFLOW
   SHOPIFY
+  AIRTABLE
+  CONTENTFUL
+  MEDIUM
 }
 
 enum ConnectorStatus {
@@ -147,6 +155,12 @@ model Document {
   lastSyncedAt    DateTime?
   version         Int            @default(1)
   sourceUpdatedAt DateTime?
+
+  // Scheduling
+  autoSyncEnabled Boolean         @default(false)
+  syncFrequency   SyncFrequency?  @default(MANUAL)
+  nextSyncAt     DateTime?
+  lastSyncError  String?
 
   seoTitle       String?
   seoDescription String?
@@ -181,6 +195,13 @@ enum SyncStatus {
   SYNCING
   SYNCED
   FAILED
+}
+
+enum SyncFrequency {
+  MANUAL
+  DAILY
+  WEEKLY
+  MONTHLY
 }
 
 model SyncLog {
@@ -222,4 +243,37 @@ model Subscription {
   updatedAt            DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model QuotaUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  month     String   // Format: "2026-05"
+  syncCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, month])
+}
+
+// Webhooks pour sync bidirectionnelle
+model WebhookEndpoint {
+  id             String   @id @default(cuid())
+  organizationId String
+  connectorId    String
+  type           WebhookType
+  url            String
+  secret         String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+enum WebhookType {
+  WORDPRESS
+  GHOST
+  WEBFLOW
+  SHOPIFY
 }

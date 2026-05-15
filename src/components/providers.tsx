@@ -1,11 +1,16 @@
 "use client"
 
 import { ThemeProvider } from "next-themes"
+import { ToastProvider } from "@/components/toast-provider"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      {children}
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ToastProvider />
+        {children}
+      </ThemeProvider>
+    </ErrorBoundary>
   )
 }

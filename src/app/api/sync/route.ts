@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getUserOrgId } from "@/lib/auth/org"
 import { enqueueSyncJob } from "@/lib/services/queue"
-import { checkSyncLimit } from "@/lib/auth/subscription"
+import { checkAndIncrementQuota } from "@/lib/auth/subscription"
 import { createSyncSchema } from "@/lib/validations"
 import { apiError, sanitizeError } from "@/lib/api-error"
 
@@ -50,15 +50,18 @@ export async function POST(req: NextRequest) {
 
   const parsed = createSyncSchema.safeParse(body)
   if (!parsed.success) {
-    return apiError(parsed.error.errors[0]?.message || "Invalid request", 400)
+    return apiError(parsed.error.issues[0]?.message || "Invalid request", 400)
   }
 
   const { sourceConnectorId, destConnectorId, sourceDocumentId, title } = parsed.data
 
   // Check sync limit before creating document
-  const withinLimit = await checkSyncLimit(session.user.id)
-  if (!withinLimit) {
-    return apiError("Sync limit exceeded. Please upgrade your plan to continue syncing.", 429, "SYNC_LIMIT_EXCEEDED")
+  const { allowed, upgradeUrl } = await checkAndIncrementQuota(session.user.id)
+  if (!allowed) {
+    const message = upgradeUrl 
+      ? `Sync limit exceeded. Upgrade: ${upgradeUrl}` 
+      : "Sync limit exceeded. Please upgrade your plan."
+    return apiError(message, 429, "QUOTA_EXCEEDED")
   }
 
   const sourceConnector = await prisma.connector.findUnique({
