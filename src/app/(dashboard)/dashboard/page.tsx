@@ -6,6 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { FileText, Plug, CheckCircle, AlertCircle, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "Manage your content sync, connectors, and monitor your synchronization status.",
+}
 
 export default async function DashboardPage() {
   const session = await auth()

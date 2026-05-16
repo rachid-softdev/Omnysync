@@ -1,12 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
+import dynamic from "next/dynamic"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Plus, RefreshCw, Loader2 } from "lucide-react"
-import { ConnectorDialog } from "@/components/connector-dialog"
 import { useTranslations } from "@/lib/i18n/useTranslations"
+
+const ConnectorDialog = dynamic(
+  () => import("@/components/connector-dialog").then(mod => ({ default: mod.ConnectorDialog })),
+  { ssr: false, loading: () => <div className="p-4">Loading...</div> }
+)
 
 interface Connector {
   id: string
@@ -61,22 +66,24 @@ export default function ConnectorsPage() {
   const [dialogType, setDialogType] = useState<string | null>(null)
   const [statusMsg, setStatusMsg] = useState("")
 
-  const fetchConnectors = async () => {
+  const fetchConnectors = useCallback(async (signal?: AbortSignal) => {
     try {
-      const res = await fetch("/api/connectors")
+      const res = await fetch("/api/connectors", { signal })
       if (res.ok) {
         const data = await res.json()
         setConnectors(data)
       }
     } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return
       console.error(e)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    fetchConnectors()
+    const controller = new AbortController()
+    fetchConnectors(controller.signal)
 
     // Check for callback params
     const params = new URLSearchParams(window.location.search)
@@ -93,11 +100,13 @@ export default function ConnectorsPage() {
       setTimeout(() => setStatusMsg(""), 5000)
       window.history.replaceState({}, "", "/dashboard/connectors")
     }
-  }, [])
 
-  const connectedTypes = new Set(connectors.map((c) => c.type))
+    return () => controller.abort()
+  }, [fetchConnectors])
 
-  const handleConnect = (type: string) => {
+  const connectedTypesSet = useMemo(() => new Set(connectors.map((c) => c.type)), [connectors])
+
+  const handleConnect = useCallback((type: string) => {
     if (type === "GOOGLE_DOCS") {
       window.location.href = "/api/auth/connect/google"
     } else if (type === "NOTION") {
@@ -105,7 +114,7 @@ export default function ConnectorsPage() {
     } else {
       setDialogType(type)
     }
-  }
+  }, [])
 
   if (loading) {
     return (
@@ -122,7 +131,7 @@ export default function ConnectorsPage() {
           <h1 className="text-3xl font-bold">{t("UI_CONNECTORS")}</h1>
           <p className="text-muted-foreground mt-1">{t("UI_MANAGE_CONNECTORS")}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchConnectors}>
+        <Button variant="outline" size="sm" onClick={() => fetchConnectors()}>
           <RefreshCw className="w-4 h-4 mr-2" />
           Actualiser
         </Button>
@@ -141,7 +150,7 @@ export default function ConnectorsPage() {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...sourceTypes].map((type) => {
-            const isConnected = connectedTypes.has(type)
+            const isConnected = connectedTypesSet.has(type)
             return (
               <Card key={type} className="hover:shadow-md transition-shadow">
                 <CardContent className="flex flex-col items-center text-center p-6">
@@ -177,7 +186,7 @@ export default function ConnectorsPage() {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {[...destTypes].map((type) => {
-            const isConnected = connectedTypes.has(type)
+            const isConnected = connectedTypesSet.has(type)
             return (
               <Card key={type} className="hover:shadow-md transition-shadow">
                 <CardContent className="flex flex-col items-center text-center p-6">
