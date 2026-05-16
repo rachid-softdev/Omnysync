@@ -10,6 +10,10 @@ import {
   Settings,
   LogOut,
   ArrowRightLeft,
+  BarChart3,
+  Webhook,
+  FileCheck,
+  Zap,
 } from "lucide-react"
 import { logoutAction } from "@/lib/actions"
 import { MobileNav } from "@/components/mobile-nav"
@@ -33,6 +37,10 @@ export default async function DashboardLayout({
     { href: "/dashboard/documents", icon: FileText, label: trans("UI_DOCS_LABEL") },
     { href: "/dashboard/connectors", icon: Plug, label: trans("UI_CONNECTORS") },
     { href: "/dashboard/sync", icon: ArrowRightLeft, label: trans("UI_SYNC") },
+    { href: "/dashboard/analytics", icon: BarChart3, label: trans("UI_ANALYTICS") || "Analytiques" },
+    { href: "/dashboard/webhooks", icon: Webhook, label: trans("UI_WEBHOOKS") || "Webhooks" },
+    { href: "/dashboard/approvals", icon: FileCheck, label: trans("UI_APPROVALS") || "Approbations" },
+    { href: "/dashboard/usage", icon: Zap, label: trans("UI_USAGE") || "Utilisation" },
     { href: "/dashboard/settings", icon: Settings, label: trans("UI_SETTINGS") },
   ]
 
