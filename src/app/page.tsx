@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { ArrowRight, Zap, Globe, BarChart3, ArrowDownUp, Shield } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useTranslations } from "@/lib/i18n/useTranslations";
+import { t } from "@/lib/i18n";
 
 export default function Home() {
-  const { t } = useTranslations();
 
   return (
     <div className="min-h-screen bg-background">
