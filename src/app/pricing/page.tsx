@@ -2,10 +2,15 @@ import { Check, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
-import { useTranslations } from "@/lib/i18n/useTranslations"
+import { t } from "@/lib/i18n"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Pricing",
+  description: "Choose the perfect plan for your content sync needs. Start free, scale as you grow.",
+}
 
 export default function PricingPage() {
-  const { t } = useTranslations()
 
   const plans = [
     {

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { t } from "@/lib/i18n"
 import { redirect } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import {
   LayoutDashboard,
@@ -69,10 +70,12 @@ export default async function DashboardLayout({
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3 mb-4">
             {user.image && (
-              <img
+              <Image
                 src={user.image}
                 alt={user.name || "User"}
-                className="w-8 h-8 rounded-full"
+                width={32}
+                height={32}
+                className="rounded-full"
               />
             )}
             <div className="flex-1 min-w-0">

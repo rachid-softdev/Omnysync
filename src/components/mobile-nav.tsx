@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Menu, X, LogOut } from "lucide-react"
@@ -97,10 +98,12 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border">
           <div className="flex items-center gap-3 mb-4">
             {user.image && (
-              <img
+              <Image
                 src={user.image}
                 alt={user.name || "User"}
-                className="w-8 h-8 rounded-full"
+                width={32}
+                height={32}
+                className="rounded-full"
               />
             )}
             <div className="flex-1 min-w-0">

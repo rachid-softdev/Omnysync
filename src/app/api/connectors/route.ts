@@ -31,7 +31,11 @@ export async function GET(req: NextRequest) {
     },
   })
 
-  return NextResponse.json(connectors)
+  return NextResponse.json(connectors, {
+    headers: {
+      "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+    },
+  })
 }
 
 export async function POST(req: NextRequest) {
