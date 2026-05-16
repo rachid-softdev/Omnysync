@@ -1,135 +1,170 @@
 /**
- * Système RBAC (Role-Based Access Control)
+ * Système de permissions granulaire (RBAC)
  * Omnysync - 2026
  */
 
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
-import { NextRequest, NextResponse } from "next/server"
-import { apiError } from "@/lib/api-error"
-import { z } from "zod"
+import { cache } from "@/lib/cache"
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type Role = "OWNER" | "ADMIN" | "MEMBER"
-
 export type Permission =
-  // Organisation
-  | "org:view"
-  | "org:update"
-  | "org:delete"
-  | "org:billing"
-  
-  // Membres
-  | "members:view"
-  | "members:invite"
-  | "members:remove"
-  | "members:edit"
-  
-  // Connecteurs
-  | "connectors:view"
-  | "connectors:create"
-  | "connectors:edit"
-  | "connectors:delete"
-  | "connectors:test"
-  
   // Documents
-  | "documents:view"
-  | "documents:create"
-  | "documents:edit"
-  | "documents:delete"
-  | "documents:sync"
+  | "document:read"
+  | "document:create"
+  | "document:update"
+  | "document:delete"
+  | "document:publish"
+  
+  // Connectors
+  | "connector:read"
+  | "connector:create"
+  | "connector:update"
+  | "connector:delete"
+  | "connector:test"
   
   // Sync
+  | "sync:read"
+  | "sync:create"
   | "sync:run"
-  | "sync:schedule"
-  | "sync:cancel"
-  | "sync:view-logs"
+  | "sync:delete"
   
-  // Approvals
-  | "approvals:view"
-  | "approvals:create"
-  | "approvals:respond"
+  // Team
+  | "team:read"
+  | "team:invite"
+  | "team:update"
+  | "team:remove"
+  
+  // Billing
+  | "billing:read"
+  | "billing:manage"
+  
+  // Settings
+  | "settings:read"
+  | "settings:update"
+  
+  // Webhooks
+  | "webhook:read"
+  | "webhook:create"
+  | "webhook:delete"
   
   // Analytics
-  | "analytics:view"
-  | "analytics:export"
+  | "analytics:read"
+  
+  // API Keys
+  | "apikey:read"
+  | "apikey:create"
+  | "apikey:delete"
+  
+  // Approval
+  | "approval:read"
+  | "approval:manage"
 
-// ============================================================================
-// PERMISSIONS MATRIX
-// ============================================================================
+export type Role = "owner" | "admin" | "member" | "viewer"
 
+// Matrice de permissions par rôle
 const rolePermissions: Record<Role, Permission[]> = {
-  OWNER: [
-    // Org
-    "org:view", "org:update", "org:delete", "org:billing",
-    // Members
-    "members:view", "members:invite", "members:remove", "members:edit",
-    // Connectors
-    "connectors:view", "connectors:create", "connectors:edit", "connectors:delete", "connectors:test",
+  owner: [
     // Documents
-    "documents:view", "documents:create", "documents:edit", "documents:delete", "documents:sync",
+    "document:read", "document:create", "document:update", "document:delete", "document:publish",
+    // Connectors
+    "connector:read", "connector:create", "connector:update", "connector:delete", "connector:test",
     // Sync
-    "sync:run", "sync:schedule", "sync:cancel", "sync:view-logs",
-    // Approvals
-    "approvals:view", "approvals:create", "approvals:respond",
+    "sync:read", "sync:create", "sync:run", "sync:delete",
+    // Team
+    "team:read", "team:invite", "team:update", "team:remove",
+    // Billing
+    "billing:read", "billing:manage",
+    // Settings
+    "settings:read", "settings:update",
+    // Webhooks
+    "webhook:read", "webhook:create", "webhook:delete",
     // Analytics
-    "analytics:view", "analytics:export",
+    "analytics:read",
+    // API Keys
+    "apikey:read", "apikey:create", "apikey:delete",
+    // Approval
+    "approval:read", "approval:manage",
   ],
-  
-  ADMIN: [
-    // Org
-    "org:view", "org:update",
-    // Members
-    "members:view", "members:invite", "members:edit",
-    // Connectors
-    "connectors:view", "connectors:create", "connectors:edit", "connectors:delete", "connectors:test",
+  admin: [
     // Documents
-    "documents:view", "documents:create", "documents:edit", "documents:delete", "documents:sync",
+    "document:read", "document:create", "document:update", "document:delete", "document:publish",
+    // Connectors
+    "connector:read", "connector:create", "connector:update", "connector:delete", "connector:test",
     // Sync
-    "sync:run", "sync:schedule", "sync:cancel", "sync:view-logs",
-    // Approvals
-    "approvals:view", "approvals:create", "approvals:respond",
+    "sync:read", "sync:create", "sync:run", "sync:delete",
+    // Team
+    "team:read", "team:invite", "team:update",
+    // Billing
+    "billing:read",
+    // Settings
+    "settings:read", "settings:update",
+    // Webhooks
+    "webhook:read", "webhook:create", "webhook:delete",
     // Analytics
-    "analytics:view", "analytics:export",
+    "analytics:read",
+    // API Keys
+    "apikey:read", "apikey:create",
+    // Approval
+    "approval:read", "approval:manage",
   ],
-  
-  MEMBER: [
-    // Org
-    "org:view",
-    // Members
-    "members:view",
-    // Connectors
-    "connectors:view",
+  member: [
     // Documents
-    "documents:view", "documents:create", "documents:edit", "documents:sync",
+    "document:read", "document:create", "document:update", "document:publish",
+    // Connectors
+    "connector:read", "connector:create",
     // Sync
-    "sync:run", "sync:view-logs",
-    // Approvals
-    "approvals:view", "approvals:respond",
+    "sync:read", "sync:create", "sync:run",
+    // Team
+    "team:read",
+    // Settings
+    "settings:read",
     // Analytics
-    "analytics:view",
+    "analytics:read",
+    // Approval
+    "approval:read",
+  ],
+  viewer: [
+    // Documents
+    "document:read",
+    // Connectors
+    "connector:read",
+    // Sync
+    "sync:read",
+    // Team
+    "team:read",
+    // Analytics
+    "analytics:read",
   ],
 }
 
 // ============================================================================
-// CORE FUNCTIONS
+// FONCTIONS
 // ============================================================================
 
 /**
  * Récupère le rôle d'un utilisateur dans une organisation
  */
-export async function getUserRole(userId: string, organizationId: string): Promise<Role | null> {
-  const membership = await prisma.userOrganization.findFirst({
+export async function getUserRole(
+  userId: string,
+  organizationId: string
+): Promise<Role | null> {
+  const membership = await prisma.userOrganization.findUnique({
     where: {
-      userId,
-      organizationId,
+      userId_organizationId: {
+        userId,
+        organizationId,
+      },
     },
+    select: { role: true },
   })
-  
-  return membership?.role as Role | null
+
+  if (!membership) return null
+
+  return membership.role.toLowerCase() as Role
 }
 
 /**
@@ -143,18 +178,67 @@ export async function hasPermission(
   const role = await getUserRole(userId, organizationId)
   
   if (!role) return false
+
+  // Cache pendant 5 minutes
+  const cacheKey = `perm:${userId}:${organizationId}:${permission}`
   
-  return rolePermissions[role].includes(permission)
+  return cache.getOrSet(cacheKey, async () => {
+    const permissions = rolePermissions[role]
+    return permissions.includes(permission)
+  }, 5 * 60 * 1000)
 }
 
 /**
- * Récupère toutes les permissions d'un utilisateur
+ * Wrapper pour vérifier les permissions dans une API route
  */
-export async function getUserPermissions(userId: string, organizationId: string): Promise<Permission[]> {
+export async function requirePermission(
+  permission: Permission,
+  organizationId: string
+): Promise<{ authorized: boolean; userId?: string; error?: string }> {
+  const session = await auth()
+  
+  if (!session?.user?.id) {
+    return { authorized: false, error: "Non autorisé" }
+  }
+
+  const hasAccess = await hasPermission(session.user.id, organizationId, permission)
+  
+  if (!hasAccess) {
+    return { 
+      authorized: false, 
+      error: `Permission requise: ${permission}` 
+    }
+  }
+
+  return { authorized: true, userId: session.user.id }
+}
+
+/**
+ * Middleware pour vérifier les permissions
+ */
+export function withPermission(permission: Permission) {
+  return async (organizationId: string) => {
+    const result = await requirePermission(permission, organizationId)
+    
+    if (!result.authorized) {
+      throw new Error(result.error)
+    }
+    
+    return result.userId!
+  }
+}
+
+/**
+ * Récupère toutes les permissions d'un utilisateur dans une org
+ */
+export async function getUserPermissions(
+  userId: string,
+  organizationId: string
+): Promise<Permission[]> {
   const role = await getUserRole(userId, organizationId)
   
   if (!role) return []
-  
+
   return rolePermissions[role]
 }
 
@@ -164,185 +248,75 @@ export async function getUserPermissions(userId: string, organizationId: string)
 export async function canAccessResource(
   userId: string,
   organizationId: string,
-  permission: Permission,
-  resourceOrgId?: string
+  resourceType: "document" | "connector" | "sync",
+  resourceId: string,
+  action: "read" | "update" | "delete"
 ): Promise<boolean> {
-  // Si une ressource spécifique est fournie, vérifier qu'elle appartient à l'org
-  if (resourceOrgId && resourceOrgId !== organizationId) {
-    return false
-  }
+  const role = await getUserRole(userId, organizationId)
   
-  return hasPermission(userId, organizationId, permission)
+  if (!role) return false
+
+  // Le owner et admin peuvent tout faire
+  if (role === "owner" || role === "admin") return true
+
+  // Vérifier que la ressource appartient à l'organisation
+  switch (resourceType) {
+    case "document": {
+      const doc = await prisma.document.findFirst({
+        where: { id: resourceId, organizationId },
+        select: { userId: true },
+      })
+      return doc !== null
+    }
+    case "connector": {
+      const connector = await prisma.connector.findFirst({
+        where: { id: resourceId, organizationId },
+        select: { userId: true },
+      })
+      return connector !== null
+    }
+    case "sync": {
+      // Les sync sont au niveau org, seul le rôle compte
+      return rolePermissions[role].includes(`${resourceType}:${action}`)
+    }
+    default:
+      return false
+  }
 }
 
 // ============================================================================
-// MIDDLEWARE HELPERS
+// HELPERS POUR LES ROUTES
 // ============================================================================
 
 /**
- * Résultat d'authentification et vérification
+ * Utilitaire pour vérifier les permissions et retourner 403 si non autorisé
  */
-export interface AuthCheck {
-  success: boolean
-  userId?: string
-  organizationId?: string
-  role?: Role
-  error?: string
-}
-
-/**
- * Vérifie l'authentification et récupère le contexte
- */
-export async function checkAuth(req: NextRequest): Promise<AuthCheck> {
-  const session = await auth()
-  
-  if (!session?.user?.id) {
-    return { success: false, error: "Unauthorized" }
-  }
-  
-  // Extraire organizationId depuis l'URL ou le header
-  const orgId = req.headers.get("x-org-id") || req.nextUrl.searchParams.get("orgId")
-  
-  if (!orgId) {
-    return { success: false, error: "Organization ID required" }
-  }
-  
-  const role = await getUserRole(session.user.id, orgId)
-  
-  if (!role) {
-    return { success: false, error: "Not a member of this organization" }
-  }
-  
-  return {
-    success: true,
-    userId: session.user.id,
-    organizationId: orgId,
-    role,
-  }
-}
-
-/**
- * Middleware de protection des routes API
- */
-export async function withPermission(
-  req: NextRequest,
+export async function checkPermission(
+  organizationId: string,
   permission: Permission
-): Promise<AuthCheck> {
-  const auth = await checkAuth(req)
+): Promise<string> {
+  const result = await requirePermission(permission, organizationId)
   
-  if (!auth.success) {
-    return auth
+  if (!result.authorized) {
+    throw new Error(result.error)
   }
   
-  const hasAccess = await hasPermission(
-    auth.userId!,
-    auth.organizationId!,
-    permission
-  )
-  
-  if (!hasAccess) {
-    return {
-      success: false,
-      error: `Permission denied: ${permission} required`,
-    }
-  }
-  
-  return auth
+  return result.userId!
 }
 
 /**
- * Helper pour les API routes Next.js
+ * Filtrer les résultats selon les permissions
  */
-export async function requirePermission(
-  req: NextRequest,
+export async function filterByPermission<T extends { organizationId: string }>(
+  userId: string,
+  organizationId: string,
+  items: T[],
   permission: Permission
-): Promise<NextResponse> {
-  const check = await withPermission(req, permission)
+): Promise<T[]> {
+  const hasAccess = await hasPermission(userId, organizationId, permission)
   
-  if (!check.success) {
-    return apiError(check.error || "Forbidden", 403)
-  }
+  if (hasAccess) return items
   
-  return NextResponse.next()
-}
-
-/**
- * Wrapper pour les handlers d'API routes avec vérification de permission
- */
-export function withAuth(
-  permission: Permission,
-  handler: (req: NextRequest, auth: AuthCheck) => Promise<NextResponse>
-) {
-  return async (req: NextRequest): Promise<NextResponse> => {
-    const auth = await withPermission(req, permission)
-    
-    if (!auth.success) {
-      return apiError(auth.error || "Forbidden", 403)
-    }
-    
-    return handler(req, auth)
-  }
-}
-
-// ============================================================================
-// PERMISSION DECORATORS FOR UI
-// ============================================================================
-
-/**
- * Vérifie les permissions et retourne un objet pour l'UI
- */
-export async function getPermissionsForUI(userId: string, organizationId: string) {
-  const permissions = await getUserPermissions(userId, organizationId)
-  
-  return {
-    isOwner: await hasPermission(userId, organizationId, "org:delete"),
-    isAdmin: await hasPermission(userId, organizationId, "members:edit"),
-    canInviteMembers: await hasPermission(userId, organizationId, "members:invite"),
-    canDeleteOrg: await hasPermission(userId, organizationId, "org:delete"),
-    canManageBilling: await hasPermission(userId, organizationId, "org:billing"),
-    canCreateDocuments: await hasPermission(userId, organizationId, "documents:create"),
-    canSync: await hasPermission(userId, organizationId, "documents:sync"),
-    canManageConnectors: await hasPermission(userId, organizationId, "connectors:create"),
-    canViewAnalytics: await hasPermission(userId, organizationId, "analytics:view"),
-    canExportAnalytics: await hasPermission(userId, organizationId, "analytics:export"),
-    permissions,
-  }
-}
-
-// ============================================================================
-// VALIDATION HELPERS
-// ============================================================================
-
-/**
- * Schema pour valider les permissions dans les神outes
- */
-export const permissionSchema = z.object({
-  permission: z.enum([
-    "org:view", "org:update", "org:delete", "org:billing",
-    "members:view", "members:invite", "members:remove", "members:edit",
-    "connectors:view", "connectors:create", "connectors:edit", "connectors:delete", "connectors:test",
-    "documents:view", "documents:create", "documents:edit", "documents:delete", "documents:sync",
-    "sync:run", "sync:schedule", "sync:cancel", "sync:view-logs",
-    "approvals:view", "approvals:create", "approvals:respond",
-    "analytics:view", "analytics:export",
-  ]),
-})
-
-/**
- * Middleware pour vérifier les permissions spécifiques à une action
- */
-export async function requireRole(roles: Role[]) {
-  return async (req: NextRequest): Promise<NextResponse> => {
-    const auth = await checkAuth(req)
-    
-    if (!auth.success) {
-      return apiError(auth.error || "Unauthorized", 401)
-    }
-    
-    if (!auth.role || !roles.includes(auth.role)) {
-      return apiError(`Role must be one of: ${roles.join(", ")}`, 403)
-    }
-    
-    return NextResponse.next()
-  }
+  // Si pas de permission, retourner seulement les items créés par l'utilisateur
+  return items.filter(item => "userId" in item && item.userId === userId)
 }
