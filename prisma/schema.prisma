@@ -11,6 +11,7 @@ model User {
   name          String?
   email         String?   @unique
   emailVerified DateTime?
+  password     String?   // Hasher avec bcrypt - null pour OAuth
   image         String?
   lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
