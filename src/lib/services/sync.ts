@@ -492,6 +492,37 @@ async function publishToDestination(
       }
     }
   }
+
+  // Contentful integration
+  if (document.destConnector.type === "CONTENTFUL") {
+    const { createContentfulEntry, updateContentfulEntry } = await import("./contentful")
+    const spaceId = config.spaceId
+    const accessToken = rawCredentials
+    const contentTypeId = config.contentTypeId || "article"
+
+    const fields = {
+      title: { "en-US": document.title },
+      body: { "en-US": htmlContent },
+      slug: { "en-US": document.slug || document.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") },
+    }
+
+    if (document.slug) {
+      // Update existing entry - get current version first
+      const entry = await prisma.document.findUnique({
+        where: { id: document.id },
+        select: { version: true },
+      })
+      if (entry) {
+        await updateContentfulEntry(accessToken, spaceId, document.slug, fields, entry.version)
+      }
+    } else {
+      const result = await createContentfulEntry(accessToken, spaceId, contentTypeId, fields)
+      await prisma.document.update({
+        where: { id: document.id },
+        data: { slug: result.id },
+      })
+    }
+  }
 }
 
 export async function detectAndSyncChanges(documentId: string): Promise<SyncResult> {

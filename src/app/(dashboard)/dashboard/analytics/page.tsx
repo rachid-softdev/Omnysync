@@ -26,6 +26,7 @@ interface AnalyticsData {
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<AnalyticsData | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [period, setPeriod] = useState("30")
 
   useEffect(() => {
@@ -33,50 +34,23 @@ export default function AnalyticsPage() {
   }, [period])
 
   const fetchAnalytics = async () => {
+    setLoading(true)
+    setError(null)
     try {
       const res = await fetch(`/api/analytics?period=${period}`)
       if (res.ok) {
         const data = await res.json()
         setData(data)
+      } else {
+        setError("Erreur lors du chargement des données analytiques")
       }
     } catch (e) {
+      setError("Impossible de charger les données analytiques")
       console.error(e)
     } finally {
       setLoading(false)
     }
   }
-
-  // Fallback data for demo
-  const fallbackData: AnalyticsData = {
-    totalSyncs: 42,
-    successRate: 85,
-    avgDuration: 12,
-    totalDocuments: 28,
-    activeConnectors: 5,
-    failedSyncs: 6,
-    recentActivity: [
-      { id: "1", action: "sync_completed", status: "SUCCESS", createdAt: new Date().toISOString() },
-      { id: "2", action: "sync_failed", status: "ERROR", createdAt: new Date(Date.now() - 3600000).toISOString() },
-      { id: "3", action: "connector_created", status: "INFO", createdAt: new Date(Date.now() - 7200000).toISOString() },
-    ],
-    syncByDay: [
-      { date: "2026-05-15", count: 5 },
-      { date: "2026-05-14", count: 8 },
-      { date: "2026-05-13", count: 3 },
-      { date: "2026-05-12", count: 12 },
-      { date: "2026-05-11", count: 6 },
-      { date: "2026-05-10", count: 4 },
-      { date: "2026-05-09", count: 7 },
-    ],
-    connectorsUsage: [
-      { type: "WORDPRESS", count: 15 },
-      { type: "GHOST", count: 8 },
-      { type: "GOOGLE_DOCS", count: 12 },
-      { type: "NOTION", count: 7 },
-    ],
-  }
-
-  const displayData = data || fallbackData
 
   if (loading) {
     return (
@@ -86,6 +60,60 @@ export default function AnalyticsPage() {
     )
   }
 
+  // Show error state
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">Analytique</h1>
+          <Button onClick={fetchAnalytics} variant="outline">
+            Réessayer
+          </Button>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+            <p className="text-lg font-medium">{error}</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Les données analytiques ne sont pas disponibles pour le moment.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Show empty state when no data
+  if (!data || (data.totalSyncs === 0 && data.totalDocuments === 0)) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">Analytique</h1>
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="px-3 py-2 border rounded-md"
+          >
+            <option value="7">7 derniers jours</option>
+            <option value="30">30 derniers jours</option>
+            <option value="90">90 derniers jours</option>
+          </select>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <FileText className="w-12 h-12 text-muted-foreground mb-4" />
+            <p className="text-lg font-medium">Aucune donnée disponible</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Commencez à synchroniser des documents pour voir vos statistiques.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Use actual data - no fallback
+  const displayData = data
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
