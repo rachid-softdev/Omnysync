@@ -25,6 +25,9 @@
     "resend:setup": "npx tsx scripts/setup-resend.ts",
     "test:emails": "node scripts/test-emails.js",
     "send:test-emails": "node scripts/send-test-emails.js",
+    "db:seed:entitlements": "npx tsx scripts/seed-entitlements.ts",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate",
     "prepare": "husky"
   },
   "dependencies": {
