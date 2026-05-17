@@ -296,3 +296,83 @@ export async function testAirtableConnection(
     }
   }
 }
+
+/**
+ * Crée un nouvel enregistrement dans Airtable
+ */
+export async function createAirtableRecord(
+  apiKey: string,
+  baseId: string,
+  tableId: string,
+  fields: Record<string, unknown>
+): Promise<{ id: string }> {
+  try {
+    const data = await fetchWithRetry<{ id: string }>(
+      `${AIRTABLE_API}/${baseId}/${tableId}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ fields }),
+      }
+    )
+    return { id: data.id }
+  } catch (error) {
+    throw new APIError(ERR_FETCH_CONTENT, "Failed to create Airtable record")
+  }
+}
+
+/**
+ * Met à jour un enregistrement existant
+ */
+export async function updateAirtableRecord(
+  apiKey: string,
+  baseId: string,
+  tableId: string,
+  recordId: string,
+  fields: Record<string, unknown>
+): Promise<{ id: string }> {
+  try {
+    const data = await fetchWithRetry<{ id: string }>(
+      `${AIRTABLE_API}/${baseId}/${tableId}/${recordId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ fields }),
+      }
+    )
+    return { id: data.id }
+  } catch (error) {
+    throw new APIError(ERR_FETCH_CONTENT, "Failed to update Airtable record")
+  }
+}
+
+/**
+ * Supprime un enregistrement
+ */
+export async function deleteAirtableRecord(
+  apiKey: string,
+  baseId: string,
+  tableId: string,
+  recordId: string
+): Promise<{ id: string }> {
+  try {
+    await fetchWithRetry(
+      `${AIRTABLE_API}/${baseId}/${tableId}/${recordId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      }
+    )
+    return { id: recordId }
+  } catch (error) {
+    throw new APIError(ERR_FETCH_CONTENT, "Failed to delete Airtable record")
+  }
+}

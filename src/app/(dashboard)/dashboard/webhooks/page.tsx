@@ -79,7 +79,7 @@ export default function WebhooksPage() {
     if (!confirm("Êtes-vous sûr de vouloir supprimer ce webhook?")) return
 
     try {
-      const res = await fetch(`/api/webhooks/${id}`, { method: "DELETE" })
+      const res = await fetch(`/api/webhook-endpoints/${id}`, { method: "DELETE" })
       if (res.ok) {
         setWebhooks(webhooks.filter(w => w.id !== id))
       }
@@ -90,7 +90,7 @@ export default function WebhooksPage() {
 
   const toggleWebhook = async (id: string, isActive: boolean) => {
     try {
-      const res = await fetch(`/api/webhooks/${id}`, {
+      const res = await fetch(`/api/webhook-endpoints/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive }),
@@ -107,7 +107,7 @@ export default function WebhooksPage() {
   const testWebhook = async (id: string) => {
     setTestingId(id)
     try {
-      const res = await fetch(`/api/webhooks/${id}/test`, { method: "POST" })
+      const res = await fetch(`/api/webhook-endpoints/${id}/test`, { method: "POST" })
       const data = await res.json()
       
       if (res.ok && data.success) {
