@@ -399,3 +399,192 @@ model ApiKey {
   @@index([organizationId])
   @@index([keyHash])
 }
+
+// ============================================================================
+// FEATURE FLAGS & ENTITLEMENTS SYSTEM
+// ============================================================================
+
+// Plan - Subscription plans (free, pro, business, enterprise)
+model Plan {
+  id              String        @id @default(cuid())
+  key             String        @unique // "free", "pro", "business", "enterprise"
+  name            String
+  priceMonthly    Decimal?      @db.Decimal(10, 2)
+  priceYearly     Decimal?      @db.Decimal(10, 2)
+  isActive        Boolean       @default(true)
+  sortOrder       Int           @default(0)
+  features        PlanFeature[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([key])
+  @@index([isActive])
+}
+
+// Feature - Available features in the system
+model Feature {
+  id              String        @id @default(cuid())
+  key             String        @unique // "EXPORT_PDF", "AI_SUMMARY", "EXPORT_CSV", etc.
+  name            String
+  description     String?
+  type            FeatureType   // "boolean", "limit", "experiment"
+  defaultConfig   Json?         // Default configuration for the feature
+  plans           PlanFeature[]
+  overrides       EntitlementOverride[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([key])
+  @@index([type])
+}
+
+enum FeatureType {
+  BOOLEAN    // true/false feature
+  LIMIT      // Numeric quota
+  EXPERIMENT // A/B test with percentage
+}
+
+// PlanFeature - Features enabled/disabled per plan with optional limits
+model PlanFeature {
+  id              String   @id @default(cuid())
+  planId          String
+  featureId       String
+  enabled         Boolean  @default(false)
+  limitValue      Int?     // null = unlimited (-1 in config means unlimited too)
+  configJson      Json?    // Additional configuration (e.g., experiment percentage)
+  downgradeStrategy DowngradeStrategy @default(GRACEFUL) // How to handle when downgrading
+
+  plan     Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature  Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, featureId])
+  @@index([planId])
+  @@index([featureId])
+}
+
+enum DowngradeStrategy {
+  GRACEFUL  // Keep access until period end, then cut
+  IMMEDIATE // Cut access immediately when downgraded
+  FREEZE   // Block new actions, keep existing data
+}
+
+// Organization - Add stripe_customer_id
+model Organization {
+  id                 String    @id @default(cuid())
+  name               String
+  slug               String?   @unique
+  description        String?
+  settings           Json?
+  lastSyncAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Quota limits (legacy - will be replaced by entitlements)
+  maxConnectors      Int       @default(2)
+  maxDocuments       Int       @default(100)
+
+  // Stripe integration
+  stripeCustomerId   String?   @unique
+
+  users              UserOrganization[]
+  connectors         Connector[]
+  documents          Document[]
+  syncLogs           SyncLog[]
+  webhookEndpoints   WebhookEndpoint[]
+  apiKeys            ApiKey[]
+  auditLogs          AuditLog[]
+  subscriptions      Subscription[]
+  entitlementOverrides EntitlementOverride[]
+  usageTrackings     UsageTracking[]
+}
+
+// Subscription - Refactored to use org_id instead of user_id
+model Subscription {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  planKey              String    @default("free")
+  status               SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  stripePriceId       String?   // Monthly or yearly price ID
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  trialStart          DateTime?
+  trialEnd            DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId])
+  @@index([organizationId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+}
+
+// EntitlementOverride - User or org level overrides
+model EntitlementOverride {
+  id          String       @id @default(cuid())
+  scope       OverrideScope // "org" or "user"
+  scopeId     String       // orgId or userId
+  featureKey  String
+  enabled     Boolean      @default(true)
+  limitValue  Int?
+  expiresAt   DateTime?   // If set, override expires at this time
+  reason      String?      // Reason for the override (required for audit)
+  feature     Feature      @relation(fields: [featureKey], references: [key])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  createdBy   String?      // userId who created the override
+
+  @@unique([scope, scopeId, featureKey])
+  @@index([scope, scopeId])
+  @@index([featureKey])
+  @@index([organizationId])
+}
+
+enum OverrideScope {
+  ORG
+  USER
+}
+
+// UsageTracking - Track usage for limit-based features
+model UsageTracking {
+  id             String   @id @default(cuid())
+  organizationId String
+  featureKey     String
+  usageCount     Int      @default(0)
+  periodStart    DateTime // Start of the billing period (usually month start)
+  periodEnd      DateTime // End of the billing period (usually month end)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, featureKey, periodStart])
+  @@index([organizationId, featureKey])
+  @@index([periodEnd])
+}
+
+// WebhookEvent - For Stripe webhook idempotency
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique // Stripe event ID
+  eventType   String
+  processedAt DateTime @default(now())
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  @@index([eventId])
+  @@index([eventType])
+}
