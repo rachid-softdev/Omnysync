@@ -399,3 +399,179 @@ model ApiKey {
   @@index([organizationId])
   @@index([keyHash])
 }
+
+// ============================================================================
+// FEATURE FLAGS & ENTITLEMENTS SYSTEM
+// ============================================================================
+
+model Plan {
+  id              String        @id @default(cuid())
+  key             String        @unique
+  name            String
+  priceMonthly    Decimal?      @db.Decimal(10, 2)
+  priceYearly     Decimal?      @db.Decimal(10, 2)
+  isActive        Boolean       @default(true)
+  sortOrder       Int           @default(0)
+  features        PlanFeature[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([key])
+  @@index([isActive])
+}
+
+model Feature {
+  id              String        @id @default(cuid())
+  key             String        @unique
+  name            String
+  description     String?
+  type            FeatureType
+  defaultConfig   Json?
+  plans           PlanFeature[]
+  overrides       EntitlementOverride[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([key])
+  @@index([type])
+}
+
+enum FeatureType {
+  BOOLEAN
+  LIMIT
+  EXPERIMENT
+}
+
+model PlanFeature {
+  id                  String            @id @default(cuid())
+  planId              String
+  featureId           String
+  enabled             Boolean           @default(false)
+  limitValue          Int?
+  configJson          Json?
+  downgradeStrategy   DowngradeStrategy @default(GRACEFUL)
+
+  plan     Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature  Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, featureId])
+  @@index([planId])
+  @@index([featureId])
+}
+
+enum DowngradeStrategy {
+  GRACEFUL
+  IMMEDIATE
+  FREEZE
+}
+
+model Organization {
+  id                 String    @id @default(cuid())
+  name               String
+  slug               String?   @unique
+  description        String?
+  settings           Json?
+  lastSyncAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  maxConnectors      Int       @default(2)
+  maxDocuments       Int       @default(100)
+  stripeCustomerId   String?   @unique
+  users              UserOrganization[]
+  connectors         Connector[]
+  documents          Document[]
+  syncLogs           SyncLog[]
+  webhookEndpoints   WebhookEndpoint[]
+  apiKeys            ApiKey[]
+  auditLogs          AuditLog[]
+  subscriptions      Subscription[]
+  entitlementOverrides EntitlementOverride[]
+  usageTrackings     UsageTracking[]
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  planKey              String    @default("free")
+  status               SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  stripePriceId       String?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  trialStart          DateTime?
+  trialEnd            DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId])
+  @@index([organizationId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+}
+
+model EntitlementOverride {
+  id          String       @id @default(cuid())
+  scope       OverrideScope
+  scopeId     String
+  featureKey  String
+  enabled     Boolean      @default(true)
+  limitValue  Int?
+  expiresAt   DateTime?
+  reason      String?
+  feature     Feature      @relation(fields: [featureKey], references: [key])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  createdBy   String?
+
+  @@unique([scope, scopeId, featureKey])
+  @@index([scope, scopeId])
+  @@index([featureKey])
+  @@index([organizationId])
+}
+
+enum OverrideScope {
+  ORG
+  USER
+}
+
+model UsageTracking {
+  id             String   @id @default(cuid())
+  organizationId String
+  featureKey     String
+  usageCount     Int      @default(0)
+  periodStart    DateTime
+  periodEnd      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, featureKey, periodStart])
+  @@index([organizationId, featureKey])
+  @@index([periodEnd])
+}
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  eventType   String
+  processedAt DateTime @default(now())
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  @@index([eventId])
+  @@index([eventType])
+}

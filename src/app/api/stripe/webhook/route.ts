@@ -28,6 +28,28 @@ export async function POST(req: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session
         const userId = session.client_reference_id
         const subscriptionId = session.subscription as string
+        const customerId = session.customer as string
+
+        // Find organization by customer ID or user
+        let orgId: string | null = null
+        
+        if (customerId) {
+          const org = await prisma.organization.findFirst({ where: { stripeCustomerId: customerId as string } })
+          orgId = org?.id ?? null
+        }
+
+        if (!orgId && userId) {
+          const userOrg = await prisma.userOrganization.findFirst({
+            where: { userId, role: "OWNER" },
+            select: { organizationId: true }
+          })
+          orgId = userOrg?.organizationId ?? null
+        }
+
+        if (orgId && subscriptionId) {
+          const subscriptionData = await stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription
+          const priceId = subscriptionData.items.data[0]?.price?.id || ""
+          const planKey = getPlanFromPriceId(priceId)
 
         if (userId && subscriptionId) {
           const subscriptionData = await stripe.subscriptions.retrieve(subscriptionId) as unknown as Stripe.Subscription
@@ -63,21 +85,27 @@ export async function POST(req: NextRequest) {
         const sub = event.data.object as any
         const customerId = sub.customer as string
 
+        // Find org by customer ID
+        const org = await prisma.organization.findFirst({ where: { stripeCustomerId: customerId } })
+        if (!org) break
+
         const existing = await prisma.subscription.findFirst({
-          where: { stripeCustomerId: customerId },
+          where: { organizationId: org.id },
         })
 
         if (existing) {
+          const newPlan = sub.status === "active" ? "pro" : sub.status === "trialing" ? "pro" : "free"
           await prisma.subscription.update({
             where: { id: existing.id },
             data: {
-              status: sub.status,
-              plan: sub.status === "active" ? "pro" : "free",
-              currentPeriodEnd: sub.current_period_end
-                ? new Date(sub.current_period_end * 1000)
-                : null,
+              status: sub.status.toUpperCase(),
+              planKey: newPlan,
+              currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000) : null,
             },
           })
+          // Invalidate entitlements cache
+          const featureGate = await import("@/lib/entitlements/FeatureGateService").then(m => m.getFeatureGateService())
+          await featureGate.invalidateCache(org.id)
         }
         break
       }
