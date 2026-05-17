@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     totalSyncs,
     successRate,
-    avgDuration: 12, // Would calculate from actual duration
+    avgDuration: null, // TODO: Calculate from actual duration tracking in sync logs
     failedSyncs: failedCount,
     totalDocuments,
     activeConnectors,

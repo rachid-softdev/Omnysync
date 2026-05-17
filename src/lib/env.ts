@@ -23,6 +23,13 @@ const envSchema = z.object({
   AWS_SECRET_ACCESS_KEY: z.string().optional(),
   AWS_REGION: z.string().optional(),
   AWS_S3_BUCKET: z.string().optional(),
+  // Notion OAuth
+  NOTION_CLIENT_ID: z.string().optional(),
+  NOTION_CLIENT_SECRET: z.string().optional(),
+  // Cron job security
+  CRON_SECRET: z.string().optional(),
+  // Monitoring
+  SENTRY_DSN: z.string().optional(),
 })
 
 type Env = z.infer<typeof envSchema>

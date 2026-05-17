@@ -341,15 +341,84 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ connector: string }> }
 ) {
-  const { connector } = await params
-  
+  const { connector } = await params as { connector: string }
+
   const url = new URL(req.url)
   const connectorId = url.searchParams.get("connector_id")
-  
+
   if (!connectorId) {
     return NextResponse.json({ error: "Missing connector_id" }, { status: 400 })
   }
 
+  // Vérifier que le webhook est configuré et actif
+  const webhook = await prisma.webhookEndpoint.findFirst({
+    where: {
+      connectorId,
+      type: connector.toUpperCase() as "WORDPRESS" | "GHOST" | "WEBFLOW" | "SHOPIFY",
+      isActive: true,
+    },
+  })
+
+  // En production, exiger une signature valide si le webhook a un secret configuré
+  if (process.env.NODE_ENV === "production" && webhook?.secret) {
+    // Récupérer la signature selon le type de webhook
+    let signature = ""
+    switch (connector.toLowerCase()) {
+      case "wordpress":
+        signature = req.headers.get("x-hub-signature") || ""
+        break
+      case "ghost":
+        signature = req.headers.get("x-ghost-signature") || ""
+        break
+      case "webflow":
+        signature = req.headers.get("x-webflow-signature") || ""
+        break
+      case "shopify":
+        signature = req.headers.get("x-shopify-hmac-sha256") || ""
+        break
+    }
+
+    if (!signature) {
+      return NextResponse.json({ error: "Missing webhook signature" }, { status: 401 })
+    }
+
+    // Lire le body et vérifier la signature
+    const bodyText = await req.text()
+    const isValid = verifyWebhookSignature(bodyText, signature, webhook.secret)
+
+    if (!isValid) {
+      return NextResponse.json({ error: "Invalid webhook signature" }, { status: 401 })
+    }
+
+    // Re-créer le body stream pour les handlers
+    const encoder = new TextEncoder()
+    const readable = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(bodyText))
+        controller.close()
+      },
+    })
+
+    // Créer une nouvelle requête avec le body re-readable
+    const newReq = new NextRequest(req.url, {
+      method: "POST",
+      headers: req.headers,
+      body: readable,
+    })
+
+    switch (connector) {
+      case "wordpress":
+        return handleWordPressWebhook(newReq, connectorId)
+      case "ghost":
+        return handleGhostWebhook(newReq, connectorId)
+      case "webflow":
+        return handleWebflowWebhook(newReq, connectorId)
+      case "shopify":
+        return handleShopifyWebhook(newReq, connectorId)
+    }
+  }
+
+  // En développement ou sans secret, passer directement
   switch (connector) {
     case "wordpress":
       return handleWordPressWebhook(req, connectorId)

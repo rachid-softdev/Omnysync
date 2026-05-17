@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { performSync, detectAndSyncChanges } from "../sync"
+import { performSync, detectAndSyncChanges } from "../services/sync"
 
 // Mock dependencies
 vi.mock("@/lib/prisma", () => ({
@@ -26,47 +26,47 @@ vi.mock("@/lib/email", () => ({
   sendSyncCompleteEmail: vi.fn(),
 }))
 
-vi.mock("./google-docs", () => ({
+vi.mock("../services/google-docs", () => ({
   getGoogleDocContent: vi.fn().mockResolvedValue({
     title: "Test Document",
     content: "Test content",
   }),
 }))
 
-vi.mock("./notion", () => ({
+vi.mock("../services/notion", () => ({
   getNotionPageContent: vi.fn().mockResolvedValue({
     title: "Test Notion Page",
     content: "Test notion content",
   }),
 }))
 
-vi.mock("./html-parser", () => ({
+vi.mock("../services/html-parser", () => ({
   parseMarkdownToHtml: vi.fn((content: string) => `<p>${content}</p>`),
   parseGoogleDocToHtml: vi.fn(() => ({ html: "<p>Test content</p>" })),
 }))
 
-vi.mock("./wordpress", () => ({
+vi.mock("../services/wordpress", () => ({
   createWordPressClient: vi.fn(() => ({
     createPost: vi.fn().mockResolvedValue({ id: 123 }),
     updatePost: vi.fn(),
   })),
 }))
 
-vi.mock("./ghost", () => ({
+vi.mock("../services/ghost", () => ({
   createGhostClient: vi.fn(() => ({
     createPost: vi.fn().mockResolvedValue({ posts: [{ id: "abc" }] }),
     updatePost: vi.fn(),
   })),
 }))
 
-vi.mock("./webflow", () => ({
+vi.mock("../services/webflow", () => ({
   createWebflowClient: vi.fn(() => ({
     createItem: vi.fn().mockResolvedValue({ items: [{ id: "wf123" }] }),
     updateItem: vi.fn(),
   })),
 }))
 
-vi.mock("./shopify", () => ({
+vi.mock("../services/shopify", () => ({
   createShopifyClient: vi.fn(() => ({
     getBlogs: vi.fn().mockResolvedValue({ blogs: [{ id: 1 }] }),
     createArticle: vi.fn().mockResolvedValue({ article: { id: "shp123" } }),
@@ -74,7 +74,7 @@ vi.mock("./shopify", () => ({
   })),
 }))
 
-vi.mock("./ai", () => ({
+vi.mock("../services/ai", () => ({
   detectContentChanges: vi.fn().mockResolvedValue({ hasChanges: true, summary: "Changes detected" }),
   generateSEO: vi.fn().mockResolvedValue({
     title: "SEO Title",
@@ -196,7 +196,7 @@ describe("performSync", () => {
     const result = await performSync("doc-789", "conn-1", "conn-2")
 
     // Verify AI functions were called
-    const { generateSEO, generateExcerpt, findInterlinkingOpportunities, generateAImage } = await import("./ai")
+    const { generateSEO, generateExcerpt, findInterlinkingOpportunities, generateAImage } = await import("../services/ai")
     
     expect(generateSEO).toHaveBeenCalled()
     expect(generateExcerpt).toHaveBeenCalled()
@@ -286,7 +286,7 @@ describe("detectAndSyncChanges", () => {
     const result = await detectAndSyncChanges("doc-123")
 
     // Should detect changes
-    const { detectContentChanges } = await import("./ai")
+    const { detectContentChanges } = await import("../services/ai")
     expect(detectContentChanges).toHaveBeenCalled()
   })
 })

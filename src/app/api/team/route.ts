@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getUserOrgId } from "@/lib/auth/org"
+import { z } from "zod"
+
+const addMemberSchema = z.object({
+  email: z.string().email("Email invalide"),
+  role: z.enum(["ADMIN", "MEMBER", "VIEWER"]).default("MEMBER"),
+})
 
 export async function GET(req: NextRequest) {
   const session = await auth()
@@ -49,7 +55,8 @@ export async function POST(req: NextRequest) {
   const orgId = await getUserOrgId(session.user.id)
   const body = await req.json()
 
-  const { email, role } = body
+  // Validate input with Zod
+  const { email, role } = addMemberSchema.parse(body)
 
   // Find user by email
   const user = await prisma.user.findUnique({

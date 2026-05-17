@@ -492,6 +492,14 @@ async function publishToDestination(
       }
     }
   }
+
+  // Contentful - placeholder (needs full integration with createContentfulEntry/updateContentfulEntry)
+  if (document.destConnector.type === "CONTENTFUL") {
+    console.warn("Contentful destination publishing is not fully implemented")
+    // TODO: Implement Contentful publishing using:
+    // - createContentfulEntry(config.spaceId, config.accessToken, config.environment, entry)
+    // - updateContentfulEntry(config.spaceId, config.accessToken, config.environment, entryId, entry)
+  }
 }
 
 export async function detectAndSyncChanges(documentId: string): Promise<SyncResult> {

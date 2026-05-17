@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { DocumentActions } from "@/components/document-actions"
 import { 
   ArrowLeft, 
   RefreshCw, 
@@ -122,18 +123,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Edit className="w-4 h-4 mr-2" />
-            Modifier
-          </Button>
-          <Button variant="outline" size="sm">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Synchroniser
-          </Button>
-          <Button variant="ghost" size="sm" className="text-destructive">
-            <Trash2 className="w-4 h-4 mr-2" />
-            Supprimer
-          </Button>
+          <DocumentActions documentId={document.id} />
         </div>
       </div>
 
