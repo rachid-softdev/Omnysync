@@ -166,7 +166,7 @@ describe("processJobWithRetry", () => {
 
   it("skips already processed jobs (idempotency)", async () => {
     const key = generateIdempotencyKey("sync_document", "doc-3")
-    markJobCompleted(key, { skipped: true })
+    markJobCompleted(key, { skipped: true, reason: "already_processed" })
 
     const job = {
       id: "job-3",
