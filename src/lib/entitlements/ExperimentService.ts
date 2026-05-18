@@ -22,15 +22,15 @@ function murmurhash3(key: string, seed: number = 0): number {
   const data = new TextEncoder().encode(key)
   const len = data.length
 
-  let h1 = seed
-  let h2 = seed
-  let h3 = seed
-  let h4 = seed
+  let h1 = BigInt(seed)
+  let h2 = BigInt(seed)
+  let h3 = BigInt(seed)
+  let h4 = BigInt(seed)
 
   const c1 = 0x87c37b91114253d5n
   const c2 = 0x4cf5ad432745937fn
 
-  // Process 16 bytes at a time (4 uint32)
+// Process 16 bytes at a time (4 uint32)
   let i = 0
   while (i + 16 <= len) {
     const k1 =
@@ -53,13 +53,13 @@ function murmurhash3(key: string, seed: number = 0): number {
       (BigInt(data[i + 14]) << 48n) |
       (BigInt(data[i + 15]) << 56n)
 
-    h1 = Number((BigInt(h1) ^ (k1 * c1)) & 0xffffffffn) >>> 0
-    h1 = ((h1 << 31) | (h1 >>> 1)) >>> 0
-    h1 = Number((BigInt(h1) * c2) & 0xffffffffn) >>> 0
+    h1 = (h1 ^ (k1 * c1)) & 0xffffffffn
+    h1 = ((h1 << 31n) | (h1 >> 1n)) & 0xffffffffn
+    h1 = (h1 * c2) & 0xffffffffn
 
-    h2 = Number((BigInt(h2) ^ (k2 * c2)) & 0xffffffffn) >>> 0
-    h2 = ((h2 << 31) | (h2 >>> 1)) >>> 0
-    h2 = Number((BigInt(h2) * c1) & 0xffffffffn) >>> 0
+    h2 = (h2 ^ (k2 * c2)) & 0xffffffffn
+    h2 = ((h2 << 31n) | (h2 >> 1n)) & 0xffffffffn
+    h2 = (h2 * c1) & 0xffffffffn
 
     i += 16
   }
@@ -118,34 +118,39 @@ function murmurhash3(key: string, seed: number = 0): number {
   }
 
   // Finalization
-  h1 ^= BigInt(len) & 0xffffffffn
-  h2 ^= BigInt(len) & 0xffffffffn
-  h3 ^= BigInt(len) & 0xffffffffn
-  h4 ^= BigInt(len) & 0xffffffffn
+  const lenBigInt = BigInt(len)
+  h1 ^= lenBigInt
+  h2 ^= lenBigInt * 0x85ebca6bn
+  h3 ^= lenBigInt * 0xc2b2ae35n
+  h4 ^= lenBigInt * 0x9e3779b1n
 
   // fmix64
-  h1 = Number((BigInt(h1) ^ (BigInt(h1) >> 33n)) & 0xffffffffn) >>> 0
-  h1 = (Number((BigInt(h1) * 0xff51afd7ed558ccdn) & 0xffffffffn) ^ (h1 >>> 15)) >>> 0
-  h1 = Number((BigInt(h1) * 0xc4ceb9fe1a85ec53n) & 0xffffffffn) >>> 0
-  h1 = (h1 ^ (h1 >>> 16)) >>> 0
+  h1 = (h1 ^ (h1 >> 33n)) & 0xffffffffn
+  h1 = (h1 * 0xff51afd7ed558ccdn) & 0xffffffffn
+  h1 = h1 ^ (h1 >> 33n)
+  h1 = (h1 * 0xc4ceb9fe1a85ec53n) & 0xffffffffn
+  h1 = h1 ^ (h1 >> 16n)
 
-  h2 = Number((BigInt(h2) ^ (BigInt(h2) >> 33n)) & 0xffffffffn) >>> 0
-  h2 = (Number((BigInt(h2) * 0xff51afd7ed558ccdn) & 0xffffffffn) ^ (h2 >>> 15)) >>> 0
-  h2 = Number((BigInt(h2) * 0xc4ceb9fe1a85ec53n) & 0xffffffffn) >>> 0
-  h2 = (h2 ^ (h2 >>> 16)) >>> 0
+  h2 = (h2 ^ (h2 >> 33n)) & 0xffffffffn
+  h2 = (h2 * 0xff51afd7ed558ccdn) & 0xffffffffn
+  h2 = h2 ^ (h2 >> 33n)
+  h2 = (h2 * 0xc4ceb9fe1a85ec53n) & 0xffffffffn
+  h2 = h2 ^ (h2 >> 16n)
 
-  h3 = Number((BigInt(h3) ^ (BigInt(h3) >> 33n)) & 0xffffffffn) >>> 0
-  h3 = (Number((BigInt(h3) * 0xff51afd7ed558ccdn) & 0xffffffffn) ^ (h3 >>> 15)) >>> 0
-  h3 = Number((BigInt(h3) * 0xc4ceb9fe1a85ec53n) & 0xffffffffn) >>> 0
-  h3 = (h3 ^ (h3 >>> 16)) >>> 0
+  h3 = (h3 ^ (h3 >> 33n)) & 0xffffffffn
+  h3 = (h3 * 0xff51afd7ed558ccdn) & 0xffffffffn
+  h3 = h3 ^ (h3 >> 33n)
+  h3 = (h3 * 0xc4ceb9fe1a85ec53n) & 0xffffffffn
+  h3 = h3 ^ (h3 >> 16n)
 
-  h4 = Number((BigInt(h4) ^ (BigInt(h4) >> 33n)) & 0xffffffffn) >>> 0
-  h4 = (Number((BigInt(h4) * 0xff51afd7ed558ccdn) & 0xffffffffn) ^ (h4 >>> 15)) >>> 0
-  h4 = Number((BigInt(h4) * 0xc4ceb9fe1a85ec53n) & 0xffffffffn) >>> 0
-  h4 = (h4 ^ (h4 >>> 16)) >>> 0
+  h4 = (h4 ^ (h4 >> 33n)) & 0xffffffffn
+  h4 = (h4 * 0xff51afd7ed558ccdn) & 0xffffffffn
+  h4 = h4 ^ (h4 >> 33n)
+  h4 = (h4 * 0xc4ceb9fe1a85ec53n) & 0xffffffffn
+  h4 = h4 ^ (h4 >> 16n)
 
   // Combine into a single number (0-99 range)
-  return ((h1 + h2 + h3 + h4) % 100) >>> 0
+  return Number(((h1 + h2 + h3 + h4) % 100n))
 }
 
 // ============================================================================
