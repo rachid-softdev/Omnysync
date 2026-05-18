@@ -1,0 +1,10 @@
+{
+  "name": "@omnysync/mobile",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Mobile app placeholder - React Native/Capacitor coming soon'",
+    "build": "echo 'Mobile app placeholder'",
+    "clean": "echo 'Cleaned'"
+  }
+}

@@ -1,0 +1,590 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  password     String?   // Hasher avec bcrypt - null pour OAuth
+  image         String?
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  organizations UserOrganization[]
+  documents     Document[]
+  connectors    Connector[]
+  syncLogs      SyncLog[]
+  subscription  Subscription?
+  auditLogs     AuditLog[]
+  
+  // New relations
+  passwordResets     PasswordReset[]
+  emailVerifications EmailVerification[]
+  twoFactorAuth      TwoFactorAuth?
+  apiKeys            ApiKey[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Organization {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String?   @unique
+  description String?
+  settings    Json?
+  lastSyncAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Quota limits (from subscription)
+  maxConnectors Int @default(2)
+  maxDocuments  Int @default(100)
+
+  users         UserOrganization[]
+  connectors    Connector[]
+  documents     Document[]
+  syncLogs      SyncLog[]
+  webhookEndpoints WebhookEndpoint[]
+  apiKeys       ApiKey[]
+  auditLogs     AuditLog[]
+}
+
+model UserOrganization {
+  id             String           @id @default(cuid())
+  userId         String
+  organizationId String
+  role           OrganizationRole @default(MEMBER)
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Connector {
+  id             String          @id @default(cuid())
+  organizationId String
+  userId         String
+  type           ConnectorType
+  name           String
+  status         ConnectorStatus @default(ACTIVE)
+  config         Json?
+  credentials    String?         @db.Text
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceDocuments Document[]   @relation("SourceConnector")
+  destDocuments   Document[]   @relation("DestConnector")
+}
+
+enum ConnectorType {
+  GOOGLE_DOCS
+  NOTION
+  WORDPRESS
+  GHOST
+  WEBFLOW
+  SHOPIFY
+  AIRTABLE
+  CONTENTFUL
+  MEDIUM
+}
+
+enum ConnectorStatus {
+  ACTIVE
+  DISCONNECTED
+  ERROR
+}
+
+model Document {
+  id                String  @id @default(cuid())
+  organizationId    String
+  userId            String
+  sourceId          String?
+  sourceConnectorId String?
+  destConnectorId   String?
+
+  title         String
+  slug          String?
+  content       String? @db.Text
+  htmlContent   String? @db.Text
+  excerpt       String?
+  featuredImage String?
+
+  status          DocumentStatus @default(DRAFT)
+  syncStatus      SyncStatus     @default(NOT_SYNCED)
+  lastSyncedAt    DateTime?
+  version         Int            @default(1)
+  sourceUpdatedAt DateTime?
+
+  // Scheduling
+  autoSyncEnabled Boolean         @default(false)
+  syncFrequency   SyncFrequency?  @default(MANUAL)
+  nextSyncAt     DateTime?
+  lastSyncError  String?
+
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String[]
+
+  categories String[]
+  tags       String[]
+  author     String?
+
+  metadata Json?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceConnector Connector?   @relation("SourceConnector", fields: [sourceConnectorId], references: [id])
+  destConnector   Connector?   @relation("DestConnector", fields: [destConnectorId], references: [id])
+  syncLogs        SyncLog[]
+  approvalRequests ApprovalRequest[]
+}
+
+enum DocumentStatus {
+  DRAFT
+  READY
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SyncStatus {
+  NOT_SYNCED
+  SYNCING
+  SYNCED
+  FAILED
+}
+
+enum SyncFrequency {
+  MANUAL
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model SyncLog {
+  id             String  @id @default(cuid())
+  organizationId String
+  userId         String
+  documentId     String?
+
+  action  String
+  status  LogStatus
+  message String?
+  details Json?
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document     Document?    @relation(fields: [documentId], references: [id], onDelete: SetNull)
+}
+
+enum LogStatus {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  plan                 String    @default("free")
+  status               String    @default("active")
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  billingCycleAnchor   Int?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model QuotaUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  month     String   // Format: "2026-05"
+  syncCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, month])
+}
+
+// Webhooks pour sync bidirectionnelle
+model WebhookEndpoint {
+  id             String   @id @default(cuid())
+  organizationId String
+  connectorId    String
+  type           WebhookType
+  url            String
+  secret         String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+enum WebhookType {
+  WORDPRESS
+  GHOST
+  WEBFLOW
+  SHOPIFY
+}
+
+// Audit Trail - Logging de toutes les actions sensibles
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  action         String   // "document.created", "connector.deleted", "member.invited"
+  targetType     String   // "document", "connector", "member", "org", "sync"
+  targetId       String?
+  details        Json?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now()) @db.Timestamptz
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([userId, createdAt])
+}
+
+// Approval Portal - Demandes d'approbation avant publication
+model ApprovalRequest {
+  id          String           @id @default(cuid())
+  documentId  String
+  token       String           @unique
+  status      ApprovalStatus   @default(PENDING)
+  requestedBy String
+  approvedBy  String?
+  approvedAt  DateTime?
+  comments    String?
+  expiresAt   DateTime
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([documentId, status])
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+// Password Reset - Tokens pour réinitialisation de mot de passe
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+// Email Verification - Vérification d'email
+model EmailVerification {
+  id        String   @id @default(cuid())
+  userId    String
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  verifiedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, email])
+}
+
+// Two-Factor Authentication
+model TwoFactorAuth {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  secret       String   // Encrypted TOTP secret
+  backupCodes  String[] // Hashed backup codes
+  enabledAt    DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// API Keys - Pour accès APIprogrammatique
+model ApiKey {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  name           String
+  keyHash        String   @unique
+  prefix         String   // First 8 chars for display
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([keyHash])
+}
+
+// ============================================================================
+// FEATURE FLAGS & ENTITLEMENTS SYSTEM
+// ============================================================================
+
+// Plan - Subscription plans (free, pro, business, enterprise)
+model Plan {
+  id              String        @id @default(cuid())
+  key             String        @unique // "free", "pro", "business", "enterprise"
+  name            String
+  priceMonthly    Decimal?      @db.Decimal(10, 2)
+  priceYearly     Decimal?      @db.Decimal(10, 2)
+  isActive        Boolean       @default(true)
+  sortOrder       Int           @default(0)
+  features        PlanFeature[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([key])
+  @@index([isActive])
+}
+
+// Feature - Available features in the system
+model Feature {
+  id              String        @id @default(cuid())
+  key             String        @unique // "EXPORT_PDF", "AI_SUMMARY", "EXPORT_CSV", etc.
+  name            String
+  description     String?
+  type            FeatureType   // "boolean", "limit", "experiment"
+  defaultConfig   Json?         // Default configuration for the feature
+  plans           PlanFeature[]
+  overrides       EntitlementOverride[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([key])
+  @@index([type])
+}
+
+enum FeatureType {
+  BOOLEAN    // true/false feature
+  LIMIT      // Numeric quota
+  EXPERIMENT // A/B test with percentage
+}
+
+// PlanFeature - Features enabled/disabled per plan with optional limits
+model PlanFeature {
+  id              String   @id @default(cuid())
+  planId          String
+  featureId       String
+  enabled         Boolean  @default(false)
+  limitValue      Int?     // null = unlimited (-1 in config means unlimited too)
+  configJson      Json?    // Additional configuration (e.g., experiment percentage)
+  downgradeStrategy DowngradeStrategy @default(GRACEFUL) // How to handle when downgrading
+
+  plan     Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature  Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, featureId])
+  @@index([planId])
+  @@index([featureId])
+}
+
+enum DowngradeStrategy {
+  GRACEFUL  // Keep access until period end, then cut
+  IMMEDIATE // Cut access immediately when downgraded
+  FREEZE   // Block new actions, keep existing data
+}
+
+// Organization - Add stripe_customer_id
+model Organization {
+  id                 String    @id @default(cuid())
+  name               String
+  slug               String?   @unique
+  description        String?
+  settings           Json?
+  lastSyncAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Quota limits (legacy - will be replaced by entitlements)
+  maxConnectors      Int       @default(2)
+  maxDocuments       Int       @default(100)
+
+  // Stripe integration
+  stripeCustomerId   String?   @unique
+
+  users              UserOrganization[]
+  connectors         Connector[]
+  documents          Document[]
+  syncLogs           SyncLog[]
+  webhookEndpoints   WebhookEndpoint[]
+  apiKeys            ApiKey[]
+  auditLogs          AuditLog[]
+  subscriptions      Subscription[]
+  entitlementOverrides EntitlementOverride[]
+  usageTrackings     UsageTracking[]
+}
+
+// Subscription - Refactored to use org_id instead of user_id
+model Subscription {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  planKey              String    @default("free")
+  status               SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  stripePriceId       String?   // Monthly or yearly price ID
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  trialStart          DateTime?
+  trialEnd            DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId])
+  @@index([organizationId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+}
+
+// EntitlementOverride - User or org level overrides
+model EntitlementOverride {
+  id          String       @id @default(cuid())
+  scope       OverrideScope // "org" or "user"
+  scopeId     String       // orgId or userId
+  featureKey  String
+  enabled     Boolean      @default(true)
+  limitValue  Int?
+  expiresAt   DateTime?   // If set, override expires at this time
+  reason      String?      // Reason for the override (required for audit)
+  feature     Feature      @relation(fields: [featureKey], references: [key])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  createdBy   String?      // userId who created the override
+
+  @@unique([scope, scopeId, featureKey])
+  @@index([scope, scopeId])
+  @@index([featureKey])
+  @@index([organizationId])
+}
+
+enum OverrideScope {
+  ORG
+  USER
+}
+
+// UsageTracking - Track usage for limit-based features
+model UsageTracking {
+  id             String   @id @default(cuid())
+  organizationId String
+  featureKey     String
+  usageCount     Int      @default(0)
+  periodStart    DateTime // Start of the billing period (usually month start)
+  periodEnd      DateTime // End of the billing period (usually month end)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, featureKey, periodStart])
+  @@index([organizationId, featureKey])
+  @@index([periodEnd])
+}
+
+// WebhookEvent - For Stripe webhook idempotency
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique // Stripe event ID
+  eventType   String
+  processedAt DateTime @default(now())
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  @@index([eventId])
+  @@index([eventType])
+}

@@ -1,0 +1,10 @@
+{
+  "name": "@omnysync/extension",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Browser extension placeholder - coming soon'",
+    "build": "echo 'Extension placeholder'",
+    "clean": "echo 'Cleaned'"
+  }
+}

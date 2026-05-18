@@ -1,0 +1,10 @@
+{
+  "name": "@omnysync/desktop",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Desktop app placeholder - Tauri/Electron coming soon'",
+    "build": "echo 'Desktop app placeholder'",
+    "clean": "echo 'Cleaned'"
+  }
+}
