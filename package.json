@@ -41,7 +41,9 @@
     "extension:build": "pnpm --filter omnysync-extension build",
     "extension:test": "pnpm --filter omnysync-extension test",
     "extension:lint": "pnpm --filter omnysync-extension lint",
-    "extension:typecheck": "pnpm --filter omnysync-extension typecheck"
+    "extension:typecheck": "pnpm --filter omnysync-extension typecheck",
+    "check-env": "pnpm --filter @omnysync/web check-env",
+    "push-env": "pnpm --filter @omnysync/web push-env"
   },
   "devDependencies": {
     "@types/node": "^20",
