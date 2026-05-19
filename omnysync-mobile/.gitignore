@@ -1,7 +1,17 @@
+# Dependencies
 node_modules/
+
+# Build outputs
 dist/
 build/
+
+# Environment files (local overrides - never commit)
 .env
 .env.local
+.env*.local
+
+# Logs
 *.log
+
+# OS
 .DS_Store
