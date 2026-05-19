@@ -4,10 +4,23 @@ import path from "path"
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    globals: true,
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
+      exclude: [
+        "node_modules/**",
+        "*.test.ts",
+        "*.test.tsx",
+        "**/__tests__/**",
+        "**/types/**",
+        "**/*.d.ts",
+        "**/prisma/**",
+        "src/middleware.ts",
+        "src/app/**",
+        "components/**",
+        ".next/**",
+      ],
     },
   },
   resolve: {
