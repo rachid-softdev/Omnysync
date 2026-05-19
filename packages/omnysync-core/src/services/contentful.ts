@@ -1,45 +1,47 @@
-import { prisma } from "../../prisma"
-import { encrypt, decrypt } from "../crypto"
-import { fetchWithRetry } from "../http"
-import { ERR_FETCH_CONTENT } from "../errors"
+import { prisma } from "../../prisma";
+import { encrypt, decrypt } from "../crypto";
+import { fetchWithRetry } from "../http";
+import { ERR_FETCH_CONTENT } from "../errors";
 
 class APIError extends Error {
   constructor(
     public code: string,
-    message: string
+    message: string,
   ) {
-    super(message)
-    this.name = "APIError"
+    super(message);
+    this.name = "APIError";
   }
 }
 
-const CONTENTFUL_CDN = "https://cdn.contentful.com"
-const CONTENTFUL_MANAGEMENT = "https://api.contentful.com"
+const CONTENTFUL_CDN = "https://cdn.contentful.com";
+const CONTENTFUL_MANAGEMENT = "https://api.contentful.com";
 
 export interface ContentfulSpace {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 export interface ContentfulContentType {
-  id: string
-  name: string
-  description?: string
+  id: string;
+  name: string;
+  description?: string;
 }
 
 export interface ContentfulEntry {
-  id: string
-  title: string
-  content: string
-  createdAt: string
-  updatedAt: string
-  fields: Record<string, unknown>
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  fields: Record<string, unknown>;
 }
 
 /**
  * Liste les espaces Contentful accessibles
  */
-export async function listContentfulSpaces(accessToken: string): Promise<ContentfulSpace[]> {
+export async function listContentfulSpaces(
+  accessToken: string,
+): Promise<ContentfulSpace[]> {
   try {
     const data = await fetchWithRetry<{ items: ContentfulSpace[] }>(
       `${CONTENTFUL_MANAGEMENT}/spaces`,
@@ -47,11 +49,11 @@ export async function listContentfulSpaces(accessToken: string): Promise<Content
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
-      }
-    )
-    return data.items || []
+      },
+    );
+    return data.items || [];
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to fetch Contentful spaces")
+    throw new APIError(ERR_FETCH_CONTENT, "Failed to fetch Contentful spaces");
   }
 }
 
@@ -60,7 +62,7 @@ export async function listContentfulSpaces(accessToken: string): Promise<Content
  */
 export async function listContentfulContentTypes(
   accessToken: string,
-  spaceId: string
+  spaceId: string,
 ): Promise<ContentfulContentType[]> {
   try {
     const data = await fetchWithRetry<{ items: ContentfulContentType[] }>(
@@ -69,11 +71,11 @@ export async function listContentfulContentTypes(
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
-      }
-    )
-    return data.items || []
+      },
+    );
+    return data.items || [];
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to fetch content types")
+    throw new APIError(ERR_FETCH_CONTENT, "Failed to fetch content types");
   }
 }
 
@@ -85,15 +87,15 @@ export async function listContentfulEntries(
   spaceId: string,
   contentTypeId: string,
   options: {
-    limit?: number
-    skip?: number
-  } = {}
+    limit?: number;
+    skip?: number;
+  } = {},
 ): Promise<ContentfulEntry[]> {
   const params = new URLSearchParams({
     content_type: contentTypeId,
     limit: (options.limit || 100).toString(),
     skip: (options.skip || 0).toString(),
-  })
+  });
 
   try {
     const data = await fetchWithRetry<{ items: ContentfulEntry[] }>(
@@ -102,9 +104,9 @@ export async function listContentfulEntries(
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
-      }
-    )
-    
+      },
+    );
+
     return (data.items || []).map((entry) => ({
       id: entry.sys?.id || "",
       title: entry.fields?.title || entry.fields?.name || "Untitled",
@@ -112,9 +114,9 @@ export async function listContentfulEntries(
       createdAt: entry.sys?.createdAt || "",
       updatedAt: entry.sys?.updatedAt || "",
       fields: entry.fields || {},
-    }))
+    }));
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to fetch entries")
+    throw new APIError(ERR_FETCH_CONTENT, "Failed to fetch entries");
   }
 }
 
@@ -122,23 +124,26 @@ export async function listContentfulEntries(
  * Convertit une entrée Contentful en format document
  */
 export function contentfulEntryToDocument(entry: ContentfulEntry): {
-  title: string
-  content: string
-  metadata: Record<string, unknown>
+  title: string;
+  content: string;
+  metadata: Record<string, unknown>;
 } {
   // Chercher le champ "body" ou "content" ou "description"
-  const contentFields = entry.fields.body || entry.fields.content || 
-                        entry.fields.description || entry.fields.text
-  
-  let content = ""
-  
+  const contentFields =
+    entry.fields.body ||
+    entry.fields.content ||
+    entry.fields.description ||
+    entry.fields.text;
+
+  let content = "";
+
   if (typeof contentFields === "string") {
-    content = contentFields
+    content = contentFields;
   } else if (typeof contentFields === "object") {
     // Contentful peut avoir du Rich Text
-    content = JSON.stringify(contentFields)
+    content = JSON.stringify(contentFields);
   } else {
-    content = JSON.stringify(entry.fields)
+    content = JSON.stringify(entry.fields);
   }
 
   return {
@@ -150,7 +155,7 @@ export function contentfulEntryToDocument(entry: ContentfulEntry): {
       updatedAt: entry.updatedAt,
       fields: entry.fields,
     },
-  }
+  };
 }
 
 /**
@@ -160,7 +165,7 @@ export async function createContentfulEntry(
   accessToken: string,
   spaceId: string,
   contentTypeId: string,
-  fields: Record<string, unknown>
+  fields: Record<string, unknown>,
 ): Promise<{ id: string }> {
   try {
     const data = await fetchWithRetry<{ sys: { id: string } }>(
@@ -173,12 +178,12 @@ export async function createContentfulEntry(
           "X-Contentful-Content-Type": contentTypeId,
         },
         body: JSON.stringify({ fields }),
-      }
-    )
-    
-    return { id: data.sys.id }
+      },
+    );
+
+    return { id: data.sys.id };
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to create entry")
+    throw new APIError(ERR_FETCH_CONTENT, "Failed to create entry");
   }
 }
 
@@ -190,7 +195,7 @@ export async function updateContentfulEntry(
   spaceId: string,
   entryId: string,
   fields: Record<string, unknown>,
-  version: number
+  version: number,
 ): Promise<{ id: string }> {
   try {
     const data = await fetchWithRetry<{ sys: { id: string } }>(
@@ -203,12 +208,12 @@ export async function updateContentfulEntry(
           "X-Contentful-Version": version.toString(),
         },
         body: JSON.stringify({ fields }),
-      }
-    )
-    
-    return { id: data.sys.id }
+      },
+    );
+
+    return { id: data.sys.id };
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to update entry")
+    throw new APIError(ERR_FETCH_CONTENT, "Failed to update entry");
   }
 }
 
@@ -220,13 +225,13 @@ export async function saveContentfulConnector(
   organizationId: string,
   accessToken: string,
   config: {
-    spaceId: string
-    contentTypeId?: string
-    environment?: string
-  }
+    spaceId: string;
+    contentTypeId?: string;
+    environment?: string;
+  },
 ) {
   // Vérifier que le token est valide en listant les espaces
-  await listContentfulSpaces(accessToken)
+  await listContentfulSpaces(accessToken);
 
   return prisma.connector.create({
     data: {
@@ -238,59 +243,72 @@ export async function saveContentfulConnector(
       credentials: encrypt(accessToken),
       config: JSON.stringify(config),
     },
-  })
+  });
 }
 
 /**
  * Liste les documents disponibles depuis Contentful
  */
 export async function listContentfulDocuments(
-  connectorId: string
+  connectorId: string,
 ): Promise<Array<{ id: string; title: string }>> {
   const connector = await prisma.connector.findUnique({
     where: { id: connectorId },
-  })
+  });
 
   if (!connector || connector.type !== "CONTENTFUL") {
-    throw new Error("Invalid Contentful connector")
+    throw new Error("Invalid Contentful connector");
   }
 
-  const accessToken = decrypt(connector.credentials || "")
-  const config = JSON.parse(decrypt(connector.config || "{}"))
+  const accessToken = decrypt(connector.credentials || "");
+  const config = JSON.parse(decrypt(connector.config || "{}"));
 
   if (!config.spaceId) {
-    return []
+    return [];
   }
 
   // Si pas de content type, lister tous les types et leurs entrées
   if (!config.contentTypeId) {
-    const contentTypes = await listContentfulContentTypes(accessToken, config.spaceId)
-    
-    const documents: Array<{ id: string; title: string }> = []
-    
-    for (const ct of contentTypes.slice(0, 3)) { // Limiter à 3 types
-      const entries = await listContentfulEntries(accessToken, config.spaceId, ct.id, {
-        limit: 10,
-      })
-      
+    const contentTypes = await listContentfulContentTypes(
+      accessToken,
+      config.spaceId,
+    );
+
+    const documents: Array<{ id: string; title: string }> = [];
+
+    for (const ct of contentTypes.slice(0, 3)) {
+      // Limiter à 3 types
+      const entries = await listContentfulEntries(
+        accessToken,
+        config.spaceId,
+        ct.id,
+        {
+          limit: 10,
+        },
+      );
+
       for (const entry of entries) {
         documents.push({
           id: `${ct.id}:${entry.id}`,
           title: `${ct.name} - ${entry.title}`,
-        })
+        });
       }
     }
-    
-    return documents
+
+    return documents;
   }
 
   // Sinon, récupérer les entrées du type spécifié
-  const entries = await listContentfulEntries(accessToken, config.spaceId, config.contentTypeId)
-  
+  const entries = await listContentfulEntries(
+    accessToken,
+    config.spaceId,
+    config.contentTypeId,
+  );
+
   return entries.map((entry) => ({
     id: entry.id,
     title: entry.title,
-  }))
+  }));
 }
 
 /**
@@ -298,65 +316,75 @@ export async function listContentfulDocuments(
  */
 export async function getContentfulEntryContent(
   connectorId: string,
-  entryId: string
-): Promise<{ id: string; title: string; content: string; metadata: Record<string, unknown> }> {
+  entryId: string,
+): Promise<{
+  id: string;
+  title: string;
+  content: string;
+  metadata: Record<string, unknown>;
+}> {
   const connector = await prisma.connector.findUnique({
     where: { id: connectorId },
-  })
+  });
 
   if (!connector || connector.type !== "CONTENTFUL") {
-    throw new Error("Invalid Contentful connector")
+    throw new Error("Invalid Contentful connector");
   }
 
-  const accessToken = decrypt(connector.credentials || "")
-  const config = JSON.parse(decrypt(connector.config || "{}"))
+  const accessToken = decrypt(connector.credentials || "");
+  const config = JSON.parse(decrypt(connector.config || "{}"));
 
   if (!config.spaceId) {
-    throw new Error("Missing space ID")
+    throw new Error("Missing space ID");
   }
 
   // Parse entryId (peut être contentTypeId:entryId ou juste entryId)
   const [contentTypeId, actualEntryId] = entryId.includes(":")
     ? entryId.split(":")
-    : [config.contentTypeId, entryId]
+    : [config.contentTypeId, entryId];
 
   if (!contentTypeId || !actualEntryId) {
-    throw new Error("Invalid entry ID")
+    throw new Error("Invalid entry ID");
   }
 
-  const entries = await listContentfulEntries(accessToken, config.spaceId, contentTypeId, {
-    limit: 1,
-  })
+  const entries = await listContentfulEntries(
+    accessToken,
+    config.spaceId,
+    contentTypeId,
+    {
+      limit: 1,
+    },
+  );
 
-  const entry = entries.find((e) => e.id === actualEntryId)
-  
+  const entry = entries.find((e) => e.id === actualEntryId);
+
   if (!entry) {
-    throw new Error("Entry not found")
+    throw new Error("Entry not found");
   }
 
-  const doc = contentfulEntryToDocument(entry)
-  
+  const doc = contentfulEntryToDocument(entry);
+
   return {
     id: actualEntryId,
     title: doc.title,
     content: doc.content,
     metadata: doc.metadata,
-  }
+  };
 }
 
 /**
  * Teste la connexion à Contentful
  */
 export async function testContentfulConnection(
-  accessToken: string
+  accessToken: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await listContentfulSpaces(accessToken)
-    return { success: true }
+    await listContentfulSpaces(accessToken);
+    return { success: true };
   } catch (error) {
     return {
       success: false,
       error: (error as Error).message,
-    }
+    };
   }
 }

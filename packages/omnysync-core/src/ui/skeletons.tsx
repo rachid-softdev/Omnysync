@@ -1,12 +1,18 @@
 /**
  * Skeleton Components - Loading states pour les pages
  */
-import { Skeleton } from "./skeleton"
+import { Skeleton } from "./skeleton";
 
 /**
  * Table Skeleton - Pour les listes avec tableau
  */
-export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
+export function TableSkeleton({
+  rows = 5,
+  columns = 4,
+}: {
+  rows?: number;
+  columns?: number;
+}) {
   return (
     <div className="space-y-3">
       {/* Header */}
@@ -24,7 +30,7 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 /**
@@ -46,7 +52,7 @@ export function CardSkeleton() {
         <Skeleton className="h-8 w-20" />
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -65,7 +71,7 @@ export function ListSkeleton({ items = 5 }: { items?: number }) {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 /**
@@ -82,7 +88,7 @@ export function FormSkeleton({ fields = 3 }: { fields?: number }) {
       ))}
       <Skeleton className="h-10 w-32" />
     </div>
-  )
+  );
 }
 
 /**
@@ -103,7 +109,7 @@ export function StatsSkeleton({ count = 4 }: { count?: number }) {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 /**
@@ -125,7 +131,7 @@ export function PageSkeleton() {
         <CardSkeleton />
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -151,5 +157,5 @@ export function DashboardSkeleton() {
         </div>
       </div>
     </div>
-  )
+  );
 }

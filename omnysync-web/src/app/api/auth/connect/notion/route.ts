@@ -1,15 +1,17 @@
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) {
-    return NextResponse.redirect(new URL("/auth/signin", req.url))
+    return NextResponse.redirect(new URL('/auth/signin', req.url))
   }
 
   const clientId = process.env.NOTION_CLIENT_ID
   if (!clientId) {
-    return NextResponse.redirect(new URL("/dashboard/connectors?error=notion_not_configured", req.url))
+    return NextResponse.redirect(
+      new URL('/dashboard/connectors?error=notion_not_configured', req.url)
+    )
   }
 
   const redirectUri = `${process.env.NEXTAUTH_URL}/api/auth/connect/notion/callback`

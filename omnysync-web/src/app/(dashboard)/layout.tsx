@@ -1,9 +1,9 @@
-import { auth } from "@/lib/auth"
-import { t } from "@/lib/i18n"
-import { redirect } from "next/navigation"
-import Link from "next/link"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
+import { auth } from '@/lib/auth'
+import { t } from '@/lib/i18n'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
 import {
   LayoutDashboard,
   FileText,
@@ -15,34 +15,38 @@ import {
   Webhook,
   FileCheck,
   Zap,
-} from "lucide-react"
-import { logoutAction } from "@/lib/actions"
-import { MobileNav } from "@/components/mobile-nav"
+} from 'lucide-react'
+import { logoutAction } from '@/lib/actions'
+import { MobileNav } from '@/components/mobile-nav'
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
 
   if (!session?.user) {
-    redirect("/auth/signin")
+    redirect('/auth/signin')
   }
 
   const user = session.user
   const trans = t
 
   const navItems = [
-    { href: "/dashboard", icon: LayoutDashboard, label: trans("UI_DASHBOARD") },
-    { href: "/dashboard/documents", icon: FileText, label: trans("UI_DOCS_LABEL") },
-    { href: "/dashboard/connectors", icon: Plug, label: trans("UI_CONNECTORS") },
-    { href: "/dashboard/sync", icon: ArrowRightLeft, label: trans("UI_SYNC") },
-    { href: "/dashboard/analytics", icon: BarChart3, label: trans("UI_ANALYTICS") || "Analytiques" },
-    { href: "/dashboard/webhooks", icon: Webhook, label: trans("UI_WEBHOOKS") || "Webhooks" },
-    { href: "/dashboard/approvals", icon: FileCheck, label: trans("UI_APPROVALS") || "Approbations" },
-    { href: "/dashboard/usage", icon: Zap, label: trans("UI_USAGE") || "Utilisation" },
-    { href: "/dashboard/settings", icon: Settings, label: trans("UI_SETTINGS") },
+    { href: '/dashboard', icon: LayoutDashboard, label: trans('UI_DASHBOARD') },
+    { href: '/dashboard/documents', icon: FileText, label: trans('UI_DOCS_LABEL') },
+    { href: '/dashboard/connectors', icon: Plug, label: trans('UI_CONNECTORS') },
+    { href: '/dashboard/sync', icon: ArrowRightLeft, label: trans('UI_SYNC') },
+    {
+      href: '/dashboard/analytics',
+      icon: BarChart3,
+      label: trans('UI_ANALYTICS') || 'Analytiques',
+    },
+    { href: '/dashboard/webhooks', icon: Webhook, label: trans('UI_WEBHOOKS') || 'Webhooks' },
+    {
+      href: '/dashboard/approvals',
+      icon: FileCheck,
+      label: trans('UI_APPROVALS') || 'Approbations',
+    },
+    { href: '/dashboard/usage', icon: Zap, label: trans('UI_USAGE') || 'Utilisation' },
+    { href: '/dashboard/settings', icon: Settings, label: trans('UI_SETTINGS') },
   ]
 
   return (
@@ -72,7 +76,7 @@ export default async function DashboardLayout({
             {user.image && (
               <Image
                 src={user.image}
-                alt={user.name || "User"}
+                alt={user.name || 'User'}
                 width={32}
                 height={32}
                 className="rounded-full"
@@ -90,15 +94,13 @@ export default async function DashboardLayout({
             onClick={() => logoutAction()}
           >
             <LogOut className="w-4 h-4 mr-2" />
-            {trans("UI_LOGOUT")}
+            {trans('UI_LOGOUT')}
           </Button>
         </div>
       </aside>
       {/* Mobile navigation */}
       <MobileNav navItems={navItems} user={user} />
-      <main className="flex-1 bg-background md:pt-0 pt-14">
-        {children}
-      </main>
+      <main className="flex-1 bg-background md:pt-0 pt-14">{children}</main>
     </div>
   )
 }

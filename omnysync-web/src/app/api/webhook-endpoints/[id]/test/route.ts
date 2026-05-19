@@ -2,18 +2,15 @@
  * Route API: Tester un webhook
  * POST /api/webhook-endpoints/[id]/test
  */
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
     const { id } = await params
@@ -25,7 +22,7 @@ export async function POST(
     })
 
     if (!membership) {
-      return NextResponse.json({ error: "Organisation non trouvée" }, { status: 404 })
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
     }
 
     // Récupérer le webhook
@@ -37,26 +34,26 @@ export async function POST(
     })
 
     if (!webhook) {
-      return NextResponse.json({ error: "Webhook non trouvé" }, { status: 404 })
+      return NextResponse.json({ error: 'Webhook non trouvé' }, { status: 404 })
     }
 
     if (!webhook.isActive) {
-      return NextResponse.json({ error: "Le webhook est désactivé" }, { status: 400 })
+      return NextResponse.json({ error: 'Le webhook est désactivé' }, { status: 400 })
     }
 
     // Envoyer une requête de test
     const testPayload = {
-      event: "test",
+      event: 'test',
       timestamp: new Date().toISOString(),
-      message: "This is a test webhook from Omnysync",
+      message: 'This is a test webhook from Omnysync',
     }
 
     try {
       const response = await fetch(webhook.url, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          "X-Webhook-Test": "true",
+          'Content-Type': 'application/json',
+          'X-Webhook-Test': 'true',
         },
         body: JSON.stringify(testPayload),
         signal: AbortSignal.timeout(10000),
@@ -69,8 +66,8 @@ export async function POST(
         data: {
           organizationId: membership.organizationId,
           userId: session.user.id,
-          action: "webhook_test",
-          status: response.ok ? "SUCCESS" : "ERROR",
+          action: 'webhook_test',
+          status: response.ok ? 'SUCCESS' : 'ERROR',
           message: `Test webhook - Status: ${response.status}`,
           details: {
             webhookId: id,
@@ -83,17 +80,17 @@ export async function POST(
       return NextResponse.json({
         success: response.ok,
         statusCode: response.status,
-        message: response.ok ? "Test réussi" : `Statut: ${response.status}`,
+        message: response.ok ? 'Test réussi' : `Statut: ${response.status}`,
       })
     } catch (fetchError) {
-      const errorMessage = fetchError instanceof Error ? fetchError.message : "Erreur inconnue"
+      const errorMessage = fetchError instanceof Error ? fetchError.message : 'Erreur inconnue'
 
       await prisma.syncLog.create({
         data: {
           organizationId: membership.organizationId,
           userId: session.user.id,
-          action: "webhook_test",
-          status: "ERROR",
+          action: 'webhook_test',
+          status: 'ERROR',
           message: `Test échoué: ${errorMessage}`,
           details: { webhookId: id, url: webhook.url, error: errorMessage },
         },
@@ -105,7 +102,7 @@ export async function POST(
       })
     }
   } catch (error) {
-    console.error("POST webhook test error:", error)
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+    console.error('POST webhook test error:', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

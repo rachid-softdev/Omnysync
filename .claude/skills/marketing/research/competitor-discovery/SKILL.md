@@ -19,6 +19,7 @@ Use when you don't know who your competitors are, when entering a new market, or
 ### Step 1: Gather Inputs
 
 Ask the user for:
+
 1. **Product description** — what it does, what category it's in, key features
 2. **Target audience** — who buys or uses the product (role, industry, company size)
 3. **Known competitors** (optional) — names or URLs to include without searching
@@ -40,11 +41,13 @@ Tailor queries to the product type. A B2B SaaS product needs different queries t
 ### Step 3: Search and Collect
 
 Run web searches for each query. For each result:
+
 - Extract company names and domains that appear across multiple results
 - Pull companies listed on review/comparison sites (G2, Capterra, etc.) — these are strong signals
 - Skip aggregator sites themselves, job boards, news articles about funding, and clearly unrelated results
 
 Compile a **candidate list** of 8-12 companies. For each, note:
+
 - **Name**
 - **URL** (homepage)
 - **How found** — which search queries surfaced them
@@ -54,11 +57,13 @@ Rank candidates by frequency — companies appearing in 3+ different searches ar
 ### Step 4: Quick Profile Each Candidate
 
 For each candidate, fetch their homepage (and pricing page if easily accessible) and extract:
+
 - **One-liner** — what they say they do, in their own words
 - **Target audience signals** — who the site speaks to
 - **Overlap** — how directly they compete (direct / adjacent / tangential)
 
 Classify each candidate:
+
 - **Direct competitor** — same problem, same audience, similar solution
 - **Adjacent competitor** — same audience but different approach, or same approach but different audience
 - **Tangential** — some overlap but fundamentally different product

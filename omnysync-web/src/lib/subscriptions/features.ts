@@ -3,9 +3,9 @@
  * Omnysync - 2026
  */
 
-import { prisma } from "@/lib/prisma"
-import { auth } from "@/lib/auth"
-import { auditBilling } from "@/lib/audit"
+import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
+import { auditBilling } from '@/lib/audit'
 
 // ============================================================================
 // TYPES
@@ -15,14 +15,14 @@ export interface PlanFeatures {
   name: string
   price: number
   currency: string
-  interval: "month" | "year"
-  
+  interval: 'month' | 'year'
+
   // Limits
   maxConnectors: number
   maxDocuments: number
   maxSyncsPerMonth: number
   maxTeamMembers: number
-  
+
   // Features
   aiSEO: boolean
   aiImages: boolean
@@ -41,10 +41,10 @@ export interface PlanFeatures {
 
 export const plans: Record<string, PlanFeatures> = {
   free: {
-    name: "Free",
+    name: 'Free',
     price: 0,
-    currency: "EUR",
-    interval: "month",
+    currency: 'EUR',
+    interval: 'month',
     maxConnectors: 2,
     maxDocuments: 100,
     maxSyncsPerMonth: 10,
@@ -59,12 +59,12 @@ export const plans: Record<string, PlanFeatures> = {
     prioritySupport: false,
     analyticsExport: false,
   },
-  
+
   pro: {
-    name: "Pro",
+    name: 'Pro',
     price: 29,
-    currency: "EUR",
-    interval: "month",
+    currency: 'EUR',
+    interval: 'month',
     maxConnectors: 10,
     maxDocuments: -1, // Unlimited
     maxSyncsPerMonth: 100,
@@ -79,12 +79,12 @@ export const plans: Record<string, PlanFeatures> = {
     prioritySupport: false,
     analyticsExport: true,
   },
-  
+
   business: {
-    name: "Business",
+    name: 'Business',
     price: 99,
-    currency: "EUR",
-    interval: "month",
+    currency: 'EUR',
+    interval: 'month',
     maxConnectors: -1,
     maxDocuments: -1,
     maxSyncsPerMonth: -1,
@@ -99,12 +99,12 @@ export const plans: Record<string, PlanFeatures> = {
     prioritySupport: true,
     analyticsExport: true,
   },
-  
+
   enterprise: {
-    name: "Enterprise",
+    name: 'Enterprise',
     price: -1,
-    currency: "EUR",
-    interval: "month",
+    currency: 'EUR',
+    interval: 'month',
     maxConnectors: -1,
     maxDocuments: -1,
     maxSyncsPerMonth: -1,
@@ -147,32 +147,32 @@ export async function checkQuota(
   })
 
   if (!org) {
-    return { allowed: false, message: "Organization not found" }
+    return { allowed: false, message: 'Organization not found' }
   }
 
   // Get plan
   const subscription = org.users[0]?.user?.subscription
-  const planKey = subscription?.plan || "free"
+  const planKey = subscription?.plan || 'free'
   const plan = plans[planKey]
 
   if (!plan) {
-    return { allowed: false, message: "Invalid plan" }
+    return { allowed: false, message: 'Invalid plan' }
   }
 
   // Check based on feature
-  if (typeof plan[feature] === "boolean") {
+  if (typeof plan[feature] === 'boolean') {
     return { allowed: plan[feature] as boolean }
   }
 
   // For numeric limits
   const limit = plan[feature] as number
-  
+
   if (limit === -1) {
     return { allowed: true } // Unlimited
   }
 
   switch (feature) {
-    case "maxConnectors": {
+    case 'maxConnectors': {
       const count = await prisma.connector.count({ where: { organizationId } })
       return {
         allowed: count < limit,
@@ -182,7 +182,7 @@ export async function checkQuota(
       }
     }
 
-    case "maxDocuments": {
+    case 'maxDocuments': {
       const count = await prisma.document.count({ where: { organizationId } })
       return {
         allowed: count < limit,
@@ -192,18 +192,18 @@ export async function checkQuota(
       }
     }
 
-    case "maxSyncsPerMonth": {
+    case 'maxSyncsPerMonth': {
       const now = new Date()
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-      
+
       const count = await prisma.syncLog.count({
         where: {
           organizationId,
           createdAt: { gte: startOfMonth },
-          status: "SUCCESS",
+          status: 'SUCCESS',
         },
       })
-      
+
       return {
         allowed: count < limit,
         current: count,
@@ -212,7 +212,7 @@ export async function checkQuota(
       }
     }
 
-    case "maxTeamMembers": {
+    case 'maxTeamMembers': {
       const count = await prisma.userOrganization.count({ where: { organizationId } })
       return {
         allowed: count < limit,
@@ -236,11 +236,11 @@ export async function withQuotaCheck<T>(
   action: () => Promise<T>
 ): Promise<T> {
   const check = await checkQuota(organizationId, feature)
-  
+
   if (!check.allowed) {
-    throw new Error(check.message || "Quota exceeded")
+    throw new Error(check.message || 'Quota exceeded')
   }
-  
+
   return action()
 }
 
@@ -253,17 +253,17 @@ export async function withQuotaCheck<T>(
  */
 export async function recordUsage(
   organizationId: string,
-  resource: "sync" | "document" | "connector" | "member"
+  resource: 'sync' | 'document' | 'connector' | 'member'
 ): Promise<void> {
   const now = new Date()
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
   // Get the owner user ID
   const org = await prisma.organization.findUnique({
     where: { id: organizationId },
     include: {
       users: {
-        where: { role: "OWNER" },
+        where: { role: 'OWNER' },
         take: 1,
       },
     },
@@ -281,10 +281,10 @@ export async function recordUsage(
     create: {
       userId,
       month: monthKey,
-      syncCount: resource === "sync" ? 1 : 0,
+      syncCount: resource === 'sync' ? 1 : 0,
     },
     update: {
-      syncCount: resource === "sync" ? { increment: 1 } : undefined,
+      syncCount: resource === 'sync' ? { increment: 1 } : undefined,
     },
   })
 }
@@ -294,14 +294,14 @@ export async function recordUsage(
  */
 export async function getUsageStats(organizationId: string) {
   const now = new Date()
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
   // Get the owner user ID
   const org = await prisma.organization.findUnique({
     where: { id: organizationId },
     include: {
       users: {
-        where: { role: "OWNER" },
+        where: { role: 'OWNER' },
         take: 1,
       },
     },
@@ -320,7 +320,7 @@ export async function getUsageStats(organizationId: string) {
     where: { userId },
   })
 
-  const planKey = subscription?.plan || "free"
+  const planKey = subscription?.plan || 'free'
   const plan = plans[planKey]
 
   return {
@@ -352,7 +352,7 @@ export async function updateUserPlan(
     where: { userId },
   })
 
-  const oldPlan = oldSubscription?.plan || "free"
+  const oldPlan = oldSubscription?.plan || 'free'
 
   // Update subscription
   await prisma.subscription.upsert({
@@ -360,7 +360,7 @@ export async function updateUserPlan(
     create: {
       userId,
       plan: planKey,
-      status: "active",
+      status: 'active',
       stripeCustomerId,
       stripeSubscriptionId,
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -370,7 +370,7 @@ export async function updateUserPlan(
       stripeCustomerId,
       stripeSubscriptionId,
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      status: "active",
+      status: 'active',
     },
   })
 
@@ -378,7 +378,7 @@ export async function updateUserPlan(
   if (oldPlan !== planKey) {
     const org = await prisma.organization.findFirst({
       where: {
-        users: { some: { userId, role: "OWNER" } },
+        users: { some: { userId, role: 'OWNER' } },
       },
     })
 
@@ -406,7 +406,7 @@ export async function cancelSubscription(userId: string): Promise<void> {
   // Audit log
   const org = await prisma.organization.findFirst({
     where: {
-      users: { some: { userId, role: "OWNER" } },
+      users: { some: { userId, role: 'OWNER' } },
     },
   })
 

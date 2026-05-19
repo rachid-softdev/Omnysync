@@ -19,6 +19,7 @@ Use when planning content around a topic before writing, building a keyword map 
 ### Step 1: Gather Inputs
 
 Ask the user for:
+
 1. **Seed topic or keyword** — e.g., "AI search optimization", "B2B SaaS customer acquisition"
 2. **Country code** (optional) — for localised volumes (default: "us")
 3. **Competitor domain(s)** (optional) — to identify keyword gaps
@@ -72,6 +73,7 @@ Group the full keyword list into semantic clusters. Each cluster represents a po
 Before clustering, separate out brand-specific and product-name keywords. These are navigational queries for specific tools, not topics you'd write content about. List them in an "Excluded: Brand/Navigational Keywords" section at the end — they're useful market intelligence but shouldn't inflate your topic clusters.
 
 **Clustering rules:**
+
 - Group keywords that would be answered by the same piece of content
 - Name each cluster after its core topic (not the highest-volume keyword)
 - Assign an intent to each cluster:
@@ -84,6 +86,7 @@ Before clustering, separate out brand-specific and product-name keywords. These 
 - Drop zero-volume keywords entirely
 
 **Within each cluster, identify:**
+
 - The **primary keyword** — highest volume keyword that best represents the cluster's intent
 - **Question keywords** — any keywords phrased as questions (valuable for H2 headings and FAQ sections)
 - **Long-tail keywords** — lower volume, more specific phrases (valuable for weaving into content)
@@ -92,13 +95,13 @@ Before clustering, separate out brand-specific and product-name keywords. These 
 
 Score each cluster for content priority:
 
-| Signal | What to look at |
-|--------|----------------|
-| **Total volume** | Sum of all keyword volumes in the cluster |
-| **Competition** | Average competition score (lower = easier to rank) |
-| **Gap opportunity** | Are competitors ranking here and you're not? (from Step 4) |
-| **Intent fit** | Does this cluster match content you'd actually create? |
-| **Question density** | Clusters with more question keywords are better for GEO |
+| Signal               | What to look at                                            |
+| -------------------- | ---------------------------------------------------------- |
+| **Total volume**     | Sum of all keyword volumes in the cluster                  |
+| **Competition**      | Average competition score (lower = easier to rank)         |
+| **Gap opportunity**  | Are competitors ranking here and you're not? (from Step 4) |
+| **Intent fit**       | Does this cluster match content you'd actually create?     |
+| **Question density** | Clusters with more question keywords are better for GEO    |
 
 Rank clusters by a blended priority — not just volume. A low-competition cluster with good question density and a clear gap often beats a high-volume, high-competition cluster.
 

@@ -1,14 +1,14 @@
 /**
  * Tests pour les routes API Stripe
  */
-import { describe, it, expect } from "vitest"
+import { describe, it, expect } from 'vitest'
 
-describe("POST /api/stripe/checkout", () => {
-  it("devrait créer une session checkout", () => {
+describe('POST /api/stripe/checkout', () => {
+  it('devrait créer une session checkout', () => {
     expect(true).toBe(true)
   })
 
-  it("devrait retourner 400 si plan invalide", () => {
+  it('devrait retourner 400 si plan invalide', () => {
     expect(true).toBe(true)
   })
 
@@ -17,26 +17,26 @@ describe("POST /api/stripe/checkout", () => {
   })
 })
 
-describe("GET /api/stripe/portal", () => {
+describe('GET /api/stripe/portal', () => {
   it("devrait retourner l'URL du portal client", () => {
     expect(true).toBe(true)
   })
 })
 
-describe("POST /api/stripe/webhook", () => {
-  it("devrait gérer checkout.session.completed", () => {
+describe('POST /api/stripe/webhook', () => {
+  it('devrait gérer checkout.session.completed', () => {
     expect(true).toBe(true)
   })
 
-  it("devrait gérer customer.subscription.updated", () => {
+  it('devrait gérer customer.subscription.updated', () => {
     expect(true).toBe(true)
   })
 
-  it("devrait gérer customer.subscription.deleted", () => {
+  it('devrait gérer customer.subscription.deleted', () => {
     expect(true).toBe(true)
   })
 
-  it("devrait vérifier la signature du webhook", () => {
+  it('devrait vérifier la signature du webhook', () => {
     expect(true).toBe(true)
   })
 })

@@ -3,7 +3,7 @@
  * Omnysync - 2026
  */
 
-import * as Sentry from "@sentry/nextjs"
+import * as Sentry from '@sentry/nextjs'
 
 // ============================================================================
 // INITIALIZATION
@@ -18,14 +18,12 @@ export function initMonitoring() {
   if (process.env.SENTRY_DSN) {
     Sentry.init({
       dsn: process.env.SENTRY_DSN,
-      tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+      tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
       replaysSessionSampleRate: 0.1,
       replaysOnErrorSampleRate: 1.0,
       environment: process.env.NODE_ENV,
       release: process.env.npm_package_version,
-      integrations: [
-        Sentry.httpIntegration(),
-      ],
+      integrations: [Sentry.httpIntegration()],
     })
   }
 }
@@ -39,7 +37,7 @@ export function initMonitoring() {
  */
 export function captureError(error: Error, context?: Record<string, unknown>) {
   if (context) {
-    Sentry.setContext("additional", context)
+    Sentry.setContext('additional', context)
   }
   Sentry.captureException(error)
 }
@@ -47,7 +45,7 @@ export function captureError(error: Error, context?: Record<string, unknown>) {
 /**
  * Capture a message with level
  */
-export function captureMessage(message: string, level: Sentry.SeverityLevel = "info") {
+export function captureMessage(message: string, level: Sentry.SeverityLevel = 'info') {
   Sentry.captureMessage(message, level)
 }
 
@@ -72,16 +70,12 @@ export function clearUser() {
 /**
  * Add breadcrumb for tracking user actions
  */
-export function addBreadcrumb(
-  category: string,
-  message: string,
-  data?: Record<string, unknown>
-) {
+export function addBreadcrumb(category: string, message: string, data?: Record<string, unknown>) {
   Sentry.addBreadcrumb({
     category,
     message,
     data,
-    level: "info",
+    level: 'info',
   })
 }
 
@@ -101,8 +95,8 @@ export async function withMonitoring<T>(
   } = {}
 ): Promise<T> {
   const span = Sentry.startInactiveSpan({
-    name: options.name || "unknown",
-    op: "function",
+    name: options.name || 'unknown',
+    op: 'function',
     forceTransaction: true,
   })
 
@@ -112,11 +106,11 @@ export async function withMonitoring<T>(
 
   try {
     const result = await fn()
-    span.setStatus("ok")
+    span.setStatus('ok')
     return result
   } catch (error) {
-    span.setStatus("internal_error")
-    span.setData("error", (error as Error).message)
+    span.setStatus('internal_error')
+    span.setData('error', (error as Error).message)
     captureError(error as Error, options.extra)
     throw error
   } finally {
@@ -130,31 +124,31 @@ export async function withMonitoring<T>(
 export function withAPIMonitoring(handler: (req: Request) => Promise<Response>) {
   return async (req: Request): Promise<Response> => {
     const startTime = Date.now()
-    
+
     try {
       const response = await handler(req)
-      
+
       // Add breadcrumb for successful request
-      addBreadcrumb("api", `${req.method} ${new URL(req.url).pathname}`, {
+      addBreadcrumb('api', `${req.method} ${new URL(req.url).pathname}`, {
         status: response.status,
         duration: Date.now() - startTime,
       })
-      
+
       return response
     } catch (error) {
       // Add breadcrumb for failed request
-      addBreadcrumb("api", `${req.method} ${new URL(req.url).pathname}`, {
-        status: "error",
+      addBreadcrumb('api', `${req.method} ${new URL(req.url).pathname}`, {
+        status: 'error',
         duration: Date.now() - startTime,
         error: (error as Error).message,
       })
-      
+
       captureError(error as Error, {
         method: req.method,
         path: new URL(req.url).pathname,
         duration: Date.now() - startTime,
       })
-      
+
       throw error
     }
   }
@@ -167,24 +161,21 @@ export function withAPIMonitoring(handler: (req: Request) => Promise<Response>) 
 /**
  * Measure and log performance metrics
  */
-export async function measurePerformance<T>(
-  name: string,
-  fn: () => Promise<T>
-): Promise<T> {
+export async function measurePerformance<T>(name: string, fn: () => Promise<T>): Promise<T> {
   const startTime = Date.now()
-  
+
   try {
     return await fn()
   } finally {
     const duration = Date.now() - startTime
-    
+
     // Log slow operations
     if (duration > 1000) {
-      captureMessage(`Slow operation: ${name} took ${duration}ms`, "warning")
+      captureMessage(`Slow operation: ${name} took ${duration}ms`, 'warning')
     }
-    
+
     // Add performance breadcrumb
-    addBreadcrumb("performance", `${name} completed`, { duration })
+    addBreadcrumb('performance', `${name} completed`, { duration })
   }
 }
 
@@ -213,7 +204,7 @@ export async function healthCheck() {
 
   // Check database
   try {
-    const { prisma } = await import("@/lib/prisma")
+    const { prisma } = await import('@/lib/prisma')
     await prisma.$queryRaw`SELECT 1`
     checks.database = true
   } catch {
@@ -223,7 +214,7 @@ export async function healthCheck() {
   // Check Redis (if configured)
   try {
     if (process.env.UPSTASH_REDIS_REST_URL) {
-      const { Redis } = await import("@upstash/redis")
+      const { Redis } = await import('@upstash/redis')
       const redis = new Redis({
         url: process.env.UPSTASH_REDIS_REST_URL,
         token: process.env.UPSTASH_REDIS_REST_TOKEN,
@@ -238,7 +229,7 @@ export async function healthCheck() {
   // Check OpenAI (if configured)
   try {
     if (process.env.OPENAI_API_KEY) {
-      const { default: OpenAI } = await import("openai")
+      const { default: OpenAI } = await import('openai')
       const openai = new OpenAI()
       await openai.models.list()
       checks.openai = true
@@ -250,7 +241,7 @@ export async function healthCheck() {
   const allHealthy = Object.values(checks).every(Boolean)
 
   return {
-    status: allHealthy ? "healthy" : "unhealthy",
+    status: allHealthy ? 'healthy' : 'unhealthy',
     timestamp: new Date().toISOString(),
     checks,
   }

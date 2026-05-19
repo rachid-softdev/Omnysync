@@ -1,36 +1,36 @@
-import { prisma } from "../../prisma"
-import { encrypt, decrypt } from "../crypto"
-import { fetchWithRetry } from "../http"
+import { prisma } from "../../prisma";
+import { encrypt, decrypt } from "../crypto";
+import { fetchWithRetry } from "../http";
 
-const MEDIUM_API = "https://api.medium.com/v1"
+const MEDIUM_API = "https://api.medium.com/v1";
 
 export interface MediumUser {
-  id: string
-  username: string
-  name: string
-  url: string
-  imageUrl: string
+  id: string;
+  username: string;
+  name: string;
+  url: string;
+  imageUrl: string;
 }
 
 export interface MediumPost {
-  id: string
-  title: string
-  authorId: string
-  tags: string[]
-  url: string
-  canonicalUrl: string
-  publishStatus: "public" | "draft" | "unlisted"
-  publishedAt: string
-  content: string
-  contentFormat: "html" | "markdown"
+  id: string;
+  title: string;
+  authorId: string;
+  tags: string[];
+  url: string;
+  canonicalUrl: string;
+  publishStatus: "public" | "draft" | "unlisted";
+  publishedAt: string;
+  content: string;
+  contentFormat: "html" | "markdown";
 }
 
 export interface MediumPublication {
-  id: string
-  name: string
-  description: string
-  url: string
-  imageUrl: string
+  id: string;
+  name: string;
+  description: string;
+  url: string;
+  imageUrl: string;
 }
 
 /**
@@ -44,11 +44,11 @@ export async function getMediumUser(accessToken: string): Promise<MediumUser> {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
-      }
-    )
-    return data.data
+      },
+    );
+    return data.data;
   } catch (error) {
-    throw new Error(`Failed to fetch Medium user: ${(error as Error).message}`)
+    throw new Error(`Failed to fetch Medium user: ${(error as Error).message}`);
   }
 }
 
@@ -57,7 +57,7 @@ export async function getMediumUser(accessToken: string): Promise<MediumUser> {
  */
 export async function listMediumPublications(
   accessToken: string,
-  userId: string
+  userId: string,
 ): Promise<MediumPublication[]> {
   try {
     const data = await fetchWithRetry<{ data: MediumPublication[] }>(
@@ -66,11 +66,13 @@ export async function listMediumPublications(
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
-      }
-    )
-    return data.data || []
+      },
+    );
+    return data.data || [];
   } catch (error) {
-    throw new Error(`Failed to fetch publications: ${(error as Error).message}`)
+    throw new Error(
+      `Failed to fetch publications: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -81,13 +83,13 @@ export async function createMediumPost(
   accessToken: string,
   userId: string,
   post: {
-    title: string
-    contentFormat: "html" | "markdown"
-    content: string
-    tags?: string[]
-    canonicalUrl?: string
-    publishStatus?: "public" | "draft" | "unlisted"
-  }
+    title: string;
+    contentFormat: "html" | "markdown";
+    content: string;
+    tags?: string[];
+    canonicalUrl?: string;
+    publishStatus?: "public" | "draft" | "unlisted";
+  },
 ): Promise<MediumPost> {
   try {
     const data = await fetchWithRetry<{ data: MediumPost }>(
@@ -99,11 +101,13 @@ export async function createMediumPost(
           "Content-Type": "application/json",
         },
         body: JSON.stringify(post),
-      }
-    )
-    return data.data
+      },
+    );
+    return data.data;
   } catch (error) {
-    throw new Error(`Failed to create Medium post: ${(error as Error).message}`)
+    throw new Error(
+      `Failed to create Medium post: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -114,13 +118,13 @@ export async function createMediumPublicationPost(
   accessToken: string,
   publicationId: string,
   post: {
-    title: string
-    contentFormat: "html" | "markdown"
-    content: string
-    tags?: string[]
-    canonicalUrl?: string
-    publishStatus?: "public" | "draft" | "unlisted"
-  }
+    title: string;
+    contentFormat: "html" | "markdown";
+    content: string;
+    tags?: string[];
+    canonicalUrl?: string;
+    publishStatus?: "public" | "draft" | "unlisted";
+  },
 ): Promise<MediumPost> {
   try {
     const data = await fetchWithRetry<{ data: MediumPost }>(
@@ -132,11 +136,13 @@ export async function createMediumPublicationPost(
           "Content-Type": "application/json",
         },
         body: JSON.stringify(post),
-      }
-    )
-    return data.data
+      },
+    );
+    return data.data;
   } catch (error) {
-    throw new Error(`Failed to create publication post: ${(error as Error).message}`)
+    throw new Error(
+      `Failed to create publication post: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -144,16 +150,16 @@ export async function createMediumPublicationPost(
  * Teste la connexion à Medium
  */
 export async function testMediumConnection(
-  accessToken: string
+  accessToken: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await getMediumUser(accessToken)
-    return { success: true }
+    await getMediumUser(accessToken);
+    return { success: true };
   } catch (error) {
     return {
       success: false,
       error: (error as Error).message,
-    }
+    };
   }
 }
 
@@ -165,11 +171,11 @@ export async function saveMediumConnector(
   organizationId: string,
   accessToken: string,
   config: {
-    publicationId?: string
-  } = {}
+    publicationId?: string;
+  } = {},
 ) {
   // Vérifier que le token est valide
-  const user = await getMediumUser(accessToken)
+  const user = await getMediumUser(accessToken);
 
   return prisma.connector.create({
     data: {
@@ -185,7 +191,7 @@ export async function saveMediumConnector(
         username: user.username,
       }),
     },
-  })
+  });
 }
 
 /**
@@ -193,26 +199,26 @@ export async function saveMediumConnector(
  */
 export async function publishToMedium(
   connectorId: string,
-  documentId: string
+  documentId: string,
 ): Promise<{ url: string }> {
   const connector = await prisma.connector.findUnique({
     where: { id: connectorId },
-  })
+  });
 
   if (!connector || connector.type !== "MEDIUM") {
-    throw new Error("Invalid Medium connector")
+    throw new Error("Invalid Medium connector");
   }
 
   const document = await prisma.document.findUnique({
     where: { id: documentId },
-  })
+  });
 
   if (!document) {
-    throw new Error("Document not found")
+    throw new Error("Document not found");
   }
 
-  const accessToken = decrypt(connector.credentials || "")
-  const config = JSON.parse(decrypt(connector.config || "{}"))
+  const accessToken = decrypt(connector.credentials || "");
+  const config = JSON.parse(decrypt(connector.config || "{}"));
 
   const postPayload = {
     title: document.title,
@@ -221,22 +227,18 @@ export async function publishToMedium(
     publishStatus: "public" as const,
     tags: document.tags,
     canonicalUrl: undefined,
-  }
+  };
 
-  let result: MediumPost
+  let result: MediumPost;
 
   if (config.publicationId) {
     result = await createMediumPublicationPost(
       accessToken,
       config.publicationId,
-      postPayload
-    )
+      postPayload,
+    );
   } else {
-    result = await createMediumPost(
-      accessToken,
-      config.userId,
-      postPayload
-    )
+    result = await createMediumPost(accessToken, config.userId, postPayload);
   }
 
   // Mettre à jour le document avec l'ID Medium
@@ -248,7 +250,7 @@ export async function publishToMedium(
       syncStatus: "SYNCED",
       lastSyncedAt: new Date(),
     },
-  })
+  });
 
-  return { url: result.url }
+  return { url: result.url };
 }

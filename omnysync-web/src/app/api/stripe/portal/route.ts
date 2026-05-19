@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from "next/server"
-import Stripe from "stripe"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { NextRequest, NextResponse } from 'next/server'
+import Stripe from 'stripe'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "")
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
 
 export async function GET(req: NextRequest) {
   const session = await auth()
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const subscription = await prisma.subscription.findUnique({
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   })
 
   if (!subscription?.stripeCustomerId) {
-    return NextResponse.json({ error: "No subscription found" }, { status: 404 })
+    return NextResponse.json({ error: 'No subscription found' }, { status: 404 })
   }
 
   try {
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ url: portalSession.url })
   } catch (error) {
-    console.error("Stripe portal error:", error)
-    return NextResponse.json({ error: "Failed to create portal" }, { status: 500 })
+    console.error('Stripe portal error:', error)
+    return NextResponse.json({ error: 'Failed to create portal' }, { status: 500 })
   }
 }

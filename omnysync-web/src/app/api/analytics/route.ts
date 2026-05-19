@@ -1,18 +1,18 @@
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { getUserOrgId } from "@/lib/auth/org"
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { getUserOrgId } from '@/lib/auth/org'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const orgId = await getUserOrgId(session.user.id)
   const { searchParams } = new URL(req.url)
-  const period = parseInt(searchParams.get("period") || "30")
+  const period = parseInt(searchParams.get('period') || '30')
 
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - period)
@@ -22,15 +22,15 @@ export async function GET(req: NextRequest) {
     where: {
       organizationId: orgId,
       createdAt: { gte: startDate },
-      action: { contains: "sync" },
+      action: { contains: 'sync' },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
   })
 
   // Calculate stats
   const totalSyncs = syncLogs.length
-  const successCount = syncLogs.filter((l) => l.status === "SUCCESS").length
-  const failedCount = syncLogs.filter((l) => l.status === "ERROR").length
+  const successCount = syncLogs.filter((l) => l.status === 'SUCCESS').length
+  const failedCount = syncLogs.filter((l) => l.status === 'ERROR').length
   const successRate = totalSyncs > 0 ? Math.round((successCount / totalSyncs) * 100) : 0
 
   // Get documents count
@@ -40,13 +40,13 @@ export async function GET(req: NextRequest) {
 
   // Get active connectors
   const activeConnectors = await prisma.connector.count({
-    where: { organizationId: orgId, status: "ACTIVE" },
+    where: { organizationId: orgId, status: 'ACTIVE' },
   })
 
   // Group by day
   const syncByDay: Record<string, number> = {}
   syncLogs.forEach((log) => {
-    const date = log.createdAt.toISOString().split("T")[0]
+    const date = log.createdAt.toISOString().split('T')[0]
     syncByDay[date] = (syncByDay[date] || 0) + 1
   })
 

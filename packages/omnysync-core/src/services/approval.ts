@@ -3,31 +3,31 @@
  * Omnysync - 2026
  */
 
-import { prisma } from "../../prisma"
-import { auditApproval } from "../audit"
-import { randomBytes } from "crypto"
+import { prisma } from "../../prisma";
+import { auditApproval } from "../audit";
+import { randomBytes } from "crypto";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export interface CreateApprovalRequest {
-  documentId: string
-  expiresIn?: number // jours, default 7
-  comments?: string
+  documentId: string;
+  expiresIn?: number; // jours, default 7
+  comments?: string;
 }
 
 export interface ApprovalResponse {
-  action: "APPROVED" | "REJECTED"
-  comments?: string
+  action: "APPROVED" | "REJECTED";
+  comments?: string;
 }
 
 export interface ApprovalRequestResult {
-  success: boolean
-  token?: string
-  expiresAt?: Date
-  approvalUrl?: string
-  error?: string
+  success: boolean;
+  token?: string;
+  expiresAt?: Date;
+  approvalUrl?: string;
+  error?: string;
 }
 
 // ============================================================================
@@ -40,7 +40,7 @@ export interface ApprovalRequestResult {
 export async function createApprovalRequest(
   organizationId: string,
   data: CreateApprovalRequest,
-  userId: string
+  userId: string,
 ): Promise<ApprovalRequestResult> {
   try {
     // Vérifier que le document existe et appartient à l'org
@@ -49,22 +49,22 @@ export async function createApprovalRequest(
         id: data.documentId,
         organizationId,
       },
-    })
+    });
 
     if (!document) {
-      return { success: false, error: "Document not found" }
+      return { success: false, error: "Document not found" };
     }
 
     if (document.status === "PUBLISHED") {
-      return { success: false, error: "Document is already published" }
+      return { success: false, error: "Document is already published" };
     }
 
     // Générer un token unique
-    const token = randomBytes(32).toString("hex")
+    const token = randomBytes(32).toString("hex");
 
     // Calculer la date d'expiration
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + (data.expiresIn || 7))
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + (data.expiresIn || 7));
 
     // Créer la demande d'approbation
     const approval = await prisma.approvalRequest.create({
@@ -76,23 +76,23 @@ export async function createApprovalRequest(
         expiresAt,
         comments: data.comments,
       },
-    })
+    });
 
-    await auditApproval.requested(organizationId, approval.id, data.documentId)
+    await auditApproval.requested(organizationId, approval.id, data.documentId);
 
     // Construire l'URL d'approbation (utilise l'URL de l'app)
-    const origin = process.env.NEXTAUTH_URL || "http://localhost:3000"
-    const approvalUrl = `${origin}/public/approval/${token}`
+    const origin = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const approvalUrl = `${origin}/public/approval/${token}`;
 
     return {
       success: true,
       token,
       expiresAt,
       approvalUrl,
-    }
+    };
   } catch (error) {
-    console.error("Create approval request failed:", error)
-    return { success: false, error: (error as Error).message }
+    console.error("Create approval request failed:", error);
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -114,10 +114,10 @@ export async function getApprovalByToken(token: string) {
         },
       },
     },
-  })
+  });
 
   if (!approval) {
-    return null
+    return null;
   }
 
   // Vérifier si expiré
@@ -126,11 +126,11 @@ export async function getApprovalByToken(token: string) {
     await prisma.approvalRequest.update({
       where: { id: approval.id },
       data: { status: "EXPIRED" },
-    })
-    return null
+    });
+    return null;
   }
 
-  return approval
+  return approval;
 }
 
 // ============================================================================
@@ -142,17 +142,17 @@ export async function getApprovalByToken(token: string) {
  */
 export async function respondToApproval(
   token: string,
-  response: ApprovalResponse
+  response: ApprovalResponse,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const approval = await getApprovalByToken(token)
+    const approval = await getApprovalByToken(token);
 
     if (!approval) {
-      return { success: false, error: "Approval request not found or expired" }
+      return { success: false, error: "Approval request not found or expired" };
     }
 
     // For anonymous approvals, use a placeholder
-    const userId = "anonymous"
+    const userId = "anonymous";
 
     // Mettre à jour la demande
     const updatedApproval = await prisma.approvalRequest.update({
@@ -163,11 +163,15 @@ export async function respondToApproval(
         approvedAt: new Date(),
         comments: response.comments,
       },
-    })
+    });
 
     // Logger l'action
     if (response.action === "APPROVED") {
-      await auditApproval.approved(approval.document.organizationId, approval.id, userId)
+      await auditApproval.approved(
+        approval.document.organizationId,
+        approval.id,
+        userId,
+      );
 
       // Si approuvé, changer le status du document et lancer le sync
       await prisma.document.update({
@@ -175,15 +179,20 @@ export async function respondToApproval(
         data: {
           status: "READY",
         },
-      })
+      });
     } else {
-      await auditApproval.rejected(approval.document.organizationId, approval.id, userId, response.comments)
+      await auditApproval.rejected(
+        approval.document.organizationId,
+        approval.id,
+        userId,
+        response.comments,
+      );
     }
 
-    return { success: true }
+    return { success: true };
   } catch (error) {
-    console.error("Respond to approval failed:", error)
-    return { success: false, error: (error as Error).message }
+    console.error("Respond to approval failed:", error);
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -198,7 +207,7 @@ export async function getApprovalsForDocument(documentId: string) {
   return prisma.approvalRequest.findMany({
     where: { documentId },
     orderBy: { createdAt: "desc" },
-  })
+  });
 }
 
 // ============================================================================
@@ -210,7 +219,7 @@ export async function getApprovalsForDocument(documentId: string) {
  */
 export async function cancelApprovalRequest(
   organizationId: string,
-  approvalId: string
+  approvalId: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const approval = await prisma.approvalRequest.findFirst({
@@ -220,24 +229,24 @@ export async function cancelApprovalRequest(
           organizationId,
         },
       },
-    })
+    });
 
     if (!approval) {
-      return { success: false, error: "Approval request not found" }
+      return { success: false, error: "Approval request not found" };
     }
 
     if (approval.status !== "PENDING") {
-      return { success: false, error: "Approval request is not pending" }
+      return { success: false, error: "Approval request is not pending" };
     }
 
     await prisma.approvalRequest.update({
       where: { id: approvalId },
       data: { status: "REJECTED" }, // Reused status for cancelled
-    })
+    });
 
-    return { success: true }
+    return { success: true };
   } catch (error) {
-    return { success: false, error: (error as Error).message }
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -251,22 +260,22 @@ export async function cancelApprovalRequest(
 export async function getApprovalsList(
   organizationId: string,
   options: {
-    status?: "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED"
-    documentId?: string
-    limit?: number
-    offset?: number
-  } = {}
+    status?: "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
+    documentId?: string;
+    limit?: number;
+    offset?: number;
+  } = {},
 ) {
-  const { status, documentId, limit = 20, offset = 0 } = options
+  const { status, documentId, limit = 20, offset = 0 } = options;
 
   const where: Record<string, unknown> = {
     document: {
       organizationId,
     },
-  }
+  };
 
-  if (status) where.status = status
-  if (documentId) where.documentId = documentId
+  if (status) where.status = status;
+  if (documentId) where.documentId = documentId;
 
   const [approvals, total] = await Promise.all([
     prisma.approvalRequest.findMany({
@@ -284,7 +293,7 @@ export async function getApprovalsList(
       },
     }),
     prisma.approvalRequest.count({ where }),
-  ])
+  ]);
 
   return {
     approvals,
@@ -294,7 +303,7 @@ export async function getApprovalsList(
       total,
       hasMore: offset + approvals.length < total,
     },
-  }
+  };
 }
 
 // ============================================================================
@@ -315,9 +324,9 @@ export async function expirePendingApprovals(): Promise<number> {
     data: {
       status: "EXPIRED",
     },
-  })
+  });
 
-  return result.count
+  return result.count;
 }
 
 // ============================================================================
@@ -328,8 +337,8 @@ export async function expirePendingApprovals(): Promise<number> {
  * Vérifie si un document peut être soumis pour approbation
  */
 export async function canSubmitForApproval(documentId: string): Promise<{
-  canSubmit: boolean
-  reason?: string
+  canSubmit: boolean;
+  reason?: string;
 }> {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
@@ -337,22 +346,25 @@ export async function canSubmitForApproval(documentId: string): Promise<{
       sourceConnector: true,
       destConnector: true,
     },
-  })
+  });
 
   if (!document) {
-    return { canSubmit: false, reason: "Document not found" }
+    return { canSubmit: false, reason: "Document not found" };
   }
 
   if (document.status === "PUBLISHED") {
-    return { canSubmit: false, reason: "Document is already published" }
+    return { canSubmit: false, reason: "Document is already published" };
   }
 
   if (document.status === "ARCHIVED") {
-    return { canSubmit: false, reason: "Document is archived" }
+    return { canSubmit: false, reason: "Document is archived" };
   }
 
   if (!document.sourceConnector || !document.destConnector) {
-    return { canSubmit: false, reason: "Document must have source and destination connectors" }
+    return {
+      canSubmit: false,
+      reason: "Document must have source and destination connectors",
+    };
   }
 
   // Vérifier s'il y a déjà une approbation en attente
@@ -364,11 +376,14 @@ export async function canSubmitForApproval(documentId: string): Promise<{
         gt: new Date(),
       },
     },
-  })
+  });
 
   if (pendingApproval) {
-    return { canSubmit: false, reason: "There is already a pending approval request" }
+    return {
+      canSubmit: false,
+      reason: "There is already a pending approval request",
+    };
   }
 
-  return { canSubmit: true }
+  return { canSubmit: true };
 }

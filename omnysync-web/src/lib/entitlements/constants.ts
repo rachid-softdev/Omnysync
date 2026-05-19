@@ -8,10 +8,10 @@
 // ============================================================================
 
 export const PLAN_KEYS = {
-  FREE: "free",
-  PRO: "pro",
-  BUSINESS: "business",
-  ENTERPRISE: "enterprise",
+  FREE: 'free',
+  PRO: 'pro',
+  BUSINESS: 'business',
+  ENTERPRISE: 'enterprise',
 } as const
 
 export type PlanKey = (typeof PLAN_KEYS)[keyof typeof PLAN_KEYS]
@@ -24,33 +24,33 @@ export const DEFAULT_PLAN = PLAN_KEYS.FREE
 
 export const FEATURE_KEYS = {
   // Boolean features
-  EXPORT_PDF: "EXPORT_PDF",
-  EXPORT_CSV: "EXPORT_CSV",
-  AI_SUMMARY: "AI_SUMMARY",
-  AI_SEO: "AI_SEO",
-  AI_IMAGES: "AI_IMAGES",
-  AI_INTERLINKING: "AI_INTERLINKING",
-  TWO_WAY_SYNC: "TWO_WAY_SYNC",
-  APPROVAL_PORTAL: "APPROVAL_PORTAL",
-  CUSTOM_DOMAIN: "CUSTOM_DOMAIN",
-  API_ACCESS: "API_ACCESS",
-  PRIORITY_SUPPORT: "PRIORITY_SUPPORT",
-  ANALYTICS_EXPORT: "ANALYTICS_EXPORT",
-  WEBHOOKS: "WEBHOOKS",
-  SCHEDULED_SYNC: "SCHEDULED_SYNC",
-  TEAM_MEMBERS: "TEAM_MEMBERS",
+  EXPORT_PDF: 'EXPORT_PDF',
+  EXPORT_CSV: 'EXPORT_CSV',
+  AI_SUMMARY: 'AI_SUMMARY',
+  AI_SEO: 'AI_SEO',
+  AI_IMAGES: 'AI_IMAGES',
+  AI_INTERLINKING: 'AI_INTERLINKING',
+  TWO_WAY_SYNC: 'TWO_WAY_SYNC',
+  APPROVAL_PORTAL: 'APPROVAL_PORTAL',
+  CUSTOM_DOMAIN: 'CUSTOM_DOMAIN',
+  API_ACCESS: 'API_ACCESS',
+  PRIORITY_SUPPORT: 'PRIORITY_SUPPORT',
+  ANALYTICS_EXPORT: 'ANALYTICS_EXPORT',
+  WEBHOOKS: 'WEBHOOKS',
+  SCHEDULED_SYNC: 'SCHEDULED_SYNC',
+  TEAM_MEMBERS: 'TEAM_MEMBERS',
 
   // Limit features
-  MAX_CONNECTORS: "MAX_CONNECTORS",
-  MAX_DOCUMENTS: "MAX_DOCUMENTS",
-  MAX_SYNCS_PER_MONTH: "MAX_SYNCS_PER_MONTH",
-  MAX_TEAM_MEMBERS: "MAX_TEAM_MEMBERS",
-  MAX_API_CALLS: "MAX_API_CALLS",
+  MAX_CONNECTORS: 'MAX_CONNECTORS',
+  MAX_DOCUMENTS: 'MAX_DOCUMENTS',
+  MAX_SYNCS_PER_MONTH: 'MAX_SYNCS_PER_MONTH',
+  MAX_TEAM_MEMBERS: 'MAX_TEAM_MEMBERS',
+  MAX_API_CALLS: 'MAX_API_CALLS',
 
   // Experiment features
-  NEW_DASHBOARD: "NEW_DASHBOARD",
-  AI_V2: "AI_V2",
-  NEW_EXPORT_UI: "NEW_EXPORT_UI",
+  NEW_DASHBOARD: 'NEW_DASHBOARD',
+  AI_V2: 'AI_V2',
+  NEW_EXPORT_UI: 'NEW_EXPORT_UI',
 } as const
 
 export type FeatureKey = (typeof FEATURE_KEYS)[keyof typeof FEATURE_KEYS]
@@ -177,25 +177,25 @@ export const CACHE_CONFIG = {
   MEMORY_TTL: 30,
 
   // Cache key prefix
-  KEY_PREFIX: "entitlements:",
+  KEY_PREFIX: 'entitlements:',
 
   // Pub/sub channel for cache invalidation
-  INVALIDATION_CHANNEL: "entitlements:invalidate",
+  INVALIDATION_CHANNEL: 'entitlements:invalidate',
 } as const
 
 // ============================================================================
 // ACTIVE SUBSCRIPTION STATUSES
 // ============================================================================
 
-export const ACTIVE_SUBSCRIPTION_STATUSES = ["ACTIVE", "TRIALING"] as const
+export const ACTIVE_SUBSCRIPTION_STATUSES = ['ACTIVE', 'TRIALING'] as const
 
 export const SUBSCRIPTION_STATUSES = {
-  ACTIVE: "ACTIVE",
-  TRIALING: "TRIALING",
-  PAST_DUE: "PAST_DUE",
-  CANCELED: "CANCELED",
-  INCOMPLETE: "INCOMPLETE",
-  INCOMPLETE_EXPIRED: "INCOMPLETE_EXPIRED",
+  ACTIVE: 'ACTIVE',
+  TRIALING: 'TRIALING',
+  PAST_DUE: 'PAST_DUE',
+  CANCELED: 'CANCELED',
+  INCOMPLETE: 'INCOMPLETE',
+  INCOMPLETE_EXPIRED: 'INCOMPLETE_EXPIRED',
 } as const
 
 // ============================================================================
@@ -203,12 +203,12 @@ export const SUBSCRIPTION_STATUSES = {
 // ============================================================================
 
 export const ERROR_MESSAGES = {
-  FEATURE_NOT_AVAILABLE: "This feature is not available on your current plan",
-  LIMIT_REACHED: "You have reached your limit for this feature",
-  SUBSCRIPTION_EXPIRED: "Your subscription has expired",
-  PLAN_REQUIRED: "This feature requires a higher plan",
-  UPGRADE_URL: "/billing/upgrade",
-  RENEW_URL: "/billing",
+  FEATURE_NOT_AVAILABLE: 'This feature is not available on your current plan',
+  LIMIT_REACHED: 'You have reached your limit for this feature',
+  SUBSCRIPTION_EXPIRED: 'Your subscription has expired',
+  PLAN_REQUIRED: 'This feature requires a higher plan',
+  UPGRADE_URL: '/billing/upgrade',
+  RENEW_URL: '/billing',
 } as const
 
 // ============================================================================
@@ -217,7 +217,7 @@ export const ERROR_MESSAGES = {
 
 export const EXPERIMENT_DEFAULTS = {
   DEFAULT_PERCENTAGE: 0,
-  SEED_PREFIX: "omnysync:experiment:",
+  SEED_PREFIX: 'omnysync:experiment:',
 } as const
 
 // ============================================================================
@@ -234,16 +234,16 @@ export const PAGINATION_DEFAULTS = {
 // DOWNGRADE STRATEGY DEFAULTS
 // ============================================================================
 
-export const DEFAULT_DOWNGRADE_STRATEGY = "GRACEFUL" as const
+export const DEFAULT_DOWNGRADE_STRATEGY = 'GRACEFUL' as const
 
 // ============================================================================
 // STRIPE PRICE IDS (for reference)
 // ============================================================================
 
 export const STRIPE_PRICE_IDS = {
-  FREE: "price_free",
-  PRO_MONTHLY: "price_pro_monthly",
-  PRO_YEARLY: "price_pro_yearly",
-  BUSINESS_MONTHLY: "price_business_monthly",
-  BUSINESS_YEARLY: "price_business_yearly",
+  FREE: 'price_free',
+  PRO_MONTHLY: 'price_pro_monthly',
+  PRO_YEARLY: 'price_pro_yearly',
+  BUSINESS_MONTHLY: 'price_business_monthly',
+  BUSINESS_YEARLY: 'price_business_yearly',
 } as const

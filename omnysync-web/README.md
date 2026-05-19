@@ -44,14 +44,14 @@ cp .env.example .env.local
 
 Variables requises :
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | URL de connexion PostgreSQL |
-| `NEXTAUTH_SECRET` | Secret NextAuth (`openssl rand -base64 32`) |
-| `NEXTAUTH_URL` | URL de l'application (`http://localhost:3000`) |
-| `GOOGLE_CLIENT_ID` | Client ID Google OAuth |
-| `GOOGLE_CLIENT_SECRET` | Client Secret Google OAuth |
-| `ENCRYPTION_KEY` | Clé de chiffrement AES-256 (32+ caractères) |
+| Variable               | Description                                    |
+| ---------------------- | ---------------------------------------------- |
+| `DATABASE_URL`         | URL de connexion PostgreSQL                    |
+| `NEXTAUTH_SECRET`      | Secret NextAuth (`openssl rand -base64 32`)    |
+| `NEXTAUTH_URL`         | URL de l'application (`http://localhost:3000`) |
+| `GOOGLE_CLIENT_ID`     | Client ID Google OAuth                         |
+| `GOOGLE_CLIENT_SECRET` | Client Secret Google OAuth                     |
+| `ENCRYPTION_KEY`       | Clé de chiffrement AES-256 (32+ caractères)    |
 
 ## Base de données
 

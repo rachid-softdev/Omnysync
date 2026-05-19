@@ -1,34 +1,34 @@
-import { MetadataRoute } from "next"
+import { MetadataRoute } from 'next'
 
-const baseUrl = process.env.NEXTAUTH_URL || "https://omnysync.com"
+const baseUrl = process.env.NEXTAUTH_URL || 'https://omnysync.com'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date()
-  
+
   // Static pages
   const staticPages = [
     {
       url: baseUrl,
       lastModified: now,
-      changeFrequency: "daily" as const,
+      changeFrequency: 'daily' as const,
       priority: 1,
     },
     {
       url: `${baseUrl}/pricing`,
       lastModified: now,
-      changeFrequency: "monthly" as const,
+      changeFrequency: 'monthly' as const,
       priority: 0.8,
     },
     {
       url: `${baseUrl}/auth/signin`,
       lastModified: now,
-      changeFrequency: "monthly" as const,
+      changeFrequency: 'monthly' as const,
       priority: 0.5,
     },
     {
       url: `${baseUrl}/blog`,
       lastModified: now,
-      changeFrequency: "weekly" as const,
+      changeFrequency: 'weekly' as const,
       priority: 0.7,
     },
   ]

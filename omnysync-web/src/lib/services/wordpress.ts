@@ -1,14 +1,14 @@
-import { prisma } from "@/lib/prisma"
-import { ERR_UPLOAD_MEDIA } from "@/lib/errors"
-import { encrypt } from "@/lib/crypto"
-import { fetchWithRetry } from "@/lib/http-client"
+import { prisma } from '@/lib/prisma'
+import { ERR_UPLOAD_MEDIA } from '@/lib/errors'
+import { encrypt } from '@/lib/crypto'
+import { fetchWithRetry } from '@/lib/http-client'
 
 export interface WordPressPost {
   id?: number
   title: string
   content: string
   excerpt?: string
-  status: "draft" | "publish" | "pending" | "future"
+  status: 'draft' | 'publish' | 'pending' | 'future'
   categories?: number[]
   tags?: number[]
   featured_media?: number
@@ -28,11 +28,11 @@ export interface WordPressTag {
 }
 
 export function createWordPressClient(siteUrl: string, username: string, password: string) {
-  const baseUrl = siteUrl.replace(/\/$/, "")
-  
+  const baseUrl = siteUrl.replace(/\/$/, '')
+
   const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`,
+    'Content-Type': 'application/json',
+    Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`,
   }
 
   async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -44,23 +44,23 @@ export function createWordPressClient(siteUrl: string, username: string, passwor
 
   return {
     async getCategories(): Promise<WordPressCategory[]> {
-      return request<WordPressCategory[]>("/categories?per_page=100")
+      return request<WordPressCategory[]>('/categories?per_page=100')
     },
 
     async getTags(): Promise<WordPressTag[]> {
-      return request<WordPressTag[]>("/tags?per_page=100")
+      return request<WordPressTag[]>('/tags?per_page=100')
     },
 
     async createPost(post: WordPressPost): Promise<{ id: number }> {
-      return request<{ id: number }>("/posts", {
-        method: "POST",
+      return request<{ id: number }>('/posts', {
+        method: 'POST',
         body: JSON.stringify(post),
       })
     },
 
     async updatePost(postId: number, post: Partial<WordPressPost>): Promise<{ id: number }> {
       return request<{ id: number }>(`/posts/${postId}`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify(post),
       })
     },
@@ -69,13 +69,16 @@ export function createWordPressClient(siteUrl: string, username: string, passwor
       return request<WordPressPost & { id: number }>(`/posts/${postId}`)
     },
 
-    async uploadMedia(media: { file: Blob; title: string }): Promise<{ id: number; source_url: string }> {
+    async uploadMedia(media: {
+      file: Blob
+      title: string
+    }): Promise<{ id: number; source_url: string }> {
       const formData = new FormData()
-      formData.append("file", media.file)
-      formData.append("title", media.title)
+      formData.append('file', media.file)
+      formData.append('title', media.title)
 
       const response = await fetch(`${baseUrl}/wp-json/wp/v2/media`, {
-        method: "POST",
+        method: 'POST',
         headers: {
           Authorization: headers.Authorization,
         },
@@ -90,7 +93,7 @@ export function createWordPressClient(siteUrl: string, username: string, passwor
     },
 
     async getUsers(): Promise<{ id: number; name: string }[]> {
-      return request<{ id: number; name: string }[]>("/users?per_page=100")
+      return request<{ id: number; name: string }[]>('/users?per_page=100')
     },
   }
 }
@@ -102,16 +105,16 @@ export async function saveWordPressConnector(
   username: string,
   password: string
 ) {
-  const rawCredentials = Buffer.from(`${username}:${password}`).toString("base64")
+  const rawCredentials = Buffer.from(`${username}:${password}`).toString('base64')
   const encryptedCredentials = encrypt(rawCredentials)
 
   return prisma.connector.create({
     data: {
       userId,
       organizationId,
-      type: "WORDPRESS",
+      type: 'WORDPRESS',
       name: `WordPress - ${new URL(siteUrl).hostname}`,
-      status: "ACTIVE",
+      status: 'ACTIVE',
       config: { siteUrl },
       credentials: encryptedCredentials,
     },

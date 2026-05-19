@@ -4,19 +4,19 @@
  * POST /admin/plans - Create a new plan
  */
 
-import { NextRequest, NextResponse } from "next/server"
-import { getEntitlementRepository } from "@/lib/entitlements/EntitlementRepository"
-import { prisma } from "@/lib/prisma"
-import { PAGINATION_DEFAULTS } from "@/lib/entitlements/constants"
+import { NextRequest, NextResponse } from 'next/server'
+import { getEntitlementRepository } from '@/lib/entitlements/EntitlementRepository'
+import { prisma } from '@/lib/prisma'
+import { PAGINATION_DEFAULTS } from '@/lib/entitlements/constants'
 
-export const runtime = "nodejs"
-export const dynamic = "force-dynamic"
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 // Check admin role (implementation depends on your auth)
 async function requireAdmin(request: NextRequest): Promise<string | null> {
-  const adminHeader = request.headers.get("x-admin-role")
-  if (adminHeader === "admin") {
-    return "admin"
+  const adminHeader = request.headers.get('x-admin-role')
+  if (adminHeader === 'admin') {
+    return 'admin'
   }
   return null
 }
@@ -29,13 +29,16 @@ export async function GET(request: NextRequest) {
   try {
     const isAdmin = await requireAdmin(request)
     if (!isAdmin) {
-      return NextResponse.json({ error: "FORBIDDEN", message: "Admin access required" }, { status: 403 })
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Admin access required' },
+        { status: 403 }
+      )
     }
 
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get("page") || "1")
+    const page = parseInt(searchParams.get('page') || '1')
     const limit = Math.min(
-      parseInt(searchParams.get("limit") || "20"),
+      parseInt(searchParams.get('limit') || '20'),
       PAGINATION_DEFAULTS.MAX_LIMIT
     )
 
@@ -59,8 +62,11 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("[Admin Plans GET] Error:", error)
-    return NextResponse.json({ error: "INTERNAL_ERROR", message: "Failed to fetch plans" }, { status: 500 })
+    console.error('[Admin Plans GET] Error:', error)
+    return NextResponse.json(
+      { error: 'INTERNAL_ERROR', message: 'Failed to fetch plans' },
+      { status: 500 }
+    )
   }
 }
 
@@ -72,20 +78,29 @@ export async function POST(request: NextRequest) {
   try {
     const isAdmin = await requireAdmin(request)
     if (!isAdmin) {
-      return NextResponse.json({ error: "FORBIDDEN", message: "Admin access required" }, { status: 403 })
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Admin access required' },
+        { status: 403 }
+      )
     }
 
     const body = await request.json()
     const { key, name, priceMonthly, priceYearly, isActive, sortOrder } = body
 
     if (!key || !name) {
-      return NextResponse.json({ error: "VALIDATION_ERROR", message: "key and name are required" }, { status: 400 })
+      return NextResponse.json(
+        { error: 'VALIDATION_ERROR', message: 'key and name are required' },
+        { status: 400 }
+      )
     }
 
     // Check if key already exists
     const existing = await prisma.plan.findUnique({ where: { key } })
     if (existing) {
-      return NextResponse.json({ error: "DUPLICATE_KEY", message: `Plan '${key}' already exists` }, { status: 409 })
+      return NextResponse.json(
+        { error: 'DUPLICATE_KEY', message: `Plan '${key}' already exists` },
+        { status: 409 }
+      )
     }
 
     const plan = await prisma.plan.create({
@@ -101,7 +116,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(plan, { status: 201 })
   } catch (error) {
-    console.error("[Admin Plans POST] Error:", error)
-    return NextResponse.json({ error: "INTERNAL_ERROR", message: "Failed to create plan" }, { status: 500 })
+    console.error('[Admin Plans POST] Error:', error)
+    return NextResponse.json(
+      { error: 'INTERNAL_ERROR', message: 'Failed to create plan' },
+      { status: 500 }
+    )
   }
 }

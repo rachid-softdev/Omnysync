@@ -1,5 +1,5 @@
-import { decrypt } from "@/lib/crypto"
-import { prisma } from "@/lib/prisma"
+import { decrypt } from '@/lib/crypto'
+import { prisma } from '@/lib/prisma'
 
 export async function uploadImageToDestination(
   imageUrl: string,
@@ -20,43 +20,43 @@ export async function uploadImageToDestination(
   const buffer = Buffer.from(arrayBuffer)
   const filename = `omnysync-${Date.now()}.png`
 
-  const rawCredentials = decrypt(document.destConnector.credentials || "")
+  const rawCredentials = decrypt(document.destConnector.credentials || '')
   const config = (document.destConnector.config || {}) as Record<string, any>
 
   try {
-    if (document.destConnector.type === "WORDPRESS") {
-      const { createWordPressClient } = await import("./wordpress")
-      const creds = Buffer.from(rawCredentials, "base64").toString().split(":")
+    if (document.destConnector.type === 'WORDPRESS') {
+      const { createWordPressClient } = await import('./wordpress')
+      const creds = Buffer.from(rawCredentials, 'base64').toString().split(':')
       const client = createWordPressClient(config.siteUrl, creds[0], creds[1])
 
-      const blob = new Blob([buffer], { type: "image/png" })
+      const blob = new Blob([buffer], { type: 'image/png' })
       const result = await client.uploadMedia({ file: blob, title: filename })
       return result.source_url
     }
 
-    if (document.destConnector.type === "GHOST") {
-      const { createGhostClient } = await import("./ghost")
+    if (document.destConnector.type === 'GHOST') {
+      const { createGhostClient } = await import('./ghost')
       const client = createGhostClient(config.siteUrl, rawCredentials)
 
-      const blob = new Blob([buffer], { type: "image/png" })
+      const blob = new Blob([buffer], { type: 'image/png' })
       const result = await client.uploadImage({ file: blob, filename })
       return result.images?.[0]?.url || null
     }
 
-    if (document.destConnector.type === "WEBFLOW") {
-      const { createWebflowClient } = await import("./webflow")
+    if (document.destConnector.type === 'WEBFLOW') {
+      const { createWebflowClient } = await import('./webflow')
       const client = createWebflowClient(rawCredentials, config.siteId)
 
-      const blob = new Blob([buffer], { type: "image/png" })
+      const blob = new Blob([buffer], { type: 'image/png' })
       const result = await client.uploadMedia(blob, filename)
       return result.url
     }
 
-    if (document.destConnector.type === "SHOPIFY") {
-      const { createShopifyClient } = await import("./shopify")
+    if (document.destConnector.type === 'SHOPIFY') {
+      const { createShopifyClient } = await import('./shopify')
       const client = createShopifyClient(config.shopDomain, rawCredentials)
 
-      const base64 = buffer.toString("base64")
+      const base64 = buffer.toString('base64')
       const result = await client.uploadImage({ attachment: base64, filename })
       return result.asset?.src || null
     }
@@ -67,9 +67,7 @@ export async function uploadImageToDestination(
   return null
 }
 
-export async function uploadAllImages(
-  documentId: string
-): Promise<string[]> {
+export async function uploadAllImages(documentId: string): Promise<string[]> {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
   })

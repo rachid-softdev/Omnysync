@@ -1,2 +1,8 @@
-export { useEntitlements, useFeature, useLimit, FeatureGuard, UsageBar } from "./useEntitlements"
-export { useIsMobile } from "./useMobile"
+export {
+  useEntitlements,
+  useFeature,
+  useLimit,
+  FeatureGuard,
+  UsageBar,
+} from "./useEntitlements";
+export { useIsMobile } from "./useMobile";

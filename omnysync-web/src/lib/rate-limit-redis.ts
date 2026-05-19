@@ -3,8 +3,8 @@
  * Alternative au rate limiting in-memory pour la production
  */
 
-import { NextRequest, NextResponse } from "next/server"
-import { Redis } from "@upstash/redis"
+import { NextRequest, NextResponse } from 'next/server'
+import { Redis } from '@upstash/redis'
 
 export const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute
 export const RATE_LIMIT_MAX = 30 // requests per window
@@ -21,24 +21,26 @@ const redis = process.env.UPSTASH_REDIS_REST_URL
  * Extract client IP from request headers
  */
 export function getClientIp(request: NextRequest): string {
-  const forwarded = request.headers.get("x-forwarded-for")
-  const realIp = request.headers.get("x-real-ip")
+  const forwarded = request.headers.get('x-forwarded-for')
+  const realIp = request.headers.get('x-real-ip')
 
   if (forwarded) {
-    return forwarded.split(",")[0].trim()
+    return forwarded.split(',')[0].trim()
   }
 
-  return realIp ?? request.headers.get("cf-connecting-ip") ?? "unknown"
+  return realIp ?? request.headers.get('cf-connecting-ip') ?? 'unknown'
 }
 
 /**
  * Rate limit check using Redis
  * Uses INCR with automatic key expiration
  */
-export async function rateLimitRedis(request: NextRequest): Promise<{ allowed: boolean; remainingTime?: number }> {
+export async function rateLimitRedis(
+  request: NextRequest
+): Promise<{ allowed: boolean; remainingTime?: number }> {
   if (!redis) {
     // Fallback to in-memory if Redis not configured
-    console.warn("Redis not configured, falling back to in-memory rate limiting")
+    console.warn('Redis not configured, falling back to in-memory rate limiting')
     return { allowed: true }
   }
 
@@ -66,7 +68,7 @@ export async function rateLimitRedis(request: NextRequest): Promise<{ allowed: b
 
     return { allowed: true }
   } catch (error) {
-    console.error("Redis rate limit error:", error)
+    console.error('Redis rate limit error:', error)
     // Fail open if Redis fails
     return { allowed: true }
   }
@@ -78,14 +80,14 @@ export async function rateLimitRedis(request: NextRequest): Promise<{ allowed: b
 export function createRateLimitResponse(remainingTime: number): NextResponse {
   const retryAfter = Math.ceil((remainingTime || 1000) / 1000)
   return NextResponse.json(
-    { error: "Too many requests", message: "Rate limit exceeded. Please try again later." },
+    { error: 'Too many requests', message: 'Rate limit exceeded. Please try again later.' },
     {
       status: 429,
       headers: {
-        "Retry-After": String(retryAfter),
-        "X-RateLimit-Limit": String(RATE_LIMIT_MAX),
-        "X-RateLimit-Remaining": "0",
-        "X-RateLimit-Reset": String(Date.now() + remainingTime),
+        'Retry-After': String(retryAfter),
+        'X-RateLimit-Limit': String(RATE_LIMIT_MAX),
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset': String(Date.now() + remainingTime),
       },
     }
   )
@@ -110,7 +112,7 @@ export async function checkRateLimitRedis(request: NextRequest): Promise<NextRes
 export function withRateLimitRedis<T extends (req: NextRequest) => Promise<NextResponse>>(
   handler: T
 ): T {
-  return (async function (req: NextRequest): Promise<NextResponse> {
+  return async function (req: NextRequest): Promise<NextResponse> {
     const rateLimitResult = await rateLimitRedis(req)
 
     if (!rateLimitResult.allowed) {
@@ -118,5 +120,5 @@ export function withRateLimitRedis<T extends (req: NextRequest) => Promise<NextR
     }
 
     return handler(req)
-  }) as T
+  } as T
 }

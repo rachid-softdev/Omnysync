@@ -12,11 +12,11 @@ export const PLAN_KEYS = {
   PRO: "pro",
   BUSINESS: "business",
   ENTERPRISE: "enterprise",
-} as const
+} as const;
 
-export type PlanKey = (typeof PLAN_KEYS)[keyof typeof PLAN_KEYS]
+export type PlanKey = (typeof PLAN_KEYS)[keyof typeof PLAN_KEYS];
 
-export const DEFAULT_PLAN = PLAN_KEYS.FREE
+export const DEFAULT_PLAN = PLAN_KEYS.FREE;
 
 // ============================================================================
 // FEATURE KEYS
@@ -51,15 +51,18 @@ export const FEATURE_KEYS = {
   NEW_DASHBOARD: "NEW_DASHBOARD",
   AI_V2: "AI_V2",
   NEW_EXPORT_UI: "NEW_EXPORT_UI",
-} as const
+} as const;
 
-export type FeatureKey = (typeof FEATURE_KEYS)[keyof typeof FEATURE_KEYS]
+export type FeatureKey = (typeof FEATURE_KEYS)[keyof typeof FEATURE_KEYS];
 
 // ============================================================================
 // DEFAULT PLAN CONFIGURATION
 // ============================================================================
 
-export const DEFAULT_PLAN_FEATURES: Record<PlanKey, Record<string, boolean | number>> = {
+export const DEFAULT_PLAN_FEATURES: Record<
+  PlanKey,
+  Record<string, boolean | number>
+> = {
   free: {
     // Boolean features
     [FEATURE_KEYS.EXPORT_PDF]: false,
@@ -163,7 +166,7 @@ export const DEFAULT_PLAN_FEATURES: Record<PlanKey, Record<string, boolean | num
     [FEATURE_KEYS.MAX_TEAM_MEMBERS]: -1,
     [FEATURE_KEYS.MAX_API_CALLS]: -1,
   },
-}
+};
 
 // ============================================================================
 // CACHE CONFIGURATION
@@ -181,13 +184,13 @@ export const CACHE_CONFIG = {
 
   // Pub/sub channel for cache invalidation
   INVALIDATION_CHANNEL: "entitlements:invalidate",
-} as const
+} as const;
 
 // ============================================================================
 // ACTIVE SUBSCRIPTION STATUSES
 // ============================================================================
 
-export const ACTIVE_SUBSCRIPTION_STATUSES = ["ACTIVE", "TRIALING"] as const
+export const ACTIVE_SUBSCRIPTION_STATUSES = ["ACTIVE", "TRIALING"] as const;
 
 export const SUBSCRIPTION_STATUSES = {
   ACTIVE: "ACTIVE",
@@ -196,7 +199,7 @@ export const SUBSCRIPTION_STATUSES = {
   CANCELED: "CANCELED",
   INCOMPLETE: "INCOMPLETE",
   INCOMPLETE_EXPIRED: "INCOMPLETE_EXPIRED",
-} as const
+} as const;
 
 // ============================================================================
 // ERROR MESSAGES
@@ -209,7 +212,7 @@ export const ERROR_MESSAGES = {
   PLAN_REQUIRED: "This feature requires a higher plan",
   UPGRADE_URL: "/billing/upgrade",
   RENEW_URL: "/billing",
-} as const
+} as const;
 
 // ============================================================================
 // EXPERIMENT DEFAULTS
@@ -218,7 +221,7 @@ export const ERROR_MESSAGES = {
 export const EXPERIMENT_DEFAULTS = {
   DEFAULT_PERCENTAGE: 0,
   SEED_PREFIX: "omnysync:experiment:",
-} as const
+} as const;
 
 // ============================================================================
 // PAGINATION DEFAULTS
@@ -228,13 +231,13 @@ export const PAGINATION_DEFAULTS = {
   DEFAULT_PAGE: 1,
   DEFAULT_LIMIT: 20,
   MAX_LIMIT: 100,
-} as const
+} as const;
 
 // ============================================================================
 // DOWNGRADE STRATEGY DEFAULTS
 // ============================================================================
 
-export const DEFAULT_DOWNGRADE_STRATEGY = "GRACEFUL" as const
+export const DEFAULT_DOWNGRADE_STRATEGY = "GRACEFUL" as const;
 
 // ============================================================================
 // STRIPE PRICE IDS (for reference)
@@ -246,4 +249,4 @@ export const STRIPE_PRICE_IDS = {
   PRO_YEARLY: "price_pro_yearly",
   BUSINESS_MONTHLY: "price_business_monthly",
   BUSINESS_YEARLY: "price_business_yearly",
-} as const
+} as const;

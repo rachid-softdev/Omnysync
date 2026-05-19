@@ -1,21 +1,23 @@
 /**
  * Service de vérification d'email
  */
-import { prisma } from "../../prisma"
-import { sendEmail } from "../email"
-import { randomBytes } from "crypto"
+import { prisma } from "../../prisma";
+import { sendEmail } from "../email";
+import { randomBytes } from "crypto";
 
-const VERIFICATION_TOKEN_EXPIRY_DAYS = 7
+const VERIFICATION_TOKEN_EXPIRY_DAYS = 7;
 
 /**
  * Génère un token de vérification d'email
  */
 export async function createEmailVerification(
   userId: string,
-  email: string
+  email: string,
 ): Promise<string> {
-  const token = randomBytes(32).toString("hex")
-  const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000)
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = new Date(
+    Date.now() + VERIFICATION_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+  );
 
   await prisma.emailVerification.create({
     data: {
@@ -24,9 +26,9 @@ export async function createEmailVerification(
       token,
       expiresAt,
     },
-  })
+  });
 
-  return token
+  return token;
 }
 
 /**
@@ -35,11 +37,11 @@ export async function createEmailVerification(
 export async function sendVerificationEmail(
   userId: string,
   email: string,
-  name?: string
+  name?: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const token = await createEmailVerification(userId, email)
+  const token = await createEmailVerification(userId, email);
 
-  const verifyUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}`
+  const verifyUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}`;
 
   try {
     await sendEmail({
@@ -58,47 +60,49 @@ export async function sendVerificationEmail(
           </p>
         </div>
       `,
-    })
+    });
 
-    return { success: true }
+    return { success: true };
   } catch (error) {
-    console.error("Failed to send verification email:", error)
-    return { success: false, error: "Échec de l'envoi de l'email" }
+    console.error("Failed to send verification email:", error);
+    return { success: false, error: "Échec de l'envoi de l'email" };
   }
 }
 
 /**
  * Valide un token de vérification
  */
-export async function verifyEmail(token: string): Promise<{ success: boolean; error?: string }> {
+export async function verifyEmail(
+  token: string,
+): Promise<{ success: boolean; error?: string }> {
   const verification = await prisma.emailVerification.findUnique({
     where: { token },
     include: { user: true },
-  })
+  });
 
   if (!verification) {
-    return { success: false, error: "Token invalide" }
+    return { success: false, error: "Token invalide" };
   }
 
   if (verification.verifiedAt) {
-    return { success: false, error: "Email déjà vérifié" }
+    return { success: false, error: "Email déjà vérifié" };
   }
 
   if (verification.expiresAt < new Date()) {
-    return { success: false, error: "Token expiré" }
+    return { success: false, error: "Token expiré" };
   }
 
   // Marquer comme vérifié
   await prisma.emailVerification.update({
     where: { id: verification.id },
     data: { verifiedAt: new Date() },
-  })
+  });
 
   // Mettre à jour l'utilisateur
   await prisma.user.update({
     where: { id: verification.userId },
     data: { emailVerified: new Date() },
-  })
+  });
 
   // Audit log
   await prisma.auditLog.create({
@@ -110,25 +114,27 @@ export async function verifyEmail(token: string): Promise<{ success: boolean; er
       targetId: verification.userId,
       details: { email: verification.email },
     },
-  })
+  });
 
-  return { success: true }
+  return { success: true };
 }
 
 /**
  * Renvoyer le token de vérification
  */
-export async function resendVerificationEmail(userId: string): Promise<{ success: boolean; message: string }> {
+export async function resendVerificationEmail(
+  userId: string,
+): Promise<{ success: boolean; message: string }> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-  })
+  });
 
   if (!user || !user.email) {
-    return { success: false, message: "Utilisateur non trouvé" }
+    return { success: false, message: "Utilisateur non trouvé" };
   }
 
   if (user.emailVerified) {
-    return { success: false, message: "Email déjà vérifié" }
+    return { success: false, message: "Email déjà vérifié" };
   }
 
   // Vérifier si un token recent existe
@@ -140,15 +146,18 @@ export async function resendVerificationEmail(userId: string): Promise<{ success
       expiresAt: { gt: new Date() },
     },
     orderBy: { createdAt: "desc" },
-  })
+  });
 
   if (existing) {
     // Checker si moins de 1 heure
-    const hourAgo = new Date(Date.now() - 60 * 60 * 1000)
+    const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
     if (existing.createdAt > hourAgo) {
-      return { success: false, message: "Email déjà envoyé récemment. Vérifiez votre boîte mail." }
+      return {
+        success: false,
+        message: "Email déjà envoyé récemment. Vérifiez votre boîte mail.",
+      };
     }
   }
 
-  return sendVerificationEmail(userId, user.email, user.name || undefined)
+  return sendVerificationEmail(userId, user.email, user.name || undefined);
 }

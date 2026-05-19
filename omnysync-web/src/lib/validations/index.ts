@@ -3,7 +3,7 @@
  * Omnysync - 2026
  */
 
-import { z } from "zod"
+import { z } from 'zod'
 
 // ============================================================================
 // COMMON SCHEMAS
@@ -33,18 +33,18 @@ export const urlSchema = z.string().url().optional()
 
 /** Types de connecteurs */
 export const connectorTypes = [
-  "GOOGLE_DOCS",
-  "NOTION", 
-  "WORDPRESS",
-  "GHOST",
-  "WEBFLOW",
-  "SHOPIFY",
-  "AIRTABLE",
-  "CONTENTFUL",
-  "MEDIUM",
+  'GOOGLE_DOCS',
+  'NOTION',
+  'WORDPRESS',
+  'GHOST',
+  'WEBFLOW',
+  'SHOPIFY',
+  'AIRTABLE',
+  'CONTENTFUL',
+  'MEDIUM',
 ] as const
 
-export type ConnectorType = typeof connectorTypes[number]
+export type ConnectorType = (typeof connectorTypes)[number]
 
 /** Création d'un connecteur */
 export const createConnectorSchema = z.object({
@@ -57,7 +57,7 @@ export const createConnectorSchema = z.object({
 /** Mise à jour d'un connecteur */
 export const updateConnectorSchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  status: z.enum(["ACTIVE", "DISCONNECTED", "ERROR"]).optional(),
+  status: z.enum(['ACTIVE', 'DISCONNECTED', 'ERROR']).optional(),
   credentials: z.record(z.string()).optional(),
   config: z.record(z.unknown()).optional(),
 })
@@ -123,7 +123,7 @@ export type UpdateConnectorInput = z.infer<typeof updateConnectorSchema>
 // ============================================================================
 
 /** Status de document */
-export const documentStatusEnum = ["DRAFT", "READY", "PUBLISHED", "ARCHIVED"] as const
+export const documentStatusEnum = ['DRAFT', 'READY', 'PUBLISHED', 'ARCHIVED'] as const
 
 /** Création d'un document */
 export const createDocumentSchema = z.object({
@@ -135,7 +135,7 @@ export const createDocumentSchema = z.object({
   htmlContent: z.string().optional(),
   excerpt: z.string().max(500).optional(),
   featuredImage: urlSchema.optional(),
-  status: z.enum(documentStatusEnum).default("DRAFT"),
+  status: z.enum(documentStatusEnum).default('DRAFT'),
   categories: z.array(z.string()).default([]),
   tags: z.array(z.string()).default([]),
   author: z.string().optional(),
@@ -152,7 +152,7 @@ export const updateDocumentSchema = z.object({
   excerpt: z.string().max(500).optional(),
   featuredImage: urlSchema.optional(),
   status: z.enum(documentStatusEnum).optional(),
-  syncStatus: z.enum(["NOT_SYNCED", "SYNCING", "SYNCED", "FAILED"]).optional(),
+  syncStatus: z.enum(['NOT_SYNCED', 'SYNCING', 'SYNCED', 'FAILED']).optional(),
   categories: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
   author: z.string().optional(),
@@ -160,13 +160,13 @@ export const updateDocumentSchema = z.object({
   seoDescription: z.string().max(160).optional(),
   seoKeywords: z.array(z.string()).optional(),
   autoSyncEnabled: z.boolean().optional(),
-  syncFrequency: z.enum(["MANUAL", "DAILY", "WEEKLY", "MONTHLY"]).optional(),
+  syncFrequency: z.enum(['MANUAL', 'DAILY', 'WEEKLY', 'MONTHLY']).optional(),
 })
 
 /** Query de documents */
 export const documentQuerySchema = paginationSchema.extend({
   status: z.enum(documentStatusEnum).optional(),
-  syncStatus: z.enum(["NOT_SYNCED", "SYNCING", "SYNCED", "FAILED"]).optional(),
+  syncStatus: z.enum(['NOT_SYNCED', 'SYNCING', 'SYNCED', 'FAILED']).optional(),
   sourceConnectorId: uuidSchema.optional(),
   destConnectorId: uuidSchema.optional(),
   search: z.string().optional(),
@@ -191,7 +191,7 @@ export const createSyncSchema = z.object({
 /** Planification d'un sync */
 export const scheduleSyncSchema = z.object({
   documentId: uuidSchema,
-  frequency: z.enum(["DAILY", "WEEKLY", "MONTHLY"]),
+  frequency: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']),
 })
 
 /** Vérification changements distants */
@@ -202,7 +202,7 @@ export const checkRemoteSchema = z.object({
 /** Résolution de conflit */
 export const resolveConflictSchema = z.object({
   documentId: uuidSchema,
-  direction: z.enum(["source-wins", "dest-wins", "manual"]),
+  direction: z.enum(['source-wins', 'dest-wins', 'manual']),
   content: z.string().optional(),
 })
 
@@ -215,7 +215,7 @@ export const createApprovalRequestSchema = z.object({
 
 /** Réponse approbation */
 export const approvalResponseSchema = z.object({
-  action: z.enum(["APPROVED", "REJECTED"]),
+  action: z.enum(['APPROVED', 'REJECTED']),
   comments: z.string().max(500).optional(),
 })
 
@@ -229,12 +229,12 @@ export type CreateApprovalRequestInput = z.infer<typeof createApprovalRequestSch
 // ============================================================================
 
 /** Rôles d'organisation */
-export const organizationRoleEnum = ["OWNER", "ADMIN", "MEMBER"] as const
+export const organizationRoleEnum = ['OWNER', 'ADMIN', 'MEMBER'] as const
 
 /** Invitation membre */
 export const inviteMemberSchema = z.object({
   email: emailSchema,
-  role: z.enum(organizationRoleEnum).default("MEMBER"),
+  role: z.enum(organizationRoleEnum).default('MEMBER'),
 })
 
 /** Mise à jour rôle */
@@ -302,33 +302,30 @@ export function validate<T>(
   data: unknown
 ): { success: true; data: T } | { success: false; error: string } {
   const result = schema.safeParse(data)
-  
+
   if (result.success) {
     return { success: true, data: result.data }
   }
-  
-  const errors = result.error.errors.map(e => `${e.path.join(".")}: ${e.message}`).join(", ")
+
+  const errors = result.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ')
   return { success: false, error: errors }
 }
 
 /**
  * Middleware de validation pour Next.js API routes
  */
-export function withValidation<T>(
-  schema: z.ZodSchema<T>,
-  handler: (data: T) => Promise<Response>
-) {
+export function withValidation<T>(schema: z.ZodSchema<T>, handler: (data: T) => Promise<Response>) {
   return async (request: Request): Promise<Response> => {
     const body = await request.json().catch(() => ({}))
     const validation = validate(schema, body)
-    
+
     if (!validation.success) {
       return Response.json(
-        { error: "Validation failed", details: validation.error },
+        { error: 'Validation failed', details: validation.error },
         { status: 400 }
       )
     }
-    
+
     return handler(validation.data)
   }
 }
@@ -342,11 +339,11 @@ export function validateQuery<T>(
 ): { success: true; data: T } | { success: false; error: string } {
   const params = Object.fromEntries(new URL(url).searchParams)
   const result = schema.safeParse(params)
-  
+
   if (result.success) {
     return { success: true, data: result.data }
   }
-  
-  const errors = result.error.errors.map(e => `${e.path.join(".")}: ${e.message}`).join(", ")
+
+  const errors = result.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ')
   return { success: false, error: errors }
 }

@@ -19,6 +19,7 @@ Use for a quick website data pull on a competitor, or as a first step before dee
 ### Step 1: Gather Inputs
 
 Ask the user for:
+
 1. **Competitor name** — the company to analyze
 2. **Competitor URL** — their homepage URL
 3. **Specific sections to focus on** (optional) — default: all 5
@@ -33,14 +34,14 @@ Confirm you have competitor name and URL. Fetch the homepage to verify it's reac
 
 Fetch up to 6 pages. Adapt URLs based on what the site actually has — not every site uses the same paths.
 
-| Page | Typical URLs to Try | What to Extract |
-|------|---------------------|-----------------|
-| Homepage | `/` | Tagline, headline, value prop, target audience signals, trust badges, social proof |
-| Pricing | `/pricing`, `/plans` | Model, tiers, price points, value metric, free tier, annual discount, trial, feature-by-tier gating |
-| Features | `/features`, `/product` | Key features, integrations, platform capabilities |
-| About | `/about`, `/about-us`, `/company` | Founded, team size signals, stage/funding signals, mission |
-| Customers | `/customers`, `/case-studies` | Customer logos, testimonials, case study count, industries served |
-| Careers | `/careers`, `/jobs`, `/about/careers` | Open roles by department, total headcount signals, strategic hiring patterns |
+| Page      | Typical URLs to Try                   | What to Extract                                                                                     |
+| --------- | ------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Homepage  | `/`                                   | Tagline, headline, value prop, target audience signals, trust badges, social proof                  |
+| Pricing   | `/pricing`, `/plans`                  | Model, tiers, price points, value metric, free tier, annual discount, trial, feature-by-tier gating |
+| Features  | `/features`, `/product`               | Key features, integrations, platform capabilities                                                   |
+| About     | `/about`, `/about-us`, `/company`     | Founded, team size signals, stage/funding signals, mission                                          |
+| Customers | `/customers`, `/case-studies`         | Customer logos, testimonials, case study count, industries served                                   |
+| Careers   | `/careers`, `/jobs`, `/about/careers` | Open roles by department, total headcount signals, strategic hiring patterns                        |
 
 **If a page doesn't exist** (404, redirect to homepage), skip it and note "not found" for that section. Don't guess.
 
@@ -49,6 +50,7 @@ Fetch up to 6 pages. Adapt URLs based on what the site actually has — not ever
 Organize extracted data into 5 sections:
 
 #### Section 1: Company Overview
+
 - Tagline (their words, not yours)
 - Founded / age signals
 - Stage / funding signals (bootstrapped, seed, Series X — based on about page, team size, office count)
@@ -58,6 +60,7 @@ Organize extracted data into 5 sections:
 - Partnerships / integrations as distribution (from features page or homepage)
 
 #### Section 2: Product & Positioning
+
 - Homepage headline (exact quote)
 - Value proposition (what they promise in 1-2 sentences)
 - Target audience (who the site speaks to)
@@ -67,6 +70,7 @@ Organize extracted data into 5 sections:
 - Free trial / freemium availability
 
 #### Section 3: Pricing & Feature Monetization
+
 - Pricing model (per-seat, usage-based, flat, freemium, custom)
 - Tier breakdown with price points
 - Value metric (what they charge per unit of)
@@ -75,6 +79,7 @@ Organize extracted data into 5 sections:
 - Enterprise tier — custom pricing or listed?
 
 **Feature monetization** — if the pricing page shows feature-by-tier breakdowns:
+
 - Which features are free vs. gated?
 - What's the key unlock at each paid tier? (the feature that justifies the upgrade)
 - What do they gate behind enterprise? (reveals what they consider highest-value)
@@ -83,6 +88,7 @@ Organize extracted data into 5 sections:
 **If pricing is not public**, note "not public — sales-led motion" and any signals about pricing level.
 
 #### Section 4: Social Proof & Trust
+
 - Customer logos (notable names)
 - Testimonial highlights (1-2 strongest quotes)
 - Case study count and themes
@@ -91,6 +97,7 @@ Organize extracted data into 5 sections:
 - Social media follower counts (if visible on site)
 
 #### Section 5: Hiring Signals
+
 - Total open roles (if listed)
 - Roles by department — engineering, sales, marketing, product, customer success, etc.
 - Notable hires or role types that signal strategic direction (e.g., "ML Engineer" = investing in AI, "Enterprise AE" = moving upmarket, "Developer Advocate" = building community)

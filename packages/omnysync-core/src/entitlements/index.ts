@@ -7,10 +7,10 @@
  */
 
 // Types
-export * from "./types"
+export * from "./types";
 
 // Constants
-export * from "./constants"
+export * from "./constants";
 
 // Errors
 export {
@@ -24,7 +24,7 @@ export {
   logFeatureGateError,
   isFeatureGateError,
   handleFeatureGateError,
-} from "./errors"
+} from "./errors";
 
 // Repository
 export {
@@ -42,7 +42,7 @@ export {
   type PlanFeatureUpdate,
   type FeatureCreateInput,
   type FeatureUpdateInput,
-} from "./EntitlementRepository"
+} from "./EntitlementRepository";
 
 // Cache Service
 export {
@@ -52,7 +52,7 @@ export {
   entitlementCache,
   type CacheOptions,
   type InvalidationMessage,
-} from "./CacheService"
+} from "./CacheService";
 
 // Experiment Service
 export {
@@ -62,7 +62,7 @@ export {
   resetExperimentService,
   calculateExpectedDistribution,
   validateExperimentConfig,
-} from "./ExperimentService"
+} from "./ExperimentService";
 
 // Feature Gate Service
 export {
@@ -71,14 +71,14 @@ export {
   resetFeatureGateService,
   featureGate,
   type FeatureGateConfig,
-} from "./FeatureGateService"
+} from "./FeatureGateService";
 
 // Downgrade Service
 export {
   getDowngradeService,
   setDowngradeService,
   resetDowngradeService,
-} from "./DowngradeService"
+} from "./DowngradeService";
 
 // Middleware
 export {
@@ -90,4 +90,4 @@ export {
   withFeature,
   withConsume,
   withLimit,
-} from "./middleware"
+} from "./middleware";

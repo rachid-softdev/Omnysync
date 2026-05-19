@@ -1,8 +1,8 @@
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "noreply@omnysync.com"
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@omnysync.com'
 
 async function getResend() {
   try {
-    const { Resend } = await import("resend")
+    const { Resend } = await import('resend')
     return new Resend(process.env.RESEND_API_KEY)
   } catch {
     return null
@@ -37,14 +37,14 @@ export async function sendEmail({
       html,
     })
   } catch (error) {
-    console.error("Failed to send email:", error)
+    console.error('Failed to send email:', error)
   }
 }
 
 export async function sendWelcomeEmail(email: string, name: string) {
   await sendEmail({
     to: email,
-    subject: "Bienvenue sur Omnysync !",
+    subject: 'Bienvenue sur Omnysync !',
     html: `
       <h1>Bienvenue ${name} !</h1>
       <p>Merci d'avoir rejoint Omnysync, la plateforme d'automatisation de contenu.</p>
@@ -65,7 +65,7 @@ export async function sendSyncCompleteEmail(
   success: boolean,
   destinationUrl?: string
 ) {
-  const status = success ? "réussie" : "échouée"
+  const status = success ? 'réussie' : 'échouée'
 
   await sendEmail({
     to: email,
@@ -73,8 +73,8 @@ export async function sendSyncCompleteEmail(
     html: `
       <h1>Synchronisation ${status}</h1>
       <p>Document : <strong>${documentTitle}</strong></p>
-      ${success && destinationUrl ? `<p>Article publié : <a href="${destinationUrl}">${destinationUrl}</a></p>` : ""}
-      ${!success ? `<p>Une erreur est survenue lors de la synchronisation. Vérifiez les logs dans votre dashboard.</p>` : ""}
+      ${success && destinationUrl ? `<p>Article publié : <a href="${destinationUrl}">${destinationUrl}</a></p>` : ''}
+      ${!success ? `<p>Une erreur est survenue lors de la synchronisation. Vérifiez les logs dans votre dashboard.</p>` : ''}
     `,
   })
 }

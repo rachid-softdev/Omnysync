@@ -3,11 +3,11 @@
  * Omnysync - 2026
  */
 
-import { prisma } from "@/lib/prisma"
-import { auditApproval } from "@/lib/audit"
-import { auth } from "@/lib/auth"
-import { randomBytes } from "crypto"
-import { headers } from "next/headers"
+import { prisma } from '@/lib/prisma'
+import { auditApproval } from '@/lib/audit'
+import { auth } from '@/lib/auth'
+import { randomBytes } from 'crypto'
+import { headers } from 'next/headers'
 
 // ============================================================================
 // TYPES
@@ -20,7 +20,7 @@ export interface CreateApprovalRequest {
 }
 
 export interface ApprovalResponse {
-  action: "APPROVED" | "REJECTED"
+  action: 'APPROVED' | 'REJECTED'
   comments?: string
 }
 
@@ -53,11 +53,11 @@ export async function createApprovalRequest(
     })
 
     if (!document) {
-      return { success: false, error: "Document not found" }
+      return { success: false, error: 'Document not found' }
     }
 
-    if (document.status === "PUBLISHED") {
-      return { success: false, error: "Document is already published" }
+    if (document.status === 'PUBLISHED') {
+      return { success: false, error: 'Document is already published' }
     }
 
     // Récupérer l'utilisateur actuel
@@ -65,11 +65,11 @@ export async function createApprovalRequest(
     const userId = session?.user?.id
 
     if (!userId) {
-      return { success: false, error: "User not authenticated" }
+      return { success: false, error: 'User not authenticated' }
     }
 
     // Générer un token unique
-    const token = randomBytes(32).toString("hex")
+    const token = randomBytes(32).toString('hex')
 
     // Calculer la date d'expiration
     const expiresAt = new Date()
@@ -80,7 +80,7 @@ export async function createApprovalRequest(
       data: {
         documentId: data.documentId,
         token,
-        status: "PENDING",
+        status: 'PENDING',
         requestedBy: userId,
         expiresAt,
         comments: data.comments,
@@ -91,7 +91,7 @@ export async function createApprovalRequest(
 
     // Construire l'URL d'approbation (utilise l'URL de l'app)
     const headersList = await headers()
-    const origin = headersList.get("origin") || process.env.NEXTAUTH_URL || "http://localhost:3000"
+    const origin = headersList.get('origin') || process.env.NEXTAUTH_URL || 'http://localhost:3000'
     const approvalUrl = `${origin}/public/approval/${token}`
 
     return {
@@ -101,7 +101,7 @@ export async function createApprovalRequest(
       approvalUrl,
     }
   } catch (error) {
-    console.error("Create approval request failed:", error)
+    console.error('Create approval request failed:', error)
     return { success: false, error: (error as Error).message }
   }
 }
@@ -131,11 +131,11 @@ export async function getApprovalByToken(token: string) {
   }
 
   // Vérifier si expiré
-  if (approval.status !== "PENDING" || approval.expiresAt < new Date()) {
+  if (approval.status !== 'PENDING' || approval.expiresAt < new Date()) {
     // Mettre à jour le status
     await prisma.approvalRequest.update({
       where: { id: approval.id },
-      data: { status: "EXPIRED" },
+      data: { status: 'EXPIRED' },
     })
     return null
   }
@@ -158,18 +158,18 @@ export async function respondToApproval(
     const approval = await getApprovalByToken(token)
 
     if (!approval) {
-      return { success: false, error: "Approval request not found or expired" }
+      return { success: false, error: 'Approval request not found or expired' }
     }
 
     // Récupérer l'utilisateur actuel pour l'approbation
     const session = await auth()
-    const userId = session?.user?.id || "anonymous"
+    const userId = session?.user?.id || 'anonymous'
 
     // Mettre à jour la demande
     const updatedApproval = await prisma.approvalRequest.update({
       where: { id: approval.id },
       data: {
-        status: response.action === "APPROVED" ? "APPROVED" : "REJECTED",
+        status: response.action === 'APPROVED' ? 'APPROVED' : 'REJECTED',
         approvedBy: userId,
         approvedAt: new Date(),
         comments: response.comments,
@@ -177,23 +177,28 @@ export async function respondToApproval(
     })
 
     // Logger l'action
-    if (response.action === "APPROVED") {
+    if (response.action === 'APPROVED') {
       await auditApproval.approved(approval.document.organizationId, approval.id, userId)
 
       // Si approuvé, changer le status du document et lancer le sync
       await prisma.document.update({
         where: { id: approval.documentId },
         data: {
-          status: "READY",
+          status: 'READY',
         },
       })
     } else {
-      await auditApproval.rejected(approval.document.organizationId, approval.id, userId, response.comments)
+      await auditApproval.rejected(
+        approval.document.organizationId,
+        approval.id,
+        userId,
+        response.comments
+      )
     }
 
     return { success: true }
   } catch (error) {
-    console.error("Respond to approval failed:", error)
+    console.error('Respond to approval failed:', error)
     return { success: false, error: (error as Error).message }
   }
 }
@@ -208,7 +213,7 @@ export async function respondToApproval(
 export async function getApprovalsForDocument(documentId: string) {
   return prisma.approvalRequest.findMany({
     where: { documentId },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
   })
 }
 
@@ -234,16 +239,16 @@ export async function cancelApprovalRequest(
     })
 
     if (!approval) {
-      return { success: false, error: "Approval request not found" }
+      return { success: false, error: 'Approval request not found' }
     }
 
-    if (approval.status !== "PENDING") {
-      return { success: false, error: "Approval request is not pending" }
+    if (approval.status !== 'PENDING') {
+      return { success: false, error: 'Approval request is not pending' }
     }
 
     await prisma.approvalRequest.update({
       where: { id: approvalId },
-      data: { status: "REJECTED" }, // Reused status for cancelled
+      data: { status: 'REJECTED' }, // Reused status for cancelled
     })
 
     return { success: true }
@@ -262,7 +267,7 @@ export async function cancelApprovalRequest(
 export async function getApprovalsList(
   organizationId: string,
   options: {
-    status?: "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED"
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED'
     documentId?: string
     limit?: number
     offset?: number
@@ -282,7 +287,7 @@ export async function getApprovalsList(
   const [approvals, total] = await Promise.all([
     prisma.approvalRequest.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,
       include: {
@@ -318,13 +323,13 @@ export async function getApprovalsList(
 export async function expirePendingApprovals(): Promise<number> {
   const result = await prisma.approvalRequest.updateMany({
     where: {
-      status: "PENDING",
+      status: 'PENDING',
       expiresAt: {
         lt: new Date(),
       },
     },
     data: {
-      status: "EXPIRED",
+      status: 'EXPIRED',
     },
   })
 
@@ -351,26 +356,26 @@ export async function canSubmitForApproval(documentId: string): Promise<{
   })
 
   if (!document) {
-    return { canSubmit: false, reason: "Document not found" }
+    return { canSubmit: false, reason: 'Document not found' }
   }
 
-  if (document.status === "PUBLISHED") {
-    return { canSubmit: false, reason: "Document is already published" }
+  if (document.status === 'PUBLISHED') {
+    return { canSubmit: false, reason: 'Document is already published' }
   }
 
-  if (document.status === "ARCHIVED") {
-    return { canSubmit: false, reason: "Document is archived" }
+  if (document.status === 'ARCHIVED') {
+    return { canSubmit: false, reason: 'Document is archived' }
   }
 
   if (!document.sourceConnector || !document.destConnector) {
-    return { canSubmit: false, reason: "Document must have source and destination connectors" }
+    return { canSubmit: false, reason: 'Document must have source and destination connectors' }
   }
 
   // Vérifier s'il y a déjà une approbation en attente
   const pendingApproval = await prisma.approvalRequest.findFirst({
     where: {
       documentId,
-      status: "PENDING",
+      status: 'PENDING',
       expiresAt: {
         gt: new Date(),
       },
@@ -378,7 +383,7 @@ export async function canSubmitForApproval(documentId: string): Promise<{
   })
 
   if (pendingApproval) {
-    return { canSubmit: false, reason: "There is already a pending approval request" }
+    return { canSubmit: false, reason: 'There is already a pending approval request' }
   }
 
   return { canSubmit: true }

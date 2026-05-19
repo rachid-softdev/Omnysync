@@ -1,10 +1,10 @@
-import "server-only"
-import fs from "fs"
-import path from "path"
+import 'server-only'
+import fs from 'fs'
+import path from 'path'
 
 export interface BlogArticle {
   slug: string
-  locale: "fr" | "en"
+  locale: 'fr' | 'en'
   title: string
   excerpt: string
   content: string
@@ -16,10 +16,10 @@ export interface BlogData {
   articles: BlogArticle[]
 }
 
-const blogDataPath = path.join(process.cwd(), "data", "blog.json")
+const blogDataPath = path.join(process.cwd(), 'data', 'blog.json')
 
 export function getBlogData(): BlogData {
-  const fileContent = fs.readFileSync(blogDataPath, "utf-8")
+  const fileContent = fs.readFileSync(blogDataPath, 'utf-8')
   return JSON.parse(fileContent)
 }
 
@@ -30,7 +30,7 @@ export function getAllArticles(): BlogArticle[] {
   )
 }
 
-export function getArticlesByLocale(locale: "fr" | "en"): BlogArticle[] {
+export function getArticlesByLocale(locale: 'fr' | 'en'): BlogArticle[] {
   return getAllArticles().filter((article) => article.locale === locale)
 }
 

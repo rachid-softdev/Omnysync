@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
-import { cn } from "@/lib/utils"
+import * as React from 'react'
+import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export interface PaginationProps extends React.HTMLAttributes<HTMLDivElement> {
   currentPage: number
@@ -22,49 +22,57 @@ export function Pagination({
   ...props
 }: PaginationProps) {
   const siblings = React.useMemo(() => {
-    const pages: (number | "ellipsis")[] = []
-    
+    const pages: (number | 'ellipsis')[] = []
+
     // Left boundary
     for (let i = 1; i <= boundaryCount; i++) {
       pages.push(i)
     }
-    
+
     // Left siblings
     if (currentPage - siblingCount - 1 > boundaryCount) {
-      pages.push("ellipsis")
+      pages.push('ellipsis')
     }
-    
+
     for (let i = Math.max(boundaryCount + 1, currentPage - siblingCount); i < currentPage; i++) {
       pages.push(i)
     }
-    
+
     // Current page
     if (currentPage > boundaryCount && currentPage <= totalPages - boundaryCount) {
       pages.push(currentPage)
     }
-    
+
     // Right siblings
-    for (let i = currentPage + 1; i <= Math.min(currentPage + siblingCount, totalPages - boundaryCount); i++) {
+    for (
+      let i = currentPage + 1;
+      i <= Math.min(currentPage + siblingCount, totalPages - boundaryCount);
+      i++
+    ) {
       pages.push(i)
     }
-    
+
     // Right ellipsis
     if (currentPage + siblingCount + 1 < totalPages - boundaryCount + 1) {
-      pages.push("ellipsis")
+      pages.push('ellipsis')
     }
-    
+
     // Right boundary
-    for (let i = Math.max(totalPages - boundaryCount + 1, currentPage + siblingCount + 1); i <= totalPages; i++) {
+    for (
+      let i = Math.max(totalPages - boundaryCount + 1, currentPage + siblingCount + 1);
+      i <= totalPages;
+      i++
+    ) {
       pages.push(i)
     }
-    
+
     return pages
   }, [currentPage, totalPages, siblingCount, boundaryCount])
 
   if (totalPages <= 1) return null
 
   return (
-    <nav className={cn("flex items-center gap-1", className)} {...props}>
+    <nav className={cn('flex items-center gap-1', className)} {...props}>
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
@@ -75,12 +83,9 @@ export function Pagination({
       </button>
 
       {siblings.map((page, index) => {
-        if (page === "ellipsis") {
+        if (page === 'ellipsis') {
           return (
-            <span
-              key={`ellipsis-${index}`}
-              className="flex items-center justify-center w-9 h-9"
-            >
+            <span key={`ellipsis-${index}`} className="flex items-center justify-center w-9 h-9">
               <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
             </span>
           )
@@ -91,13 +96,13 @@ export function Pagination({
             key={page}
             onClick={() => onPageChange(page)}
             className={cn(
-              "flex items-center justify-center w-9 h-9 rounded-md text-sm font-medium transition-colors",
+              'flex items-center justify-center w-9 h-9 rounded-md text-sm font-medium transition-colors',
               page === currentPage
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                : "border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                : 'border border-input bg-background hover:bg-accent hover:text-accent-foreground'
             )}
             aria-label={`Page ${page}`}
-            aria-current={page === currentPage ? "page" : undefined}
+            aria-current={page === currentPage ? 'page' : undefined}
           >
             {page}
           </button>
@@ -162,7 +167,7 @@ export function PaginationInfo({
 
   return (
     <span className="text-sm text-muted-foreground">
-      Affichage de {start} à {end} sur {total} résultat{total !== 1 ? "s" : ""}
+      Affichage de {start} à {end} sur {total} résultat{total !== 1 ? 's' : ''}
     </span>
   )
 }

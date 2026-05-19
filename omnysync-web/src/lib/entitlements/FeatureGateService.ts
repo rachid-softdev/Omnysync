@@ -25,20 +25,17 @@ import {
   FeatureType,
   UsageInfo,
   OverrideData,
-} from "./types"
-import {
-  getEntitlementRepository,
-  IEntitlementRepository,
-} from "./EntitlementRepository"
-import { getCacheService, CacheService } from "./CacheService"
-import { getExperimentService, ExperimentService } from "./ExperimentService"
-import { DEFAULT_PLAN, ACTIVE_SUBSCRIPTION_STATUSES } from "./constants"
+} from './types'
+import { getEntitlementRepository, IEntitlementRepository } from './EntitlementRepository'
+import { getCacheService, CacheService } from './CacheService'
+import { getExperimentService, ExperimentService } from './ExperimentService'
+import { DEFAULT_PLAN, ACTIVE_SUBSCRIPTION_STATUSES } from './constants'
 import {
   FeatureNotAvailableError,
   LimitReachedError,
   SubscriptionExpiredError,
   InvalidFeatureError,
-} from "./errors"
+} from './errors'
 
 // ============================================================================
 // SERVICE CONFIG
@@ -86,13 +83,13 @@ export class FeatureGateService {
   async getLimit(orgId: string, limitKey: string): Promise<number | null> {
     // Validate feature exists
     const feature = await this.repo.getFeature(limitKey)
-    if (!feature || feature.type !== "LIMIT") {
+    if (!feature || feature.type !== 'LIMIT') {
       // For features that don't exist in DB, check default plan config
       // This is a fallback for migration
       return null
     }
 
-    const resolved = await this.resolveFeatureValue(orgId, limitKey, "LIMIT")
+    const resolved = await this.resolveFeatureValue(orgId, limitKey, 'LIMIT')
     return resolved.value as number | null
   }
 
@@ -110,7 +107,7 @@ export class FeatureGateService {
       throw new FeatureNotAvailableError(
         featureKey,
         planKey,
-        feature?.type === "LIMIT" ? "Pro" : undefined
+        feature?.type === 'LIMIT' ? 'Pro' : undefined
       )
     }
   }
@@ -119,11 +116,7 @@ export class FeatureGateService {
   // canConsume - Check if org can consume n units (default 1)
   // ============================================================================
 
-  async canConsume(
-    orgId: string,
-    featureKey: string,
-    amount: number = 1
-  ): Promise<boolean> {
+  async canConsume(orgId: string, featureKey: string, amount: number = 1): Promise<boolean> {
     // Get the limit for this feature
     const limit = await this.getLimit(orgId, featureKey)
 
@@ -142,11 +135,7 @@ export class FeatureGateService {
   // consume - Atomically consume n units (default 1)
   // ============================================================================
 
-  async consume(
-    orgId: string,
-    featureKey: string,
-    amount: number = 1
-  ): Promise<ConsumeResult> {
+  async consume(orgId: string, featureKey: string, amount: number = 1): Promise<ConsumeResult> {
     // Check feature is enabled first
     await this.assertFeature(orgId, featureKey)
 
@@ -174,12 +163,7 @@ export class FeatureGateService {
     if (!canDo) {
       const usage = await this.getUsage(orgId, featureKey)
 
-      throw new LimitReachedError(
-        featureKey,
-        limit,
-        usage.used,
-        usage.resetAt.toISOString()
-      )
+      throw new LimitReachedError(featureKey, limit, usage.used, usage.resetAt.toISOString())
     }
 
     // Atomically consume
@@ -223,10 +207,7 @@ export class FeatureGateService {
   // getDebugTrace - Detailed trace of how a feature was resolved
   // ============================================================================
 
-  async getDebugTrace(
-    orgId: string,
-    featureKey: string
-  ): Promise<DebugTrace> {
+  async getDebugTrace(orgId: string, featureKey: string): Promise<DebugTrace> {
     const feature = await this.repo.getFeature(featureKey)
 
     if (!feature) {
@@ -289,8 +270,8 @@ export class FeatureGateService {
     if (!subscription) {
       // No active subscription - use fallback
       return {
-        value: featureType === "LIMIT" ? 0 : false,
-        source: "fallback",
+        value: featureType === 'LIMIT' ? 0 : false,
+        source: 'fallback',
       }
     }
 
@@ -303,17 +284,17 @@ export class FeatureGateService {
     const planLimit = featureConfig?.limitValue
 
     // For experiments, return the config
-    if (featureType === "EXPERIMENT" && planEnabled) {
+    if (featureType === 'EXPERIMENT' && planEnabled) {
       return {
         value: true, // Experiment is "enabled" at plan level
-        source: "plan",
+        source: 'plan',
         planKey,
         limitValue: planLimit,
       }
     }
 
     // For boolean features
-    if (featureType === "BOOLEAN") {
+    if (featureType === 'BOOLEAN') {
       // Check user override
       // Note: user override would need userId passed in - skipping for now
       // In a full implementation, we'd pass userId through the call chain
@@ -324,7 +305,7 @@ export class FeatureGateService {
       if (orgOverride) {
         return {
           value: orgOverride.enabled,
-          source: "org_override",
+          source: 'org_override',
           override: orgOverride,
           planKey,
           limitValue: planLimit,
@@ -334,21 +315,21 @@ export class FeatureGateService {
       // Fall back to plan
       return {
         value: planEnabled,
-        source: planEnabled ? "plan" : "fallback",
+        source: planEnabled ? 'plan' : 'fallback',
         planKey,
         limitValue: planLimit,
       }
     }
 
     // For limit features
-    if (featureType === "LIMIT") {
+    if (featureType === 'LIMIT') {
       // Check org override for limit
       const orgOverride = await this.repo.getOrgOverride(orgId, featureKey)
 
       if (orgOverride && orgOverride.limitValue !== null) {
         return {
           value: orgOverride.limitValue,
-          source: "org_override",
+          source: 'org_override',
           override: orgOverride,
           planKey,
           limitValue: orgOverride.limitValue,
@@ -361,7 +342,7 @@ export class FeatureGateService {
 
       return {
         value: planEnabled ? (limitValue ?? 0) : 0,
-        source: planEnabled ? "plan" : "fallback",
+        source: planEnabled ? 'plan' : 'fallback',
         planKey,
         limitValue,
       }
@@ -369,8 +350,8 @@ export class FeatureGateService {
 
     // Fallback
     return {
-      value: featureType === "LIMIT" ? 0 : false,
-      source: "fallback",
+      value: featureType === 'LIMIT' ? 0 : false,
+      source: 'fallback',
     }
   }
 
@@ -378,10 +359,7 @@ export class FeatureGateService {
   // PRIVATE: USAGE HELPERS
   // ============================================================================
 
-  private async getUsage(
-    orgId: string,
-    featureKey: string
-  ): Promise<UsageInfo> {
+  private async getUsage(orgId: string, featureKey: string): Promise<UsageInfo> {
     const limit = await this.getLimit(orgId, featureKey)
     const usage = await this.repo.getUsageTracking(orgId, featureKey)
 

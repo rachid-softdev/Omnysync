@@ -10,20 +10,17 @@
  * Simplified implementation: graceful by default (per user request)
  */
 
-import { DowngradePreview, DowngradeStrategy } from "./types"
-import { getEntitlementRepository } from "./EntitlementRepository"
-import { getFeatureGateService } from "./FeatureGateService"
-import { DEFAULT_DOWNGRADE_STRATEGY } from "./constants"
+import { DowngradePreview, DowngradeStrategy } from './types'
+import { getEntitlementRepository } from './EntitlementRepository'
+import { getFeatureGateService } from './FeatureGateService'
+import { DEFAULT_DOWNGRADE_STRATEGY } from './constants'
 
 export class DowngradeService {
   /**
    * Get preview of what features will be affected by a downgrade
    * Used for admin UI to show impact before making changes
    */
-  async getDowngradePreview(
-    orgId: string,
-    targetPlanKey: string
-  ): Promise<DowngradePreview> {
+  async getDowngradePreview(orgId: string, targetPlanKey: string): Promise<DowngradePreview> {
     const repo = getEntitlementRepository()
     return repo.getDowngradePreview(orgId, targetPlanKey)
   }
@@ -32,18 +29,16 @@ export class DowngradeService {
    * Calculate the effective downgrade strategy for a feature
    * Uses the plan's configured strategy, but considers usage
    */
-  calculateEffectiveStrategy(
-    feature: DowngradePreview["features"][0]
-  ): DowngradeStrategy {
+  calculateEffectiveStrategy(feature: DowngradePreview['features'][0]): DowngradeStrategy {
     if (!feature.willBeAffected) {
-      return "GRACEFUL" // Not affected, no action needed
+      return 'GRACEFUL' // Not affected, no action needed
     }
 
     const strategy = feature.downgradeStrategy
 
     // If there are active users, default to graceful to avoid disrupting them
-    if (strategy === "IMMEDIATE" && feature.hasActiveUsage) {
-      return "GRACEFUL"
+    if (strategy === 'IMMEDIATE' && feature.hasActiveUsage) {
+      return 'GRACEFUL'
     }
 
     return strategy
@@ -69,20 +64,14 @@ export class DowngradeService {
     for (const feature of affectedFeatures) {
       const strategy = this.calculateEffectiveStrategy(feature)
 
-      if (strategy === "IMMEDIATE") {
-        warnings.push(
-          `${feature.featureName}: Access will be cut immediately`
-        )
-      } else if (strategy === "GRACEFUL") {
+      if (strategy === 'IMMEDIATE') {
+        warnings.push(`${feature.featureName}: Access will be cut immediately`)
+      } else if (strategy === 'GRACEFUL') {
         if (feature.hasActiveUsage) {
-          warnings.push(
-            `${feature.featureName}: Users will lose access at period end`
-          )
+          warnings.push(`${feature.featureName}: Users will lose access at period end`)
         }
-      } else if (strategy === "FREEZE") {
-        warnings.push(
-          `${feature.featureName}: New actions will be blocked, data preserved`
-        )
+      } else if (strategy === 'FREEZE') {
+        warnings.push(`${feature.featureName}: New actions will be blocked, data preserved`)
       }
     }
 
@@ -147,7 +136,7 @@ export class DowngradeService {
     if (!subscription) return false
 
     // If subscription is active, no grace period needed
-    if (subscription.status === "ACTIVE" || subscription.status === "TRIALING") {
+    if (subscription.status === 'ACTIVE' || subscription.status === 'TRIALING') {
       return false
     }
 
@@ -167,11 +156,11 @@ export class DowngradeService {
 
     if (!hasGrace) return []
 
-    const preview = await this.getDowngradePreview(orgId, "free")
+    const preview = await this.getDowngradePreview(orgId, 'free')
 
     // Return features that were affected but might still be accessible
     return preview.features
-      .filter((f) => f.willBeAffected && f.downgradeStrategy === "GRACEFUL")
+      .filter((f) => f.willBeAffected && f.downgradeStrategy === 'GRACEFUL')
       .map((f) => f.featureKey)
   }
 
@@ -199,17 +188,17 @@ export class DowngradeService {
     // If going from enabled to disabled
     if (isCurrentlyEnabled && !newPlanEnabled) {
       switch (strategy) {
-        case "GRACEFUL":
+        case 'GRACEFUL':
           // Check if we're still in the billing period
           if (subscriptionEndDate && new Date(subscriptionEndDate) > new Date()) {
             return true // Keep access until period end
           }
           return false // Period ended, cut access
 
-        case "IMMEDIATE":
+        case 'IMMEDIATE':
           return false // Cut immediately
 
-        case "FREEZE":
+        case 'FREEZE':
           return true // Keep access but block new actions (handled elsewhere)
 
         default:

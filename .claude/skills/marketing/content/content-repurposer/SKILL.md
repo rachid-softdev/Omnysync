@@ -19,6 +19,7 @@ Use when you've just published a newsletter or blog post and need social content
 ### Step 1: Gather Inputs
 
 Ask the user for:
+
 1. **Long-form content** — the hub piece. Can be:
    - A newsletter issue (pasted or file path)
    - A blog post (pasted, file path, or URL to fetch)
@@ -35,6 +36,7 @@ Ask the user for:
 ### Step 2: Extract the Core from the Hub
 
 Read the long-form content and extract:
+
 - **Main thesis** — the one big idea in one sentence
 - **Key takeaways** — 3-7 specific, actionable points
 - **Supporting stories** — personal anecdotes, examples, or case studies
@@ -55,6 +57,7 @@ Create one post for each of the spoke templates:
 Tell a narrative that leads to the hub's key insight.
 
 **Structure:**
+
 1. **Pain/Attention** — Open with a personal story or relatable problem
 2. **Agitate** — Show how things got worse
 3. **Intrigue** — Introduce a turning point
@@ -62,6 +65,7 @@ Tell a narrative that leads to the hub's key insight.
 5. **Solution** — Bring clarity with a specific action or resource
 
 **Rules:**
+
 - First person. This is a story, not a lecture.
 - Short sentences. One idea per line.
 - The opening line must hook.
@@ -73,6 +77,7 @@ Tell a narrative that leads to the hub's key insight.
 Share a pattern or insight related to the hub topic.
 
 **Structure:**
+
 1. **Observation statement** — One clear, specific thing you noticed
 2. **Evidence** — 2-4 specifics that support the observation
 3. **Closer** — A short, punchy takeaway line
@@ -84,6 +89,7 @@ Share a pattern or insight related to the hub topic.
 Challenge a commonly held belief from the hub content.
 
 **Structure:**
+
 1. **Hot take** — State the contrarian position clearly
 2. **Supporting points** — 3-5 reasons this take is valid
 3. **Reframe** — End with a new way to think about it
@@ -95,6 +101,7 @@ Challenge a commonly held belief from the hub content.
 Curate tools, resources, tips, or takeaways from the hub content.
 
 **Structure:**
+
 1. **Framing line** — "X [things] every [audience] should know about:"
 2. **Numbered list** — Each item with a name + short description
 3. **Optional closer** — A recommendation or CTA
@@ -106,10 +113,12 @@ Curate tools, resources, tips, or takeaways from the hub content.
 Turn the hub's key insight into a meme-format post.
 
 **Structure:**
+
 1. **Choose a meme format** — Match the hub's core tension to a template
 2. **Write the caption** — The meme does the heavy lifting. Caption adds context.
 
 **Rules:**
+
 - Standalone. Understandable without reading the hub content.
 - Use the audience's in-group language.
 - Don't force it. If no natural meme angle, skip and double up on another template.
@@ -121,6 +130,7 @@ Turn the hub's key insight into a meme-format post.
 Show how the hub topic has evolved — then vs. now.
 
 **Structure:**
+
 1. **Then** — What things looked like before. 3-5 bullet points.
 2. **Now** — What things look like after. 3-5 bullet points (matching structure).
 3. **Lesson** — One line that captures the shift.
@@ -160,6 +170,7 @@ Miss it? Grab it here ↓
 ```
 
 **CTA rules:**
+
 - If the user provides a subscriber count, use it for social proof.
 - If no count is available, skip that line — don't make one up.
 - The link should be the last element.
@@ -168,24 +179,26 @@ Miss it? Grab it here ↓
 
 Tag each post with its primary emotional trigger:
 
-| Trigger | What it does | Post types that map |
-|---------|-------------|-------------------|
-| **Entertains** | Generates awareness | Story, Past vs. Present |
-| **Teaches** | Builds trust | Listicle, Observation |
-| **Empathizes** | Deepens emotional connection | Story (pain-focused), Contrarian |
-| **Makes me think** | Challenges preconceptions | Contrarian Take, Observation |
+| Trigger            | What it does                 | Post types that map              |
+| ------------------ | ---------------------------- | -------------------------------- |
+| **Entertains**     | Generates awareness          | Story, Past vs. Present          |
+| **Teaches**        | Builds trust                 | Listicle, Observation            |
+| **Empathizes**     | Deepens emotional connection | Story (pain-focused), Contrarian |
+| **Makes me think** | Challenges preconceptions    | Contrarian Take, Observation     |
 
 Flag if the batch is unbalanced. A good week has at least 2 different triggers represented.
 
 ### Step 6: Platform Adaptation
 
 **LinkedIn:**
+
 - First line is everything — shows above the "see more" fold
 - Line breaks generously
 - 1,300 characters is the sweet spot
 - End with a question or conversation starter
 
 **Twitter/X:**
+
 - 280 characters for single tweets — ruthlessly edit
 - Threads: first tweet stands alone
 - Listicles and observations compress well into single tweets
@@ -193,15 +206,15 @@ Flag if the batch is unbalanced. A good week has at least 2 different triggers r
 
 ### Step 7: Build Publishing Schedule
 
-| Day | Post Type | Trigger |
-|-----|----------|---------|
-| Day 1 (pre-hub) | Pre-Hub CTA | — |
-| Day 2 (hub day) | Hub publishes | — |
-| Day 3 (post-hub) | Post-Hub CTA | — |
-| Day 4 | Story | Entertains / Empathizes |
-| Day 5 | Observation | Teaches |
-| Day 6 | Contrarian Take | Makes me think |
-| Day 7 | Listicle or Past vs. Present | Teaches / Entertains |
+| Day              | Post Type                    | Trigger                 |
+| ---------------- | ---------------------------- | ----------------------- |
+| Day 1 (pre-hub)  | Pre-Hub CTA                  | —                       |
+| Day 2 (hub day)  | Hub publishes                | —                       |
+| Day 3 (post-hub) | Post-Hub CTA                 | —                       |
+| Day 4            | Story                        | Entertains / Empathizes |
+| Day 5            | Observation                  | Teaches                 |
+| Day 6            | Contrarian Take              | Makes me think          |
+| Day 7            | Listicle or Past vs. Present | Teaches / Entertains    |
 
 ## Output Format
 
@@ -305,4 +318,3 @@ Flag if the batch is unbalanced. A good week has at least 2 different triggers r
 - Contrarian takes only work if the original content actually has a contrarian angle. Don't manufacture one.
 - CTA posts work best when they give a taste of value before asking for the click.
 - If the hub is thin on material (under 500 words or only 1-2 takeaways), generate 3 spokes instead of 5 and flag that the hub could be expanded.
-

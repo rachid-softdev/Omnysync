@@ -1,28 +1,18 @@
-import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
-import { decrypt } from "@/lib/crypto"
-import { createWordPressClient } from "@/lib/services/wordpress"
-import { createGhostClient } from "@/lib/services/ghost"
-import crypto from "crypto"
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { decrypt } from '@/lib/crypto'
+import { createWordPressClient } from '@/lib/services/wordpress'
+import { createGhostClient } from '@/lib/services/ghost'
+import crypto from 'crypto'
 
 /**
  * Vérifie la signature HMAC du webhook
  */
-function verifyWebhookSignature(
-  payload: string,
-  signature: string,
-  secret: string
-): boolean {
+function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
   try {
-    const expected = crypto
-      .createHmac("sha256", secret)
-      .update(payload)
-      .digest("hex")
-    
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expected)
-    )
+    const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex')
+
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
   } catch {
     return false
   }
@@ -41,28 +31,28 @@ async function fetchRemoteContent(
 
   if (!connector) return null
 
-  const credentials = decrypt(connector.credentials || "")
+  const credentials = decrypt(connector.credentials || '')
   const config = (connector.config || {}) as Record<string, string>
 
   switch (connector.type) {
-    case "WORDPRESS": {
-      const creds = Buffer.from(credentials, "base64").toString().split(":")
+    case 'WORDPRESS': {
+      const creds = Buffer.from(credentials, 'base64').toString().split(':')
       const client = createWordPressClient(config.siteUrl, creds[0], creds[1])
-      const post = await client.getPost(parseInt(externalId)) as unknown as {
+      const post = (await client.getPost(parseInt(externalId))) as unknown as {
         content?: { rendered?: string }
         title?: { rendered?: string }
         modified?: string
       }
       return {
-        content: post?.content?.rendered || "",
-        title: post?.title?.rendered || "Untitled",
+        content: post?.content?.rendered || '',
+        title: post?.title?.rendered || 'Untitled',
         updatedAt: post?.modified ? new Date(post.modified) : new Date(),
       }
     }
 
-    case "GHOST": {
+    case 'GHOST': {
       const client = createGhostClient(config.siteUrl, credentials)
-      const response = await client.getPost(externalId) as unknown as {
+      const response = (await client.getPost(externalId)) as unknown as {
         posts?: Array<{
           html?: string
           title?: string
@@ -70,10 +60,10 @@ async function fetchRemoteContent(
         }>
       }
       return {
-        content: response?.posts?.[0]?.html || "",
-        title: response?.posts?.[0]?.title || "Untitled",
-        updatedAt: response?.posts?.[0]?.updated_at 
-          ? new Date(response.posts[0].updated_at) 
+        content: response?.posts?.[0]?.html || '',
+        title: response?.posts?.[0]?.title || 'Untitled',
+        updatedAt: response?.posts?.[0]?.updated_at
+          ? new Date(response.posts[0].updated_at)
           : new Date(),
       }
     }
@@ -113,8 +103,8 @@ async function updateLocalDocument(
       organizationId,
       userId,
       documentId,
-      action: "remote_change_detected",
-      status: "INFO",
+      action: 'remote_change_detected',
+      status: 'INFO',
       message: `Changes detected from remote: ${remoteTitle}`,
     },
   })
@@ -127,33 +117,33 @@ async function handleWordPressWebhook(
 ): Promise<NextResponse> {
   try {
     const body = await req.text()
-    const signature = req.headers.get("x-hub-signature") || ""
-    
+    const signature = req.headers.get('x-hub-signature') || ''
+
     const webhook = await prisma.webhookEndpoint.findFirst({
       where: {
         connectorId,
-        type: "WORDPRESS",
+        type: 'WORDPRESS',
         isActive: true,
       },
     })
 
     if (webhook?.secret) {
       const isValid = verifyWebhookSignature(body, signature, webhook.secret)
-      if (isValid === false && process.env.NODE_ENV === "production") {
-        return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
+      if (isValid === false && process.env.NODE_ENV === 'production') {
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
       }
     }
 
-    const data = await req.json() as unknown as {
+    const data = (await req.json()) as unknown as {
       post_id?: number
       action?: string
     }
-    
-    const eventType = req.headers.get("x-wordpress-event") || data.action
-    
-    if (eventType === "post_published" || eventType === "post_updated") {
+
+    const eventType = req.headers.get('x-wordpress-event') || data.action
+
+    if (eventType === 'post_published' || eventType === 'post_updated') {
       const postId = data.post_id?.toString()
-      
+
       if (postId) {
         const documents = await prisma.document.findMany({
           where: {
@@ -180,30 +170,24 @@ async function handleWordPressWebhook(
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error("WordPress webhook error:", error)
-    return NextResponse.json(
-      { error: (error as Error).message },
-      { status: 500 }
-    )
+    console.error('WordPress webhook error:', error)
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
 
 // Webhook Ghost
-async function handleGhostWebhook(
-  req: NextRequest,
-  connectorId: string
-): Promise<NextResponse> {
+async function handleGhostWebhook(req: NextRequest, connectorId: string): Promise<NextResponse> {
   try {
-    const data = await req.json() as unknown as {
+    const data = (await req.json()) as unknown as {
       event?: string
       post?: { id?: string }
     }
-    
+
     const event = data.event
-    
-    if (event === "post.published" || event === "post.updated") {
+
+    if (event === 'post.published' || event === 'post.updated') {
       const postId = data.post?.id
-      
+
       if (postId) {
         const documents = await prisma.document.findMany({
           where: {
@@ -230,28 +214,22 @@ async function handleGhostWebhook(
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error("Ghost webhook error:", error)
-    return NextResponse.json(
-      { error: (error as Error).message },
-      { status: 500 }
-    )
+    console.error('Ghost webhook error:', error)
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
 
 // Webhook Webflow (simplified)
-async function handleWebflowWebhook(
-  req: NextRequest,
-  connectorId: string
-): Promise<NextResponse> {
+async function handleWebflowWebhook(req: NextRequest, connectorId: string): Promise<NextResponse> {
   try {
-    const data = await req.json() as unknown as {
+    const data = (await req.json()) as unknown as {
       type?: string
       data?: { item?: { id?: string } }
     }
-    
-    if (data.type === "item_published" || data.type === "item_updated") {
+
+    if (data.type === 'item_published' || data.type === 'item_updated') {
       const itemId = data.data?.item?.id
-      
+
       if (itemId) {
         const documents = await prisma.document.findMany({
           where: {
@@ -278,30 +256,24 @@ async function handleWebflowWebhook(
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error("Webflow webhook error:", error)
-    return NextResponse.json(
-      { error: (error as Error).message },
-      { status: 500 }
-    )
+    console.error('Webflow webhook error:', error)
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
 
 // Webhook Shopify (simplified)
-async function handleShopifyWebhook(
-  req: NextRequest,
-  connectorId: string
-): Promise<NextResponse> {
+async function handleShopifyWebhook(req: NextRequest, connectorId: string): Promise<NextResponse> {
   try {
-    const topic = req.headers.get("x-shopify-topic") || ""
-    
+    const topic = req.headers.get('x-shopify-topic') || ''
+
     // Shopify webhook topics: article_created, article_updated, article_deleted
-    if (topic.startsWith("article_")) {
-      const data = await req.json() as unknown as {
+    if (topic.startsWith('article_')) {
+      const data = (await req.json()) as unknown as {
         article?: { id?: number }
       }
-      
+
       const articleId = data?.article?.id?.toString()
-      
+
       if (articleId) {
         const documents = await prisma.document.findMany({
           where: {
@@ -328,11 +300,8 @@ async function handleShopifyWebhook(
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error("Shopify webhook error:", error)
-    return NextResponse.json(
-      { error: (error as Error).message },
-      { status: 500 }
-    )
+    console.error('Shopify webhook error:', error)
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
 
@@ -342,27 +311,24 @@ export async function POST(
   { params }: { params: Promise<{ connector: string }> }
 ) {
   const { connector } = await params
-  
+
   const url = new URL(req.url)
-  const connectorId = url.searchParams.get("connector_id")
-  
+  const connectorId = url.searchParams.get('connector_id')
+
   if (!connectorId) {
-    return NextResponse.json({ error: "Missing connector_id" }, { status: 400 })
+    return NextResponse.json({ error: 'Missing connector_id' }, { status: 400 })
   }
 
   switch (connector) {
-    case "wordpress":
+    case 'wordpress':
       return handleWordPressWebhook(req, connectorId)
-    case "ghost":
+    case 'ghost':
       return handleGhostWebhook(req, connectorId)
-    case "webflow":
+    case 'webflow':
       return handleWebflowWebhook(req, connectorId)
-    case "shopify":
+    case 'shopify':
       return handleShopifyWebhook(req, connectorId)
     default:
-      return NextResponse.json(
-        { error: "Unsupported connector type" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Unsupported connector type' }, { status: 400 })
   }
 }

@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { Suspense as ReactSuspense } from "react"
+import { Suspense as ReactSuspense } from 'react'
 
 interface SuspenseWrapperProps {
   children: React.ReactNode
@@ -8,11 +8,7 @@ interface SuspenseWrapperProps {
 }
 
 export function Suspense({ children, fallback }: SuspenseWrapperProps) {
-  return (
-    <ReactSuspense fallback={fallback || <Skeleton />}>
-      {children}
-    </ReactSuspense>
-  )
+  return <ReactSuspense fallback={fallback || <Skeleton />}>{children}</ReactSuspense>
 }
 
 function Skeleton() {

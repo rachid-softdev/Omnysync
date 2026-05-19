@@ -7,27 +7,23 @@
 // FEATURE TYPES
 // ============================================================================
 
-export type FeatureType = "BOOLEAN" | "LIMIT" | "EXPERIMENT"
+export type FeatureType = 'BOOLEAN' | 'LIMIT' | 'EXPERIMENT'
 
 export type SubscriptionStatus =
-  | "ACTIVE"
-  | "TRIALING"
-  | "PAST_DUE"
-  | "CANCELED"
-  | "INCOMPLETE"
-  | "INCOMPLETE_EXPIRED"
+  | 'ACTIVE'
+  | 'TRIALING'
+  | 'PAST_DUE'
+  | 'CANCELED'
+  | 'INCOMPLETE'
+  | 'INCOMPLETE_EXPIRED'
 
-export type OverrideScope = "ORG" | "USER"
+export type OverrideScope = 'ORG' | 'USER'
 
-export type DowngradeStrategy = "GRACEFUL" | "IMMEDIATE" | "FREEZE"
+export type DowngradeStrategy = 'GRACEFUL' | 'IMMEDIATE' | 'FREEZE'
 
-export type ResolveSource =
-  | "user_override"
-  | "org_override"
-  | "plan"
-  | "fallback"
+export type ResolveSource = 'user_override' | 'org_override' | 'plan' | 'fallback'
 
-export type ActiveSubscriptionStatus = "ACTIVE" | "TRIALING"
+export type ActiveSubscriptionStatus = 'ACTIVE' | 'TRIALING'
 
 // ============================================================================
 // ENTITLEMENT MAP
@@ -83,7 +79,7 @@ export interface ConsumeResult {
 }
 
 export interface ConsumeError {
-  code: "LIMIT_REACHED" | "FEATURE_NOT_ENABLED" | "SUBSCRIPTION_EXPIRED"
+  code: 'LIMIT_REACHED' | 'FEATURE_NOT_ENABLED' | 'SUBSCRIPTION_EXPIRED'
   message: string
 }
 
@@ -212,13 +208,13 @@ export interface StripeWebhookEvent {
 }
 
 export type StripeWebhookEventType =
-  | "checkout.session.completed"
-  | "customer.subscription.created"
-  | "customer.subscription.updated"
-  | "customer.subscription.deleted"
-  | "invoice.payment_succeeded"
-  | "invoice.payment_failed"
-  | "customer.subscription.trial_end"
+  | 'checkout.session.completed'
+  | 'customer.subscription.created'
+  | 'customer.subscription.updated'
+  | 'customer.subscription.deleted'
+  | 'invoice.payment_succeeded'
+  | 'invoice.payment_failed'
+  | 'customer.subscription.trial_end'
 
 // ============================================================================
 // CACHE TYPES
@@ -234,13 +230,7 @@ export interface CachedEntitlements {
 // UTILITY TYPES
 // ============================================================================
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export interface NonNull<T> {
   [key: string]: T

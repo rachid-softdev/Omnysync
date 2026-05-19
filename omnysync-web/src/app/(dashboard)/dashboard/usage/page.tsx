@@ -1,39 +1,50 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
-import { Loader2, TrendingUp, Zap, FileText, Users, Image, Link2, BarChart3, Calendar, Clock } from "lucide-react"
-import { useTranslations } from "@/lib/i18n/useTranslations"
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Progress } from '@/components/ui/progress'
+import {
+  Loader2,
+  TrendingUp,
+  Zap,
+  FileText,
+  Users,
+  Image,
+  Link2,
+  BarChart3,
+  Calendar,
+  Clock,
+} from 'lucide-react'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 interface UsageData {
   currentPlan: string
   billingCycle: { start: string; end: string }
-  
+
   // Syncs
   syncUsed: number
   syncLimit: number
-  
+
   // Documents
   documentsUsed: number
   documentsLimit: number
-  
+
   // Connectors
   connectorsUsed: number
   connectorsLimit: number
-  
+
   // Team
   teamUsed: number
   teamLimit: number
-  
+
   // AI Usage
   aiSEO: number
   aiImages: number
   aiInterlinking: number
-  
+
   // History
   history: Array<{
     month: string
@@ -54,7 +65,7 @@ export default function UsagePage() {
 
   const fetchUsage = async () => {
     try {
-      const res = await fetch("/api/usage")
+      const res = await fetch('/api/usage')
       if (res.ok) {
         const data = await res.json()
         setUsage(data)
@@ -68,10 +79,10 @@ export default function UsagePage() {
 
   // Données de demo
   const demoUsage: UsageData = {
-    currentPlan: "Pro",
+    currentPlan: 'Pro',
     billingCycle: {
-      start: "2026-05-01",
-      end: "2026-05-31",
+      start: '2026-05-01',
+      end: '2026-05-31',
     },
     syncUsed: 67,
     syncLimit: 100,
@@ -85,11 +96,11 @@ export default function UsagePage() {
     aiImages: 12,
     aiInterlinking: 8,
     history: [
-      { month: "2026-05", syncs: 67, documents: 45, aiCalls: 43 },
-      { month: "2026-04", syncs: 52, documents: 38, aiCalls: 31 },
-      { month: "2026-03", syncs: 48, documents: 32, aiCalls: 28 },
-      { month: "2026-02", syncs: 35, documents: 25, aiCalls: 19 },
-      { month: "2026-01", syncs: 28, documents: 20, aiCalls: 12 },
+      { month: '2026-05', syncs: 67, documents: 45, aiCalls: 43 },
+      { month: '2026-04', syncs: 52, documents: 38, aiCalls: 31 },
+      { month: '2026-03', syncs: 48, documents: 32, aiCalls: 28 },
+      { month: '2026-02', syncs: 35, documents: 25, aiCalls: 19 },
+      { month: '2026-01', syncs: 28, documents: 20, aiCalls: 12 },
     ],
   }
 
@@ -101,9 +112,9 @@ export default function UsagePage() {
   }
 
   const getUsageColor = (percentage: number) => {
-    if (percentage >= 90) return "text-red-500"
-    if (percentage >= 75) return "text-yellow-500"
-    return "text-muted-foreground"
+    if (percentage >= 90) return 'text-red-500'
+    if (percentage >= 75) return 'text-yellow-500'
+    return 'text-muted-foreground'
   }
 
   if (loading) {
@@ -117,9 +128,9 @@ export default function UsagePage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">{t("USAGE_TITLE") || "Utilisation"}</h1>
+        <h1 className="text-3xl font-bold">{t('USAGE_TITLE') || 'Utilisation'}</h1>
         <p className="text-muted-foreground mt-1">
-          {t("USAGE_SUBTITLE") || "Suivez votre consommation et vos limites"}
+          {t('USAGE_SUBTITLE') || 'Suivez votre consommation et vos limites'}
         </p>
       </div>
 
@@ -133,7 +144,9 @@ export default function UsagePage() {
                 <Badge variant="default">Actif</Badge>
               </div>
               <p className="text-muted-foreground mt-1">
-                Cycle de facturation: {new Date(displayUsage.billingCycle.start).toLocaleDateString("fr-FR")} - {new Date(displayUsage.billingCycle.end).toLocaleDateString("fr-FR")}
+                Cycle de facturation:{' '}
+                {new Date(displayUsage.billingCycle.start).toLocaleDateString('fr-FR')} -{' '}
+                {new Date(displayUsage.billingCycle.end).toLocaleDateString('fr-FR')}
               </p>
             </div>
             <Button variant="outline">Changer de plan</Button>
@@ -163,8 +176,13 @@ export default function UsagePage() {
                   {displayUsage.syncUsed}
                   <span className="text-lg text-muted-foreground">/{displayUsage.syncLimit}</span>
                 </div>
-                <Progress value={getUsagePercentage(displayUsage.syncUsed, displayUsage.syncLimit)} className="h-2" />
-                <p className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.syncUsed, displayUsage.syncLimit))}`}>
+                <Progress
+                  value={getUsagePercentage(displayUsage.syncUsed, displayUsage.syncLimit)}
+                  className="h-2"
+                />
+                <p
+                  className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.syncUsed, displayUsage.syncLimit))}`}
+                >
                   {displayUsage.syncLimit - displayUsage.syncUsed} restantes ce mois
                 </p>
               </CardContent>
@@ -182,13 +200,21 @@ export default function UsagePage() {
                 <div className="text-3xl font-bold mb-2">
                   {displayUsage.documentsUsed}
                   <span className="text-lg text-muted-foreground">
-                    {displayUsage.documentsLimit === -1 ? "/∞" : `/${displayUsage.documentsLimit}`}
+                    {displayUsage.documentsLimit === -1 ? '/∞' : `/${displayUsage.documentsLimit}`}
                   </span>
                 </div>
                 {displayUsage.documentsLimit !== -1 && (
                   <>
-                    <Progress value={getUsagePercentage(displayUsage.documentsUsed, displayUsage.documentsLimit)} className="h-2" />
-                    <p className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.documentsUsed, displayUsage.documentsLimit))}`}>
+                    <Progress
+                      value={getUsagePercentage(
+                        displayUsage.documentsUsed,
+                        displayUsage.documentsLimit
+                      )}
+                      className="h-2"
+                    />
+                    <p
+                      className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.documentsUsed, displayUsage.documentsLimit))}`}
+                    >
                       {displayUsage.documentsLimit - displayUsage.documentsUsed} restantes
                     </p>
                   </>
@@ -207,10 +233,20 @@ export default function UsagePage() {
               <CardContent>
                 <div className="text-3xl font-bold mb-2">
                   {displayUsage.connectorsUsed}
-                  <span className="text-lg text-muted-foreground">/{displayUsage.connectorsLimit}</span>
+                  <span className="text-lg text-muted-foreground">
+                    /{displayUsage.connectorsLimit}
+                  </span>
                 </div>
-                <Progress value={getUsagePercentage(displayUsage.connectorsUsed, displayUsage.connectorsLimit)} className="h-2" />
-                <p className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.connectorsUsed, displayUsage.connectorsLimit))}`}>
+                <Progress
+                  value={getUsagePercentage(
+                    displayUsage.connectorsUsed,
+                    displayUsage.connectorsLimit
+                  )}
+                  className="h-2"
+                />
+                <p
+                  className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.connectorsUsed, displayUsage.connectorsLimit))}`}
+                >
                   {displayUsage.connectorsLimit - displayUsage.connectorsUsed} disponibles
                 </p>
               </CardContent>
@@ -229,8 +265,13 @@ export default function UsagePage() {
                   {displayUsage.teamUsed}
                   <span className="text-lg text-muted-foreground">/{displayUsage.teamLimit}</span>
                 </div>
-                <Progress value={getUsagePercentage(displayUsage.teamUsed, displayUsage.teamLimit)} className="h-2" />
-                <p className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.teamUsed, displayUsage.teamLimit))}`}>
+                <Progress
+                  value={getUsagePercentage(displayUsage.teamUsed, displayUsage.teamLimit)}
+                  className="h-2"
+                />
+                <p
+                  className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.teamUsed, displayUsage.teamLimit))}`}
+                >
                   {displayUsage.teamLimit - displayUsage.teamUsed} places restantes
                 </p>
               </CardContent>
@@ -242,9 +283,7 @@ export default function UsagePage() {
           <Card>
             <CardHeader>
               <CardTitle>Utilisation IA</CardTitle>
-              <CardDescription>
-                Nombre d'appels aux fonctionnalités IA ce mois-ci
-              </CardDescription>
+              <CardDescription>Nombre d'appels aux fonctionnalités IA ce mois-ci</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-6">
@@ -265,9 +304,7 @@ export default function UsagePage() {
                     <h3 className="font-semibold">Images</h3>
                   </div>
                   <p className="text-4xl font-bold">{displayUsage.aiImages}</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Images générées avec DALL-E
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">Images générées avec DALL-E</p>
                 </div>
 
                 <div className="p-6 rounded-lg border bg-muted/50">
@@ -283,12 +320,15 @@ export default function UsagePage() {
               </div>
 
               <div className="mt-8 p-4 rounded-lg bg-muted">
-                <h4 className="font-semibold mb-2"> Fonctionnalités IA (Plan {displayUsage.currentPlan})</h4>
+                <h4 className="font-semibold mb-2">
+                  {' '}
+                  Fonctionnalités IA (Plan {displayUsage.currentPlan})
+                </h4>
                 <ul className="space-y-1 text-sm text-muted-foreground">
                   <li>✓ SEO automatique</li>
                   <li>✓ Génération d'images</li>
-                  {displayUsage.currentPlan === "Pro" && <li>✓ Maillage interne</li>}
-                  {displayUsage.currentPlan !== "Free" && <li>✓ Amélioration de contenu</li>}
+                  {displayUsage.currentPlan === 'Pro' && <li>✓ Maillage interne</li>}
+                  {displayUsage.currentPlan !== 'Free' && <li>✓ Amélioration de contenu</li>}
                 </ul>
               </div>
             </CardContent>
@@ -299,9 +339,7 @@ export default function UsagePage() {
           <Card>
             <CardHeader>
               <CardTitle>Historique d'utilisation</CardTitle>
-              <CardDescription>
-                Vos statistiques mensuelles
-              </CardDescription>
+              <CardDescription>Vos statistiques mensuelles</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -320,7 +358,10 @@ export default function UsagePage() {
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-muted-foreground" />
-                            {new Date(month.month + "-01").toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}
+                            {new Date(month.month + '-01').toLocaleDateString('fr-FR', {
+                              month: 'long',
+                              year: 'numeric',
+                            })}
                           </div>
                         </td>
                         <td className="text-right py-3 px-4 font-medium">{month.syncs}</td>

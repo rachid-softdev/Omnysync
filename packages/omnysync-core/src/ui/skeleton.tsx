@@ -1,4 +1,4 @@
-import { cn } from "../utils/cn"
+import { cn } from "../utils/cn";
 
 export function Skeleton({
   className,
@@ -6,13 +6,10 @@ export function Skeleton({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn(
-        "animate-pulse rounded-md bg-muted",
-        className
-      )}
+      className={cn("animate-pulse rounded-md bg-muted", className)}
       {...props}
     />
-  )
+  );
 }
 
 // Document card skeleton
@@ -29,7 +26,7 @@ export function DocumentCardSkeleton() {
         <Skeleton className="h-4 w-24" />
       </div>
     </div>
-  )
+  );
 }
 
 // Connector card skeleton
@@ -43,7 +40,7 @@ export function ConnectorCardSkeleton() {
       </div>
       <Skeleton className="h-9 w-24" />
     </div>
-  )
+  );
 }
 
 // Table row skeleton
@@ -54,7 +51,7 @@ export function TableRowSkeleton({ columns = 4 }: { columns?: number }) {
         <Skeleton key={i} className="h-4 flex-1" />
       ))}
     </div>
-  )
+  );
 }
 
 // Stats card skeleton
@@ -67,7 +64,7 @@ export function StatsCardSkeleton() {
         <Skeleton className="h-4 w-24" />
       </div>
     </div>
-  )
+  );
 }
 
 // Page skeleton
@@ -81,14 +78,14 @@ export function PageSkeleton() {
         </div>
         <Skeleton className="h-10 w-32" />
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCardSkeleton />
         <StatsCardSkeleton />
         <StatsCardSkeleton />
         <StatsCardSkeleton />
       </div>
-      
+
       <div className="space-y-4">
         <Skeleton className="h-6 w-32" />
         <div className="space-y-2">
@@ -98,5 +95,5 @@ export function PageSkeleton() {
         </div>
       </div>
     </div>
-  )
+  );
 }

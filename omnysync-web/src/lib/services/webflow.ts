@@ -1,13 +1,13 @@
-import { prisma } from "@/lib/prisma"
-import { ERR_UPLOAD_MEDIA } from "@/lib/errors"
-import { encrypt } from "@/lib/crypto"
-import { fetchWithRetry } from "@/lib/http-client"
+import { prisma } from '@/lib/prisma'
+import { ERR_UPLOAD_MEDIA } from '@/lib/errors'
+import { encrypt } from '@/lib/crypto'
+import { fetchWithRetry } from '@/lib/http-client'
 
 export interface WebflowPost {
   name: string
   slug: string
   content: string
-  status: "draft" | "published"
+  status: 'draft' | 'published'
   fields?: Record<string, string | boolean | undefined>
 }
 
@@ -18,11 +18,11 @@ export interface WebflowCollection {
 }
 
 export function createWebflowClient(accessToken: string, siteId: string) {
-  const baseUrl = "https://api.webflow.com"
-  
+  const baseUrl = 'https://api.webflow.com'
+
   const headers = {
     Authorization: `Bearer ${accessToken}`,
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   }
 
   async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -37,37 +37,46 @@ export function createWebflowClient(accessToken: string, siteId: string) {
       return request(`/sites/${siteId}/collections`)
     },
 
-    async getCollectionItems(collectionId: string): Promise<{ items: Array<{ id: string; name: string; slug: string }> }> {
+    async getCollectionItems(
+      collectionId: string
+    ): Promise<{ items: Array<{ id: string; name: string; slug: string }> }> {
       return request(`/collections/${collectionId}/items`)
     },
 
-    async createItem(collectionId: string, item: WebflowPost): Promise<{ items: Array<{ id: string }> }> {
+    async createItem(
+      collectionId: string,
+      item: WebflowPost
+    ): Promise<{ items: Array<{ id: string }> }> {
       return request(`/collections/${collectionId}/items`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({
           fields: {
             name: item.name,
             slug: item.slug,
-            _archived: item.status === "draft",
-            _draft: item.status === "draft",
-            "post-body": item.content,
+            _archived: item.status === 'draft',
+            _draft: item.status === 'draft',
+            'post-body': item.content,
             ...item.fields,
           },
         }),
       })
     },
 
-    async updateItem(collectionId: string, itemId: string, item: Partial<WebflowPost>): Promise<{ items: Array<{ id: string }> }> {
+    async updateItem(
+      collectionId: string,
+      itemId: string,
+      item: Partial<WebflowPost>
+    ): Promise<{ items: Array<{ id: string }> }> {
       return request(`/collections/${collectionId}/items/${itemId}`, {
-        method: "PUT",
+        method: 'PUT',
         body: JSON.stringify({
           fields: {
             ...(item.name && { name: item.name }),
             ...(item.slug && { slug: item.slug }),
-            ...(item.content && { "post-body": item.content }),
+            ...(item.content && { 'post-body': item.content }),
             ...(item.status && {
-              _archived: item.status === "draft",
-              _draft: item.status === "draft",
+              _archived: item.status === 'draft',
+              _draft: item.status === 'draft',
             }),
           },
         }),
@@ -76,10 +85,10 @@ export function createWebflowClient(accessToken: string, siteId: string) {
 
     async uploadMedia(file: Blob, filename: string): Promise<{ url: string }> {
       const formData = new FormData()
-      formData.append("file", file, filename)
+      formData.append('file', file, filename)
 
       const response = await fetch(`${baseUrl}/sites/${siteId}/assets`, {
-        method: "POST",
+        method: 'POST',
         headers: {
           Authorization: headers.Authorization,
         },
@@ -105,9 +114,9 @@ export async function saveWebflowConnector(
     data: {
       userId,
       organizationId,
-      type: "WEBFLOW",
+      type: 'WEBFLOW',
       name: `Webflow - ${siteId}`,
-      status: "ACTIVE",
+      status: 'ACTIVE',
       config: { siteId },
       credentials: encrypt(accessToken),
     },

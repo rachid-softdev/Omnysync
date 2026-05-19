@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/prisma"
-import { encrypt, decrypt } from "@/lib/crypto"
-import { fetchWithRetry } from "@/lib/http-client"
-import { ERR_FETCH_CONTENT } from "@/lib/errors"
+import { prisma } from '@/lib/prisma'
+import { encrypt, decrypt } from '@/lib/crypto'
+import { fetchWithRetry } from '@/lib/http-client'
+import { ERR_FETCH_CONTENT } from '@/lib/errors'
 
 class APIError extends Error {
   constructor(
@@ -9,11 +9,11 @@ class APIError extends Error {
     message: string
   ) {
     super(message)
-    this.name = "APIError"
+    this.name = 'APIError'
   }
 }
 
-const AIRTABLE_API = "https://api.airtable.com/v0"
+const AIRTABLE_API = 'https://api.airtable.com/v0'
 
 export interface AirtableBase {
   id: string
@@ -44,7 +44,7 @@ export async function listAirtableBases(apiKey: string): Promise<AirtableBase[]>
     })
     return data
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to fetch Airtable bases")
+    throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch Airtable bases')
   }
 }
 
@@ -63,7 +63,7 @@ export async function listAirtableTables(apiKey: string, baseId: string): Promis
     )
     return data.tables || []
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to fetch Airtable tables")
+    throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch Airtable tables')
   }
 }
 
@@ -81,19 +81,19 @@ export async function getAirtableRecords(
   } = {}
 ): Promise<AirtableRecord[]> {
   const params = new URLSearchParams()
-  
+
   if (options.maxRecords) {
-    params.set("maxRecords", options.maxRecords.toString())
+    params.set('maxRecords', options.maxRecords.toString())
   }
   if (options.view) {
-    params.set("view", options.view)
+    params.set('view', options.view)
   }
   if (options.filterByFormula) {
-    params.set("filterByFormula", options.filterByFormula)
+    params.set('filterByFormula', options.filterByFormula)
   }
 
   const queryString = params.toString()
-  const url = `${AIRTABLE_API}/${baseId}/${tableId}${queryString ? `?${queryString}` : ""}`
+  const url = `${AIRTABLE_API}/${baseId}/${tableId}${queryString ? `?${queryString}` : ''}`
 
   try {
     const data = await fetchWithRetry<{ records: AirtableRecord[] }>(url, {
@@ -103,7 +103,7 @@ export async function getAirtableRecords(
     })
     return data.records || []
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to fetch Airtable records")
+    throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch Airtable records')
   }
 }
 
@@ -116,27 +116,30 @@ export function airtableRecordToDocument(record: AirtableRecord): {
   metadata: Record<string, unknown>
 } {
   // Essayer de trouver le titre dans les champs
-  const titleField = record.fields["Title"] || record.fields["title"] || 
-                     record.fields["Name"] || record.fields["name"] || 
-                     Object.values(record.fields).find((v) => typeof v === "string")
-  
-  const title = String(titleField || "Untitled")
-  
+  const titleField =
+    record.fields['Title'] ||
+    record.fields['title'] ||
+    record.fields['Name'] ||
+    record.fields['name'] ||
+    Object.values(record.fields).find((v) => typeof v === 'string')
+
+  const title = String(titleField || 'Untitled')
+
   // Convertir tous les champs en contenu
   const content = Object.entries(record.fields)
     .map(([key, value]) => {
-      if (typeof value === "string") {
+      if (typeof value === 'string') {
         return `## ${key}\n${value}`
       }
       if (Array.isArray(value)) {
-        return `## ${key}\n${value.join(", ")}`
+        return `## ${key}\n${value.join(', ')}`
       }
-      if (typeof value === "object") {
+      if (typeof value === 'object') {
         return `## ${key}\n${JSON.stringify(value, null, 2)}`
       }
       return `## ${key}\n${String(value)}`
     })
-    .join("\n\n")
+    .join('\n\n')
 
   return {
     title,
@@ -169,9 +172,9 @@ export async function saveAirtableConnector(
     data: {
       userId,
       organizationId,
-      type: "AIRTABLE",
-      name: "Airtable",
-      status: "ACTIVE",
+      type: 'AIRTABLE',
+      name: 'Airtable',
+      status: 'ACTIVE',
       credentials: encrypt(apiKey),
       config: JSON.stringify(config),
     },
@@ -188,12 +191,12 @@ export async function listAirtableDocuments(
     where: { id: connectorId },
   })
 
-  if (!connector || connector.type !== "AIRTABLE") {
-    throw new Error("Invalid Airtable connector")
+  if (!connector || connector.type !== 'AIRTABLE') {
+    throw new Error('Invalid Airtable connector')
   }
 
-  const apiKey = decrypt(connector.credentials || "")
-  const config = JSON.parse(decrypt(connector.config || "{}"))
+  const apiKey = decrypt(connector.credentials || '')
+  const config = JSON.parse(decrypt(connector.config || '{}'))
 
   if (!config.baseId) {
     return []
@@ -202,15 +205,15 @@ export async function listAirtableDocuments(
   // Si pas de table spécifiée, lister toutes les tables
   if (!config.tableId) {
     const tables = await listAirtableTables(apiKey, config.baseId)
-    
+
     // Pour chaque table, récupérer les enregistrements
     const documents: Array<{ id: string; title: string }> = []
-    
+
     for (const table of tables) {
       const records = await getAirtableRecords(apiKey, config.baseId, table.id, {
         maxRecords: 10,
       })
-      
+
       for (const record of records) {
         const doc = airtableRecordToDocument(record)
         documents.push({
@@ -219,13 +222,13 @@ export async function listAirtableDocuments(
         })
       }
     }
-    
+
     return documents
   }
 
   // Sinon, récupérer les enregistrements de la table spécifiée
   const records = await getAirtableRecords(apiKey, config.baseId, config.tableId)
-  
+
   return records.map((record) => {
     const doc = airtableRecordToDocument(record)
     return {
@@ -246,20 +249,20 @@ export async function getAirtableRecordContent(
     where: { id: connectorId },
   })
 
-  if (!connector || connector.type !== "AIRTABLE") {
-    throw new Error("Invalid Airtable connector")
+  if (!connector || connector.type !== 'AIRTABLE') {
+    throw new Error('Invalid Airtable connector')
   }
 
-  const apiKey = decrypt(connector.credentials || "")
-  const config = JSON.parse(decrypt(connector.config || "{}"))
+  const apiKey = decrypt(connector.credentials || '')
+  const config = JSON.parse(decrypt(connector.config || '{}'))
 
   // Parse recordId (peut être tableId:recordId ou juste recordId)
-  const [tableId, actualRecordId] = recordId.includes(":") 
-    ? recordId.split(":") 
+  const [tableId, actualRecordId] = recordId.includes(':')
+    ? recordId.split(':')
     : [config.tableId, recordId]
 
   if (!tableId || !actualRecordId || !config.baseId) {
-    throw new Error("Invalid record ID")
+    throw new Error('Invalid record ID')
   }
 
   const records = await getAirtableRecords(apiKey, config.baseId, tableId, {
@@ -267,11 +270,11 @@ export async function getAirtableRecordContent(
   })
 
   if (records.length === 0) {
-    throw new Error("Record not found")
+    throw new Error('Record not found')
   }
 
   const doc = airtableRecordToDocument(records[0])
-  
+
   return {
     id: actualRecordId,
     title: doc.title,
@@ -307,20 +310,17 @@ export async function createAirtableRecord(
   fields: Record<string, unknown>
 ): Promise<{ id: string }> {
   try {
-    const data = await fetchWithRetry<{ id: string }>(
-      `${AIRTABLE_API}/${baseId}/${tableId}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ fields }),
-      }
-    )
+    const data = await fetchWithRetry<{ id: string }>(`${AIRTABLE_API}/${baseId}/${tableId}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ fields }),
+    })
     return { id: data.id }
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to create Airtable record")
+    throw new APIError(ERR_FETCH_CONTENT, 'Failed to create Airtable record')
   }
 }
 
@@ -338,17 +338,17 @@ export async function updateAirtableRecord(
     const data = await fetchWithRetry<{ id: string }>(
       `${AIRTABLE_API}/${baseId}/${tableId}/${recordId}`,
       {
-        method: "PATCH",
+        method: 'PATCH',
         headers: {
           Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ fields }),
       }
     )
     return { id: data.id }
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to update Airtable record")
+    throw new APIError(ERR_FETCH_CONTENT, 'Failed to update Airtable record')
   }
 }
 
@@ -362,17 +362,14 @@ export async function deleteAirtableRecord(
   recordId: string
 ): Promise<{ id: string }> {
   try {
-    await fetchWithRetry(
-      `${AIRTABLE_API}/${baseId}/${tableId}/${recordId}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-      }
-    )
+    await fetchWithRetry(`${AIRTABLE_API}/${baseId}/${tableId}/${recordId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    })
     return { id: recordId }
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to delete Airtable record")
+    throw new APIError(ERR_FETCH_CONTENT, 'Failed to delete Airtable record')
   }
 }

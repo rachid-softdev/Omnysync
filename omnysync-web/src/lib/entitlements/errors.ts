@@ -3,15 +3,15 @@
  * Omnysync - 2026
  */
 
-import { ERROR_MESSAGES } from "./constants"
+import { ERROR_MESSAGES } from './constants'
 
 export type FeatureGateErrorCode =
-  | "FEATURE_NOT_AVAILABLE"
-  | "LIMIT_REACHED"
-  | "SUBSCRIPTION_EXPIRED"
-  | "INVALID_ORG"
-  | "INVALID_FEATURE"
-  | "CACHE_ERROR"
+  | 'FEATURE_NOT_AVAILABLE'
+  | 'LIMIT_REACHED'
+  | 'SUBSCRIPTION_EXPIRED'
+  | 'INVALID_ORG'
+  | 'INVALID_FEATURE'
+  | 'CACHE_ERROR'
 
 export interface FeatureGateErrorContext {
   orgId?: string
@@ -38,19 +38,19 @@ export class FeatureGateError extends Error {
     statusCode: number = 403
   ) {
     super(message)
-    this.name = "FeatureGateError"
+    this.name = 'FeatureGateError'
     this.code = code
     this.statusCode = statusCode
     this.context = context
 
     // Set additional properties for specific errors
-    if (code === "FEATURE_NOT_AVAILABLE") {
+    if (code === 'FEATURE_NOT_AVAILABLE') {
       this.featureKey = context.feature
       this.planRequired = context.plan
       this.upgradeUrl = ERROR_MESSAGES.UPGRADE_URL
     }
 
-    if (code === "LIMIT_REACHED") {
+    if (code === 'LIMIT_REACHED') {
       this.featureKey = context.feature
       this.upgradeUrl = ERROR_MESSAGES.UPGRADE_URL
     }
@@ -72,14 +72,14 @@ export class FeatureGateError extends Error {
       response.upgrade_url = this.upgradeUrl
     }
 
-    if (this.code === "LIMIT_REACHED") {
+    if (this.code === 'LIMIT_REACHED') {
       response.limit = this.context.limit
       response.used = this.context.used
       response.reset_at = this.context.resetAt
       response.upgrade_url = this.upgradeUrl
     }
 
-    if (this.code === "SUBSCRIPTION_EXPIRED") {
+    if (this.code === 'SUBSCRIPTION_EXPIRED') {
       response.renew_url = ERROR_MESSAGES.RENEW_URL
     }
 
@@ -94,7 +94,7 @@ export class FeatureGateError extends Error {
 export class FeatureNotAvailableError extends FeatureGateError {
   constructor(featureKey: string, currentPlan: string, requiredPlan?: string) {
     super(
-      "FEATURE_NOT_AVAILABLE",
+      'FEATURE_NOT_AVAILABLE',
       requiredPlan
         ? `Feature '${featureKey}' requires ${requiredPlan} plan. You are currently on ${currentPlan}.`
         : `Feature '${featureKey}' is not available on your current plan.`,
@@ -108,14 +108,9 @@ export class FeatureNotAvailableError extends FeatureGateError {
 }
 
 export class LimitReachedError extends FeatureGateError {
-  constructor(
-    featureKey: string,
-    limit: number,
-    used: number,
-    resetAt: string
-  ) {
+  constructor(featureKey: string, limit: number, used: number, resetAt: string) {
     super(
-      "LIMIT_REACHED",
+      'LIMIT_REACHED',
       `You have reached your limit for '${featureKey}'. You have used ${used} out of ${limit} allowed.`,
       {
         feature: featureKey,
@@ -131,8 +126,8 @@ export class LimitReachedError extends FeatureGateError {
 export class SubscriptionExpiredError extends FeatureGateError {
   constructor(orgId: string) {
     super(
-      "SUBSCRIPTION_EXPIRED",
-      "Your subscription has expired. Please renew to continue using premium features.",
+      'SUBSCRIPTION_EXPIRED',
+      'Your subscription has expired. Please renew to continue using premium features.',
       { orgId },
       402
     )
@@ -141,19 +136,14 @@ export class SubscriptionExpiredError extends FeatureGateError {
 
 export class InvalidOrganizationError extends FeatureGateError {
   constructor(orgId: string) {
-    super(
-      "INVALID_ORG",
-      `Organization '${orgId}' not found or does not exist.`,
-      { orgId },
-      404
-    )
+    super('INVALID_ORG', `Organization '${orgId}' not found or does not exist.`, { orgId }, 404)
   }
 }
 
 export class InvalidFeatureError extends FeatureGateError {
   constructor(featureKey: string) {
     super(
-      "INVALID_FEATURE",
+      'INVALID_FEATURE',
       `Feature '${featureKey}' is not defined in the system.`,
       { feature: featureKey },
       400
@@ -163,7 +153,7 @@ export class InvalidFeatureError extends FeatureGateError {
 
 export class CacheError extends FeatureGateError {
   constructor(message: string, context: FeatureGateErrorContext = {}) {
-    super("CACHE_ERROR", message, context, 500)
+    super('CACHE_ERROR', message, context, 500)
   }
 }
 
@@ -175,7 +165,7 @@ export function logFeatureGateError(
   error: FeatureGateError,
   additionalContext?: Record<string, unknown>
 ): void {
-  console.error("[FeatureGateError]", {
+  console.error('[FeatureGateError]', {
     code: error.code,
     message: error.message,
     context: { ...error.context, ...additionalContext },
@@ -199,12 +189,12 @@ export function handleFeatureGateError(error: unknown): {
   }
 
   // Unknown error
-  console.error("[UnexpectedError]", error)
+  console.error('[UnexpectedError]', error)
   return {
     statusCode: 500,
     body: {
-      error: "INTERNAL_ERROR",
-      message: "An unexpected error occurred",
+      error: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred',
     },
   }
 }

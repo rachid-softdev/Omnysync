@@ -2,7 +2,7 @@
  * Utilitaires pour la gestion des mots de passe
  * Utilise bcrypt pour le hashage
  */
-import { hash, compare } from "bcrypt"
+import { hash, compare } from 'bcrypt'
 
 const ROUNDS = 12
 
@@ -34,25 +34,25 @@ export function validatePasswordStrength(password: string): { valid: boolean; er
   const errors: string[] = []
 
   if (password.length < 8) {
-    errors.push("Le mot de passe doit contenir au moins 8 caractères")
+    errors.push('Le mot de passe doit contenir au moins 8 caractères')
   }
 
   if (!/[A-Z]/.test(password)) {
-    errors.push("Le mot de passe doit contenir au moins une majuscule")
+    errors.push('Le mot de passe doit contenir au moins une majuscule')
   }
 
   if (!/[a-z]/.test(password)) {
-    errors.push("Le mot de passe doit contenir au moins une minuscule")
+    errors.push('Le mot de passe doit contenir au moins une minuscule')
   }
 
   if (!/[0-9]/.test(password)) {
-    errors.push("Le mot de passe doit contenir au moins un chiffre")
+    errors.push('Le mot de passe doit contenir au moins un chiffre')
   }
 
   // Le mot de passe est valide même sans caractère spécial
   // mais on peut ajouter une suggestion
   if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    errors.push("Suggestion: ajoutez un caractère spécial pour plus de sécurité")
+    errors.push('Suggestion: ajoutez un caractère spécial pour plus de sécurité')
   }
 
   return {

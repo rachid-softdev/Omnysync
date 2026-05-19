@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/prisma"
-import { NextResponse } from "next/server"
+import { prisma } from '@/lib/prisma'
+import { NextResponse } from 'next/server'
 
-export type Plan = "free" | "pro" | "business"
+export type Plan = 'free' | 'pro' | 'business'
 
 export interface PlanLimits {
   syncsPerMonth: number
@@ -49,7 +49,7 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
 
 export function getCurrentMonth(): string {
   const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
 export async function getUserPlan(userId: string): Promise<Plan> {
@@ -57,11 +57,11 @@ export async function getUserPlan(userId: string): Promise<Plan> {
     where: { userId },
   })
 
-  if (!subscription || subscription.status !== "active") {
-    return "free"
+  if (!subscription || subscription.status !== 'active') {
+    return 'free'
   }
 
-  return (subscription.plan as Plan) || "free"
+  return (subscription.plan as Plan) || 'free'
 }
 
 export function getPlanLimits(plan: Plan): PlanLimits {
@@ -95,9 +95,7 @@ export async function getQuotaUsage(userId: string): Promise<{
   const syncCount = quotaUsage?.syncCount || 0
 
   // Calcul du pourcentage d'utilisation (pour le plan gratuit)
-  const percentUsed = plan === "free" 
-    ? Math.round((syncCount / limits.syncsPerMonth) * 100) 
-    : 0
+  const percentUsed = plan === 'free' ? Math.round((syncCount / limits.syncsPerMonth) * 100) : 0
 
   return {
     syncCount,
@@ -145,7 +143,7 @@ export async function checkAndIncrementQuota(userId: string): Promise<{
     return {
       allowed: false,
       remaining: 0,
-      upgradeUrl: "/pricing",
+      upgradeUrl: '/pricing',
     }
   }
 
@@ -163,13 +161,15 @@ export async function checkAndIncrementQuota(userId: string): Promise<{
  */
 export async function decrementQuotaOnFailure(userId: string): Promise<void> {
   const month = getCurrentMonth()
-  
-  await prisma.quotaUsage.updateMany({
-    where: { userId, month },
-    data: { syncCount: { decrement: 1 } },
-  }).catch(() => {
-    // Ignore errors - quota is not critical
-  })
+
+  await prisma.quotaUsage
+    .updateMany({
+      where: { userId, month },
+      data: { syncCount: { decrement: 1 } },
+    })
+    .catch(() => {
+      // Ignore errors - quota is not critical
+    })
 }
 
 /**
@@ -194,7 +194,7 @@ export async function checkConnectorLimit(userId: string): Promise<{
     allowed,
     current: connectorCount,
     limit: limits.connectors,
-    upgradeUrl: allowed ? undefined : "/pricing",
+    upgradeUrl: allowed ? undefined : '/pricing',
   }
 }
 
@@ -220,19 +220,22 @@ export async function checkDocumentLimit(userId: string): Promise<{
     allowed,
     current: documentCount,
     limit: limits.documents,
-    upgradeUrl: allowed ? undefined : "/pricing",
+    upgradeUrl: allowed ? undefined : '/pricing',
   }
 }
 
 /**
  * Middleware pour vérifier les quotas sur les routes API
  */
-export async function withQuotaCheck(request: Request, handler: () => Promise<Response>): Promise<Response> {
+export async function withQuotaCheck(
+  request: Request,
+  handler: () => Promise<Response>
+): Promise<Response> {
   // Extraire le userId depuis la session (à adapter selon votre auth)
-  const userId = request.headers.get("x-user-id")
-  
+  const userId = request.headers.get('x-user-id')
+
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const { allowed, upgradeUrl } = await checkAndIncrementQuota(userId)
@@ -240,9 +243,9 @@ export async function withQuotaCheck(request: Request, handler: () => Promise<Re
   if (!allowed) {
     return NextResponse.json(
       {
-        error: "Quota exceeded",
-        code: "QUOTA_EXCEEDED",
-        message: "Vous avez atteint votre limite de synchronisations mensuelles",
+        error: 'Quota exceeded',
+        code: 'QUOTA_EXCEEDED',
+        message: 'Vous avez atteint votre limite de synchronisations mensuelles',
         upgradeUrl,
       },
       { status: 403 }
@@ -262,7 +265,7 @@ export function getPlanFromPriceId(priceId: string): Plan {
   const proPriceId = process.env.STRIPE_PRICE_PRO_MONTHLY
   const businessPriceId = process.env.STRIPE_PRICE_BUSINESS_MONTHLY
 
-  if (priceId === proPriceId) return "pro"
-  if (priceId === businessPriceId) return "business"
-  return "free"
+  if (priceId === proPriceId) return 'pro'
+  if (priceId === businessPriceId) return 'business'
+  return 'free'
 }

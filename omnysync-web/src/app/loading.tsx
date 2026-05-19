@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { RefreshCcw } from "lucide-react";
+import { RefreshCcw } from 'lucide-react'
 
 export default function Loading() {
   return (
@@ -10,5 +10,5 @@ export default function Loading() {
         <p className="text-muted-foreground">Loading...</p>
       </div>
     </div>
-  );
+  )
 }

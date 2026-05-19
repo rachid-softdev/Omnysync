@@ -1,26 +1,31 @@
 /**
  * Service de réinitialisation de mot de passe
  */
-import { prisma } from "../../prisma"
-import { sendEmail } from "../email"
-import { encrypt, decrypt } from "../crypto"
-import { randomBytes } from "crypto"
+import { prisma } from "../../prisma";
+import { sendEmail } from "../email";
+import { encrypt, decrypt } from "../crypto";
+import { randomBytes } from "crypto";
 
-const RESET_TOKEN_EXPIRY_HOURS = 1
-const MAX_RESET_ATTEMPTS = 3
-const RATE_LIMIT_WINDOW_MINUTES = 15
+const RESET_TOKEN_EXPIRY_HOURS = 1;
+const MAX_RESET_ATTEMPTS = 3;
+const RATE_LIMIT_WINDOW_MINUTES = 15;
 
 /**
  * Génère un token de réinitialisation
  */
-export async function createPasswordResetToken(email: string): Promise<{ success: boolean; message: string }> {
+export async function createPasswordResetToken(
+  email: string,
+): Promise<{ success: boolean; message: string }> {
   const user = await prisma.user.findUnique({
     where: { email },
-  })
+  });
 
   if (!user) {
     // Ne pas révéler si l'email existe
-    return { success: true, message: "Si ce compte existe, un email a été envoyé" }
+    return {
+      success: true,
+      message: "Si ce compte existe, un email a été envoyé",
+    };
   }
 
   // Vérifier le rate limit
@@ -31,15 +36,20 @@ export async function createPasswordResetToken(email: string): Promise<{ success
         gte: new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000),
       },
     },
-  })
+  });
 
   if (recentResets >= MAX_RESET_ATTEMPTS) {
-    return { success: false, message: "Trop de demandes. Réessayez dans 15 minutes" }
+    return {
+      success: false,
+      message: "Trop de demandes. Réessayez dans 15 minutes",
+    };
   }
 
   // Générer token sécurisé
-  const token = randomBytes(32).toString("hex")
-  const expiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRY_HOURS * 60 * 60 * 1000)
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = new Date(
+    Date.now() + RESET_TOKEN_EXPIRY_HOURS * 60 * 60 * 1000,
+  );
 
   // Créer le token
   await prisma.passwordReset.create({
@@ -48,11 +58,11 @@ export async function createPasswordResetToken(email: string): Promise<{ success
       token,
       expiresAt,
     },
-  })
+  });
 
   // Envoyer l'email
-  const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`
-  
+  const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`;
+
   await sendEmail({
     to: email,
     subject: "Réinitialisation de votre mot de passe - Omnysync",
@@ -72,33 +82,38 @@ export async function createPasswordResetToken(email: string): Promise<{ success
         </p>
       </div>
     `,
-  })
+  });
 
-  return { success: true, message: "Si ce compte existe, un email a été envoyé" }
+  return {
+    success: true,
+    message: "Si ce compte existe, un email a été envoyé",
+  };
 }
 
 /**
  * Valide un token de réinitialisation
  */
-export async function validateResetToken(token: string): Promise<{ valid: boolean; userId?: string; error?: string }> {
+export async function validateResetToken(
+  token: string,
+): Promise<{ valid: boolean; userId?: string; error?: string }> {
   const reset = await prisma.passwordReset.findUnique({
     where: { token },
     include: { user: true },
-  })
+  });
 
   if (!reset) {
-    return { valid: false, error: "Token invalide" }
+    return { valid: false, error: "Token invalide" };
   }
 
   if (reset.usedAt) {
-    return { valid: false, error: "Token déjà utilisé" }
+    return { valid: false, error: "Token déjà utilisé" };
   }
 
   if (reset.expiresAt < new Date()) {
-    return { valid: false, error: "Token expiré" }
+    return { valid: false, error: "Token expiré" };
   }
 
-  return { valid: true, userId: reset.userId }
+  return { valid: true, userId: reset.userId };
 }
 
 /**
@@ -106,12 +121,12 @@ export async function validateResetToken(token: string): Promise<{ valid: boolea
  */
 export async function resetPassword(
   token: string,
-  newPassword: string
+  newPassword: string,
 ): Promise<{ success: boolean; error?: string }> {
   // Valider le token
-  const validation = await validateResetToken(token)
+  const validation = await validateResetToken(token);
   if (!validation.valid || !validation.userId) {
-    return { success: false, error: validation.error }
+    return { success: false, error: validation.error };
   }
 
   // TODO: Hasher le mot de passe avec bcrypt et stocker
@@ -122,7 +137,7 @@ export async function resetPassword(
   await prisma.passwordReset.update({
     where: { token },
     data: { usedAt: new Date() },
-  })
+  });
 
   // Créer un audit log
   await prisma.auditLog.create({
@@ -134,9 +149,9 @@ export async function resetPassword(
       targetId: validation.userId,
       details: { method: "token" },
     },
-  })
+  });
 
-  return { success: true }
+  return { success: true };
 }
 
 /**
@@ -147,7 +162,7 @@ export async function cleanupExpiredTokens(): Promise<number> {
     where: {
       expiresAt: { lt: new Date() },
     },
-  })
+  });
 
-  return result.count
+  return result.count;
 }

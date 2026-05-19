@@ -1,22 +1,22 @@
-import { prisma } from "../../prisma"
+import { prisma } from "../../prisma";
 
 export interface AIUsageLog {
-  id: string
-  userId: string | null
-  model: string
-  feature: string
-  tokens: number
-  costEstimate: number
-  createdAt: Date
+  id: string;
+  userId: string | null;
+  model: string;
+  feature: string;
+  tokens: number;
+  costEstimate: number;
+  createdAt: Date;
 }
 
 // Log AI usage to database
 export async function logAIUsage(data: {
-  userId: string | null
-  model: string
-  feature: string
-  tokens: number
-  costEstimate: number
+  userId: string | null;
+  model: string;
+  feature: string;
+  tokens: number;
+  costEstimate: number;
 }): Promise<void> {
   try {
     // In production, store in database for analytics and billing
@@ -27,18 +27,22 @@ export async function logAIUsage(data: {
       tokens: data.tokens,
       costEstimate: data.costEstimate,
       timestamp: new Date().toISOString(),
-    })
+    });
 
     // Optional: Store in database if you have an AIUsageLog model
     // await prisma.aiUsageLog.create({ data: { ...data, createdAt: new Date() } })
   } catch (error) {
     // Don't fail the main operation if logging fails
-    console.error("Failed to log AI usage:", error)
+    console.error("Failed to log AI usage:", error);
   }
 }
 
 // Get AI usage stats for a user
-export async function getAIUsageStats(userId: string, startDate?: Date, endDate?: Date) {
+export async function getAIUsageStats(
+  userId: string,
+  startDate?: Date,
+  endDate?: Date,
+) {
   // Placeholder for future AIUsageLog model
   // In production:
   // return await prisma.aiUsageLog.aggregate({
@@ -55,5 +59,5 @@ export async function getAIUsageStats(userId: string, startDate?: Date, endDate?
     totalCost: 0,
     requestCount: 0,
     period: { start: startDate, end: endDate },
-  }
+  };
 }

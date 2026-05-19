@@ -3,35 +3,35 @@
  * Omnysync - 2026
  */
 
-import { prisma } from "../../prisma"
-import { auditBilling } from "../audit"
+import { prisma } from "../../prisma";
+import { auditBilling } from "../audit";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export interface PlanFeatures {
-  name: string
-  price: number
-  currency: string
-  interval: "month" | "year"
-  
+  name: string;
+  price: number;
+  currency: string;
+  interval: "month" | "year";
+
   // Limits
-  maxConnectors: number
-  maxDocuments: number
-  maxSyncsPerMonth: number
-  maxTeamMembers: number
-  
+  maxConnectors: number;
+  maxDocuments: number;
+  maxSyncsPerMonth: number;
+  maxTeamMembers: number;
+
   // Features
-  aiSEO: boolean
-  aiImages: boolean
-  aiInterlinking: boolean
-  twoWaySync: boolean
-  approvalPortal: boolean
-  customDomain: boolean
-  apiAccess: boolean
-  prioritySupport: boolean
-  analyticsExport: boolean
+  aiSEO: boolean;
+  aiImages: boolean;
+  aiInterlinking: boolean;
+  twoWaySync: boolean;
+  approvalPortal: boolean;
+  customDomain: boolean;
+  apiAccess: boolean;
+  prioritySupport: boolean;
+  analyticsExport: boolean;
 }
 
 // ============================================================================
@@ -58,7 +58,7 @@ export const plans: Record<string, PlanFeatures> = {
     prioritySupport: false,
     analyticsExport: false,
   },
-  
+
   pro: {
     name: "Pro",
     price: 29,
@@ -78,7 +78,7 @@ export const plans: Record<string, PlanFeatures> = {
     prioritySupport: false,
     analyticsExport: true,
   },
-  
+
   business: {
     name: "Business",
     price: 99,
@@ -98,7 +98,7 @@ export const plans: Record<string, PlanFeatures> = {
     prioritySupport: true,
     analyticsExport: true,
   },
-  
+
   enterprise: {
     name: "Enterprise",
     price: -1,
@@ -118,7 +118,7 @@ export const plans: Record<string, PlanFeatures> = {
     prioritySupport: true,
     analyticsExport: true,
   },
-}
+};
 
 // ============================================================================
 // QUOTA CHECKING
@@ -129,8 +129,13 @@ export const plans: Record<string, PlanFeatures> = {
  */
 export async function checkQuota(
   organizationId: string,
-  feature: keyof PlanFeatures
-): Promise<{ allowed: boolean; current?: number; limit?: number; message?: string }> {
+  feature: keyof PlanFeatures,
+): Promise<{
+  allowed: boolean;
+  current?: number;
+  limit?: number;
+  message?: string;
+}> {
   // Get organization and subscription
   const org = await prisma.organization.findUnique({
     where: { id: organizationId },
@@ -143,86 +148,96 @@ export async function checkQuota(
         },
       },
     },
-  })
+  });
 
   if (!org) {
-    return { allowed: false, message: "Organization not found" }
+    return { allowed: false, message: "Organization not found" };
   }
 
   // Get plan
-  const subscription = org.users[0]?.user?.subscription
-  const planKey = subscription?.plan || "free"
-  const plan = plans[planKey]
+  const subscription = org.users[0]?.user?.subscription;
+  const planKey = subscription?.plan || "free";
+  const plan = plans[planKey];
 
   if (!plan) {
-    return { allowed: false, message: "Invalid plan" }
+    return { allowed: false, message: "Invalid plan" };
   }
 
   // Check based on feature
   if (typeof plan[feature] === "boolean") {
-    return { allowed: plan[feature] as boolean }
+    return { allowed: plan[feature] as boolean };
   }
 
   // For numeric limits
-  const limit = plan[feature] as number
-  
+  const limit = plan[feature] as number;
+
   if (limit === -1) {
-    return { allowed: true } // Unlimited
+    return { allowed: true }; // Unlimited
   }
 
   switch (feature) {
     case "maxConnectors": {
-      const count = await prisma.connector.count({ where: { organizationId } })
+      const count = await prisma.connector.count({ where: { organizationId } });
       return {
         allowed: count < limit,
         current: count,
         limit,
-        message: count >= limit ? `Limite de ${limit} connecteurs atteinte` : undefined,
-      }
+        message:
+          count >= limit
+            ? `Limite de ${limit} connecteurs atteinte`
+            : undefined,
+      };
     }
 
     case "maxDocuments": {
-      const count = await prisma.document.count({ where: { organizationId } })
+      const count = await prisma.document.count({ where: { organizationId } });
       return {
         allowed: count < limit,
         current: count,
         limit,
-        message: count >= limit ? `Limite de ${limit} documents atteinte` : undefined,
-      }
+        message:
+          count >= limit ? `Limite de ${limit} documents atteinte` : undefined,
+      };
     }
 
     case "maxSyncsPerMonth": {
-      const now = new Date()
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-      
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
       const count = await prisma.syncLog.count({
         where: {
           organizationId,
           createdAt: { gte: startOfMonth },
           status: "SUCCESS",
         },
-      })
-      
+      });
+
       return {
         allowed: count < limit,
         current: count,
         limit,
-        message: count >= limit ? `Limite de ${limit} synchronisations atteinte` : undefined,
-      }
+        message:
+          count >= limit
+            ? `Limite de ${limit} synchronisations atteinte`
+            : undefined,
+      };
     }
 
     case "maxTeamMembers": {
-      const count = await prisma.userOrganization.count({ where: { organizationId } })
+      const count = await prisma.userOrganization.count({
+        where: { organizationId },
+      });
       return {
         allowed: count < limit,
         current: count,
         limit,
-        message: count >= limit ? `Limite de ${limit} membres atteinte` : undefined,
-      }
+        message:
+          count >= limit ? `Limite de ${limit} membres atteinte` : undefined,
+      };
     }
 
     default:
-      return { allowed: true }
+      return { allowed: true };
   }
 }
 
@@ -232,15 +247,15 @@ export async function checkQuota(
 export async function withQuotaCheck<T>(
   organizationId: string,
   feature: keyof PlanFeatures,
-  action: () => Promise<T>
+  action: () => Promise<T>,
 ): Promise<T> {
-  const check = await checkQuota(organizationId, feature)
-  
+  const check = await checkQuota(organizationId, feature);
+
   if (!check.allowed) {
-    throw new Error(check.message || "Quota exceeded")
+    throw new Error(check.message || "Quota exceeded");
   }
-  
-  return action()
+
+  return action();
 }
 
 // ============================================================================
@@ -252,10 +267,10 @@ export async function withQuotaCheck<T>(
  */
 export async function recordUsage(
   organizationId: string,
-  resource: "sync" | "document" | "connector" | "member"
+  resource: "sync" | "document" | "connector" | "member",
 ): Promise<void> {
-  const now = new Date()
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+  const now = new Date();
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
   // Get the owner user ID
   const org = await prisma.organization.findUnique({
@@ -266,11 +281,11 @@ export async function recordUsage(
         take: 1,
       },
     },
-  })
+  });
 
-  if (!org?.users[0]) return
+  if (!org?.users[0]) return;
 
-  const userId = org.users[0].userId
+  const userId = org.users[0].userId;
 
   // Upsert quota usage
   await prisma.quotaUsage.upsert({
@@ -285,15 +300,15 @@ export async function recordUsage(
     update: {
       syncCount: resource === "sync" ? { increment: 1 } : undefined,
     },
-  })
+  });
 }
 
 /**
  * Récupère les statistiques d'utilisation
  */
 export async function getUsageStats(organizationId: string) {
-  const now = new Date()
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+  const now = new Date();
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
   // Get the owner user ID
   const org = await prisma.organization.findUnique({
@@ -304,23 +319,23 @@ export async function getUsageStats(organizationId: string) {
         take: 1,
       },
     },
-  })
+  });
 
-  if (!org?.users[0]) return null
+  if (!org?.users[0]) return null;
 
-  const userId = org.users[0].userId
+  const userId = org.users[0].userId;
 
   const quota = await prisma.quotaUsage.findUnique({
     where: { userId_month: { userId, month: monthKey } },
-  })
+  });
 
   // Get plan
   const subscription = await prisma.subscription.findUnique({
     where: { userId },
-  })
+  });
 
-  const planKey = subscription?.plan || "free"
-  const plan = plans[planKey]
+  const planKey = subscription?.plan || "free";
+  const plan = plans[planKey];
 
   return {
     syncCount: quota?.syncCount || 0,
@@ -329,9 +344,11 @@ export async function getUsageStats(organizationId: string) {
     maxConnectors: plan.maxConnectors,
     documentCount: await prisma.document.count({ where: { organizationId } }),
     maxDocuments: plan.maxDocuments,
-    memberCount: await prisma.userOrganization.count({ where: { organizationId } }),
+    memberCount: await prisma.userOrganization.count({
+      where: { organizationId },
+    }),
     maxMembers: plan.maxTeamMembers,
-  }
+  };
 }
 
 // ============================================================================
@@ -345,13 +362,13 @@ export async function updateUserPlan(
   userId: string,
   planKey: string,
   stripeCustomerId?: string,
-  stripeSubscriptionId?: string
+  stripeSubscriptionId?: string,
 ): Promise<void> {
   const oldSubscription = await prisma.subscription.findUnique({
     where: { userId },
-  })
+  });
 
-  const oldPlan = oldSubscription?.plan || "free"
+  const oldPlan = oldSubscription?.plan || "free";
 
   // Update subscription
   await prisma.subscription.upsert({
@@ -371,7 +388,7 @@ export async function updateUserPlan(
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       status: "active",
     },
-  })
+  });
 
   // Audit log
   if (oldPlan !== planKey) {
@@ -379,13 +396,13 @@ export async function updateUserPlan(
       where: {
         users: { some: { userId, role: "OWNER" } },
       },
-    })
+    });
 
     if (org) {
       if (plans[planKey]!.price > plans[oldPlan]!.price) {
-        await auditBilling.planUpgraded(org.id, oldPlan, planKey)
+        await auditBilling.planUpgraded(org.id, oldPlan, planKey);
       } else {
-        await auditBilling.planDowngraded(org.id, oldPlan, planKey)
+        await auditBilling.planDowngraded(org.id, oldPlan, planKey);
       }
     }
   }
@@ -400,16 +417,16 @@ export async function cancelSubscription(userId: string): Promise<void> {
     data: {
       cancelAtPeriodEnd: true,
     },
-  })
+  });
 
   // Audit log
   const org = await prisma.organization.findFirst({
     where: {
       users: { some: { userId, role: "OWNER" } },
     },
-  })
+  });
 
   if (org) {
-    await auditBilling.subscriptionCancelled(org.id)
+    await auditBilling.subscriptionCancelled(org.id);
   }
 }

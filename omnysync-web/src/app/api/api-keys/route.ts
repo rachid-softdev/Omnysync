@@ -3,14 +3,14 @@
  * GET /api/api-keys - Liste les clés
  * POST /api/api-keys - Crée une clé
  */
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { randomBytes, createHash } from "crypto"
-import { z } from "zod"
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { randomBytes, createHash } from 'crypto'
+import { z } from 'zod'
 
 const createApiKeySchema = z.object({
-  name: z.string().min(1, "Nom requis").max(100),
+  name: z.string().min(1, 'Nom requis').max(100),
   expiresInDays: z.number().optional(),
 })
 
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
     const membership = await prisma.userOrganization.findFirst({
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!membership) {
-      return NextResponse.json({ error: "Organisation non trouvée" }, { status: 404 })
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
     }
 
     const apiKeys = await prisma.apiKey.findMany({
@@ -43,13 +43,13 @@ export async function GET(request: NextRequest) {
         expiresAt: true,
         createdAt: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     })
 
     return NextResponse.json({ apiKeys })
   } catch (error) {
-    console.error("GET api-keys error:", error)
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+    console.error('GET api-keys error:', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -69,12 +69,12 @@ export async function POST(request: NextRequest) {
     })
 
     if (!membership) {
-      return NextResponse.json({ error: "Organisation non trouvée" }, { status: 404 })
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
     }
 
     // Générer une clé API
-    const rawKey = randomBytes(32).toString("hex")
-    const keyHash = createHash("sha256").update(rawKey).digest("hex")
+    const rawKey = randomBytes(32).toString('hex')
+    const keyHash = createHash('sha256').update(rawKey).digest('hex')
     const prefix = rawKey.substring(0, 8)
 
     // Calculer la date d'expiration si spécifiée
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
     }
-    console.error("POST api-keys error:", error)
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+    console.error('POST api-keys error:', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

@@ -1,30 +1,24 @@
-import { MetadataRoute } from "next"
+import { MetadataRoute } from 'next'
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXTAUTH_URL || "https://omnysync.com"
-  
+  const baseUrl = process.env.NEXTAUTH_URL || 'https://omnysync.com'
+
   return {
     rules: [
       {
-        userAgent: "*",
-        allow: "/",
-        disallow: [
-          "/api/",
-          "/auth/",
-          "/dashboard/",
-          "/_next/",
-          "/static/",
-        ],
+        userAgent: '*',
+        allow: '/',
+        disallow: ['/api/', '/auth/', '/dashboard/', '/_next/', '/static/'],
       },
       // Allow specific paths for SEO
       {
-        userAgent: "*",
-        allow: ["/pricing", "/blog", "/blog/"],
+        userAgent: '*',
+        allow: ['/pricing', '/blog', '/blog/'],
       },
       // Sitemap location
       {
-        userAgent: "*",
-        disallow: "/",
+        userAgent: '*',
+        disallow: '/',
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,

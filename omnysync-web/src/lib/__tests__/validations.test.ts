@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect } from 'vitest'
 import {
   createSyncSchema,
   createConnectorSchema,
@@ -6,14 +6,14 @@ import {
   queueJobSchema,
   checkoutSchema,
   checkRemoteSchema,
-} from "../validations"
+} from '../validations'
 
-describe("createSyncSchema", () => {
-  it("validates correct input", () => {
+describe('createSyncSchema', () => {
+  it('validates correct input', () => {
     const validInput = {
-      sourceConnectorId: "123e4567-e89b-12d3-a456-426614174000",
-      destConnectorId: "123e4567-e89b-12d3-a456-426614174001",
-      sourceDocumentId: "doc-123",
+      sourceConnectorId: '123e4567-e89b-12d3-a456-426614174000',
+      destConnectorId: '123e4567-e89b-12d3-a456-426614174001',
+      sourceDocumentId: 'doc-123',
     }
 
     const result = createSyncSchema.safeParse(validInput)
@@ -24,12 +24,12 @@ describe("createSyncSchema", () => {
     }
   })
 
-  it("validates input with optional title", () => {
+  it('validates input with optional title', () => {
     const validInput = {
-      sourceConnectorId: "123e4567-e89b-12d3-a456-426614174000",
-      destConnectorId: "123e4567-e89b-12d3-a456-426614174001",
-      sourceDocumentId: "doc-123",
-      title: "My Sync Title",
+      sourceConnectorId: '123e4567-e89b-12d3-a456-426614174000',
+      destConnectorId: '123e4567-e89b-12d3-a456-426614174001',
+      sourceDocumentId: 'doc-123',
+      title: 'My Sync Title',
     }
 
     const result = createSyncSchema.safeParse(validInput)
@@ -37,11 +37,11 @@ describe("createSyncSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("rejects invalid UUID for sourceConnectorId", () => {
+  it('rejects invalid UUID for sourceConnectorId', () => {
     const invalidInput = {
-      sourceConnectorId: "not-a-uuid",
-      destConnectorId: "123e4567-e89b-12d3-a456-426614174001",
-      sourceDocumentId: "doc-123",
+      sourceConnectorId: 'not-a-uuid',
+      destConnectorId: '123e4567-e89b-12d3-a456-426614174001',
+      sourceDocumentId: 'doc-123',
     }
 
     const result = createSyncSchema.safeParse(invalidInput)
@@ -49,11 +49,11 @@ describe("createSyncSchema", () => {
     expect(result.success).toBe(false)
   })
 
-  it("rejects invalid UUID for destConnectorId", () => {
+  it('rejects invalid UUID for destConnectorId', () => {
     const invalidInput = {
-      sourceConnectorId: "123e4567-e89b-12d3-a456-426614174000",
-      destConnectorId: "invalid-uuid",
-      sourceDocumentId: "doc-123",
+      sourceConnectorId: '123e4567-e89b-12d3-a456-426614174000',
+      destConnectorId: 'invalid-uuid',
+      sourceDocumentId: 'doc-123',
     }
 
     const result = createSyncSchema.safeParse(invalidInput)
@@ -61,11 +61,11 @@ describe("createSyncSchema", () => {
     expect(result.success).toBe(false)
   })
 
-  it("rejects empty sourceDocumentId", () => {
+  it('rejects empty sourceDocumentId', () => {
     const invalidInput = {
-      sourceConnectorId: "123e4567-e89b-12d3-a456-426614174000",
-      destConnectorId: "123e4567-e89b-12d3-a456-426614174001",
-      sourceDocumentId: "",
+      sourceConnectorId: '123e4567-e89b-12d3-a456-426614174000',
+      destConnectorId: '123e4567-e89b-12d3-a456-426614174001',
+      sourceDocumentId: '',
     }
 
     const result = createSyncSchema.safeParse(invalidInput)
@@ -73,9 +73,9 @@ describe("createSyncSchema", () => {
     expect(result.success).toBe(false)
   })
 
-  it("rejects missing required fields", () => {
+  it('rejects missing required fields', () => {
     const invalidInput = {
-      sourceConnectorId: "123e4567-e89b-12d3-a456-426614174000",
+      sourceConnectorId: '123e4567-e89b-12d3-a456-426614174000',
     }
 
     const result = createSyncSchema.safeParse(invalidInput)
@@ -84,13 +84,13 @@ describe("createSyncSchema", () => {
   })
 })
 
-describe("createConnectorSchema", () => {
-  it("validates correct input with type GOOGLE_DOCS", () => {
+describe('createConnectorSchema', () => {
+  it('validates correct input with type GOOGLE_DOCS', () => {
     const validInput = {
-      type: "GOOGLE_DOCS" as const,
-      name: "My Google Drive",
-      credentials: { accessToken: "token123" },
-      config: { folderId: "abc123" },
+      type: 'GOOGLE_DOCS' as const,
+      name: 'My Google Drive',
+      credentials: { accessToken: 'token123' },
+      config: { folderId: 'abc123' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -98,11 +98,11 @@ describe("createConnectorSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("validates correct input with type NOTION", () => {
+  it('validates correct input with type NOTION', () => {
     const validInput = {
-      type: "NOTION" as const,
-      name: "My Notion Workspace",
-      credentials: { integrationToken: "token456" },
+      type: 'NOTION' as const,
+      name: 'My Notion Workspace',
+      credentials: { integrationToken: 'token456' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -110,12 +110,12 @@ describe("createConnectorSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("validates correct input with type WORDPRESS", () => {
+  it('validates correct input with type WORDPRESS', () => {
     const validInput = {
-      type: "WORDPRESS" as const,
-      name: "My WordPress Site",
-      credentials: { apiKey: "key789" },
-      config: { siteUrl: "https://example.com" },
+      type: 'WORDPRESS' as const,
+      name: 'My WordPress Site',
+      credentials: { apiKey: 'key789' },
+      config: { siteUrl: 'https://example.com' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -123,11 +123,11 @@ describe("createConnectorSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("validates correct input with type GHOST", () => {
+  it('validates correct input with type GHOST', () => {
     const validInput = {
-      type: "GHOST" as const,
-      name: "My Ghost Blog",
-      credentials: { adminApiKey: "ghost-key" },
+      type: 'GHOST' as const,
+      name: 'My Ghost Blog',
+      credentials: { adminApiKey: 'ghost-key' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -135,11 +135,11 @@ describe("createConnectorSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("validates correct input with type WEBFLOW", () => {
+  it('validates correct input with type WEBFLOW', () => {
     const validInput = {
-      type: "WEBFLOW" as const,
-      name: "My Webflow Site",
-      credentials: { accessToken: "webflow-token" },
+      type: 'WEBFLOW' as const,
+      name: 'My Webflow Site',
+      credentials: { accessToken: 'webflow-token' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -147,11 +147,11 @@ describe("createConnectorSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("validates correct input with type SHOPIFY", () => {
+  it('validates correct input with type SHOPIFY', () => {
     const validInput = {
-      type: "SHOPIFY" as const,
-      name: "My Shopify Store",
-      credentials: { shopifyAccessToken: "shopify-token" },
+      type: 'SHOPIFY' as const,
+      name: 'My Shopify Store',
+      credentials: { shopifyAccessToken: 'shopify-token' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -159,10 +159,10 @@ describe("createConnectorSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("rejects invalid connector type", () => {
+  it('rejects invalid connector type', () => {
     const invalidInput = {
-      type: "INVALID_TYPE",
-      name: "Test",
+      type: 'INVALID_TYPE',
+      name: 'Test',
     }
 
     const result = createConnectorSchema.safeParse(invalidInput)
@@ -170,10 +170,10 @@ describe("createConnectorSchema", () => {
     expect(result.success).toBe(false)
   })
 
-  it("rejects empty name", () => {
+  it('rejects empty name', () => {
     const invalidInput = {
-      type: "GOOGLE_DOCS" as const,
-      name: "",
+      type: 'GOOGLE_DOCS' as const,
+      name: '',
     }
 
     const result = createConnectorSchema.safeParse(invalidInput)
@@ -181,10 +181,10 @@ describe("createConnectorSchema", () => {
     expect(result.success).toBe(false)
   })
 
-  it("rejects name exceeding 100 characters", () => {
+  it('rejects name exceeding 100 characters', () => {
     const invalidInput = {
-      type: "GOOGLE_DOCS" as const,
-      name: "a".repeat(101),
+      type: 'GOOGLE_DOCS' as const,
+      name: 'a'.repeat(101),
     }
 
     const result = createConnectorSchema.safeParse(invalidInput)
@@ -192,10 +192,10 @@ describe("createConnectorSchema", () => {
     expect(result.success).toBe(false)
   })
 
-  it("allows name with exactly 100 characters", () => {
+  it('allows name with exactly 100 characters', () => {
     const validInput = {
-      type: "GOOGLE_DOCS" as const,
-      name: "a".repeat(100),
+      type: 'GOOGLE_DOCS' as const,
+      name: 'a'.repeat(100),
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -203,10 +203,10 @@ describe("createConnectorSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("allows optional credentials and config", () => {
+  it('allows optional credentials and config', () => {
     const validInput = {
-      type: "GOOGLE_DOCS" as const,
-      name: "Test",
+      type: 'GOOGLE_DOCS' as const,
+      name: 'Test',
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -215,8 +215,8 @@ describe("createConnectorSchema", () => {
   })
 })
 
-describe("paginationSchema", () => {
-  it("returns default values when no input provided", () => {
+describe('paginationSchema', () => {
+  it('returns default values when no input provided', () => {
     const result = paginationSchema.safeParse({})
 
     expect(result.success).toBe(true)
@@ -226,8 +226,8 @@ describe("paginationSchema", () => {
     }
   })
 
-  it("coerces string page to number", () => {
-    const result = paginationSchema.safeParse({ page: "2" })
+  it('coerces string page to number', () => {
+    const result = paginationSchema.safeParse({ page: '2' })
 
     expect(result.success).toBe(true)
     if (result.success) {
@@ -235,8 +235,8 @@ describe("paginationSchema", () => {
     }
   })
 
-  it("coerces string limit to number", () => {
-    const result = paginationSchema.safeParse({ limit: "50" })
+  it('coerces string limit to number', () => {
+    const result = paginationSchema.safeParse({ limit: '50' })
 
     expect(result.success).toBe(true)
     if (result.success) {
@@ -244,7 +244,7 @@ describe("paginationSchema", () => {
     }
   })
 
-  it("uses custom page value", () => {
+  it('uses custom page value', () => {
     const result = paginationSchema.safeParse({ page: 5 })
 
     expect(result.success).toBe(true)
@@ -253,7 +253,7 @@ describe("paginationSchema", () => {
     }
   })
 
-  it("uses custom limit value", () => {
+  it('uses custom limit value', () => {
     const result = paginationSchema.safeParse({ limit: 50 })
 
     expect(result.success).toBe(true)
@@ -262,43 +262,43 @@ describe("paginationSchema", () => {
     }
   })
 
-  it("rejects negative page", () => {
+  it('rejects negative page', () => {
     const result = paginationSchema.safeParse({ page: -1 })
 
     expect(result.success).toBe(false)
   })
 
-  it("rejects zero page", () => {
+  it('rejects zero page', () => {
     const result = paginationSchema.safeParse({ page: 0 })
 
     expect(result.success).toBe(false)
   })
 
-  it("rejects non-integer page", () => {
+  it('rejects non-integer page', () => {
     const result = paginationSchema.safeParse({ page: 1.5 })
 
     expect(result.success).toBe(false)
   })
 
-  it("rejects limit exceeding 100", () => {
+  it('rejects limit exceeding 100', () => {
     const result = paginationSchema.safeParse({ limit: 101 })
 
     expect(result.success).toBe(false)
   })
 
-  it("allows limit of 100", () => {
+  it('allows limit of 100', () => {
     const result = paginationSchema.safeParse({ limit: 100 })
 
     expect(result.success).toBe(true)
   })
 
-  it("rejects negative limit", () => {
+  it('rejects negative limit', () => {
     const result = paginationSchema.safeParse({ limit: -5 })
 
     expect(result.success).toBe(false)
   })
 
-  it("accepts both page and limit together", () => {
+  it('accepts both page and limit together', () => {
     const result = paginationSchema.safeParse({ page: 3, limit: 50 })
 
     expect(result.success).toBe(true)
@@ -309,11 +309,11 @@ describe("paginationSchema", () => {
   })
 })
 
-describe("queueJobSchema", () => {
-  it("validates correct input", () => {
+describe('queueJobSchema', () => {
+  it('validates correct input', () => {
     const validInput = {
-      type: "sync_document",
-      payload: { documentId: "123", userId: "456" },
+      type: 'sync_document',
+      payload: { documentId: '123', userId: '456' },
     }
 
     const result = queueJobSchema.safeParse(validInput)
@@ -321,9 +321,9 @@ describe("queueJobSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("allows optional documentId", () => {
+  it('allows optional documentId', () => {
     const validInput = {
-      type: "sync_document",
+      type: 'sync_document',
       payload: {},
     }
 
@@ -332,7 +332,7 @@ describe("queueJobSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("rejects missing type", () => {
+  it('rejects missing type', () => {
     const invalidInput = {
       payload: {},
     }
@@ -343,10 +343,10 @@ describe("queueJobSchema", () => {
   })
 })
 
-describe("checkoutSchema", () => {
-  it("validates correct input", () => {
+describe('checkoutSchema', () => {
+  it('validates correct input', () => {
     const validInput = {
-      priceId: "price_123abc",
+      priceId: 'price_123abc',
     }
 
     const result = checkoutSchema.safeParse(validInput)
@@ -354,9 +354,9 @@ describe("checkoutSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("rejects empty priceId", () => {
+  it('rejects empty priceId', () => {
     const invalidInput = {
-      priceId: "",
+      priceId: '',
     }
 
     const result = checkoutSchema.safeParse(invalidInput)
@@ -365,10 +365,10 @@ describe("checkoutSchema", () => {
   })
 })
 
-describe("checkRemoteSchema", () => {
-  it("validates correct input with valid UUID", () => {
+describe('checkRemoteSchema', () => {
+  it('validates correct input with valid UUID', () => {
     const validInput = {
-      documentId: "123e4567-e89b-12d3-a456-426614174000",
+      documentId: '123e4567-e89b-12d3-a456-426614174000',
     }
 
     const result = checkRemoteSchema.safeParse(validInput)
@@ -376,9 +376,9 @@ describe("checkRemoteSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("rejects invalid UUID", () => {
+  it('rejects invalid UUID', () => {
     const invalidInput = {
-      documentId: "not-a-uuid",
+      documentId: 'not-a-uuid',
     }
 
     const result = checkRemoteSchema.safeParse(invalidInput)

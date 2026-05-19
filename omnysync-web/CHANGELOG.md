@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+
 - Security improvements (encryption, CSP headers, rate limiting)
 - API validation with Zod schemas
 - Comprehensive test coverage
@@ -15,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - Queue system with idempotency and dead letter queue
 
 ### Fixed
+
 - Google Docs credential encryption
 - ENCRYPTION_KEY now required with minimum length
 - ENCRYPTION_SALT moved to environment variable

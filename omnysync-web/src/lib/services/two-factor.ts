@@ -1,9 +1,9 @@
 /**
  * Service d'authentification à deux facteurs (TOTP)
  */
-import { prisma } from "@/lib/prisma"
-import { encrypt, decrypt } from "@/lib/crypto"
-import { randomBytes, createHash } from "crypto"
+import { prisma } from '@/lib/prisma'
+import { encrypt, decrypt } from '@/lib/crypto'
+import { randomBytes, createHash } from 'crypto'
 
 // TOTP: Time-based One-Time Password
 // Implementa
@@ -13,11 +13,11 @@ import { randomBytes, createHash } from "crypto"
  */
 export function generateTotpSecret(): { secret: string; otpauthUrl: string } {
   // Secret aléatoire base32 (20 bytes pour meilleur sécurité)
-  const secret = randomBytes(20).toString("base64").replace(/=/g, "")
-  
+  const secret = randomBytes(20).toString('base64').replace(/=/g, '')
+
   // URL pour les apps d'authentification (Google Authenticator, etc.)
   const otpauthUrl = `otpauth://totp/Omnysync?secret=${secret}&issuer=Omnysync`
-  
+
   return { secret, otpauthUrl }
 }
 
@@ -29,13 +29,11 @@ export async function setupTwoFactor(
   secret: string
 ): Promise<{ success: boolean; backupCodes?: string[]; error?: string }> {
   // Générer les backup codes (10 codes de 8 caractères)
-  const backupCodes = Array.from({ length: 10 }, () => 
-    randomBytes(4).toString("hex").toUpperCase()
-  )
+  const backupCodes = Array.from({ length: 10 }, () => randomBytes(4).toString('hex').toUpperCase())
 
   // Hasher les backup codes pour stockage sécurisé
-  const hashedBackupCodes = backupCodes.map(code => 
-    createHash("sha256").update(code).digest("hex")
+  const hashedBackupCodes = backupCodes.map((code) =>
+    createHash('sha256').update(code).digest('hex')
   )
 
   try {
@@ -55,7 +53,7 @@ export async function setupTwoFactor(
     // Audit log
     const user = await prisma.user.findUnique({ where: { id: userId } })
     const org = await prisma.userOrganization.findFirst({
-      where: { userId, role: "OWNER" },
+      where: { userId, role: 'OWNER' },
       include: { organization: true },
     })
 
@@ -64,8 +62,8 @@ export async function setupTwoFactor(
         data: {
           organizationId: org.organizationId,
           userId,
-          action: "twofactor.enabled",
-          targetType: "user",
+          action: 'twofactor.enabled',
+          targetType: 'user',
           targetId: userId,
         },
       })
@@ -73,8 +71,8 @@ export async function setupTwoFactor(
 
     return { success: true, backupCodes }
   } catch (error) {
-    console.error("Failed to setup 2FA:", error)
-    return { success: false, error: "Échec de la configuration du 2FA" }
+    console.error('Failed to setup 2FA:', error)
+    return { success: false, error: 'Échec de la configuration du 2FA' }
   }
 }
 
@@ -90,17 +88,17 @@ export async function verifyTotpCode(
   })
 
   if (!twoFactor) {
-    return { valid: false, error: "2FA non activé" }
+    return { valid: false, error: '2FA non activé' }
   }
 
   // Vérifier d'abord les backup codes
-  const codeHash = createHash("sha256").update(code.toUpperCase()).digest("hex")
+  const codeHash = createHash('sha256').update(code.toUpperCase()).digest('hex')
   if (twoFactor.backupCodes.includes(codeHash)) {
     // Backup code utilisé - le supprimer
     await prisma.twoFactorAuth.update({
       where: { userId },
       data: {
-        backupCodes: twoFactor.backupCodes.filter(c => c !== codeHash),
+        backupCodes: twoFactor.backupCodes.filter((c) => c !== codeHash),
       },
     })
     return { valid: true }
@@ -109,15 +107,15 @@ export async function verifyTotpCode(
   // Décrypter le secret et vérifier le code TOTP
   // Note: En production, utiliser une librarie comme 'otpauth'
   // Ici implementation simplifiée pour demonstration
-  
+
   const secret = decrypt(twoFactor.secret)
-  
+
   // Vérification TOTP (simplifiée)
   // En production: utiliser https://www.npmjs.com/package/otpauth
   const isValid = await verifyTotp(secret, code)
-  
+
   if (!isValid) {
-    return { valid: false, error: "Code invalide" }
+    return { valid: false, error: 'Code invalide' }
   }
 
   return { valid: true }
@@ -129,15 +127,15 @@ async function verifyTotp(secret: string, code: string): Promise<boolean> {
   // Exemple avec speakeasy:
   // import speakeasy from 'speakeasy'
   // return speakeasy.totp.verify({ secret, encoding: 'base32', token: code })
-  
+
   // Pour l'instant, retourner true si code = "123456" (DEV ONLY)
-  if (process.env.NODE_ENV === "development" && code === "123456") {
+  if (process.env.NODE_ENV === 'development' && code === '123456') {
     return true
   }
-  
+
   // Log pour debugging en développement
   console.log(`[TOTP] Verifying code for secret starting with: ${secret.substring(0, 4)}...`)
-  
+
   // Placeholder: à implémenter avec librarie réelle
   return false
 }
@@ -154,7 +152,7 @@ export async function disableTwoFactor(
   })
 
   if (!twoFactor) {
-    return { success: false, error: "2FA non activé" }
+    return { success: false, error: '2FA non activé' }
   }
 
   // Supprimer le 2FA
@@ -164,7 +162,7 @@ export async function disableTwoFactor(
 
   // Audit log
   const org = await prisma.userOrganization.findFirst({
-    where: { userId, role: "OWNER" },
+    where: { userId, role: 'OWNER' },
     include: { organization: true },
   })
 
@@ -173,8 +171,8 @@ export async function disableTwoFactor(
       data: {
         organizationId: org.organizationId,
         userId,
-        action: "twofactor.disabled",
-        targetType: "user",
+        action: 'twofactor.disabled',
+        targetType: 'user',
         targetId: userId,
       },
     })

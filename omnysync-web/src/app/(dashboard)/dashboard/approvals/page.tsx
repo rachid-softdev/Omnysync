@@ -1,19 +1,36 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Loader2, FileCheck, Clock, CheckCircle, XCircle, AlertCircle, ExternalLink, Eye } from "lucide-react"
-import { useTranslations } from "@/lib/i18n/useTranslations"
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import {
+  Loader2,
+  FileCheck,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  ExternalLink,
+  Eye,
+} from 'lucide-react'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 interface ApprovalRequest {
   id: string
   documentId: string
   documentTitle: string
-  status: "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED"
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED'
   requestedBy: string
   requestedAt: string
   expiresAt: string
@@ -28,7 +45,7 @@ export default function ApprovalsPage() {
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([])
   const [selectedApproval, setSelectedApproval] = useState<ApprovalRequest | null>(null)
   const [rejectOpen, setRejectOpen] = useState(false)
-  const [rejectComment, setRejectComment] = useState("")
+  const [rejectComment, setRejectComment] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   useEffect(() => {
@@ -37,7 +54,7 @@ export default function ApprovalsPage() {
 
   const fetchApprovals = async () => {
     try {
-      const res = await fetch("/api/approvals")
+      const res = await fetch('/api/approvals')
       if (res.ok) {
         const data = await res.json()
         setApprovals(data.approvals || [])
@@ -52,11 +69,15 @@ export default function ApprovalsPage() {
   const approveRequest = async (id: string) => {
     setActionLoading(id)
     try {
-      const res = await fetch(`/api/approvals/${id}/approve`, { method: "POST" })
+      const res = await fetch(`/api/approvals/${id}/approve`, { method: 'POST' })
       if (res.ok) {
-        setApprovals(approvals.map(a => 
-          a.id === id ? { ...a, status: "APPROVED" as const, approvedAt: new Date().toISOString() } : a
-        ))
+        setApprovals(
+          approvals.map((a) =>
+            a.id === id
+              ? { ...a, status: 'APPROVED' as const, approvedAt: new Date().toISOString() }
+              : a
+          )
+        )
       }
     } catch (e) {
       console.error(e)
@@ -69,16 +90,18 @@ export default function ApprovalsPage() {
     setActionLoading(id)
     try {
       const res = await fetch(`/api/approvals/${id}/reject`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ comments: rejectComment }),
       })
       if (res.ok) {
-        setApprovals(approvals.map(a => 
-          a.id === id ? { ...a, status: "REJECTED" as const, comments: rejectComment } : a
-        ))
+        setApprovals(
+          approvals.map((a) =>
+            a.id === id ? { ...a, status: 'REJECTED' as const, comments: rejectComment } : a
+          )
+        )
         setRejectOpen(false)
-        setRejectComment("")
+        setRejectComment('')
       }
     } catch (e) {
       console.error(e)
@@ -89,14 +112,34 @@ export default function ApprovalsPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "PENDING":
-        return <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500"><Clock className="w-3 h-3 mr-1" />En attente</Badge>
-      case "APPROVED":
-        return <Badge variant="default" className="bg-green-500/10 text-green-500"><CheckCircle className="w-3 h-3 mr-1" />Approuvé</Badge>
-      case "REJECTED":
-        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Rejeté</Badge>
-      case "EXPIRED":
-        return <Badge variant="outline" className="text-muted-foreground"><AlertCircle className="w-3 h-3 mr-1" />Expiré</Badge>
+      case 'PENDING':
+        return (
+          <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500">
+            <Clock className="w-3 h-3 mr-1" />
+            En attente
+          </Badge>
+        )
+      case 'APPROVED':
+        return (
+          <Badge variant="default" className="bg-green-500/10 text-green-500">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Approuvé
+          </Badge>
+        )
+      case 'REJECTED':
+        return (
+          <Badge variant="destructive">
+            <XCircle className="w-3 h-3 mr-1" />
+            Rejeté
+          </Badge>
+        )
+      case 'EXPIRED':
+        return (
+          <Badge variant="outline" className="text-muted-foreground">
+            <AlertCircle className="w-3 h-3 mr-1" />
+            Expiré
+          </Badge>
+        )
       default:
         return <Badge>{status}</Badge>
     }
@@ -110,15 +153,15 @@ export default function ApprovalsPage() {
     )
   }
 
-  const pendingApprovals = approvals.filter(a => a.status === "PENDING")
-  const historyApprovals = approvals.filter(a => a.status !== "PENDING")
+  const pendingApprovals = approvals.filter((a) => a.status === 'PENDING')
+  const historyApprovals = approvals.filter((a) => a.status !== 'PENDING')
 
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">{t("APPROVALS_TITLE") || "Approbations"}</h1>
+        <h1 className="text-3xl font-bold">{t('APPROVALS_TITLE') || 'Approbations'}</h1>
         <p className="text-muted-foreground mt-1">
-          {t("APPROVALS_SUBTITLE") || "Gérez les demandes d'approbation avant publication"}
+          {t('APPROVALS_SUBTITLE') || "Gérez les demandes d'approbation avant publication"}
         </p>
       </div>
 
@@ -126,7 +169,7 @@ export default function ApprovalsPage() {
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Clock className="w-5 h-5" />
-          {t("APPROVALS_PENDING") || "En attente"} ({pendingApprovals.length})
+          {t('APPROVALS_PENDING') || 'En attente'} ({pendingApprovals.length})
         </h2>
 
         {pendingApprovals.length === 0 ? (
@@ -148,10 +191,11 @@ export default function ApprovalsPage() {
                         {getStatusBadge(approval.status)}
                       </div>
                       <p className="text-sm text-muted-foreground mb-2">
-                        Demandé par {approval.requestedBy} • {new Date(approval.requestedAt).toLocaleString("fr-FR")}
+                        Demandé par {approval.requestedBy} •{' '}
+                        {new Date(approval.requestedAt).toLocaleString('fr-FR')}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Expire le {new Date(approval.expiresAt).toLocaleString("fr-FR")}
+                        Expire le {new Date(approval.expiresAt).toLocaleString('fr-FR')}
                       </p>
                     </div>
 
@@ -202,7 +246,7 @@ export default function ApprovalsPage() {
       <div>
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <FileCheck className="w-5 h-5" />
-          {t("APPROVALS_HISTORY") || "Historique"}
+          {t('APPROVALS_HISTORY') || 'Historique'}
         </h2>
 
         {historyApprovals.length === 0 ? (
@@ -223,12 +267,11 @@ export default function ApprovalsPage() {
                         {getStatusBadge(approval.status)}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {approval.status === "APPROVED" 
-                          ? `Approuvé par ${approval.approvedBy} le ${approval.approvedAt ? new Date(approval.approvedAt).toLocaleString("fr-FR") : ""}`
-                          : approval.status === "REJECTED"
-                          ? `Rejeté${approval.comments ? `: ${approval.comments}` : ""}`
-                          : `Expiré le ${new Date(approval.expiresAt).toLocaleString("fr-FR")}`
-                        }
+                        {approval.status === 'APPROVED'
+                          ? `Approuvé par ${approval.approvedBy} le ${approval.approvedAt ? new Date(approval.approvedAt).toLocaleString('fr-FR') : ''}`
+                          : approval.status === 'REJECTED'
+                            ? `Rejeté${approval.comments ? `: ${approval.comments}` : ''}`
+                            : `Expiré le ${new Date(approval.expiresAt).toLocaleString('fr-FR')}`}
                       </p>
                     </div>
                   </div>
@@ -244,9 +287,7 @@ export default function ApprovalsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rejeter la demande</DialogTitle>
-            <DialogDescription>
-              Veuillez fournir une raison pour le rejet.
-            </DialogDescription>
+            <DialogDescription>Veuillez fournir une raison pour le rejet.</DialogDescription>
           </DialogHeader>
           <Textarea
             placeholder="Raison du rejet (optionnel)"
@@ -255,7 +296,9 @@ export default function ApprovalsPage() {
             className="min-h-[100px]"
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectOpen(false)}>Annuler</Button>
+            <Button variant="outline" onClick={() => setRejectOpen(false)}>
+              Annuler
+            </Button>
             {selectedApproval && (
               <Button
                 variant="destructive"

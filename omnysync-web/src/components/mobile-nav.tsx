@@ -1,14 +1,14 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Menu, X, LogOut } from "lucide-react"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { logoutAction } from "@/lib/actions"
-import { t } from "@/lib/i18n"
+import { useState } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { usePathname } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Menu, X, LogOut } from 'lucide-react'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { logoutAction } from '@/lib/actions'
+import { t } from '@/lib/i18n'
 
 interface NavItem {
   href: string
@@ -37,12 +37,7 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
       {/* Mobile header with hamburger */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-40 bg-card border-b border-border flex items-center justify-between px-4 h-14">
         <h1 className="text-lg font-bold">Omnysync</h1>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsOpen(true)}
-          aria-label="Open menu"
-        >
+        <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)} aria-label="Open menu">
           <Menu className="w-5 h-5" />
         </Button>
       </header>
@@ -58,7 +53,7 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
       {/* Mobile drawer */}
       <div
         className={`md:hidden fixed top-0 left-0 z-50 h-full w-72 bg-card border-r border-border transform transition-transform duration-200 ease-in-out ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
+          isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="flex items-center justify-between p-4 border-b border-border">
@@ -75,16 +70,14 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
         <nav className="p-4">
           <ul className="space-y-2">
             {navItems.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
                     onClick={() => setIsOpen(false)}
                     className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                      isActive
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-accent"
+                      isActive ? 'bg-accent text-accent-foreground' : 'hover:bg-accent'
                     }`}
                   >
                     <item.icon className="w-5 h-5" />
@@ -100,7 +93,7 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
             {user.image && (
               <Image
                 src={user.image}
-                alt={user.name || "User"}
+                alt={user.name || 'User'}
                 width={32}
                 height={32}
                 className="rounded-full"
@@ -112,14 +105,14 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
             </div>
           </div>
           <Button
-              variant="ghost"
-              className="w-full justify-start text-muted-foreground hover:text-foreground"
-              size="sm"
-              onClick={() => logoutAction()}
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              {t("UI_LOGOUT")}
-            </Button>
+            variant="ghost"
+            className="w-full justify-start text-muted-foreground hover:text-foreground"
+            size="sm"
+            onClick={() => logoutAction()}
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            {t('UI_LOGOUT')}
+          </Button>
         </div>
       </div>
     </>

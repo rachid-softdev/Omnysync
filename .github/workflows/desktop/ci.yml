@@ -4,13 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - 'omnysync-desktop/**'
-      - 'packages/**'
+      - "omnysync-desktop/**"
+      - "packages/**"
   pull_request:
     branches: [main]
     paths:
-      - 'omnysync-desktop/**'
-      - 'packages/**'
+      - "omnysync-desktop/**"
+      - "packages/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

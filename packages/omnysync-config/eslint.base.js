@@ -8,4 +8,4 @@ module.exports = {
     "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
   },
   ignorePatterns: ["dist/", "node_modules/", ".next/"],
-}
+};

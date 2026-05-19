@@ -19,6 +19,7 @@ Use before building or refreshing your content strategy — map the competitive 
 ### Step 1: Gather Inputs
 
 Ask the user for:
+
 1. **Competitor name** — the company to analyze
 2. **Competitor URL** — their homepage domain
 3. **Your product description** — what you sell and who it's for (needed to assess relevance of competitor content)
@@ -39,19 +40,19 @@ If sitemap is unavailable, fall back to fetching the blog index and resource pag
 
 From the sitemap URLs and page fetches, categorize content into types:
 
-| Content Type | URL Patterns to Look For | What It Signals |
-|---|---|---|
-| Blog posts | `/blog/`, `/posts/` | Core content engine — topics, frequency, depth |
-| Guides / pillar pages | `/guides/`, `/learn/`, `/resources/`, `/academy/` | Hub-and-spoke SEO strategy, authority building |
-| Comparison pages | `/vs/`, `/compare/`, `/alternatives/`, `*-vs-*`, `*-alternative*` | Commercial intent capture, direct competitor targeting |
-| "Best of" / listicle pages | `best-*`, `top-*` | Category keyword capture |
-| Glossary / definitions | `/glossary/`, `/dictionary/`, `what-is-*` | Programmatic SEO, awareness-stage traffic |
-| Templates / tools | `/templates/`, `/tools/`, `/calculator/`, `/generator/` | Product-led content, high-intent capture |
-| Case studies | `/case-studies/`, `/customers/`, `/success-stories/` | Social proof content, bottom-of-funnel |
-| Webinars / video | `/webinars/`, `/events/`, `/videos/` | Event-driven content, lead capture |
-| White papers / ebooks | `/whitepapers/`, `/ebooks/`, `/reports/` | Gated content for lead gen |
-| Landing pages | `/solutions/`, `/for/`, `/use-cases/` | Segment-specific or use-case-specific targeting |
-| Changelog / updates | `/changelog/`, `/updates/`, `/whats-new/` | Product velocity signaling |
+| Content Type               | URL Patterns to Look For                                          | What It Signals                                        |
+| -------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------ |
+| Blog posts                 | `/blog/`, `/posts/`                                               | Core content engine — topics, frequency, depth         |
+| Guides / pillar pages      | `/guides/`, `/learn/`, `/resources/`, `/academy/`                 | Hub-and-spoke SEO strategy, authority building         |
+| Comparison pages           | `/vs/`, `/compare/`, `/alternatives/`, `*-vs-*`, `*-alternative*` | Commercial intent capture, direct competitor targeting |
+| "Best of" / listicle pages | `best-*`, `top-*`                                                 | Category keyword capture                               |
+| Glossary / definitions     | `/glossary/`, `/dictionary/`, `what-is-*`                         | Programmatic SEO, awareness-stage traffic              |
+| Templates / tools          | `/templates/`, `/tools/`, `/calculator/`, `/generator/`           | Product-led content, high-intent capture               |
+| Case studies               | `/case-studies/`, `/customers/`, `/success-stories/`              | Social proof content, bottom-of-funnel                 |
+| Webinars / video           | `/webinars/`, `/events/`, `/videos/`                              | Event-driven content, lead capture                     |
+| White papers / ebooks      | `/whitepapers/`, `/ebooks/`, `/reports/`                          | Gated content for lead gen                             |
+| Landing pages              | `/solutions/`, `/for/`, `/use-cases/`                             | Segment-specific or use-case-specific targeting        |
+| Changelog / updates        | `/changelog/`, `/updates/`, `/whats-new/`                         | Product velocity signaling                             |
 
 Count pages per category. Note which categories exist and which don't — absent categories are potential opportunities.
 
@@ -60,10 +61,12 @@ Count pages per category. Note which categories exist and which don't — absent
 This gets its own step because it's high-value commercial intent content that directly affects competitive positioning.
 
 Search for and fetch:
+
 - Pages on their site matching `/vs/`, `/compare/`, `/alternatives/` patterns
 - WebSearch: `site:{domain} vs` and `site:{domain} alternatives`
 
 For each comparison page found:
+
 - **Who they compare against** — which competitors do they target?
 - **How they position themselves** — what dimensions do they claim to win on?
 - **Are they targeting YOUR product?** — flag immediately if yes
@@ -89,6 +92,7 @@ If no keyword data is available, assess these qualitatively from sitemap and pag
 Assess their content-based lead generation:
 
 Fetch their resource center / content library page if it exists. Look for:
+
 - **Gated vs. ungated ratio** — what do they put behind email capture?
 - **Types of gated content** — white papers, ebooks, templates, webinars, reports, tools
 - **Lead magnets** — what do they offer in exchange for email? (visible on blog sidebars, popups, footer CTAs)
@@ -102,11 +106,13 @@ What they gate reveals what they believe is high enough value to trade for conta
 Assess how they distribute content and where they're active:
 
 Fetch their homepage footer and about page for social links. For each channel found:
+
 - **Which platforms** — Twitter/X, LinkedIn, YouTube, TikTok, Instagram, etc.
 - **Content type per platform** — do they repurpose blog content? Original social content? Video?
 - **Posting frequency** — if visible (recent posts on embedded feeds)
 
 Also check:
+
 - **Newsletter** — is there a newsletter signup? What do they promise (frequency, content type)?
 - **Podcast** — do they have one? Where is it distributed?
 - **YouTube** — do they publish video content? What kind (tutorials, webinars, thought leadership)?
@@ -116,16 +122,19 @@ Also check:
 Cross-reference competitor content against your position:
 
 **If keyword data is available:**
+
 - Keywords they rank for that you don't — content they've written that you haven't
 - Keywords you rank for that they don't — your existing advantages
 - Keywords neither of you rank for — unclaimed territory
 
 **If no keyword data is available**, assess gaps qualitatively:
+
 - Content types they have that you don't (comparison pages, glossary, templates)
 - Topics they cover extensively that you haven't touched
 - Formats they use that you haven't tried
 
 **For every gap, assess:**
+
 - Can you cover this topic better? (more depth, better data, fresher perspective)
 - Is the traffic worth it? (use keyword data to estimate opportunity size)
 - Does it align with your product and audience?

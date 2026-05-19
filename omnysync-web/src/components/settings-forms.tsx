@@ -1,13 +1,22 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
 
 interface ApiKey {
   id: string
@@ -26,45 +35,45 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
   const router = useRouter()
 
   // Password form state
-  const [currentPassword, setCurrentPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordLoading, setPasswordLoading] = useState(false)
-  const [passwordError, setPasswordError] = useState("")
+  const [passwordError, setPasswordError] = useState('')
   const [passwordSuccess, setPasswordSuccess] = useState(false)
 
   // Delete account state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [deleteConfirmText, setDeleteConfirmText] = useState("")
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   // API Keys state
   const [apiKeys, setApiKeys] = useState<ApiKey[]>(initialApiKeys)
-  const [newKeyName, setNewKeyName] = useState("")
+  const [newKeyName, setNewKeyName] = useState('')
   const [showNewKeyDialog, setShowNewKeyDialog] = useState(false)
-  const [newKeyValue, setNewKeyValue] = useState("")
+  const [newKeyValue, setNewKeyValue] = useState('')
   const [keyLoading, setKeyLoading] = useState(false)
 
   // Handle password change
   const handlePasswordChange = async () => {
-    setPasswordError("")
+    setPasswordError('')
     setPasswordSuccess(false)
 
     if (newPassword !== confirmPassword) {
-      setPasswordError("Les mots de passe ne correspondent pas")
+      setPasswordError('Les mots de passe ne correspondent pas')
       return
     }
 
     if (newPassword.length < 8) {
-      setPasswordError("Le mot de passe doit contenir au moins 8 caractères")
+      setPasswordError('Le mot de passe doit contenir au moins 8 caractères')
       return
     }
 
     setPasswordLoading(true)
     try {
-      const res = await fetch("/api/user/password", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/user/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword }),
       })
 
@@ -72,14 +81,14 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
 
       if (res.ok) {
         setPasswordSuccess(true)
-        setCurrentPassword("")
-        setNewPassword("")
-        setConfirmPassword("")
+        setCurrentPassword('')
+        setNewPassword('')
+        setConfirmPassword('')
       } else {
-        setPasswordError(data.error || "Erreur lors du changement de mot de passe")
+        setPasswordError(data.error || 'Erreur lors du changement de mot de passe')
       }
     } catch (e) {
-      setPasswordError("Erreur de connexion")
+      setPasswordError('Erreur de connexion')
     } finally {
       setPasswordLoading(false)
     }
@@ -87,20 +96,20 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
 
   // Handle account deletion
   const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== "SUPPRIMER") {
+    if (deleteConfirmText !== 'SUPPRIMER') {
       return
     }
 
     setDeleteLoading(true)
     try {
-      const res = await fetch("/api/user", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/user', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirmText: deleteConfirmText }),
       })
 
       if (res.ok) {
-        router.push("/")
+        router.push('/')
       }
     } catch (e) {
       console.error(e)
@@ -115,9 +124,9 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
 
     setKeyLoading(true)
     try {
-      const res = await fetch("/api/api-keys", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newKeyName }),
       })
 
@@ -126,7 +135,7 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
       if (res.ok && data.rawKey) {
         setNewKeyValue(data.rawKey)
         setApiKeys([...apiKeys, data.apiKey])
-        setNewKeyName("")
+        setNewKeyName('')
       }
     } catch (e) {
       console.error(e)
@@ -138,9 +147,9 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
   // Handle API key deletion
   const handleDeleteApiKey = async (id: string) => {
     try {
-      const res = await fetch(`/api/api-keys/${id}`, { method: "DELETE" })
+      const res = await fetch(`/api/api-keys/${id}`, { method: 'DELETE' })
       if (res.ok) {
-        setApiKeys(apiKeys.filter(k => k.id !== id))
+        setApiKeys(apiKeys.filter((k) => k.id !== id))
       }
     } catch (e) {
       console.error(e)
@@ -192,7 +201,7 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
           {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
           {passwordSuccess && <p className="text-sm text-green-500">Mot de passe mis à jour!</p>}
           <Button onClick={handlePasswordChange} disabled={passwordLoading}>
-            {passwordLoading ? "Mise à jour..." : "Mettre à jour le mot de passe"}
+            {passwordLoading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
           </Button>
         </CardContent>
       </Card>
@@ -206,7 +215,10 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
           {apiKeys.length > 0 && (
             <div className="space-y-2">
               {apiKeys.map((key) => (
-                <div key={key.id} className="flex items-center justify-between p-3 rounded-lg border">
+                <div
+                  key={key.id}
+                  className="flex items-center justify-between p-3 rounded-lg border"
+                >
                   <div>
                     <p className="font-medium">{key.name}</p>
                     <p className="text-sm text-muted-foreground">{key.prefix}...</p>
@@ -230,7 +242,7 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
               onChange={(e) => setNewKeyName(e.target.value)}
             />
             <Button onClick={handleCreateApiKey} disabled={keyLoading || !newKeyName.trim()}>
-              {keyLoading ? "Création..." : "Générer"}
+              {keyLoading ? 'Création...' : 'Générer'}
             </Button>
           </div>
         </CardContent>
@@ -245,10 +257,7 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
           <p className="text-sm text-muted-foreground">
             La suppression de votre compte est irréversible. Toutes vos données seront perdues.
           </p>
-          <Button
-            variant="destructive"
-            onClick={() => setShowDeleteDialog(true)}
-          >
+          <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
             Supprimer mon compte
           </Button>
         </CardContent>
@@ -273,17 +282,17 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAccount}
-              disabled={deleteConfirmText !== "SUPPRIMER" || deleteLoading}
+              disabled={deleteConfirmText !== 'SUPPRIMER' || deleteLoading}
               className="bg-red-500 text-white hover:bg-red-600"
             >
-              {deleteLoading ? "Suppression..." : "Supprimer définitivement"}
+              {deleteLoading ? 'Suppression...' : 'Supprimer définitivement'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* New API Key Dialog - Show the key once */}
-      <AlertDialog open={!!newKeyValue} onOpenChange={() => !newKeyValue && setNewKeyValue("")}>
+      <AlertDialog open={!!newKeyValue} onOpenChange={() => !newKeyValue && setNewKeyValue('')}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Clé API créée!</AlertDialogTitle>
@@ -293,10 +302,12 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
           </AlertDialogHeader>
           <div className="flex items-center gap-2 my-4">
             <code className="flex-1 p-2 bg-muted rounded font-mono text-sm">{newKeyValue}</code>
-            <Button variant="outline" onClick={() => copyToClipboard(newKeyValue)}>Copier</Button>
+            <Button variant="outline" onClick={() => copyToClipboard(newKeyValue)}>
+              Copier
+            </Button>
           </div>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setNewKeyValue("")}>J'ai copié</AlertDialogAction>
+            <AlertDialogAction onClick={() => setNewKeyValue('')}>J'ai copié</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

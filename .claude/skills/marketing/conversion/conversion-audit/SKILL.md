@@ -29,6 +29,7 @@ Each section transitions via "sandwiches" — brief passages that bounce between
 **Conversion mechanics (clarity → desire → credibility → action)** — Every landing page must achieve clarity (hero divider), intensify desire (fascinations / value teasing), earn credibility (confidence signals + testimonial walls), and compel immediate action (urgency + friction removal).
 
 Key vocabulary:
+
 - **Crispy** = specific, concrete, vivid copy drawn from customer research (vs. "soggy" vague platitudes)
 - **Obliteration** = each dream word directly cancels a specific pain word (fear → confidence, streaky → flawless)
 - **Sandwich** = a transition between sections that steps forward and back to create drama
@@ -42,6 +43,7 @@ Key vocabulary:
 ### Step 1: Fetch & Parse
 
 Fetch the URL provided by the user. Extract:
+
 - Full rendered page content (text, headings, images, CTAs)
 - Page structure and visual flow (section order, above-fold content)
 - All CTAs (buttons, forms, links) — text, placement, and frequency
@@ -80,17 +82,17 @@ The #1 failing of pages that don't convert.
 
 If the page appears to be B2B SaaS, verify these sections exist in roughly this order:
 
-| # | Section | What to check |
-|---|---------|--------------|
-| 1 | Hero | Result + objection-elimination headline, dual CTAs |
-| 2 | Social proof bar | Customer logos immediately below hero |
-| 3 | Problem section | Hook headline, pain in ~25 words |
-| 4 | Testimonial | Outcomes-focused pull quote |
-| 5 | Solution section | Outcomes headline, how-it-works |
-| 6 | Features section | 3 feature blocks framed as benefits |
-| 7 | Support section | "Everything you need" checklist |
-| 8 | Second testimonial | Different customer, different benefit |
-| 9 | Closing CTA | "More [outcome]." with dual CTAs |
+| #   | Section            | What to check                                      |
+| --- | ------------------ | -------------------------------------------------- |
+| 1   | Hero               | Result + objection-elimination headline, dual CTAs |
+| 2   | Social proof bar   | Customer logos immediately below hero              |
+| 3   | Problem section    | Hook headline, pain in ~25 words                   |
+| 4   | Testimonial        | Outcomes-focused pull quote                        |
+| 5   | Solution section   | Outcomes headline, how-it-works                    |
+| 6   | Features section   | 3 feature blocks framed as benefits                |
+| 7   | Support section    | "Everything you need" checklist                    |
+| 8   | Second testimonial | Different customer, different benefit              |
+| 9   | Closing CTA        | "More [outcome]." with dual CTAs                   |
 
 Skip this check entirely for non-SaaS pages.
 
@@ -267,4 +269,3 @@ Skip this check entirely for non-SaaS pages.
 - Never score based on aesthetic preference — focus on conversion principles.
 - Never assume the target audience — if unclear, note it as a gap.
 - Flag if the page has no clear single CTA, talks entirely about the product and never the customer, or appears to receive paid traffic with no tracking pixels.
-

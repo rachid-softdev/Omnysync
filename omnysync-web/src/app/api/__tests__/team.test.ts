@@ -1,9 +1,9 @@
 /**
  * Tests pour les routes API Team
  */
-import { describe, it, expect } from "vitest"
+import { describe, it, expect } from 'vitest'
 
-describe("GET /api/team", () => {
+describe('GET /api/team', () => {
   it("devrait retourner les membres de l'organisation", () => {
     expect(true).toBe(true)
   })
@@ -13,12 +13,12 @@ describe("GET /api/team", () => {
   })
 })
 
-describe("POST /api/team/invite", () => {
-  it("devrait envoyer une invitation par email", () => {
+describe('POST /api/team/invite', () => {
+  it('devrait envoyer une invitation par email', () => {
     expect(true).toBe(true)
   })
 
-  it("devrait vérifier les quotas de membre", () => {
+  it('devrait vérifier les quotas de membre', () => {
     expect(true).toBe(true)
   })
 
@@ -27,22 +27,22 @@ describe("POST /api/team/invite", () => {
   })
 })
 
-describe("PUT /api/team/[memberId]/role", () => {
+describe('PUT /api/team/[memberId]/role', () => {
   it("devrait modifier le rôle d'un membre", () => {
     expect(true).toBe(true)
   })
 
-  it("ne devrait pas permettre de rétrograder le owner", () => {
+  it('ne devrait pas permettre de rétrograder le owner', () => {
     expect(true).toBe(true)
   })
 })
 
-describe("DELETE /api/team/[memberId]", () => {
-  it("devrait supprimer un membre", () => {
+describe('DELETE /api/team/[memberId]', () => {
+  it('devrait supprimer un membre', () => {
     expect(true).toBe(true)
   })
 
-  it("ne devrait pas permettre de supprimer le owner", () => {
+  it('ne devrait pas permettre de supprimer le owner', () => {
     expect(true).toBe(true)
   })
 })

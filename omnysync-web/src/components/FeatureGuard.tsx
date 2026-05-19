@@ -5,10 +5,10 @@
  * Uses the useFeature hook under the hood.
  */
 
-"use client"
+'use client'
 
-import { useFeature } from "@/hooks/useEntitlements"
-import type { ReactNode } from "react"
+import { useFeature } from '@/hooks/useEntitlements'
+import type { ReactNode } from 'react'
 
 export interface FeatureGuardProps {
   /** Feature key to check */
@@ -50,7 +50,7 @@ export function FeatureGuard({
   fallback = null,
   showFallbackWhileLoading = false,
   hideWhenDisabled = false,
-  className = "",
+  className = '',
 }: FeatureGuardProps) {
   const isEnabled = useFeature(feature)
 
@@ -82,12 +82,7 @@ interface FeatureSwitchProps {
   className?: string
 }
 
-export function FeatureSwitch({
-  feature,
-  enabled,
-  disabled,
-  className = "",
-}: FeatureSwitchProps) {
+export function FeatureSwitch({ feature, enabled, disabled, className = '' }: FeatureSwitchProps) {
   const isEnabled = useFeature(feature)
 
   return <span className={className}>{isEnabled ? enabled : disabled}</span>
@@ -101,21 +96,23 @@ export function FeatureSwitch({
  */
 interface PlanBadgeProps {
   className?: string
-  variant?: "default" | "success" | "warning" | "error"
+  variant?: 'default' | 'success' | 'warning' | 'error'
 }
 
-export function PlanBadge({ className = "", variant = "default" }: PlanBadgeProps) {
+export function PlanBadge({ className = '', variant = 'default' }: PlanBadgeProps) {
   // This would use useEntitlements internally
   // For now, placeholder - implement based on your UI
   const variantClasses = {
-    default: "bg-gray-100 text-gray-800",
-    success: "bg-green-100 text-green-800",
-    warning: "bg-yellow-100 text-yellow-800",
-    error: "bg-red-100 text-red-800",
+    default: 'bg-gray-100 text-gray-800',
+    success: 'bg-green-100 text-green-800',
+    warning: 'bg-yellow-100 text-yellow-800',
+    error: 'bg-red-100 text-red-800',
   }
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variantClasses[variant]} ${className}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variantClasses[variant]} ${className}`}
+    >
       Plan
     </span>
   )

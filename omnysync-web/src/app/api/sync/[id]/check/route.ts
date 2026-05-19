@@ -1,16 +1,13 @@
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { enqueueChangeDetection } from "@/lib/services/queue"
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { enqueueChangeDetection } from '@/lib/services/queue'
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const { id } = await params
@@ -20,10 +17,10 @@ export async function POST(
   })
 
   if (!document || document.userId !== session.user.id) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 })
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
   await enqueueChangeDetection(id)
 
-  return NextResponse.json({ success: true, message: "Change detection queued" })
+  return NextResponse.json({ success: true, message: 'Change detection queued' })
 }

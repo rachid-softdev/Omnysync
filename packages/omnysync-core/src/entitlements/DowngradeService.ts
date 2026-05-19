@@ -10,10 +10,10 @@
  * Simplified implementation: graceful by default (per user request)
  */
 
-import { DowngradePreview, DowngradeStrategy } from "./types"
-import { getEntitlementRepository } from "./EntitlementRepository"
-import { getFeatureGateService } from "./FeatureGateService"
-import { DEFAULT_DOWNGRADE_STRATEGY } from "./constants"
+import { DowngradePreview, DowngradeStrategy } from "./types";
+import { getEntitlementRepository } from "./EntitlementRepository";
+import { getFeatureGateService } from "./FeatureGateService";
+import { DEFAULT_DOWNGRADE_STRATEGY } from "./constants";
 
 export class DowngradeService {
   /**
@@ -22,10 +22,10 @@ export class DowngradeService {
    */
   async getDowngradePreview(
     orgId: string,
-    targetPlanKey: string
+    targetPlanKey: string,
   ): Promise<DowngradePreview> {
-    const repo = getEntitlementRepository()
-    return repo.getDowngradePreview(orgId, targetPlanKey)
+    const repo = getEntitlementRepository();
+    return repo.getDowngradePreview(orgId, targetPlanKey);
   }
 
   /**
@@ -33,20 +33,20 @@ export class DowngradeService {
    * Uses the plan's configured strategy, but considers usage
    */
   calculateEffectiveStrategy(
-    feature: DowngradePreview["features"][0]
+    feature: DowngradePreview["features"][0],
   ): DowngradeStrategy {
     if (!feature.willBeAffected) {
-      return "GRACEFUL" // Not affected, no action needed
+      return "GRACEFUL"; // Not affected, no action needed
     }
 
-    const strategy = feature.downgradeStrategy
+    const strategy = feature.downgradeStrategy;
 
     // If there are active users, default to graceful to avoid disrupting them
     if (strategy === "IMMEDIATE" && feature.hasActiveUsage) {
-      return "GRACEFUL"
+      return "GRACEFUL";
     }
 
-    return strategy
+    return strategy;
   }
 
   /**
@@ -55,34 +55,32 @@ export class DowngradeService {
    */
   async validateDowngrade(
     orgId: string,
-    targetPlanKey: string
+    targetPlanKey: string,
   ): Promise<{
-    canProceed: boolean
-    warnings: string[]
-    affectedFeatures: number
+    canProceed: boolean;
+    warnings: string[];
+    affectedFeatures: number;
   }> {
-    const preview = await this.getDowngradePreview(orgId, targetPlanKey)
+    const preview = await this.getDowngradePreview(orgId, targetPlanKey);
 
-    const affectedFeatures = preview.features.filter((f) => f.willBeAffected)
-    const warnings: string[] = []
+    const affectedFeatures = preview.features.filter((f) => f.willBeAffected);
+    const warnings: string[] = [];
 
     for (const feature of affectedFeatures) {
-      const strategy = this.calculateEffectiveStrategy(feature)
+      const strategy = this.calculateEffectiveStrategy(feature);
 
       if (strategy === "IMMEDIATE") {
-        warnings.push(
-          `${feature.featureName}: Access will be cut immediately`
-        )
+        warnings.push(`${feature.featureName}: Access will be cut immediately`);
       } else if (strategy === "GRACEFUL") {
         if (feature.hasActiveUsage) {
           warnings.push(
-            `${feature.featureName}: Users will lose access at period end`
-          )
+            `${feature.featureName}: Users will lose access at period end`,
+          );
         }
       } else if (strategy === "FREEZE") {
         warnings.push(
-          `${feature.featureName}: New actions will be blocked, data preserved`
-        )
+          `${feature.featureName}: New actions will be blocked, data preserved`,
+        );
       }
     }
 
@@ -91,7 +89,7 @@ export class DowngradeService {
       canProceed: true,
       warnings,
       affectedFeatures: affectedFeatures.length,
-    }
+    };
   }
 
   /**
@@ -102,38 +100,40 @@ export class DowngradeService {
   async applyDowngrade(
     orgId: string,
     targetPlanKey: string,
-    notifyUsers: boolean = false
+    notifyUsers: boolean = false,
   ): Promise<{
-    success: boolean
-    featuresAffected: number
-    notificationsSent?: number
+    success: boolean;
+    featuresAffected: number;
+    notificationsSent?: number;
   }> {
-    const preview = await this.getDowngradePreview(orgId, targetPlanKey)
-    const affectedCount = preview.features.filter((f) => f.willBeAffected).length
+    const preview = await this.getDowngradePreview(orgId, targetPlanKey);
+    const affectedCount = preview.features.filter(
+      (f) => f.willBeAffected,
+    ).length;
 
     // Invalidate cache so FeatureGateService picks up new plan
-    const featureGate = getFeatureGateService()
-    await featureGate.invalidateCache(orgId)
+    const featureGate = getFeatureGateService();
+    await featureGate.invalidateCache(orgId);
 
     // If we need to notify users (scheduled for later)
-    let notificationsSent = 0
+    let notificationsSent = 0;
     if (notifyUsers) {
       // TODO: Implement email notification
       // This would send a batch email to all org users
       // warning them about the upcoming feature changes
-      notificationsSent = 0 // Placeholder
+      notificationsSent = 0; // Placeholder
     }
 
     console.log(
       `[DowngradeService] Applied downgrade for org ${orgId} to ${targetPlanKey}. ` +
-        `Affected ${affectedCount} features.`
-    )
+        `Affected ${affectedCount} features.`,
+    );
 
     return {
       success: true,
       featuresAffected: affectedCount,
       notificationsSent: notifyUsers ? notificationsSent : undefined,
-    }
+    };
   }
 
   /**
@@ -141,38 +141,41 @@ export class DowngradeService {
    * (i.e., was downgraded but still has access until period end)
    */
   async hasGracePeriodAccess(orgId: string): Promise<boolean> {
-    const repo = getEntitlementRepository()
-    const subscription = await repo.getActiveSubscription(orgId)
+    const repo = getEntitlementRepository();
+    const subscription = await repo.getActiveSubscription(orgId);
 
-    if (!subscription) return false
+    if (!subscription) return false;
 
     // If subscription is active, no grace period needed
-    if (subscription.status === "ACTIVE" || subscription.status === "TRIALING") {
-      return false
+    if (
+      subscription.status === "ACTIVE" ||
+      subscription.status === "TRIALING"
+    ) {
+      return false;
     }
 
     // Check if period has ended
     if (subscription.currentPeriodEnd) {
-      return new Date(subscription.currentPeriodEnd) > new Date()
+      return new Date(subscription.currentPeriodEnd) > new Date();
     }
 
-    return false
+    return false;
   }
 
   /**
    * Get list of features that are in grace period (plan downgraded but still accessible)
    */
   async getGracePeriodFeatures(orgId: string): Promise<string[]> {
-    const hasGrace = await this.hasGracePeriodAccess(orgId)
+    const hasGrace = await this.hasGracePeriodAccess(orgId);
 
-    if (!hasGrace) return []
+    if (!hasGrace) return [];
 
-    const preview = await this.getDowngradePreview(orgId, "free")
+    const preview = await this.getDowngradePreview(orgId, "free");
 
     // Return features that were affected but might still be accessible
     return preview.features
       .filter((f) => f.willBeAffected && f.downgradeStrategy === "GRACEFUL")
-      .map((f) => f.featureKey)
+      .map((f) => f.featureKey);
   }
 
   /**
@@ -184,16 +187,16 @@ export class DowngradeService {
     isCurrentlyEnabled: boolean,
     newPlanEnabled: boolean,
     strategy: DowngradeStrategy,
-    subscriptionEndDate?: Date | null
+    subscriptionEndDate?: Date | null,
   ): boolean {
     // If going from disabled to disabled, no change
     if (!isCurrentlyEnabled && !newPlanEnabled) {
-      return false
+      return false;
     }
 
     // If going from disabled to enabled, always allow
     if (!isCurrentlyEnabled && newPlanEnabled) {
-      return true
+      return true;
     }
 
     // If going from enabled to disabled
@@ -201,24 +204,27 @@ export class DowngradeService {
       switch (strategy) {
         case "GRACEFUL":
           // Check if we're still in the billing period
-          if (subscriptionEndDate && new Date(subscriptionEndDate) > new Date()) {
-            return true // Keep access until period end
+          if (
+            subscriptionEndDate &&
+            new Date(subscriptionEndDate) > new Date()
+          ) {
+            return true; // Keep access until period end
           }
-          return false // Period ended, cut access
+          return false; // Period ended, cut access
 
         case "IMMEDIATE":
-          return false // Cut immediately
+          return false; // Cut immediately
 
         case "FREEZE":
-          return true // Keep access but block new actions (handled elsewhere)
+          return true; // Keep access but block new actions (handled elsewhere)
 
         default:
-          return false
+          return false;
       }
     }
 
     // Otherwise maintain current state
-    return isCurrentlyEnabled
+    return isCurrentlyEnabled;
   }
 }
 
@@ -226,19 +232,19 @@ export class DowngradeService {
 // SINGLETON
 // ============================================================================
 
-let downgradeServiceInstance: DowngradeService | null = null
+let downgradeServiceInstance: DowngradeService | null = null;
 
 export function getDowngradeService(): DowngradeService {
   if (!downgradeServiceInstance) {
-    downgradeServiceInstance = new DowngradeService()
+    downgradeServiceInstance = new DowngradeService();
   }
-  return downgradeServiceInstance
+  return downgradeServiceInstance;
 }
 
 export function setDowngradeService(service: DowngradeService): void {
-  downgradeServiceInstance = service
+  downgradeServiceInstance = service;
 }
 
 export function resetDowngradeService(): void {
-  downgradeServiceInstance = null
+  downgradeServiceInstance = null;
 }

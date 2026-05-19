@@ -1,33 +1,33 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { auth } from "@/lib/auth"
-import { t } from "@/lib/i18n"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
-import { useTranslations } from "@/lib/i18n/useTranslations"
-import { 
-  User, 
-  Key, 
-  Bell, 
-  CreditCard, 
-  Shield, 
-  Trash2, 
-  Loader2, 
-  CheckCircle, 
+import { useState } from 'react'
+import { auth } from '@/lib/auth'
+import { t } from '@/lib/i18n'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Separator } from '@/components/ui/separator'
+import { useTranslations } from '@/lib/i18n/useTranslations'
+import {
+  User,
+  Key,
+  Bell,
+  CreditCard,
+  Shield,
+  Trash2,
+  Loader2,
+  CheckCircle,
   AlertCircle,
   ExternalLink,
   Building,
   Mail,
-  Globe
-} from "lucide-react"
+  Globe,
+} from 'lucide-react'
 
 interface UserData {
   id: string
@@ -41,23 +41,23 @@ export default function SettingsPage() {
   const { t } = useTranslations()
   const [loading, setLoading] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [name, setName] = useState("")
+  const [name, setName] = useState('')
   const [notifications, setNotifications] = useState({
     syncSuccess: true,
     syncFailed: true,
     weeklyDigest: false,
     teamInvites: true,
   })
-  
+
   // API Keys (simulées)
   const [apiKeys] = useState([
-    { id: "1", name: "Production API Key", createdAt: "2026-01-15", lastUsed: "2026-05-10" },
+    { id: '1', name: 'Production API Key', createdAt: '2026-01-15', lastUsed: '2026-05-10' },
   ])
 
   const handleSave = async () => {
     setLoading(true)
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000))
     setLoading(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
@@ -66,8 +66,8 @@ export default function SettingsPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">{t("UI_SETTINGS")}</h1>
-        <p className="text-muted-foreground mt-1">{t("UI_PREFERENCES")}</p>
+        <h1 className="text-3xl font-bold">{t('UI_SETTINGS')}</h1>
+        <p className="text-muted-foreground mt-1">{t('UI_PREFERENCES')}</p>
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
@@ -109,7 +109,9 @@ export default function SettingsPage() {
                     <AvatarFallback className="text-2xl">U</AvatarFallback>
                   </Avatar>
                   <div>
-                    <Button variant="outline" size="sm">Changer la photo</Button>
+                    <Button variant="outline" size="sm">
+                      Changer la photo
+                    </Button>
                     <p className="text-xs text-muted-foreground mt-1">JPG, PNG ou GIF. Max 2MB.</p>
                   </div>
                 </div>
@@ -117,8 +119,8 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nom complet</Label>
-                    <Input 
-                      id="name" 
+                    <Input
+                      id="name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Votre nom"
@@ -126,11 +128,11 @@ export default function SettingsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input 
-                      id="email" 
-                      type="email" 
-                      value="user@example.com" 
-                      disabled 
+                    <Input
+                      id="email"
+                      type="email"
+                      value="user@example.com"
+                      disabled
                       className="bg-muted"
                     />
                   </div>
@@ -151,7 +153,7 @@ export default function SettingsPage() {
                   <Button onClick={handleSave} disabled={loading}>
                     {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     {saved && <CheckCircle className="w-4 h-4 mr-2" />}
-                    {saved ? "Sauvegardé!" : "Enregistrer"}
+                    {saved ? 'Sauvegardé!' : 'Enregistrer'}
                   </Button>
                 </div>
               </CardContent>
@@ -240,7 +242,9 @@ export default function SettingsPage() {
                       <Globe className="w-5 h-5 text-muted-foreground" />
                       <div>
                         <p className="font-medium">Chrome - Windows</p>
-                        <p className="text-xs text-muted-foreground">Dernière activité: Il y a 5 minutes</p>
+                        <p className="text-xs text-muted-foreground">
+                          Dernière activité: Il y a 5 minutes
+                        </p>
                       </div>
                     </div>
                     <Badge variant="outline">Actuelle</Badge>
@@ -250,7 +254,9 @@ export default function SettingsPage() {
                       <Globe className="w-5 h-5 text-muted-foreground" />
                       <div>
                         <p className="font-medium">Safari - macOS</p>
-                        <p className="text-xs text-muted-foreground">Dernière activité: Il y a 3 jours</p>
+                        <p className="text-xs text-muted-foreground">
+                          Dernière activité: Il y a 3 jours
+                        </p>
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" className="text-destructive">
@@ -282,9 +288,11 @@ export default function SettingsPage() {
                       Recevoir un email quand un document est synchronisé
                     </p>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={notifications.syncSuccess}
-                    onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, syncSuccess: checked }))}
+                    onCheckedChange={(checked) =>
+                      setNotifications((prev) => ({ ...prev, syncSuccess: checked }))
+                    }
                   />
                 </div>
                 <Separator />
@@ -295,9 +303,11 @@ export default function SettingsPage() {
                       Être notifié immédiatement en cas d'erreur
                     </p>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={notifications.syncFailed}
-                    onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, syncFailed: checked }))}
+                    onCheckedChange={(checked) =>
+                      setNotifications((prev) => ({ ...prev, syncFailed: checked }))
+                    }
                   />
                 </div>
                 <Separator />
@@ -308,9 +318,11 @@ export default function SettingsPage() {
                       Recevoir un résumé de l'activité de la semaine
                     </p>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={notifications.weeklyDigest}
-                    onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, weeklyDigest: checked }))}
+                    onCheckedChange={(checked) =>
+                      setNotifications((prev) => ({ ...prev, weeklyDigest: checked }))
+                    }
                   />
                 </div>
                 <Separator />
@@ -321,9 +333,11 @@ export default function SettingsPage() {
                       Notifications quand quelqu'un rejoint votre organisation
                     </p>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={notifications.teamInvites}
-                    onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, teamInvites: checked }))}
+                    onCheckedChange={(checked) =>
+                      setNotifications((prev) => ({ ...prev, teamInvites: checked }))
+                    }
                   />
                 </div>
                 <Button className="mt-4" onClick={handleSave} disabled={loading}>
@@ -350,10 +364,14 @@ export default function SettingsPage() {
                       <p className="text-xl font-bold">Plan Pro</p>
                       <Badge>Actif</Badge>
                     </div>
-                    <p className="text-muted-foreground mt-1">29€/mois - renovación le 15 juin 2026</p>
+                    <p className="text-muted-foreground mt-1">
+                      29€/mois - renovación le 15 juin 2026
+                    </p>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">Changer de plan</Button>
+                    <Button variant="outline" size="sm">
+                      Changer de plan
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -371,7 +389,7 @@ export default function SettingsPage() {
                     <span className="text-muted-foreground">45 / 100</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary" style={{ width: "45%" }} />
+                    <div className="h-full bg-primary" style={{ width: '45%' }} />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -380,7 +398,7 @@ export default function SettingsPage() {
                     <span className="text-muted-foreground">67 / 100</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary" style={{ width: "67%" }} />
+                    <div className="h-full bg-primary" style={{ width: '67%' }} />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -389,7 +407,7 @@ export default function SettingsPage() {
                     <span className="text-muted-foreground">6 / 10</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary" style={{ width: "60%" }} />
+                    <div className="h-full bg-primary" style={{ width: '60%' }} />
                   </div>
                 </div>
               </CardContent>
@@ -403,17 +421,22 @@ export default function SettingsPage() {
               <CardContent>
                 <div className="space-y-2">
                   {[
-                    { date: "15 mai 2026", amount: "29,00€", status: "Paid" },
-                    { date: "15 avril 2026", amount: "29,00€", status: "Paid" },
-                    { date: "15 mars 2026", amount: "29,00€", status: "Paid" },
+                    { date: '15 mai 2026', amount: '29,00€', status: 'Paid' },
+                    { date: '15 avril 2026', amount: '29,00€', status: 'Paid' },
+                    { date: '15 mars 2026', amount: '29,00€', status: 'Paid' },
                   ].map((invoice, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-3 rounded-lg border"
+                    >
                       <div>
                         <p className="font-medium">{invoice.date}</p>
                         <p className="text-sm text-muted-foreground">{invoice.amount}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-green-500">{invoice.status}</Badge>
+                        <Badge variant="outline" className="text-green-500">
+                          {invoice.status}
+                        </Badge>
                         <Button variant="ghost" size="sm">
                           <ExternalLink className="w-4 h-4" />
                         </Button>
@@ -448,7 +471,10 @@ export default function SettingsPage() {
                 <Separator />
 
                 {apiKeys.map((key) => (
-                  <div key={key.id} className="flex items-center justify-between p-4 rounded-lg border">
+                  <div
+                    key={key.id}
+                    className="flex items-center justify-between p-4 rounded-lg border"
+                  >
                     <div>
                       <p className="font-medium">{key.name}</p>
                       <p className="text-sm text-muted-foreground">
@@ -456,7 +482,9 @@ export default function SettingsPage() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">Copier</Button>
+                      <Button variant="outline" size="sm">
+                        Copier
+                      </Button>
                       <Button variant="ghost" size="sm" className="text-destructive">
                         <Trash2 className="w-4 h-4" />
                       </Button>

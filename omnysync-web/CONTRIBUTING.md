@@ -20,6 +20,7 @@
 ## Commit Messages
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
 - `feat:` - New feature
 - `fix:` - Bug fix
 - `docs:` - Documentation
