@@ -1,42 +1,55 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent } from "@/components/ui/card"
-import { Loader2, CheckCircle, XCircle } from "lucide-react"
-import { useTranslations } from "@/lib/i18n/useTranslations"
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent } from '@/components/ui/card'
+import { Loader2, CheckCircle, XCircle } from 'lucide-react'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
-const PLATFORM_FIELDS: Record<string, { label: string; key: string; type: string; placeholder: string }[]> = {
+const PLATFORM_FIELDS: Record<
+  string,
+  { label: string; key: string; type: string; placeholder: string }[]
+> = {
   WORDPRESS: [
-    { label: "URL du site", key: "siteUrl", type: "text", placeholder: "https://monsite.com" },
-    { label: "Nom d'utilisateur", key: "username", type: "text", placeholder: "admin" },
-    { label: "Mot de passe d'application", key: "password", type: "password", placeholder: "XXXX XXXX XXXX XXXX" },
+    { label: 'URL du site', key: 'siteUrl', type: 'text', placeholder: 'https://monsite.com' },
+    { label: "Nom d'utilisateur", key: 'username', type: 'text', placeholder: 'admin' },
+    {
+      label: "Mot de passe d'application",
+      key: 'password',
+      type: 'password',
+      placeholder: 'XXXX XXXX XXXX XXXX',
+    },
   ],
   GHOST: [
-    { label: "URL du site", key: "siteUrl", type: "text", placeholder: "https://monsite.com" },
-    { label: "Admin API Key", key: "adminApiKey", type: "password", placeholder: "id:secret" },
+    { label: 'URL du site', key: 'siteUrl', type: 'text', placeholder: 'https://monsite.com' },
+    { label: 'Admin API Key', key: 'adminApiKey', type: 'password', placeholder: 'id:secret' },
   ],
   WEBFLOW: [
-    { label: "Site ID", key: "siteId", type: "text", placeholder: "abc123..." },
-    { label: "Access Token", key: "accessToken", type: "password", placeholder: "token..." },
+    { label: 'Site ID', key: 'siteId', type: 'text', placeholder: 'abc123...' },
+    { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'token...' },
   ],
   SHOPIFY: [
-    { label: "Domaine", key: "shopDomain", type: "text", placeholder: "ma-boutique.myshopify.com" },
-    { label: "Access Token", key: "accessToken", type: "password", placeholder: "shpat_..." },
+    { label: 'Domaine', key: 'shopDomain', type: 'text', placeholder: 'ma-boutique.myshopify.com' },
+    { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'shpat_...' },
   ],
   AIRTABLE: [
-    { label: "API Key", key: "apiKey", type: "password", placeholder: "key..." },
-    { label: "Base ID (optionnel)", key: "baseId", type: "text", placeholder: "app..." },
+    { label: 'API Key', key: 'apiKey', type: 'password', placeholder: 'key...' },
+    { label: 'Base ID (optionnel)', key: 'baseId', type: 'text', placeholder: 'app...' },
   ],
   CONTENTFUL: [
-    { label: "Access Token", key: "accessToken", type: "password", placeholder: "token..." },
-    { label: "Space ID (optionnel)", key: "spaceId", type: "text", placeholder: "space ID" },
+    { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'token...' },
+    { label: 'Space ID (optionnel)', key: 'spaceId', type: 'text', placeholder: 'space ID' },
   ],
   MEDIUM: [
-    { label: "Access Token", key: "accessToken", type: "password", placeholder: "token..." },
-    { label: "Publication ID (optionnel)", key: "publicationId", type: "text", placeholder: "publication ID" },
+    { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'token...' },
+    {
+      label: 'Publication ID (optionnel)',
+      key: 'publicationId',
+      type: 'text',
+      placeholder: 'publication ID',
+    },
   ],
 }
 
@@ -51,7 +64,7 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
   const { t } = useTranslations()
   const [fields, setFields] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
   if (!open) return null
@@ -65,54 +78,54 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
 
   const handleConnect = async () => {
     setLoading(true)
-    setError("")
+    setError('')
 
     const config: Record<string, string> = {}
     const credentials: Record<string, string> = {}
 
     // Séparer config vs credentials selon le type
     switch (type) {
-      case "WORDPRESS":
-        config.siteUrl = fields.siteUrl || ""
-        credentials.username = fields.username || ""
-        credentials.password = fields.password || ""
+      case 'WORDPRESS':
+        config.siteUrl = fields.siteUrl || ''
+        credentials.username = fields.username || ''
+        credentials.password = fields.password || ''
         break
-      case "GHOST":
-        config.siteUrl = fields.siteUrl || ""
-        credentials.adminApiKey = fields.adminApiKey || ""
+      case 'GHOST':
+        config.siteUrl = fields.siteUrl || ''
+        credentials.adminApiKey = fields.adminApiKey || ''
         break
-      case "WEBFLOW":
-        config.siteId = fields.siteId || ""
-        credentials.accessToken = fields.accessToken || ""
+      case 'WEBFLOW':
+        config.siteId = fields.siteId || ''
+        credentials.accessToken = fields.accessToken || ''
         break
-      case "SHOPIFY":
-        config.shopDomain = fields.shopDomain || ""
-        credentials.accessToken = fields.accessToken || ""
+      case 'SHOPIFY':
+        config.shopDomain = fields.shopDomain || ''
+        credentials.accessToken = fields.accessToken || ''
         break
-      case "AIRTABLE":
-        config.baseId = fields.baseId || ""
-        credentials.apiKey = fields.apiKey || ""
+      case 'AIRTABLE':
+        config.baseId = fields.baseId || ''
+        credentials.apiKey = fields.apiKey || ''
         break
-      case "CONTENTFUL":
-        config.spaceId = fields.spaceId || ""
-        credentials.accessToken = fields.accessToken || ""
+      case 'CONTENTFUL':
+        config.spaceId = fields.spaceId || ''
+        credentials.accessToken = fields.accessToken || ''
         break
-      case "MEDIUM":
-        config.publicationId = fields.publicationId || ""
-        credentials.accessToken = fields.accessToken || ""
+      case 'MEDIUM':
+        config.publicationId = fields.publicationId || ''
+        credentials.accessToken = fields.accessToken || ''
         break
     }
 
     try {
-      const res = await fetch("/api/connectors", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/connectors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type, name: type, config, credentials }),
       })
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || "Connection failed")
+        throw new Error(data.error || 'Connection failed')
       }
 
       setSuccess(true)
@@ -128,28 +141,34 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
   }
 
   const connectorName: Record<string, string> = {
-    WORDPRESS: "WordPress",
-    GHOST: "Ghost",
-    WEBFLOW: "Webflow",
-    SHOPIFY: "Shopify",
-    AIRTABLE: "Airtable",
-    CONTENTFUL: "Contentful",
-    MEDIUM: "Medium",
+    WORDPRESS: 'WordPress',
+    GHOST: 'Ghost',
+    WEBFLOW: 'Webflow',
+    SHOPIFY: 'Shopify',
+    AIRTABLE: 'Airtable',
+    CONTENTFUL: 'Contentful',
+    MEDIUM: 'Medium',
   }
 
   const connectorDescriptions: Record<string, string> = {
-    WORDPRESS: "Connectez votre site WordPress via REST API",
+    WORDPRESS: 'Connectez votre site WordPress via REST API',
     GHOST: "Connectez votre blog Ghost via l'API Admin",
-    WEBFLOW: "Connectez votre CMS Webflow",
-    SHOPIFY: "Connectez votre boutique Shopify",
-    AIRTABLE: "Syncronisez vos bases Airtable",
-    CONTENTFUL: "Connectez votre espace Contentful",
-    MEDIUM: "Publiez vos articles sur Medium",
+    WEBFLOW: 'Connectez votre CMS Webflow',
+    SHOPIFY: 'Connectez votre boutique Shopify',
+    AIRTABLE: 'Syncronisez vos bases Airtable',
+    CONTENTFUL: 'Connectez votre espace Contentful',
+    MEDIUM: 'Publiez vos articles sur Medium',
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-card border border-border rounded-xl shadow-xl p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-card border border-border rounded-xl shadow-xl p-6 w-full max-w-md mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="mb-4">
           <h3 className="text-lg font-semibold">Connecter {connectorName[type] || type}</h3>
           <p className="text-sm text-muted-foreground">{connectorDescriptions[type]}</p>
@@ -168,7 +187,7 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
                 <Input
                   type={field.type}
                   placeholder={field.placeholder}
-                  value={fields[field.key] || ""}
+                  value={fields[field.key] || ''}
                   onChange={(e) => updateField(field.key, e.target.value)}
                 />
               </div>

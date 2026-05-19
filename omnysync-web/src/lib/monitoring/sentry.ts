@@ -6,55 +6,55 @@
 // Ce fichier configure Sentry pour le tracking d'erreurs
 // À utiliser uniquement si SENTRY_DSN est configuré
 
-import * as Sentry from "@sentry/nextjs"
+import * as Sentry from '@sentry/nextjs'
 
 /**
  * Initialise Sentry avec la configuration recommandée
  */
 export function initSentry() {
   if (!process.env.SENTRY_DSN) {
-    console.warn("SENTRY_DSN not configured, skipping Sentry initialization")
+    console.warn('SENTRY_DSN not configured, skipping Sentry initialization')
     return
   }
 
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    
+
     // Performance monitoring
-    tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
-    
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+
     // Session replay (optionnel, peut impacter les perfs)
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
-    
+
     // Environment
     environment: process.env.NODE_ENV,
-    
+
     // Release tracking
     release: process.env.npm_package_version,
-    
+
     // Ignore certain errors
     ignoreErrors: [
       /Network Error/,
       /fetch failed/,
       /Failed to fetch/,
-      "ResizeObserver loop limit exceeded",
-      "ResizeObserver loop completed with undelivered notifications",
+      'ResizeObserver loop limit exceeded',
+      'ResizeObserver loop completed with undelivered notifications',
     ],
-    
+
     // Filter transactions
     beforeSendTransaction(event) {
       // Ne pas envoyer les transactions de health check
-      if (event.transaction?.includes("health")) {
+      if (event.transaction?.includes('health')) {
         return null
       }
       return event
     },
-    
+
     // Attach user info when available
     initialScope: {
       tags: {
-        app: "omnysync",
+        app: 'omnysync',
       },
     },
   })
@@ -65,7 +65,7 @@ export function initSentry() {
  */
 export function captureError(error: Error, context?: Record<string, unknown>) {
   if (!process.env.SENTRY_DSN) {
-    console.error("Error:", error, context)
+    console.error('Error:', error, context)
     return
   }
 
@@ -79,7 +79,7 @@ export function captureError(error: Error, context?: Record<string, unknown>) {
  */
 export function captureMessage(
   message: string,
-  level: Sentry.SeverityLevel = "info",
+  level: Sentry.SeverityLevel = 'info',
   context?: Record<string, unknown>
 ) {
   if (!process.env.SENTRY_DSN) {

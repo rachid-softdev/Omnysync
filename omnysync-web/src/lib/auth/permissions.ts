@@ -3,9 +3,9 @@
  * Omnysync - 2026
  */
 
-import { prisma } from "@/lib/prisma"
-import { auth } from "@/lib/auth"
-import { cache } from "@/lib/cache"
+import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
+import { cache } from '@/lib/cache'
 
 // ============================================================================
 // TYPES
@@ -13,131 +13,176 @@ import { cache } from "@/lib/cache"
 
 export type Permission =
   // Documents
-  | "document:read"
-  | "document:create"
-  | "document:update"
-  | "document:delete"
-  | "document:publish"
-  
-  // Connectors
-  | "connector:read"
-  | "connector:create"
-  | "connector:update"
-  | "connector:delete"
-  | "connector:test"
-  
-  // Sync
-  | "sync:read"
-  | "sync:create"
-  | "sync:run"
-  | "sync:delete"
-  
-  // Team
-  | "team:read"
-  | "team:invite"
-  | "team:update"
-  | "team:remove"
-  
-  // Billing
-  | "billing:read"
-  | "billing:manage"
-  
-  // Settings
-  | "settings:read"
-  | "settings:update"
-  
-  // Webhooks
-  | "webhook:read"
-  | "webhook:create"
-  | "webhook:delete"
-  
-  // Analytics
-  | "analytics:read"
-  
-  // API Keys
-  | "apikey:read"
-  | "apikey:create"
-  | "apikey:delete"
-  
-  // Approval
-  | "approval:read"
-  | "approval:manage"
+  | 'document:read'
+  | 'document:create'
+  | 'document:update'
+  | 'document:delete'
+  | 'document:publish'
 
-export type Role = "owner" | "admin" | "member" | "viewer"
+  // Connectors
+  | 'connector:read'
+  | 'connector:create'
+  | 'connector:update'
+  | 'connector:delete'
+  | 'connector:test'
+
+  // Sync
+  | 'sync:read'
+  | 'sync:create'
+  | 'sync:run'
+  | 'sync:delete'
+
+  // Team
+  | 'team:read'
+  | 'team:invite'
+  | 'team:update'
+  | 'team:remove'
+
+  // Billing
+  | 'billing:read'
+  | 'billing:manage'
+
+  // Settings
+  | 'settings:read'
+  | 'settings:update'
+
+  // Webhooks
+  | 'webhook:read'
+  | 'webhook:create'
+  | 'webhook:delete'
+
+  // Analytics
+  | 'analytics:read'
+
+  // API Keys
+  | 'apikey:read'
+  | 'apikey:create'
+  | 'apikey:delete'
+
+  // Approval
+  | 'approval:read'
+  | 'approval:manage'
+
+export type Role = 'owner' | 'admin' | 'member' | 'viewer'
 
 // Matrice de permissions par rôle
 const rolePermissions: Record<Role, Permission[]> = {
   owner: [
     // Documents
-    "document:read", "document:create", "document:update", "document:delete", "document:publish",
+    'document:read',
+    'document:create',
+    'document:update',
+    'document:delete',
+    'document:publish',
     // Connectors
-    "connector:read", "connector:create", "connector:update", "connector:delete", "connector:test",
+    'connector:read',
+    'connector:create',
+    'connector:update',
+    'connector:delete',
+    'connector:test',
     // Sync
-    "sync:read", "sync:create", "sync:run", "sync:delete",
+    'sync:read',
+    'sync:create',
+    'sync:run',
+    'sync:delete',
     // Team
-    "team:read", "team:invite", "team:update", "team:remove",
+    'team:read',
+    'team:invite',
+    'team:update',
+    'team:remove',
     // Billing
-    "billing:read", "billing:manage",
+    'billing:read',
+    'billing:manage',
     // Settings
-    "settings:read", "settings:update",
+    'settings:read',
+    'settings:update',
     // Webhooks
-    "webhook:read", "webhook:create", "webhook:delete",
+    'webhook:read',
+    'webhook:create',
+    'webhook:delete',
     // Analytics
-    "analytics:read",
+    'analytics:read',
     // API Keys
-    "apikey:read", "apikey:create", "apikey:delete",
+    'apikey:read',
+    'apikey:create',
+    'apikey:delete',
     // Approval
-    "approval:read", "approval:manage",
+    'approval:read',
+    'approval:manage',
   ],
   admin: [
     // Documents
-    "document:read", "document:create", "document:update", "document:delete", "document:publish",
+    'document:read',
+    'document:create',
+    'document:update',
+    'document:delete',
+    'document:publish',
     // Connectors
-    "connector:read", "connector:create", "connector:update", "connector:delete", "connector:test",
+    'connector:read',
+    'connector:create',
+    'connector:update',
+    'connector:delete',
+    'connector:test',
     // Sync
-    "sync:read", "sync:create", "sync:run", "sync:delete",
+    'sync:read',
+    'sync:create',
+    'sync:run',
+    'sync:delete',
     // Team
-    "team:read", "team:invite", "team:update",
+    'team:read',
+    'team:invite',
+    'team:update',
     // Billing
-    "billing:read",
+    'billing:read',
     // Settings
-    "settings:read", "settings:update",
+    'settings:read',
+    'settings:update',
     // Webhooks
-    "webhook:read", "webhook:create", "webhook:delete",
+    'webhook:read',
+    'webhook:create',
+    'webhook:delete',
     // Analytics
-    "analytics:read",
+    'analytics:read',
     // API Keys
-    "apikey:read", "apikey:create",
+    'apikey:read',
+    'apikey:create',
     // Approval
-    "approval:read", "approval:manage",
+    'approval:read',
+    'approval:manage',
   ],
   member: [
     // Documents
-    "document:read", "document:create", "document:update", "document:publish",
+    'document:read',
+    'document:create',
+    'document:update',
+    'document:publish',
     // Connectors
-    "connector:read", "connector:create",
+    'connector:read',
+    'connector:create',
     // Sync
-    "sync:read", "sync:create", "sync:run",
+    'sync:read',
+    'sync:create',
+    'sync:run',
     // Team
-    "team:read",
+    'team:read',
     // Settings
-    "settings:read",
+    'settings:read',
     // Analytics
-    "analytics:read",
+    'analytics:read',
     // Approval
-    "approval:read",
+    'approval:read',
   ],
   viewer: [
     // Documents
-    "document:read",
+    'document:read',
     // Connectors
-    "connector:read",
+    'connector:read',
     // Sync
-    "sync:read",
+    'sync:read',
     // Team
-    "team:read",
+    'team:read',
     // Analytics
-    "analytics:read",
+    'analytics:read',
   ],
 }
 
@@ -148,10 +193,7 @@ const rolePermissions: Record<Role, Permission[]> = {
 /**
  * Récupère le rôle d'un utilisateur dans une organisation
  */
-export async function getUserRole(
-  userId: string,
-  organizationId: string
-): Promise<Role | null> {
+export async function getUserRole(userId: string, organizationId: string): Promise<Role | null> {
   const membership = await prisma.userOrganization.findUnique({
     where: {
       userId_organizationId: {
@@ -176,16 +218,20 @@ export async function hasPermission(
   permission: Permission
 ): Promise<boolean> {
   const role = await getUserRole(userId, organizationId)
-  
+
   if (!role) return false
 
   // Cache pendant 5 minutes
   const cacheKey = `perm:${userId}:${organizationId}:${permission}`
-  
-  return cache.getOrSet(cacheKey, async () => {
-    const permissions = rolePermissions[role]
-    return permissions.includes(permission)
-  }, 5 * 60 * 1000)
+
+  return cache.getOrSet(
+    cacheKey,
+    async () => {
+      const permissions = rolePermissions[role]
+      return permissions.includes(permission)
+    },
+    5 * 60 * 1000
+  )
 }
 
 /**
@@ -196,17 +242,17 @@ export async function requirePermission(
   organizationId: string
 ): Promise<{ authorized: boolean; userId?: string; error?: string }> {
   const session = await auth()
-  
+
   if (!session?.user?.id) {
-    return { authorized: false, error: "Non autorisé" }
+    return { authorized: false, error: 'Non autorisé' }
   }
 
   const hasAccess = await hasPermission(session.user.id, organizationId, permission)
-  
+
   if (!hasAccess) {
-    return { 
-      authorized: false, 
-      error: `Permission requise: ${permission}` 
+    return {
+      authorized: false,
+      error: `Permission requise: ${permission}`,
     }
   }
 
@@ -219,11 +265,11 @@ export async function requirePermission(
 export function withPermission(permission: Permission) {
   return async (organizationId: string) => {
     const result = await requirePermission(permission, organizationId)
-    
+
     if (!result.authorized) {
       throw new Error(result.error)
     }
-    
+
     return result.userId!
   }
 }
@@ -236,7 +282,7 @@ export async function getUserPermissions(
   organizationId: string
 ): Promise<Permission[]> {
   const role = await getUserRole(userId, organizationId)
-  
+
   if (!role) return []
 
   return rolePermissions[role]
@@ -248,34 +294,34 @@ export async function getUserPermissions(
 export async function canAccessResource(
   userId: string,
   organizationId: string,
-  resourceType: "document" | "connector" | "sync",
+  resourceType: 'document' | 'connector' | 'sync',
   resourceId: string,
-  action: "read" | "update" | "delete"
+  action: 'read' | 'update' | 'delete'
 ): Promise<boolean> {
   const role = await getUserRole(userId, organizationId)
-  
+
   if (!role) return false
 
   // Le owner et admin peuvent tout faire
-  if (role === "owner" || role === "admin") return true
+  if (role === 'owner' || role === 'admin') return true
 
   // Vérifier que la ressource appartient à l'organisation
   switch (resourceType) {
-    case "document": {
+    case 'document': {
       const doc = await prisma.document.findFirst({
         where: { id: resourceId, organizationId },
         select: { userId: true },
       })
       return doc !== null
     }
-    case "connector": {
+    case 'connector': {
       const connector = await prisma.connector.findFirst({
         where: { id: resourceId, organizationId },
         select: { userId: true },
       })
       return connector !== null
     }
-    case "sync": {
+    case 'sync': {
       // Les sync sont au niveau org, seul le rôle compte
       return rolePermissions[role].includes(`${resourceType}:${action}`)
     }
@@ -296,11 +342,11 @@ export async function checkPermission(
   permission: Permission
 ): Promise<string> {
   const result = await requirePermission(permission, organizationId)
-  
+
   if (!result.authorized) {
     throw new Error(result.error)
   }
-  
+
   return result.userId!
 }
 
@@ -314,9 +360,9 @@ export async function filterByPermission<T extends { organizationId: string }>(
   permission: Permission
 ): Promise<T[]> {
   const hasAccess = await hasPermission(userId, organizationId, permission)
-  
+
   if (hasAccess) return items
-  
+
   // Si pas de permission, retourner seulement les items créés par l'utilisateur
-  return items.filter(item => "userId" in item && item.userId === userId)
+  return items.filter((item) => 'userId' in item && item.userId === userId)
 }

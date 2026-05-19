@@ -1,10 +1,10 @@
 /**
  * Service de réinitialisation de mot de passe
  */
-import { prisma } from "@/lib/prisma"
-import { sendEmail } from "@/lib/email"
-import { encrypt, decrypt } from "@/lib/crypto"
-import { randomBytes } from "crypto"
+import { prisma } from '@/lib/prisma'
+import { sendEmail } from '@/lib/email'
+import { encrypt, decrypt } from '@/lib/crypto'
+import { randomBytes } from 'crypto'
 
 const RESET_TOKEN_EXPIRY_HOURS = 1
 const MAX_RESET_ATTEMPTS = 3
@@ -13,14 +13,16 @@ const RATE_LIMIT_WINDOW_MINUTES = 15
 /**
  * Génère un token de réinitialisation
  */
-export async function createPasswordResetToken(email: string): Promise<{ success: boolean; message: string }> {
+export async function createPasswordResetToken(
+  email: string
+): Promise<{ success: boolean; message: string }> {
   const user = await prisma.user.findUnique({
     where: { email },
   })
 
   if (!user) {
     // Ne pas révéler si l'email existe
-    return { success: true, message: "Si ce compte existe, un email a été envoyé" }
+    return { success: true, message: 'Si ce compte existe, un email a été envoyé' }
   }
 
   // Vérifier le rate limit
@@ -34,11 +36,11 @@ export async function createPasswordResetToken(email: string): Promise<{ success
   })
 
   if (recentResets >= MAX_RESET_ATTEMPTS) {
-    return { success: false, message: "Trop de demandes. Réessayez dans 15 minutes" }
+    return { success: false, message: 'Trop de demandes. Réessayez dans 15 minutes' }
   }
 
   // Générer token sécurisé
-  const token = randomBytes(32).toString("hex")
+  const token = randomBytes(32).toString('hex')
   const expiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRY_HOURS * 60 * 60 * 1000)
 
   // Créer le token
@@ -52,10 +54,10 @@ export async function createPasswordResetToken(email: string): Promise<{ success
 
   // Envoyer l'email
   const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`
-  
+
   await sendEmail({
     to: email,
-    subject: "Réinitialisation de votre mot de passe - Omnysync",
+    subject: 'Réinitialisation de votre mot de passe - Omnysync',
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h1>Réinitialisation de mot de passe</h1>
@@ -65,7 +67,7 @@ export async function createPasswordResetToken(email: string): Promise<{ success
           Réinitialiser mon mot de passe
         </a>
         <p style="margin-top: 20px; color: #666; font-size: 14px;">
-          Ce lien expire dans ${RESET_TOKEN_EXPIRY_HOURS} heure${RESET_TOKEN_EXPIRY_HOURS > 1 ? "s" : ""}.
+          Ce lien expire dans ${RESET_TOKEN_EXPIRY_HOURS} heure${RESET_TOKEN_EXPIRY_HOURS > 1 ? 's' : ''}.
         </p>
         <p style="color: #666; font-size: 14px;">
           Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
@@ -74,28 +76,30 @@ export async function createPasswordResetToken(email: string): Promise<{ success
     `,
   })
 
-  return { success: true, message: "Si ce compte existe, un email a été envoyé" }
+  return { success: true, message: 'Si ce compte existe, un email a été envoyé' }
 }
 
 /**
  * Valide un token de réinitialisation
  */
-export async function validateResetToken(token: string): Promise<{ valid: boolean; userId?: string; error?: string }> {
+export async function validateResetToken(
+  token: string
+): Promise<{ valid: boolean; userId?: string; error?: string }> {
   const reset = await prisma.passwordReset.findUnique({
     where: { token },
     include: { user: true },
   })
 
   if (!reset) {
-    return { valid: false, error: "Token invalide" }
+    return { valid: false, error: 'Token invalide' }
   }
 
   if (reset.usedAt) {
-    return { valid: false, error: "Token déjà utilisé" }
+    return { valid: false, error: 'Token déjà utilisé' }
   }
 
   if (reset.expiresAt < new Date()) {
-    return { valid: false, error: "Token expiré" }
+    return { valid: false, error: 'Token expiré' }
   }
 
   return { valid: true, userId: reset.userId }
@@ -127,12 +131,12 @@ export async function resetPassword(
   // Créer un audit log
   await prisma.auditLog.create({
     data: {
-      organizationId: "", // Pas d'organisation pour password reset
+      organizationId: '', // Pas d'organisation pour password reset
       userId: validation.userId,
-      action: "password.reset",
-      targetType: "user",
+      action: 'password.reset',
+      targetType: 'user',
       targetId: validation.userId,
-      details: { method: "token" },
+      details: { method: 'token' },
     },
   })
 

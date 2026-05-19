@@ -9,9 +9,9 @@
  * never from the request body.
  */
 
-import { getFeatureGateService } from "./FeatureGateService"
-import { handleFeatureGateError, FeatureGateError } from "./errors"
-import { ConsumeResult } from "./types"
+import { getFeatureGateService } from './FeatureGateService'
+import { handleFeatureGateError, FeatureGateError } from './errors'
+import { ConsumeResult } from './types'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -32,9 +32,7 @@ export type MiddlewareHandler = (
  * Default resolver - looks for x-org-id header
  * In production, this should extract from auth session/JWT
  */
-export function createOrgIdResolver(
-  headerName: string = "x-org-id"
-): OrgIdResolver {
+export function createOrgIdResolver(headerName: string = 'x-org-id'): OrgIdResolver {
   return async (request: Request): Promise<string | null> => {
     // Try header first
     const headerOrgId = request.headers.get(headerName)
@@ -76,7 +74,7 @@ export function requireFeature(
 
     if (!orgId) {
       return Response.json(
-        { error: "INVALID_ORG", message: "Organization not identified" },
+        { error: 'INVALID_ORG', message: 'Organization not identified' },
         { status: 401 }
       )
     }
@@ -100,10 +98,7 @@ export function requireFeature(
  *
  * Returns current usage info in X-RateLimit-* headers for convenience
  */
-export function requireLimit(
-  featureKey: string,
-  orgIdResolver?: OrgIdResolver
-): MiddlewareHandler {
+export function requireLimit(featureKey: string, orgIdResolver?: OrgIdResolver): MiddlewareHandler {
   const resolveOrgId = orgIdResolver ?? createOrgIdResolver()
 
   return async (req: Request, handler: () => Promise<Response>): Promise<Response> => {
@@ -112,7 +107,7 @@ export function requireLimit(
 
     if (!orgId) {
       return Response.json(
-        { error: "INVALID_ORG", message: "Organization not identified" },
+        { error: 'INVALID_ORG', message: 'Organization not identified' },
         { status: 401 }
       )
     }
@@ -124,7 +119,7 @@ export function requireLimit(
       if (!hasFeature) {
         const planKey = await featureGate.getAllEntitlements(orgId).then((e) => e.planKey)
         throw new FeatureGateError(
-          "FEATURE_NOT_AVAILABLE",
+          'FEATURE_NOT_AVAILABLE',
           `Feature '${featureKey}' not available on ${planKey} plan`,
           { feature: featureKey, plan: planKey },
           403
@@ -140,7 +135,7 @@ export function requireLimit(
         const entitlements = await featureGate.getAllEntitlements(orgId)
 
         throw new FeatureGateError(
-          "LIMIT_REACHED",
+          'LIMIT_REACHED',
           `Limit reached for '${featureKey}'`,
           {
             feature: featureKey,
@@ -177,7 +172,7 @@ export function consumeFeature(
 
     if (!orgId) {
       return Response.json(
-        { error: "INVALID_ORG", message: "Organization not identified" },
+        { error: 'INVALID_ORG', message: 'Organization not identified' },
         { status: 401 }
       )
     }
@@ -188,8 +183,8 @@ export function consumeFeature(
 
       // Add consumption info to request headers for downstream use
       const headers = new Headers()
-      headers.set("X-Consumed-Units", amount.toString())
-      headers.set("X-Remaining-Units", (result.remaining ?? "unlimited").toString())
+      headers.set('X-Consumed-Units', amount.toString())
+      headers.set('X-Remaining-Units', (result.remaining ?? 'unlimited').toString())
 
       // Merge with existing response
       const response = await handler()
@@ -219,16 +214,18 @@ export function consumeFeature(
  *   const requireFeatureExpress = toExpress(requireFeature("EXPORT_PDF"))
  *   app.get("/export", requireFeatureExpress, handler)
  */
-export function toExpress(
-  factory: (orgIdResolver?: OrgIdResolver) => MiddlewareHandler
-) {
+export function toExpress(factory: (orgIdResolver?: OrgIdResolver) => MiddlewareHandler) {
   return (featureKey: string) => {
     const middleware = factory(featureKey)
 
-    return (req: { headers: Record<string, string | undefined> }, res: unknown, next: (err?: Error) => void) => {
+    return (
+      req: { headers: Record<string, string | undefined> },
+      res: unknown,
+      next: (err?: Error) => void
+    ) => {
       // Create a mock Request object
-      const mockReq = new Request("http://localhost", {
-        method: "GET",
+      const mockReq = new Request('http://localhost', {
+        method: 'GET',
         headers: req.headers as Record<string, string>,
       })
 
@@ -236,18 +233,20 @@ export function toExpress(
       const handler = async () => {
         // This would be the actual route handler
         // For middleware, we just pass through
-        return new Response("OK")
+        return new Response('OK')
       }
 
-      middleware(mockReq, handler).then((response) => {
-        if (response.status >= 400) {
-          res.status(response.status).json({ error: "Feature not available" })
-        } else {
-          next()
-        }
-      }).catch((err) => {
-        next(err)
-      })
+      middleware(mockReq, handler)
+        .then((response) => {
+          if (response.status >= 400) {
+            res.status(response.status).json({ error: 'Feature not available' })
+          } else {
+            next()
+          }
+        })
+        .catch((err) => {
+          next(err)
+        })
     }
   }
 }
@@ -271,11 +270,11 @@ export function withFeature(featureKey: string) {
       const featureGate = getFeatureGateService()
 
       // Get orgId from session (implementation depends on auth setup)
-      const orgId = req.headers.get("x-org-id")
+      const orgId = req.headers.get('x-org-id')
 
       if (!orgId) {
         return Response.json(
-          { error: "INVALID_ORG", message: "Organization not identified" },
+          { error: 'INVALID_ORG', message: 'Organization not identified' },
           { status: 401 }
         )
       }
@@ -295,11 +294,11 @@ export function withConsume(featureKey: string, amount: number = 1) {
   return <T extends (req: Request) => Promise<Response>>(handler: T): T => {
     return (async (req: Request) => {
       const featureGate = getFeatureGateService()
-      const orgId = req.headers.get("x-org-id")
+      const orgId = req.headers.get('x-org-id')
 
       if (!orgId) {
         return Response.json(
-          { error: "INVALID_ORG", message: "Organization not identified" },
+          { error: 'INVALID_ORG', message: 'Organization not identified' },
           { status: 401 }
         )
       }
@@ -319,11 +318,11 @@ export function withLimit(featureKey: string) {
   return <T extends (req: Request) => Promise<Response>>(handler: T): T => {
     return (async (req: Request) => {
       const featureGate = getFeatureGateService()
-      const orgId = req.headers.get("x-org-id")
+      const orgId = req.headers.get('x-org-id')
 
       if (!orgId) {
         return Response.json(
-          { error: "INVALID_ORG", message: "Organization not identified" },
+          { error: 'INVALID_ORG', message: 'Organization not identified' },
           { status: 401 }
         )
       }
@@ -337,11 +336,11 @@ export function withLimit(featureKey: string) {
 
           return Response.json(
             {
-              error: "LIMIT_REACHED",
+              error: 'LIMIT_REACHED',
               feature: featureKey,
-              limit: limit ?? "unlimited",
+              limit: limit ?? 'unlimited',
               used: entitlements.limits[featureKey] ?? 0,
-              upgrade_url: "/billing/upgrade",
+              upgrade_url: '/billing/upgrade',
             },
             { status: 402 }
           )

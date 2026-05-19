@@ -1,14 +1,20 @@
-import { prisma } from "@/lib/prisma"
-import { ERR_DOC_NOT_FOUND, ERR_DOC_NOT_PUBLISHED, ERR_SYNC_NO_CHANGES, ERR_SYNC_SUCCESS, ERR_API_FAILED } from "@/lib/errors"
-import { decrypt } from "@/lib/crypto"
-import { sendSyncCompleteEmail } from "@/lib/email"
-import { detectContentChanges } from "./ai"
-import { getGoogleDocContent } from "./google-docs"
-import { getNotionPageContent } from "./notion"
-import { createWordPressClient } from "./wordpress"
-import { createGhostClient } from "./ghost"
-import { createWebflowClient } from "./webflow"
-import { createShopifyClient } from "./shopify"
+import { prisma } from '@/lib/prisma'
+import {
+  ERR_DOC_NOT_FOUND,
+  ERR_DOC_NOT_PUBLISHED,
+  ERR_SYNC_NO_CHANGES,
+  ERR_SYNC_SUCCESS,
+  ERR_API_FAILED,
+} from '@/lib/errors'
+import { decrypt } from '@/lib/crypto'
+import { sendSyncCompleteEmail } from '@/lib/email'
+import { detectContentChanges } from './ai'
+import { getGoogleDocContent } from './google-docs'
+import { getNotionPageContent } from './notion'
+import { createWordPressClient } from './wordpress'
+import { createGhostClient } from './ghost'
+import { createWebflowClient } from './webflow'
+import { createShopifyClient } from './shopify'
 
 export interface SyncResult {
   success: boolean
@@ -31,13 +37,13 @@ async function enrichContentWithAI(
   seoKeywords: string[]
   excerpt: string
 }> {
-  const { generateSEO, generateExcerpt, findInterlinkingOpportunities } = await import("./ai")
-  
+  const { generateSEO, generateExcerpt, findInterlinkingOpportunities } = await import('./ai')
+
   const enrichment = {
     seoTitle: title,
-    seoDescription: "",
+    seoDescription: '',
     seoKeywords: [] as string[],
-    excerpt: "",
+    excerpt: '',
   }
 
   // 1. Generate SEO metadata
@@ -45,9 +51,9 @@ async function enrichContentWithAI(
     await prisma.syncLog.create({
       data: {
         documentId,
-        action: "ai_seo_started",
-        status: "INFO",
-        message: "Génération des métadonnées SEO...",
+        action: 'ai_seo_started',
+        status: 'INFO',
+        message: 'Génération des métadonnées SEO...',
       },
     })
 
@@ -59,19 +65,19 @@ async function enrichContentWithAI(
     await prisma.syncLog.create({
       data: {
         documentId,
-        action: "ai_seo_completed",
-        status: "INFO",
+        action: 'ai_seo_completed',
+        status: 'INFO',
         message: `SEO généré: ${seo.title.substring(0, 50)}...`,
       },
     })
   } catch (error) {
-    console.error("AI SEO generation failed:", error)
+    console.error('AI SEO generation failed:', error)
     await prisma.syncLog.create({
       data: {
         documentId,
-        action: "ai_seo_failed",
-        status: "WARNING",
-        message: "Génération SEO échouée, utilisation du titre par défaut",
+        action: 'ai_seo_failed',
+        status: 'WARNING',
+        message: 'Génération SEO échouée, utilisation du titre par défaut',
       },
     })
   }
@@ -81,17 +87,18 @@ async function enrichContentWithAI(
     const excerpt = await generateExcerpt(htmlContent, 160)
     enrichment.excerpt = excerpt
   } catch (error) {
-    console.error("AI excerpt generation failed:", error)
+    console.error('AI excerpt generation failed:', error)
     // Fallback: use first 160 chars of plain text
-    enrichment.excerpt = htmlContent.replace(/<[^>]+>/g, "").substring(0, 160)
+    enrichment.excerpt = htmlContent.replace(/<[^>]+>/g, '').substring(0, 160)
   }
 
   // 3. Find interlinking opportunities (for published documents)
   try {
     const existingDocs = await prisma.document.findMany({
       where: {
-        organizationId: (await prisma.document.findUnique({ where: { id: documentId } }))?.organizationId,
-        status: "PUBLISHED",
+        organizationId: (await prisma.document.findUnique({ where: { id: documentId } }))
+          ?.organizationId,
+        status: 'PUBLISHED',
         id: { not: documentId },
       },
       select: { title: true, slug: true, excerpt: true },
@@ -101,23 +108,23 @@ async function enrichContentWithAI(
     if (existingDocs.length > 0) {
       const links = await findInterlinkingOpportunities(
         htmlContent,
-        existingDocs.map((d) => ({ title: d.title, url: d.slug || "", excerpt: d.excerpt || "" }))
+        existingDocs.map((d) => ({ title: d.title, url: d.slug || '', excerpt: d.excerpt || '' }))
       )
-      
+
       if (links.links.length > 0) {
         // Log the found links
         await prisma.syncLog.create({
           data: {
             documentId,
-            action: "ai_interlinking_found",
-            status: "INFO",
+            action: 'ai_interlinking_found',
+            status: 'INFO',
             message: `${links.links.length} opportunités de liens internes détectées`,
           },
         })
       }
     }
   } catch (error) {
-    console.error("AI interlinking failed:", error)
+    console.error('AI interlinking failed:', error)
   }
 
   return enrichment
@@ -128,7 +135,7 @@ async function enrichContentWithAI(
  * [AI-Image: prompt description]
  */
 async function generateAIImages(documentId: string, htmlContent: string): Promise<string | null> {
-  const { generateAImage } = await import("./ai")
+  const { generateAImage } = await import('./ai')
 
   // Check for AI image placeholders in content
   const aiImageRegex = /\[AI-Image:\s*([^\]]+)\]/gi
@@ -145,20 +152,20 @@ async function generateAIImages(documentId: string, htmlContent: string): Promis
     await prisma.syncLog.create({
       data: {
         documentId,
-        action: "ai_image_generated",
-        status: "INFO",
-        message: "Image générée via DALL-E 3",
+        action: 'ai_image_generated',
+        status: 'INFO',
+        message: 'Image générée via DALL-E 3',
       },
     })
 
     return imageUrl
   } catch (error) {
-    console.error("AI image generation failed:", error)
+    console.error('AI image generation failed:', error)
     await prisma.syncLog.create({
       data: {
         documentId,
-        action: "ai_image_failed",
-        status: "WARNING",
+        action: 'ai_image_failed',
+        status: 'WARNING',
         message: "Génération d'image IA échouée",
       },
     })
@@ -185,7 +192,7 @@ export async function performSync(
 
   await prisma.document.update({
     where: { id: documentId },
-    data: { syncStatus: "SYNCING" },
+    data: { syncStatus: 'SYNCING' },
   })
 
   // Log start of sync
@@ -194,34 +201,36 @@ export async function performSync(
       userId: document.userId,
       organizationId: document.organizationId,
       documentId,
-      action: "sync_started",
-      status: "INFO",
-      message: "Synchronisation démarrée",
+      action: 'sync_started',
+      status: 'INFO',
+      message: 'Synchronisation démarrée',
     },
   })
 
   try {
-    let content = ""
+    let content = ''
     let title = document.title
 
     // Step 1: Retrieve content from source
     await prisma.syncLog.create({
       data: {
         documentId,
-        action: "fetch_content_started",
-        status: "INFO",
-        message: "Récupération du contenu depuis la source...",
+        action: 'fetch_content_started',
+        status: 'INFO',
+        message: 'Récupération du contenu depuis la source...',
       },
     })
 
-    if (document.sourceConnector?.type === "GOOGLE_DOCS") {
-      const raw = decrypt(document.sourceConnector.credentials || "{}")
+    if (document.sourceConnector?.type === 'GOOGLE_DOCS') {
+      const raw = decrypt(document.sourceConnector.credentials || '{}')
       const credentials = JSON.parse(raw)
       const docData = await getGoogleDocContent(document.sourceId!, credentials.accessToken)
       content = docData.content
       title = docData.title
-    } else if (document.sourceConnector?.type === "NOTION") {
-      const raw = decrypt(String(document.sourceConnector.credentials || document.sourceConnector.config || "{}"))
+    } else if (document.sourceConnector?.type === 'NOTION') {
+      const raw = decrypt(
+        String(document.sourceConnector.credentials || document.sourceConnector.config || '{}')
+      )
       const config = JSON.parse(raw)
       const pageData = await getNotionPageContent(document.sourceId!, config.accessToken)
       content = pageData.content
@@ -231,8 +240,8 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
-        action: "fetch_content_completed",
-        status: "INFO",
+        action: 'fetch_content_completed',
+        status: 'INFO',
         message: `Contenu récupéré (${content.length} caractères)`,
       },
     })
@@ -241,19 +250,19 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
-        action: "parsing_html_started",
-        status: "INFO",
-        message: "Conversion en HTML...",
+        action: 'parsing_html_started',
+        status: 'INFO',
+        message: 'Conversion en HTML...',
       },
     })
 
-    const { parseMarkdownToHtml, parseGoogleDocToHtml } = await import("./html-parser")
+    const { parseMarkdownToHtml, parseGoogleDocToHtml } = await import('./html-parser')
     let htmlContent = content
 
-    if (document.sourceConnector?.type === "NOTION") {
+    if (document.sourceConnector?.type === 'NOTION') {
       htmlContent = parseMarkdownToHtml(content)
-    } else if (document.sourceConnector?.type === "GOOGLE_DOCS" && document.sourceId) {
-      const raw = decrypt(document.sourceConnector.credentials || "{}")
+    } else if (document.sourceConnector?.type === 'GOOGLE_DOCS' && document.sourceId) {
+      const raw = decrypt(document.sourceConnector.credentials || '{}')
       const credentials = JSON.parse(raw)
       const fullDocData = await getGoogleDocContent(document.sourceId, credentials.accessToken)
       const parsed = parseGoogleDocToHtml(fullDocData)
@@ -263,9 +272,9 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
-        action: "parsing_html_completed",
-        status: "INFO",
-        message: "HTML généré avec succès",
+        action: 'parsing_html_completed',
+        status: 'INFO',
+        message: 'HTML généré avec succès',
       },
     })
 
@@ -273,9 +282,9 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
-        action: "ai_enrichment_started",
-        status: "INFO",
-        message: "Enrichissement IA...",
+        action: 'ai_enrichment_started',
+        status: 'INFO',
+        message: 'Enrichissement IA...',
       },
     })
 
@@ -287,9 +296,9 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
-        action: "ai_enrichment_completed",
-        status: "INFO",
-        message: "Enrichissement IA terminé",
+        action: 'ai_enrichment_completed',
+        status: 'INFO',
+        message: 'Enrichissement IA terminé',
       },
     })
 
@@ -312,9 +321,9 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
-        action: "publish_started",
-        status: "INFO",
-        message: "Publication vers la destination...",
+        action: 'publish_started',
+        status: 'INFO',
+        message: 'Publication vers la destination...',
       },
     })
 
@@ -324,9 +333,9 @@ export async function performSync(
     await prisma.document.update({
       where: { id: documentId },
       data: {
-        syncStatus: "SYNCED",
+        syncStatus: 'SYNCED',
         lastSyncedAt: new Date(),
-        status: "PUBLISHED",
+        status: 'PUBLISHED',
       },
     })
 
@@ -335,9 +344,9 @@ export async function performSync(
         userId: document.userId,
         organizationId: document.organizationId,
         documentId,
-        action: "sync_completed",
-        status: "SUCCESS",
-        message: "Document synchronisé avec succès (avec enrichissement IA)",
+        action: 'sync_completed',
+        status: 'SUCCESS',
+        message: 'Document synchronisé avec succès (avec enrichissement IA)',
       },
     })
 
@@ -355,7 +364,7 @@ export async function performSync(
   } catch (error) {
     await prisma.document.update({
       where: { id: documentId },
-      data: { syncStatus: "FAILED", lastSyncError: (error as Error).message },
+      data: { syncStatus: 'FAILED', lastSyncError: (error as Error).message },
     })
 
     await prisma.syncLog.create({
@@ -363,8 +372,8 @@ export async function performSync(
         userId: document.userId,
         organizationId: document.organizationId,
         documentId,
-        action: "sync_failed",
-        status: "ERROR",
+        action: 'sync_failed',
+        status: 'ERROR',
         message: (error as Error).message,
       },
     })
@@ -390,25 +399,25 @@ async function publishToDestination(
 ) {
   if (!document.destConnector) return
 
-  const rawCredentials = decrypt(document.destConnector.credentials || "")
+  const rawCredentials = decrypt(document.destConnector.credentials || '')
   const config = document.destConnector.config || {}
 
-  if (document.destConnector.type === "WORDPRESS") {
-    const { createWordPressClient } = await import("./wordpress")
-    const creds = Buffer.from(rawCredentials, "base64").toString().split(":")
+  if (document.destConnector.type === 'WORDPRESS') {
+    const { createWordPressClient } = await import('./wordpress')
+    const creds = Buffer.from(rawCredentials, 'base64').toString().split(':')
     const client = createWordPressClient(config.siteUrl, creds[0], creds[1])
 
     if (document.slug) {
       await client.updatePost(parseInt(document.slug), {
         title: document.title,
         content: htmlContent,
-        status: "publish",
+        status: 'publish',
       })
     } else {
       const result = await client.createPost({
         title: document.title,
         content: htmlContent,
-        status: "publish",
+        status: 'publish',
       })
       await prisma.document.update({
         where: { id: document.id },
@@ -417,21 +426,21 @@ async function publishToDestination(
     }
   }
 
-  if (document.destConnector.type === "GHOST") {
-    const { createGhostClient } = await import("./ghost")
+  if (document.destConnector.type === 'GHOST') {
+    const { createGhostClient } = await import('./ghost')
     const client = createGhostClient(config.siteUrl, rawCredentials)
 
     if (document.slug) {
       await client.updatePost(document.slug, {
         title: document.title,
         html: htmlContent,
-        status: "published",
+        status: 'published',
       })
     } else {
       const result = await client.createPost({
         title: document.title,
         html: htmlContent,
-        status: "published",
+        status: 'published',
       })
       await prisma.document.update({
         where: { id: document.id },
@@ -440,25 +449,25 @@ async function publishToDestination(
     }
   }
 
-  if (document.destConnector.type === "WEBFLOW") {
-    const { createWebflowClient } = await import("./webflow")
+  if (document.destConnector.type === 'WEBFLOW') {
+    const { createWebflowClient } = await import('./webflow')
     const client = createWebflowClient(rawCredentials, config.siteId)
 
-    const slug = document.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+    const slug = document.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 
     if (document.slug) {
       await client.updateItem(config.collectionId, document.slug, {
         name: document.title,
         slug,
         content: htmlContent,
-        status: "published",
+        status: 'published',
       })
     } else {
       const result = await client.createItem(config.collectionId, {
         name: document.title,
         slug,
         content: htmlContent,
-        status: "published",
+        status: 'published',
       })
       await prisma.document.update({
         where: { id: document.id },
@@ -467,8 +476,8 @@ async function publishToDestination(
     }
   }
 
-  if (document.destConnector.type === "SHOPIFY") {
-    const { createShopifyClient } = await import("./shopify")
+  if (document.destConnector.type === 'SHOPIFY') {
+    const { createShopifyClient } = await import('./shopify')
     const client = createShopifyClient(config.shopDomain, rawCredentials)
 
     const blogs = await client.getBlogs()
@@ -494,16 +503,16 @@ async function publishToDestination(
   }
 
   // Contentful integration
-  if (document.destConnector.type === "CONTENTFUL") {
-    const { createContentfulEntry, updateContentfulEntry } = await import("./contentful")
+  if (document.destConnector.type === 'CONTENTFUL') {
+    const { createContentfulEntry, updateContentfulEntry } = await import('./contentful')
     const spaceId = config.spaceId
     const accessToken = rawCredentials
-    const contentTypeId = config.contentTypeId || "article"
+    const contentTypeId = config.contentTypeId || 'article'
 
     const fields = {
-      title: { "en-US": document.title },
-      body: { "en-US": htmlContent },
-      slug: { "en-US": document.slug || document.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") },
+      title: { 'en-US': document.title },
+      body: { 'en-US': htmlContent },
+      slug: { 'en-US': document.slug || document.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') },
     }
 
     if (document.slug) {
@@ -538,24 +547,24 @@ export async function detectAndSyncChanges(documentId: string): Promise<SyncResu
     return { success: false, error: ERR_DOC_NOT_FOUND, documentId }
   }
 
-  if (document.status !== "PUBLISHED") {
+  if (document.status !== 'PUBLISHED') {
     return { success: false, error: ERR_DOC_NOT_PUBLISHED, documentId }
   }
 
   try {
-    let newContent = ""
+    let newContent = ''
     let newTitle = document.title
 
-    if (document.sourceConnector?.type === "GOOGLE_DOCS") {
-      const raw = decrypt(document.sourceConnector.credentials || "{}")
+    if (document.sourceConnector?.type === 'GOOGLE_DOCS') {
+      const raw = decrypt(document.sourceConnector.credentials || '{}')
       const credentials = JSON.parse(raw)
       const docData = await getGoogleDocContent(document.sourceId!, credentials.accessToken)
       newContent = docData.content
       newTitle = docData.title
     }
 
-    const { detectContentChanges: detectChanges } = await import("./ai")
-    const result = await detectChanges(document.content || "", newContent)
+    const { detectContentChanges: detectChanges } = await import('./ai')
+    const result = await detectChanges(document.content || '', newContent)
 
     if (!result.hasChanges) {
       return {
@@ -571,8 +580,8 @@ export async function detectAndSyncChanges(documentId: string): Promise<SyncResu
         userId: document.userId,
         organizationId: document.organizationId,
         documentId,
-        action: "changes_detected",
-        status: "INFO",
+        action: 'changes_detected',
+        status: 'INFO',
         message: result.summary,
       },
     })
@@ -580,7 +589,7 @@ export async function detectAndSyncChanges(documentId: string): Promise<SyncResu
     if (!document.sourceConnectorId || !document.destConnectorId) {
       return {
         success: false,
-        error: "Missing connector IDs",
+        error: 'Missing connector IDs',
         documentId,
       }
     }
@@ -605,20 +614,20 @@ export async function checkRemoteChanges(documentId: string) {
 
   if (!document || !document.destConnector) return null
 
-  const credentials = decrypt(document.destConnector.credentials || "")
+  const credentials = decrypt(document.destConnector.credentials || '')
   const config = (document.destConnector.config || {}) as Record<string, string>
 
-  if (document.destConnector.type === "WORDPRESS") {
-    const { createWordPressClient } = await import("./wordpress")
-    const creds = Buffer.from(credentials, "base64").toString().split(":")
+  if (document.destConnector.type === 'WORDPRESS') {
+    const { createWordPressClient } = await import('./wordpress')
+    const creds = Buffer.from(credentials, 'base64').toString().split(':')
     const client = createWordPressClient(config.siteUrl, creds[0], creds[1])
-    return client.getPost(parseInt(document.slug || "0"))
+    return client.getPost(parseInt(document.slug || '0'))
   }
 
-  if (document.destConnector.type === "GHOST") {
-    const { createGhostClient } = await import("./ghost")
+  if (document.destConnector.type === 'GHOST') {
+    const { createGhostClient } = await import('./ghost')
     const client = createGhostClient(config.siteUrl, credentials)
-    return client.getPost(document.slug || "")
+    return client.getPost(document.slug || '')
   }
 
   return null

@@ -19,6 +19,7 @@ Use when you have a topic and need social posts (no long-form source content req
 ### Step 1: Gather Inputs
 
 Ask the user for:
+
 1. **Topic or idea** — what the post(s) should be about. Can be a single sentence, a specific angle, a question, or a brief with talking points.
 2. **Template(s) to use** (optional) — Story, Observation, Contrarian, Listicle, Past vs. Present, Hand-Raiser, Launch, Meme, Carousel, or "all" (default: first 5)
 3. **Platform** — LinkedIn, Twitter/X, or both (default: both)
@@ -53,6 +54,7 @@ A personal narrative that leads to the topic's key insight. Highest engagement, 
 **Emotional trigger:** Entertains / Empathizes
 
 **Structure:**
+
 1. **Pain/Attention** — Open with a specific, relatable moment. Not "I used to struggle with X" but the exact scene.
 2. **Agitate** — Make it worse. What happened when the problem continued?
 3. **Intrigue** — The turning point. What changed?
@@ -60,6 +62,7 @@ A personal narrative that leads to the topic's key insight. Highest engagement, 
 5. **Solution** — The actionable takeaway.
 
 **Rules:**
+
 - First person. Real or realistic scenarios.
 - Opening line must stop the scroll.
 - Short paragraphs. One idea per line.
@@ -74,6 +77,7 @@ A pattern or insight you've noticed, backed by specifics.
 **Emotional trigger:** Teaches / Makes me think
 
 **Structure:**
+
 1. **Observation** — One clear, specific thing you've noticed.
 2. **Evidence** — 3-5 specific, concrete points.
 3. **Closer** — A punchy, quotable takeaway.
@@ -87,11 +91,13 @@ Challenge something the audience assumes is true.
 **Emotional trigger:** Makes me think / Empathizes
 
 **Structure:**
+
 1. **The take** — State the contrarian position in one sentence.
 2. **Why the conventional view is wrong** — 2-3 reasons.
 3. **The reframe** — A new way to think about it.
 
 **Rules:**
+
 - Must be genuinely surprising. "Work smarter not harder" is not contrarian.
 - Support with logic, experience, or evidence — not just attitude.
 
@@ -104,11 +110,13 @@ A curated list of tips, tools, resources, or lessons.
 **Emotional trigger:** Teaches
 
 **Structure:**
+
 1. **Frame** — "X [things] every [audience] should [know/use/avoid]:"
 2. **List** — Each item: name/label + one-line description. Consistent format.
 3. **Closer** — Optional recommendation or CTA.
 
 **Rules:**
+
 - Each item scannable in under 5 seconds.
 - Odd numbers (5, 7, 9) tend to outperform even.
 - Put the most surprising item at #1 or last position.
@@ -122,11 +130,13 @@ Show transformation over time.
 **Emotional trigger:** Entertains / Teaches
 
 **Structure:**
+
 1. **Then** — The old way. 3-5 bullet points.
 2. **Now** — The new way. 3-5 bullet points (matching structure).
 3. **Lesson** — One word or short phrase.
 
 **Rules:**
+
 - Parallel structure is critical.
 - Be specific. "$2K/month" beats "less money."
 - The lesson line should land like a punchline.
@@ -140,6 +150,7 @@ Generate comments from interested readers, then DM them a free resource.
 **Emotional trigger:** Teaches / Empathizes
 
 **Structure:**
+
 1. **Personal struggle** — Open with a relatable problem (2-3 short lines)
 2. **Transformation** — What changed, with specific numbers and timeframe
 3. **The offer** — A free resource that breaks down your process
@@ -148,6 +159,7 @@ Generate comments from interested readers, then DM them a free resource.
 6. **CTA** — `Drop "[WORD]" below and I'll DM it to you`
 
 **Rules:**
+
 - Fascinations are NOT feature bullets. They are curiosity gaps.
 - The relief statement matters — telling people what they won't need to do reduces perceived cost.
 - One-page PDF is the ideal resource format.
@@ -161,6 +173,7 @@ Promote a paid offer. Story-first, pitch-second.
 **Emotional trigger:** Empathizes / Teaches
 
 **Structure:**
+
 1. **Hook** (Line 1) — One short, scroll-stopping line. Never promotional.
 2. **Curiosity inducer** (Line 2) — Creates an open loop.
 3. **Story** (60-70% of the post) — Build tension, share a relatable struggle.
@@ -168,6 +181,7 @@ Promote a paid offer. Story-first, pitch-second.
 5. **CTA** — One clear action with the link.
 
 **Rules:**
+
 - 175-225 words total. Scannable in under 60 seconds.
 - Story before pitch. The first 60-70% earns attention.
 - Emoji: 0-2 max, in hook or CTA only.
@@ -181,10 +195,12 @@ Turn a topic into a meme-format post.
 **Emotional trigger:** Entertains
 
 **Structure:**
+
 1. **Choose a meme format** — Match the topic's core tension to a template
 2. **Write a 1-2 sentence caption** — The meme image does the heavy lifting.
 
 **Rules:**
+
 - Standalone. Understandable without any other context.
 - Use the audience's in-group language.
 - Don't force it. If no natural meme angle exists, skip.
@@ -198,12 +214,14 @@ Multi-slide visual post optimized for swipe mechanic.
 **Emotional trigger:** Teaches
 
 **Structure:**
+
 1. **Cover slide** — Bold headline + subtitle (the hook)
 2. **Content slides (5-8)** — One point per slide, consistent design
 3. **Summary slide** — Recap key points
 4. **CTA slide** — Follow, save, share, or visit link
 
 **Rules:**
+
 - Square format (1080x1080).
 - First slide is everything — if it doesn't hook, nobody swipes.
 - Educational carousels get the highest save rates on Instagram.
@@ -215,6 +233,7 @@ Multi-slide visual post optimized for swipe mechanic.
 Adapt each post for the target platform(s):
 
 **LinkedIn:**
+
 - First line shows above the fold — must earn the "see more" click
 - Generous line breaks. One thought per line.
 - Emojis: only if they match brand voice, sparingly
@@ -222,6 +241,7 @@ Adapt each post for the target platform(s):
 - End with a question to drive comments
 
 **Twitter/X:**
+
 - Single tweets: 280 characters max. Ruthlessly compress.
 - Threads: first tweet stands alone. Each subsequent tweet adds one idea.
 - No hashtags in the body.
@@ -233,6 +253,7 @@ If generating for both platforms, produce separate versions — don't just trim 
 ### Step 5: Review and Polish
 
 For each post, check:
+
 - **Hook strength** — Would you stop scrolling for the first line?
 - **Specificity** — Replace any generic advice with concrete details.
 - **Voice match** — Does it sound like the author, not like a template?
@@ -304,4 +325,3 @@ For each post, check:
 - Story posts require real (or realistic) personal experience. If the user doesn't provide anecdotes, ask for them.
 - Not every template works for every topic. If there's no contrarian angle, skip Contrarian Take and generate a second Observation or Listicle instead.
 - These templates are frameworks, not fill-in-the-blanks. The output should read like a human wrote it.
-

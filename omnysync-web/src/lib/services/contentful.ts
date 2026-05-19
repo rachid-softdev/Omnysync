@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/prisma"
-import { encrypt, decrypt } from "@/lib/crypto"
-import { fetchWithRetry } from "@/lib/http-client"
-import { ERR_FETCH_CONTENT } from "@/lib/errors"
+import { prisma } from '@/lib/prisma'
+import { encrypt, decrypt } from '@/lib/crypto'
+import { fetchWithRetry } from '@/lib/http-client'
+import { ERR_FETCH_CONTENT } from '@/lib/errors'
 
 class APIError extends Error {
   constructor(
@@ -9,12 +9,12 @@ class APIError extends Error {
     message: string
   ) {
     super(message)
-    this.name = "APIError"
+    this.name = 'APIError'
   }
 }
 
-const CONTENTFUL_CDN = "https://cdn.contentful.com"
-const CONTENTFUL_MANAGEMENT = "https://api.contentful.com"
+const CONTENTFUL_CDN = 'https://cdn.contentful.com'
+const CONTENTFUL_MANAGEMENT = 'https://api.contentful.com'
 
 export interface ContentfulSpace {
   id: string
@@ -51,7 +51,7 @@ export async function listContentfulSpaces(accessToken: string): Promise<Content
     )
     return data.items || []
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to fetch Contentful spaces")
+    throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch Contentful spaces')
   }
 }
 
@@ -73,7 +73,7 @@ export async function listContentfulContentTypes(
     )
     return data.items || []
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to fetch content types")
+    throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch content types')
   }
 }
 
@@ -104,17 +104,17 @@ export async function listContentfulEntries(
         },
       }
     )
-    
+
     return (data.items || []).map((entry) => ({
-      id: entry.sys?.id || "",
-      title: entry.fields?.title || entry.fields?.name || "Untitled",
+      id: entry.sys?.id || '',
+      title: entry.fields?.title || entry.fields?.name || 'Untitled',
       content: JSON.stringify(entry.fields, null, 2),
-      createdAt: entry.sys?.createdAt || "",
-      updatedAt: entry.sys?.updatedAt || "",
+      createdAt: entry.sys?.createdAt || '',
+      updatedAt: entry.sys?.updatedAt || '',
       fields: entry.fields || {},
     }))
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to fetch entries")
+    throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch entries')
   }
 }
 
@@ -127,14 +127,14 @@ export function contentfulEntryToDocument(entry: ContentfulEntry): {
   metadata: Record<string, unknown>
 } {
   // Chercher le champ "body" ou "content" ou "description"
-  const contentFields = entry.fields.body || entry.fields.content || 
-                        entry.fields.description || entry.fields.text
-  
-  let content = ""
-  
-  if (typeof contentFields === "string") {
+  const contentFields =
+    entry.fields.body || entry.fields.content || entry.fields.description || entry.fields.text
+
+  let content = ''
+
+  if (typeof contentFields === 'string') {
     content = contentFields
-  } else if (typeof contentFields === "object") {
+  } else if (typeof contentFields === 'object') {
     // Contentful peut avoir du Rich Text
     content = JSON.stringify(contentFields)
   } else {
@@ -166,19 +166,19 @@ export async function createContentfulEntry(
     const data = await fetchWithRetry<{ sys: { id: string } }>(
       `${CONTENTFUL_MANAGEMENT}/spaces/${spaceId}/entries`,
       {
-        method: "POST",
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/vnd.contentful.management.v1+json",
-          "X-Contentful-Content-Type": contentTypeId,
+          'Content-Type': 'application/vnd.contentful.management.v1+json',
+          'X-Contentful-Content-Type': contentTypeId,
         },
         body: JSON.stringify({ fields }),
       }
     )
-    
+
     return { id: data.sys.id }
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to create entry")
+    throw new APIError(ERR_FETCH_CONTENT, 'Failed to create entry')
   }
 }
 
@@ -196,19 +196,19 @@ export async function updateContentfulEntry(
     const data = await fetchWithRetry<{ sys: { id: string } }>(
       `${CONTENTFUL_MANAGEMENT}/spaces/${spaceId}/entries/${entryId}`,
       {
-        method: "PUT",
+        method: 'PUT',
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/vnd.contentful.management.v1+json",
-          "X-Contentful-Version": version.toString(),
+          'Content-Type': 'application/vnd.contentful.management.v1+json',
+          'X-Contentful-Version': version.toString(),
         },
         body: JSON.stringify({ fields }),
       }
     )
-    
+
     return { id: data.sys.id }
   } catch (error) {
-    throw new APIError(ERR_FETCH_CONTENT, "Failed to update entry")
+    throw new APIError(ERR_FETCH_CONTENT, 'Failed to update entry')
   }
 }
 
@@ -232,9 +232,9 @@ export async function saveContentfulConnector(
     data: {
       userId,
       organizationId,
-      type: "CONTENTFUL",
-      name: "Contentful",
-      status: "ACTIVE",
+      type: 'CONTENTFUL',
+      name: 'Contentful',
+      status: 'ACTIVE',
       credentials: encrypt(accessToken),
       config: JSON.stringify(config),
     },
@@ -251,12 +251,12 @@ export async function listContentfulDocuments(
     where: { id: connectorId },
   })
 
-  if (!connector || connector.type !== "CONTENTFUL") {
-    throw new Error("Invalid Contentful connector")
+  if (!connector || connector.type !== 'CONTENTFUL') {
+    throw new Error('Invalid Contentful connector')
   }
 
-  const accessToken = decrypt(connector.credentials || "")
-  const config = JSON.parse(decrypt(connector.config || "{}"))
+  const accessToken = decrypt(connector.credentials || '')
+  const config = JSON.parse(decrypt(connector.config || '{}'))
 
   if (!config.spaceId) {
     return []
@@ -265,14 +265,15 @@ export async function listContentfulDocuments(
   // Si pas de content type, lister tous les types et leurs entrées
   if (!config.contentTypeId) {
     const contentTypes = await listContentfulContentTypes(accessToken, config.spaceId)
-    
+
     const documents: Array<{ id: string; title: string }> = []
-    
-    for (const ct of contentTypes.slice(0, 3)) { // Limiter à 3 types
+
+    for (const ct of contentTypes.slice(0, 3)) {
+      // Limiter à 3 types
       const entries = await listContentfulEntries(accessToken, config.spaceId, ct.id, {
         limit: 10,
       })
-      
+
       for (const entry of entries) {
         documents.push({
           id: `${ct.id}:${entry.id}`,
@@ -280,13 +281,13 @@ export async function listContentfulDocuments(
         })
       }
     }
-    
+
     return documents
   }
 
   // Sinon, récupérer les entrées du type spécifié
   const entries = await listContentfulEntries(accessToken, config.spaceId, config.contentTypeId)
-  
+
   return entries.map((entry) => ({
     id: entry.id,
     title: entry.title,
@@ -304,24 +305,24 @@ export async function getContentfulEntryContent(
     where: { id: connectorId },
   })
 
-  if (!connector || connector.type !== "CONTENTFUL") {
-    throw new Error("Invalid Contentful connector")
+  if (!connector || connector.type !== 'CONTENTFUL') {
+    throw new Error('Invalid Contentful connector')
   }
 
-  const accessToken = decrypt(connector.credentials || "")
-  const config = JSON.parse(decrypt(connector.config || "{}"))
+  const accessToken = decrypt(connector.credentials || '')
+  const config = JSON.parse(decrypt(connector.config || '{}'))
 
   if (!config.spaceId) {
-    throw new Error("Missing space ID")
+    throw new Error('Missing space ID')
   }
 
   // Parse entryId (peut être contentTypeId:entryId ou juste entryId)
-  const [contentTypeId, actualEntryId] = entryId.includes(":")
-    ? entryId.split(":")
+  const [contentTypeId, actualEntryId] = entryId.includes(':')
+    ? entryId.split(':')
     : [config.contentTypeId, entryId]
 
   if (!contentTypeId || !actualEntryId) {
-    throw new Error("Invalid entry ID")
+    throw new Error('Invalid entry ID')
   }
 
   const entries = await listContentfulEntries(accessToken, config.spaceId, contentTypeId, {
@@ -329,13 +330,13 @@ export async function getContentfulEntryContent(
   })
 
   const entry = entries.find((e) => e.id === actualEntryId)
-  
+
   if (!entry) {
-    throw new Error("Entry not found")
+    throw new Error('Entry not found')
   }
 
   const doc = contentfulEntryToDocument(entry)
-  
+
   return {
     id: actualEntryId,
     title: doc.title,

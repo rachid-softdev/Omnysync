@@ -1,26 +1,40 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { 
-  Users, 
-  UserPlus, 
-  Mail, 
-  Shield, 
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Users,
+  UserPlus,
+  Mail,
+  Shield,
   MoreVertical,
   Crown,
   User,
   Trash2,
-  Loader2
-} from "lucide-react"
-import { useTranslations } from "@/lib/i18n/useTranslations"
+  Loader2,
+} from 'lucide-react'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 interface TeamMember {
   id: string
@@ -36,8 +50,8 @@ export default function TeamSettingsPage() {
   const [members, setMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
-  const [inviteEmail, setInviteEmail] = useState("")
-  const [inviteRole, setInviteRole] = useState("MEMBER")
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState('MEMBER')
   const [inviting, setInviting] = useState(false)
 
   useEffect(() => {
@@ -46,7 +60,7 @@ export default function TeamSettingsPage() {
 
   const fetchTeam = async () => {
     try {
-      const res = await fetch("/api/team")
+      const res = await fetch('/api/team')
       if (res.ok) {
         const data = await res.json()
         setMembers(data)
@@ -60,19 +74,19 @@ export default function TeamSettingsPage() {
 
   const handleInvite = async () => {
     if (!inviteEmail) return
-    
+
     setInviting(true)
     try {
-      const res = await fetch("/api/team/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/team/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
       })
-      
+
       if (res.ok) {
         setInviteDialogOpen(false)
-        setInviteEmail("")
-        setInviteRole("MEMBER")
+        setInviteEmail('')
+        setInviteRole('MEMBER')
         fetchTeam()
       }
     } catch (e) {
@@ -83,13 +97,13 @@ export default function TeamSettingsPage() {
   }
 
   const handleRemoveMember = async (memberId: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce membre ?")) return
-    
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce membre ?')) return
+
     try {
       const res = await fetch(`/api/team/${memberId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       })
-      
+
       if (res.ok) {
         fetchTeam()
       }
@@ -101,11 +115,11 @@ export default function TeamSettingsPage() {
   const handleUpdateRole = async (memberId: string, newRole: string) => {
     try {
       const res = await fetch(`/api/team/${memberId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole }),
       })
-      
+
       if (res.ok) {
         fetchTeam()
       }
@@ -116,18 +130,25 @@ export default function TeamSettingsPage() {
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case "OWNER": return <Crown className="w-4 h-4 text-yellow-500" />
-      case "ADMIN": return <Shield className="w-4 h-4 text-blue-500" />
-      default: return <User className="w-4 h-4 text-muted-foreground" />
+      case 'OWNER':
+        return <Crown className="w-4 h-4 text-yellow-500" />
+      case 'ADMIN':
+        return <Shield className="w-4 h-4 text-blue-500" />
+      default:
+        return <User className="w-4 h-4 text-muted-foreground" />
     }
   }
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case "OWNER": return "Propriétaire"
-      case "ADMIN": return "Administrateur"
-      case "MEMBER": return "Membre"
-      default: return role
+      case 'OWNER':
+        return 'Propriétaire'
+      case 'ADMIN':
+        return 'Administrateur'
+      case 'MEMBER':
+        return 'Membre'
+      default:
+        return role
     }
   }
 
@@ -143,9 +164,9 @@ export default function TeamSettingsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">{t("TEAM_TITLE") || "Équipe"}</h1>
+          <h1 className="text-3xl font-bold">{t('TEAM_TITLE') || 'Équipe'}</h1>
           <p className="text-muted-foreground mt-1">
-            {t("TEAM_SUBTITLE") || "Gérez les membres de votre organisation"}
+            {t('TEAM_SUBTITLE') || 'Gérez les membres de votre organisation'}
           </p>
         </div>
         <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
@@ -165,9 +186,9 @@ export default function TeamSettingsPage() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
+                <Input
+                  id="email"
+                  type="email"
                   placeholder="email@exemple.com"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
@@ -206,7 +227,7 @@ export default function TeamSettingsPage() {
             Membres de l'organisation
           </CardTitle>
           <CardDescription>
-            {members.length} membre{members.length !== 1 ? "s" : ""}
+            {members.length} membre{members.length !== 1 ? 's' : ''}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -218,7 +239,7 @@ export default function TeamSettingsPage() {
           ) : (
             <div className="space-y-4">
               {members.map((member) => (
-                <div 
+                <div
                   key={member.id}
                   className="flex items-center justify-between p-4 rounded-lg border"
                 >
@@ -230,7 +251,7 @@ export default function TeamSettingsPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{member.name || "Sans nom"}</p>
+                      <p className="font-medium">{member.name || 'Sans nom'}</p>
                       <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <Mail className="w-3 h-3" />
                         {member.email}
@@ -238,16 +259,16 @@ export default function TeamSettingsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <Badge variant={member.role === "OWNER" ? "default" : "secondary"}>
+                    <Badge variant={member.role === 'OWNER' ? 'default' : 'secondary'}>
                       <span className="flex items-center gap-1">
                         {getRoleIcon(member.role)}
                         {getRoleLabel(member.role)}
                       </span>
                     </Badge>
-                    {member.role !== "OWNER" && (
+                    {member.role !== 'OWNER' && (
                       <div className="flex items-center gap-2">
-                        <Select 
-                          value={member.role} 
+                        <Select
+                          value={member.role}
                           onValueChange={(newRole) => handleUpdateRole(member.id, newRole)}
                         >
                           <SelectTrigger className="w-32">
@@ -258,8 +279,8 @@ export default function TeamSettingsPage() {
                             <SelectItem value="ADMIN">Admin</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="icon"
                           className="text-destructive"
                           onClick={() => handleRemoveMember(member.id)}

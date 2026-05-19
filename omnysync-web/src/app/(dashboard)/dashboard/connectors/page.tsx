@@ -1,15 +1,15 @@
-"use client"
+'use client'
 
-import { useState, useEffect, useCallback, useMemo } from "react"
-import dynamic from "next/dynamic"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Plus, RefreshCw, Loader2 } from "lucide-react"
-import { useTranslations } from "@/lib/i18n/useTranslations"
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import dynamic from 'next/dynamic'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Plus, RefreshCw, Loader2 } from 'lucide-react'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 const ConnectorDialog = dynamic(
-  () => import("@/components/connector-dialog").then(mod => ({ default: mod.ConnectorDialog })),
+  () => import('@/components/connector-dialog').then((mod) => ({ default: mod.ConnectorDialog })),
   { ssr: false, loading: () => <div className="p-4">Loading...</div> }
 )
 
@@ -20,43 +20,43 @@ interface Connector {
   status: string
 }
 
-const sourceTypes = ["GOOGLE_DOCS", "NOTION", "AIRTABLE", "CONTENTFUL"] as const
-const destTypes = ["WORDPRESS", "GHOST", "WEBFLOW", "SHOPIFY", "MEDIUM"] as const
+const sourceTypes = ['GOOGLE_DOCS', 'NOTION', 'AIRTABLE', 'CONTENTFUL'] as const
+const destTypes = ['WORDPRESS', 'GHOST', 'WEBFLOW', 'SHOPIFY', 'MEDIUM'] as const
 
 const connectorNames: Record<string, string> = {
-  GOOGLE_DOCS: "Google Docs",
-  NOTION: "Notion",
-  WORDPRESS: "WordPress",
-  GHOST: "Ghost",
-  WEBFLOW: "Webflow",
-  SHOPIFY: "Shopify",
-  AIRTABLE: "Airtable",
-  CONTENTFUL: "Contentful",
-  MEDIUM: "Medium",
+  GOOGLE_DOCS: 'Google Docs',
+  NOTION: 'Notion',
+  WORDPRESS: 'WordPress',
+  GHOST: 'Ghost',
+  WEBFLOW: 'Webflow',
+  SHOPIFY: 'Shopify',
+  AIRTABLE: 'Airtable',
+  CONTENTFUL: 'Contentful',
+  MEDIUM: 'Medium',
 }
 
 const connectorIcons: Record<string, string> = {
-  GOOGLE_DOCS: "📄",
-  NOTION: "📝",
-  WORDPRESS: "🔵",
-  GHOST: "👻",
-  WEBFLOW: "🌐",
-  SHOPIFY: "🛒",
-  AIRTABLE: "📊",
-  CONTENTFUL: "🏗️",
-  MEDIUM: "📰",
+  GOOGLE_DOCS: '📄',
+  NOTION: '📝',
+  WORDPRESS: '🔵',
+  GHOST: '👻',
+  WEBFLOW: '🌐',
+  SHOPIFY: '🛒',
+  AIRTABLE: '📊',
+  CONTENTFUL: '🏗️',
+  MEDIUM: '📰',
 }
 
 const connectorDescriptions: Record<string, string> = {
-  GOOGLE_DOCS: "Récupérez le contenu depuis Google Docs",
-  NOTION: "Importez vos pages Notion",
-  WORDPRESS: "Publiez sur WordPress via REST API",
-  GHOST: "Export vers Ghost via Admin API",
-  WEBFLOW: "Sync vers Webflow CMS",
-  SHOPIFY: "Créez des articles Shopify",
-  AIRTABLE: "Synchronisez vos bases Airtable",
-  CONTENTFUL: "Publiez vers Contentful",
-  MEDIUM: "Publiez sur Medium",
+  GOOGLE_DOCS: 'Récupérez le contenu depuis Google Docs',
+  NOTION: 'Importez vos pages Notion',
+  WORDPRESS: 'Publiez sur WordPress via REST API',
+  GHOST: 'Export vers Ghost via Admin API',
+  WEBFLOW: 'Sync vers Webflow CMS',
+  SHOPIFY: 'Créez des articles Shopify',
+  AIRTABLE: 'Synchronisez vos bases Airtable',
+  CONTENTFUL: 'Publiez vers Contentful',
+  MEDIUM: 'Publiez sur Medium',
 }
 
 export default function ConnectorsPage() {
@@ -64,17 +64,17 @@ export default function ConnectorsPage() {
   const [connectors, setConnectors] = useState<Connector[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogType, setDialogType] = useState<string | null>(null)
-  const [statusMsg, setStatusMsg] = useState("")
+  const [statusMsg, setStatusMsg] = useState('')
 
   const fetchConnectors = useCallback(async (signal?: AbortSignal) => {
     try {
-      const res = await fetch("/api/connectors", { signal })
+      const res = await fetch('/api/connectors', { signal })
       if (res.ok) {
         const data = await res.json()
         setConnectors(data)
       }
     } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") return
+      if (e instanceof DOMException && e.name === 'AbortError') return
       console.error(e)
     } finally {
       setLoading(false)
@@ -87,18 +87,18 @@ export default function ConnectorsPage() {
 
     // Check for callback params
     const params = new URLSearchParams(window.location.search)
-    if (params.get("connected") === "google_docs") {
-      setStatusMsg("Google Docs connecté avec succès !")
-      setTimeout(() => setStatusMsg(""), 5000)
-      window.history.replaceState({}, "", "/dashboard/connectors")
-    } else if (params.get("connected") === "notion") {
-      setStatusMsg("Notion connecté avec succès !")
-      setTimeout(() => setStatusMsg(""), 5000)
-      window.history.replaceState({}, "", "/dashboard/connectors")
-    } else if (params.get("error")) {
-      setStatusMsg("Erreur de connexion. Réessayez.")
-      setTimeout(() => setStatusMsg(""), 5000)
-      window.history.replaceState({}, "", "/dashboard/connectors")
+    if (params.get('connected') === 'google_docs') {
+      setStatusMsg('Google Docs connecté avec succès !')
+      setTimeout(() => setStatusMsg(''), 5000)
+      window.history.replaceState({}, '', '/dashboard/connectors')
+    } else if (params.get('connected') === 'notion') {
+      setStatusMsg('Notion connecté avec succès !')
+      setTimeout(() => setStatusMsg(''), 5000)
+      window.history.replaceState({}, '', '/dashboard/connectors')
+    } else if (params.get('error')) {
+      setStatusMsg('Erreur de connexion. Réessayez.')
+      setTimeout(() => setStatusMsg(''), 5000)
+      window.history.replaceState({}, '', '/dashboard/connectors')
     }
 
     return () => controller.abort()
@@ -107,10 +107,10 @@ export default function ConnectorsPage() {
   const connectedTypesSet = useMemo(() => new Set(connectors.map((c) => c.type)), [connectors])
 
   const handleConnect = useCallback((type: string) => {
-    if (type === "GOOGLE_DOCS") {
-      window.location.href = "/api/auth/connect/google"
-    } else if (type === "NOTION") {
-      window.location.href = "/api/auth/connect/notion"
+    if (type === 'GOOGLE_DOCS') {
+      window.location.href = '/api/auth/connect/google'
+    } else if (type === 'NOTION') {
+      window.location.href = '/api/auth/connect/notion'
     } else {
       setDialogType(type)
     }
@@ -128,8 +128,8 @@ export default function ConnectorsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">{t("UI_CONNECTORS")}</h1>
-          <p className="text-muted-foreground mt-1">{t("UI_MANAGE_CONNECTORS")}</p>
+          <h1 className="text-3xl font-bold">{t('UI_CONNECTORS')}</h1>
+          <p className="text-muted-foreground mt-1">{t('UI_MANAGE_CONNECTORS')}</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => fetchConnectors()}>
           <RefreshCw className="w-4 h-4 mr-2" />
@@ -144,7 +144,7 @@ export default function ConnectorsPage() {
       )}
 
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">{t("UI_SOURCES")}</h2>
+        <h2 className="text-xl font-semibold mb-4">{t('UI_SOURCES')}</h2>
         <p className="text-sm text-muted-foreground mb-4">
           Connectez vos sources de contenu pour importer des documents
         </p>
@@ -160,12 +160,12 @@ export default function ConnectorsPage() {
                     {connectorDescriptions[type]}
                   </p>
                   <Button
-                    variant={isConnected ? "outline" : "default"}
+                    variant={isConnected ? 'outline' : 'default'}
                     size="sm"
                     onClick={() => handleConnect(type)}
                     className="w-full"
                   >
-                    {isConnected ? "Connecté" : "Connecter"}
+                    {isConnected ? 'Connecté' : 'Connecter'}
                   </Button>
                   {isConnected && (
                     <Badge variant="secondary" className="mt-2">
@@ -180,7 +180,7 @@ export default function ConnectorsPage() {
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold mb-4">{t("UI_DESTINATIONS")}</h2>
+        <h2 className="text-xl font-semibold mb-4">{t('UI_DESTINATIONS')}</h2>
         <p className="text-sm text-muted-foreground mb-4">
           Configurez vos destinations pour publier vos contenus synchronisés
         </p>
@@ -196,12 +196,12 @@ export default function ConnectorsPage() {
                     {connectorDescriptions[type]}
                   </p>
                   <Button
-                    variant={isConnected ? "outline" : "default"}
+                    variant={isConnected ? 'outline' : 'default'}
                     size="sm"
                     onClick={() => handleConnect(type)}
                     className="w-full"
                   >
-                    {isConnected ? "Configuré" : "Configurer"}
+                    {isConnected ? 'Configuré' : 'Configurer'}
                   </Button>
                   {isConnected && (
                     <Badge variant="secondary" className="mt-2">
@@ -226,10 +226,12 @@ export default function ConnectorsPage() {
                   <span className="text-2xl">{connectorIcons[connector.type]}</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{connector.name}</p>
-                    <p className="text-sm text-muted-foreground">{connectorNames[connector.type]}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {connectorNames[connector.type]}
+                    </p>
                   </div>
-                  <Badge 
-                    variant={connector.status === "ACTIVE" ? "default" : "destructive"}
+                  <Badge
+                    variant={connector.status === 'ACTIVE' ? 'default' : 'destructive'}
                     className="capitalize"
                   >
                     {connector.status.toLowerCase()}
@@ -242,7 +244,7 @@ export default function ConnectorsPage() {
       )}
 
       <ConnectorDialog
-        type={dialogType || ""}
+        type={dialogType || ''}
         open={!!dialogType}
         onClose={() => setDialogType(null)}
         onSuccess={fetchConnectors}

@@ -1,8 +1,8 @@
-import { prisma } from "@/lib/prisma"
-import { encrypt, decrypt } from "@/lib/crypto"
-import { fetchWithRetry } from "@/lib/http-client"
+import { prisma } from '@/lib/prisma'
+import { encrypt, decrypt } from '@/lib/crypto'
+import { fetchWithRetry } from '@/lib/http-client'
 
-const MEDIUM_API = "https://api.medium.com/v1"
+const MEDIUM_API = 'https://api.medium.com/v1'
 
 export interface MediumUser {
   id: string
@@ -19,10 +19,10 @@ export interface MediumPost {
   tags: string[]
   url: string
   canonicalUrl: string
-  publishStatus: "public" | "draft" | "unlisted"
+  publishStatus: 'public' | 'draft' | 'unlisted'
   publishedAt: string
   content: string
-  contentFormat: "html" | "markdown"
+  contentFormat: 'html' | 'markdown'
 }
 
 export interface MediumPublication {
@@ -38,14 +38,11 @@ export interface MediumPublication {
  */
 export async function getMediumUser(accessToken: string): Promise<MediumUser> {
   try {
-    const data = await fetchWithRetry<{ data: MediumUser }>(
-      `${MEDIUM_API}/me`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    )
+    const data = await fetchWithRetry<{ data: MediumUser }>(`${MEDIUM_API}/me`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
     return data.data
   } catch (error) {
     throw new Error(`Failed to fetch Medium user: ${(error as Error).message}`)
@@ -82,25 +79,22 @@ export async function createMediumPost(
   userId: string,
   post: {
     title: string
-    contentFormat: "html" | "markdown"
+    contentFormat: 'html' | 'markdown'
     content: string
     tags?: string[]
     canonicalUrl?: string
-    publishStatus?: "public" | "draft" | "unlisted"
+    publishStatus?: 'public' | 'draft' | 'unlisted'
   }
 ): Promise<MediumPost> {
   try {
-    const data = await fetchWithRetry<{ data: MediumPost }>(
-      `${MEDIUM_API}/users/${userId}/posts`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(post),
-      }
-    )
+    const data = await fetchWithRetry<{ data: MediumPost }>(`${MEDIUM_API}/users/${userId}/posts`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(post),
+    })
     return data.data
   } catch (error) {
     throw new Error(`Failed to create Medium post: ${(error as Error).message}`)
@@ -115,21 +109,21 @@ export async function createMediumPublicationPost(
   publicationId: string,
   post: {
     title: string
-    contentFormat: "html" | "markdown"
+    contentFormat: 'html' | 'markdown'
     content: string
     tags?: string[]
     canonicalUrl?: string
-    publishStatus?: "public" | "draft" | "unlisted"
+    publishStatus?: 'public' | 'draft' | 'unlisted'
   }
 ): Promise<MediumPost> {
   try {
     const data = await fetchWithRetry<{ data: MediumPost }>(
       `${MEDIUM_API}/publications/${publicationId}/posts`,
       {
-        method: "POST",
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(post),
       }
@@ -175,9 +169,9 @@ export async function saveMediumConnector(
     data: {
       userId,
       organizationId,
-      type: "MEDIUM",
+      type: 'MEDIUM',
       name: `Medium (@${user.username})`,
-      status: "ACTIVE",
+      status: 'ACTIVE',
       credentials: encrypt(accessToken),
       config: JSON.stringify({
         ...config,
@@ -199,8 +193,8 @@ export async function publishToMedium(
     where: { id: connectorId },
   })
 
-  if (!connector || connector.type !== "MEDIUM") {
-    throw new Error("Invalid Medium connector")
+  if (!connector || connector.type !== 'MEDIUM') {
+    throw new Error('Invalid Medium connector')
   }
 
   const document = await prisma.document.findUnique({
@@ -208,17 +202,17 @@ export async function publishToMedium(
   })
 
   if (!document) {
-    throw new Error("Document not found")
+    throw new Error('Document not found')
   }
 
-  const accessToken = decrypt(connector.credentials || "")
-  const config = JSON.parse(decrypt(connector.config || "{}"))
+  const accessToken = decrypt(connector.credentials || '')
+  const config = JSON.parse(decrypt(connector.config || '{}'))
 
   const postPayload = {
     title: document.title,
-    contentFormat: "html" as const,
-    content: document.htmlContent || document.content || "",
-    publishStatus: "public" as const,
+    contentFormat: 'html' as const,
+    content: document.htmlContent || document.content || '',
+    publishStatus: 'public' as const,
     tags: document.tags,
     canonicalUrl: undefined,
   }
@@ -226,17 +220,9 @@ export async function publishToMedium(
   let result: MediumPost
 
   if (config.publicationId) {
-    result = await createMediumPublicationPost(
-      accessToken,
-      config.publicationId,
-      postPayload
-    )
+    result = await createMediumPublicationPost(accessToken, config.publicationId, postPayload)
   } else {
-    result = await createMediumPost(
-      accessToken,
-      config.userId,
-      postPayload
-    )
+    result = await createMediumPost(accessToken, config.userId, postPayload)
   }
 
   // Mettre à jour le document avec l'ID Medium
@@ -245,7 +231,7 @@ export async function publishToMedium(
     data: {
       destConnectorId: connectorId,
       slug: result.id,
-      syncStatus: "SYNCED",
+      syncStatus: 'SYNCED',
       lastSyncedAt: new Date(),
     },
   })

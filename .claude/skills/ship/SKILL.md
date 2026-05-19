@@ -10,6 +10,7 @@ Commits staged changes, pushes the branch, opens a PR, and triggers an automated
 ## When to Use This Skill
 
 Invoke this skill when the user says things like:
+
 - "ship it"
 - "commit push pr"
 - "ship this"
@@ -24,6 +25,7 @@ Follow these steps **in order**, stopping and reporting any errors immediately.
 ### Step 1 — Sanity checks
 
 Run these in parallel:
+
 ```bash
 git status
 git diff
@@ -45,6 +47,7 @@ If there are conflicts, resolve them (keeping both sides where appropriate), the
 ### Step 3 — Stage files
 
 Stage all changed/new files that are relevant to the work. Explicitly exclude:
+
 - `.DS_Store`
 - `*.db`, `*.db-shm`, `*.db-wal`
 - Any file that looks like it contains secrets (`.env`, `credentials.*`, etc.)
@@ -58,6 +61,7 @@ git status   # verify staging looks right
 ### Step 4 — Commit
 
 Write a commit message that:
+
 - Uses the imperative mood (`feat:`, `fix:`, `ci:`, `docs:`, `refactor:`)
 - First line ≤ 72 characters summarising the **why**, not the what
 - Body bullet points for non-obvious details (optional but preferred for large changes)
@@ -70,11 +74,13 @@ git commit -m "<message>"
 ### Step 5 — Push
 
 If the branch has no upstream yet:
+
 ```bash
 git push -u origin <branch>
 ```
 
 Otherwise:
+
 ```bash
 git push
 ```
@@ -112,6 +118,7 @@ gh pr comment <PR number> --body "/oc please review this PR and approve if you f
 ### Step 8 — Report back
 
 Tell the user:
+
 - The commit hash and message
 - The PR URL
 - That the opencode review has been triggered

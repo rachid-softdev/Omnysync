@@ -1,29 +1,29 @@
-import { auth } from "@/lib/auth"
-import { t } from "@/lib/i18n"
-import { prisma } from "@/lib/prisma"
-import { getUserOrgId } from "@/lib/auth/org"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { 
-  ArrowLeft, 
-  RefreshCw, 
-  Play, 
-  Square, 
-  CheckCircle, 
+import { auth } from '@/lib/auth'
+import { t } from '@/lib/i18n'
+import { prisma } from '@/lib/prisma'
+import { getUserOrgId } from '@/lib/auth/org'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import {
+  ArrowLeft,
+  RefreshCw,
+  Play,
+  Square,
+  CheckCircle,
   AlertCircle,
   Clock,
   FileText,
   Database,
   Wand2,
   Upload,
-  Send
-} from "lucide-react"
-import Link from "next/link"
-import { notFound } from "next/navigation"
+  Send,
+} from 'lucide-react'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
 
-export const dynamic = "force-dynamic"
+export const dynamic = 'force-dynamic'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -41,11 +41,11 @@ export default async function SyncDetailPage({ params }: PageProps) {
 
   // Get sync execution logs for this document
   const syncLogs = await prisma.syncLog.findMany({
-    where: { 
+    where: {
       documentId: id,
       organizationId: orgId,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     take: 50,
   })
 
@@ -63,33 +63,43 @@ export default async function SyncDetailPage({ params }: PageProps) {
 
   // Define sync steps
   const syncSteps = [
-    { id: 1, name: "Récupération du contenu", icon: Database, status: "completed" as const },
-    { id: 2, name: "Parsing HTML", icon: FileText, status: "completed" as const },
-    { id: 3, name: "Enrichissement IA", icon: Wand2, status: "completed" as const },
-    { id: 4, name: "Upload images", icon: Upload, status: "completed" as const },
-    { id: 5, name: "Publication", icon: Send, status: document.syncStatus === "SYNCED" ? "completed" as const : 
-                                          document.syncStatus === "SYNCING" ? "in_progress" as const : 
-                                          document.syncStatus === "FAILED" ? "error" as const : "pending" as const },
+    { id: 1, name: 'Récupération du contenu', icon: Database, status: 'completed' as const },
+    { id: 2, name: 'Parsing HTML', icon: FileText, status: 'completed' as const },
+    { id: 3, name: 'Enrichissement IA', icon: Wand2, status: 'completed' as const },
+    { id: 4, name: 'Upload images', icon: Upload, status: 'completed' as const },
+    {
+      id: 5,
+      name: 'Publication',
+      icon: Send,
+      status:
+        document.syncStatus === 'SYNCED'
+          ? ('completed' as const)
+          : document.syncStatus === 'SYNCING'
+            ? ('in_progress' as const)
+            : document.syncStatus === 'FAILED'
+              ? ('error' as const)
+              : ('pending' as const),
+    },
   ]
 
   // Calculate overall progress
-  const completedSteps = syncSteps.filter(s => s.status === "completed").length
+  const completedSteps = syncSteps.filter((s) => s.status === 'completed').length
   const progress = Math.round((completedSteps / syncSteps.length) * 100)
 
   const statusLabels: Record<string, string> = {
-    NOT_SYNCED: "Non synchronisé",
-    SYNCING: "En cours",
-    SYNCED: "Synchronisé",
-    FAILED: "Échec",
+    NOT_SYNCED: 'Non synchronisé',
+    SYNCING: 'En cours',
+    SYNCED: 'Synchronisé',
+    FAILED: 'Échec',
   }
 
   const connectorNames: Record<string, string> = {
-    GOOGLE_DOCS: "Google Docs",
-    NOTION: "Notion",
-    WORDPRESS: "WordPress",
-    GHOST: "Ghost",
-    WEBFLOW: "Webflow",
-    SHOPIFY: "Shopify",
+    GOOGLE_DOCS: 'Google Docs',
+    NOTION: 'Notion',
+    WORDPRESS: 'WordPress',
+    GHOST: 'Ghost',
+    WEBFLOW: 'Webflow',
+    SHOPIFY: 'Shopify',
   }
 
   return (
@@ -105,9 +115,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
           </Link>
           <div>
             <h1 className="text-2xl font-bold">Détail de la synchronisation</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {document.title}
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">{document.title}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -117,12 +125,14 @@ export default async function SyncDetailPage({ params }: PageProps) {
               Voir document
             </Button>
           </Link>
-          <form action={async () => {
-            "use server"
-            // Trigger sync
-            const { performSync } = await import("@/lib/services/sync")
-            await performSync(document.id, document.sourceConnectorId!, document.destConnectorId!)
-          }}>
+          <form
+            action={async () => {
+              'use server'
+              // Trigger sync
+              const { performSync } = await import('@/lib/services/sync')
+              await performSync(document.id, document.sourceConnectorId!, document.destConnectorId!)
+            }}
+          >
             <Button type="submit" size="sm">
               <RefreshCw className="w-4 h-4 mr-2" />
               Relancer
@@ -136,15 +146,15 @@ export default async function SyncDetailPage({ params }: PageProps) {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              {document.syncStatus === "SYNCED" ? (
+              {document.syncStatus === 'SYNCED' ? (
                 <div className="p-2 rounded-full bg-green-500/10">
                   <CheckCircle className="w-6 h-6 text-green-500" />
                 </div>
-              ) : document.syncStatus === "FAILED" ? (
+              ) : document.syncStatus === 'FAILED' ? (
                 <div className="p-2 rounded-full bg-red-500/10">
                   <AlertCircle className="w-6 h-6 text-red-500" />
                 </div>
-              ) : document.syncStatus === "SYNCING" ? (
+              ) : document.syncStatus === 'SYNCING' ? (
                 <div className="p-2 rounded-full bg-blue-500/10">
                   <RefreshCw className="w-6 h-6 text-blue-500 animate-spin" />
                 </div>
@@ -159,7 +169,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
                 </h2>
                 {document.lastSyncedAt && (
                   <p className="text-sm text-muted-foreground">
-                    Dernière exécution: {document.lastSyncedAt.toLocaleString("fr-FR")}
+                    Dernière exécution: {document.lastSyncedAt.toLocaleString('fr-FR')}
                   </p>
                 )}
               </div>
@@ -182,21 +192,23 @@ export default async function SyncDetailPage({ params }: PageProps) {
         <CardContent>
           <div className="space-y-4">
             {syncSteps.map((step, index) => (
-              <div 
-                key={step.id} 
-                className="flex items-center gap-4 p-4 rounded-lg border"
-              >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  step.status === "completed" ? "bg-green-500/10 text-green-500" :
-                  step.status === "in_progress" ? "bg-blue-500/10 text-blue-500" :
-                  step.status === "error" ? "bg-red-500/10 text-red-500" :
-                  "bg-secondary text-muted-foreground"
-                }`}>
-                  {step.status === "completed" ? (
+              <div key={step.id} className="flex items-center gap-4 p-4 rounded-lg border">
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    step.status === 'completed'
+                      ? 'bg-green-500/10 text-green-500'
+                      : step.status === 'in_progress'
+                        ? 'bg-blue-500/10 text-blue-500'
+                        : step.status === 'error'
+                          ? 'bg-red-500/10 text-red-500'
+                          : 'bg-secondary text-muted-foreground'
+                  }`}
+                >
+                  {step.status === 'completed' ? (
                     <CheckCircle className="w-5 h-5" />
-                  ) : step.status === "in_progress" ? (
+                  ) : step.status === 'in_progress' ? (
                     <RefreshCw className="w-5 h-5 animate-spin" />
-                  ) : step.status === "error" ? (
+                  ) : step.status === 'error' ? (
                     <AlertCircle className="w-5 h-5" />
                   ) : (
                     <span className="font-bold">{step.id}</span>
@@ -205,15 +217,13 @@ export default async function SyncDetailPage({ params }: PageProps) {
                 <div className="flex-1">
                   <p className="font-medium">{step.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {step.status === "completed" && "Terminé"}
-                    {step.status === "in_progress" && "En cours..."}
-                    {step.status === "error" && "Erreur survenue"}
-                    {step.status === "pending" && "En attente"}
+                    {step.status === 'completed' && 'Terminé'}
+                    {step.status === 'in_progress' && 'En cours...'}
+                    {step.status === 'error' && 'Erreur survenue'}
+                    {step.status === 'pending' && 'En attente'}
                   </p>
                 </div>
-                {index < syncSteps.length - 1 && (
-                  <div className="w-px h-8 bg-border" />
-                )}
+                {index < syncSteps.length - 1 && <div className="w-px h-8 bg-border" />}
               </div>
             ))}
           </div>
@@ -230,15 +240,15 @@ export default async function SyncDetailPage({ params }: PageProps) {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
                 <span className="text-xl">
-                  {document.sourceConnector?.type === "GOOGLE_DOCS" ? "📄" : "📝"}
+                  {document.sourceConnector?.type === 'GOOGLE_DOCS' ? '📄' : '📝'}
                 </span>
               </div>
               <div>
                 <p className="font-medium">
-                  {connectorNames[document.sourceConnector?.type || ""] || "Source"}
+                  {connectorNames[document.sourceConnector?.type || ''] || 'Source'}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {document.sourceConnector?.name || "Non connecté"}
+                  {document.sourceConnector?.name || 'Non connecté'}
                 </p>
               </div>
             </div>
@@ -253,18 +263,23 @@ export default async function SyncDetailPage({ params }: PageProps) {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
                 <span className="text-xl">
-                  {document.destConnector?.type === "WORDPRESS" ? "🔵" :
-                   document.destConnector?.type === "GHOST" ? "👻" :
-                   document.destConnector?.type === "WEBFLOW" ? "🌐" :
-                   document.destConnector?.type === "SHOPIFY" ? "🛒" : "📤"}
+                  {document.destConnector?.type === 'WORDPRESS'
+                    ? '🔵'
+                    : document.destConnector?.type === 'GHOST'
+                      ? '👻'
+                      : document.destConnector?.type === 'WEBFLOW'
+                        ? '🌐'
+                        : document.destConnector?.type === 'SHOPIFY'
+                          ? '🛒'
+                          : '📤'}
                 </span>
               </div>
               <div>
                 <p className="font-medium">
-                  {connectorNames[document.destConnector?.type || ""] || "Destination"}
+                  {connectorNames[document.destConnector?.type || ''] || 'Destination'}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {document.destConnector?.name || "Non connecté"}
+                  {document.destConnector?.name || 'Non connecté'}
                 </p>
               </div>
             </div>
@@ -273,7 +288,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
       </div>
 
       {/* Error Details */}
-      {document.syncStatus === "FAILED" && document.lastSyncError && (
+      {document.syncStatus === 'FAILED' && document.lastSyncError && (
         <Card className="mb-8 border-red-200 dark:border-red-900">
           <CardHeader className="bg-red-50 dark:bg-red-900/20">
             <CardTitle className="text-red-600">Erreur de synchronisation</CardTitle>
@@ -298,20 +313,22 @@ export default async function SyncDetailPage({ params }: PageProps) {
               <p className="text-muted-foreground">Aucun log disponible</p>
             ) : (
               syncLogs.map((log) => (
-                <div 
-                  key={log.id} 
+                <div
+                  key={log.id}
                   className={`mb-2 ${
-                    log.status === "ERROR" ? "text-red-500" :
-                    log.status === "SUCCESS" ? "text-green-500" :
-                    "text-muted-foreground"
+                    log.status === 'ERROR'
+                      ? 'text-red-500'
+                      : log.status === 'SUCCESS'
+                        ? 'text-green-500'
+                        : 'text-muted-foreground'
                   }`}
                 >
                   <span className="text-xs opacity-50">
-                    [{log.createdAt.toLocaleTimeString("fr-FR")}]
-                  </span>{" "}
-                  {log.status === "SUCCESS" && "✓ "}
-                  {log.status === "ERROR" && "✗ "}
-                  {log.status === "INFO" && "ℹ "}
+                    [{log.createdAt.toLocaleTimeString('fr-FR')}]
+                  </span>{' '}
+                  {log.status === 'SUCCESS' && '✓ '}
+                  {log.status === 'ERROR' && '✗ '}
+                  {log.status === 'INFO' && 'ℹ '}
                   {log.action}: {log.message}
                 </div>
               ))

@@ -19,12 +19,14 @@ Use when finding influencers to partner with for sponsorships, affiliate deals, 
 ### Step 1: Gather Inputs
 
 Ask the user for:
+
 1. **Industry/niche** — the topic domain (e.g., "B2B SaaS marketing", "personal finance for millennials", "indie game development")
 2. **Target audience** — who follows these influencers, framed as the buyer (e.g., "SaaS founders", "freelance developers", "e-commerce store owners")
 3. **Platform focus** (optional) — prioritize specific platforms (YouTube, X/Twitter, Newsletters, Podcasts, Instagram). Default: search all.
 4. **Minimum follower count** (optional) — exclude influencers below a threshold. Default: no minimum (micro-influencers included).
 
 Extract from inputs:
+
 - **Niche keywords:** The 3-5 topic terms that define the industry
 - **Audience profile:** Who the target audience is (role, stage, problem domain)
 - **Platform priorities:** Which platforms to weight more heavily
@@ -34,11 +36,13 @@ Extract from inputs:
 Generate 10 search queries to surface influencers across platform types and discovery angles:
 
 **"Top influencers" list queries:**
+
 - "top [niche] influencers [current year]"
 - "best [niche] creators to follow"
 - "top [audience] thought leaders"
 
 **Platform-specific queries:**
+
 - "top [niche] youtube channels"
 - "[niche] youtube [subscribers OR creators]"
 - "best [niche] newsletter substack"
@@ -46,6 +50,7 @@ Generate 10 search queries to surface influencers across platform types and disc
 - "[niche] twitter thought leaders"
 
 **Cross-platform discovery:**
+
 - "[niche] conference speakers [current year]"
 - "who sponsors [niche] newsletters"
 - "[niche] podcast guest list"
@@ -53,6 +58,7 @@ Generate 10 search queries to surface influencers across platform types and disc
 ### Step 3: Search YouTube
 
 Search YouTube for top channels in the niche:
+
 - Use queries: "top [niche] YouTube channels", "[audience] YouTube", "[niche keyword] tutorial/advice channel"
 - For each channel found, collect: Channel name, URL, subscriber count, content focus
 - Aim for 20-30 YouTube channels across macro (500k+), mid-tier (50k-500k), and micro (<50k) tiers
@@ -60,6 +66,7 @@ Search YouTube for top channels in the niche:
 ### Step 4: Search X/Twitter
 
 Search for thought leaders on X/Twitter:
+
 - Use queries: "[niche] twitter", "best [niche] accounts to follow", "[identity/role] twitter"
 - Check "listicles" — blog posts titled "Best [niche] accounts to follow on Twitter/X" often list 10-20 accounts at once
 - Include both prolific posters (daily content) and respected practitioners (less frequent but high-quality takes)
@@ -67,14 +74,17 @@ Search for thought leaders on X/Twitter:
 ### Step 5: Search Blogs, Newsletters, and Podcasts
 
 #### Blogs
+
 - Search: "top [niche] blogs", "best [niche] blog to read", "[niche] writers"
 - Look for independent writers with their own sites
 
 #### Newsletters
+
 - Search: "best [niche] newsletter", "[niche] substack", "[niche] email newsletter"
 - Check Substack's discover page for the niche if applicable
 
 #### Podcasts
+
 - Search: "top [niche] podcast", "best [niche] podcast", "[audience] podcast"
 - Check Apple Podcasts and Spotify charts if accessible
 
@@ -87,15 +97,18 @@ Search for thought leaders on X/Twitter:
 ### Step 7: Mine Cross-Platform Discovery Sources
 
 #### Conference Speaker Lists
+
 - Search: "[niche] conference [current year] speakers", "[niche] summit speakers"
 - Conference keynote and session speakers are pre-vetted as recognized voices
 - Extract speaker names → find their primary platform
 
 #### Podcast Guest Cross-References
+
 - Search: "[top podcast in niche] guests", "most popular [niche] podcast episodes"
 - Repeat guests on multiple podcasts = high-credibility signal
 
 #### Newsletter Curator Lists
+
 - Search: "who sponsors [niche] newsletters", "[niche] newsletter sponsors"
 - Companies sponsoring newsletters indicate which newsletters have a commercially valuable audience
 
@@ -103,18 +116,18 @@ Search for thought leaders on X/Twitter:
 
 Compile all discovered influencers into a single list. For each entry, record:
 
-| Field | Description |
-|-------|-------------|
-| Name | Person or brand name |
-| Primary Platform | The platform where they have the largest/most active presence |
-| X/Twitter URL | Profile URL or "—" |
-| YouTube URL | Channel URL or "—" |
-| Newsletter/Blog URL | URL or "—" |
-| Podcast URL | URL or "—" |
-| Instagram/Facebook URL | URL or "—" |
-| Primary Follower Count | Count on their primary platform |
-| Content Type | What they primarily create (tutorials, opinion/takes, case studies, interviews, tools) |
-| Source | Where they were discovered |
+| Field                  | Description                                                                            |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| Name                   | Person or brand name                                                                   |
+| Primary Platform       | The platform where they have the largest/most active presence                          |
+| X/Twitter URL          | Profile URL or "—"                                                                     |
+| YouTube URL            | Channel URL or "—"                                                                     |
+| Newsletter/Blog URL    | URL or "—"                                                                             |
+| Podcast URL            | URL or "—"                                                                             |
+| Instagram/Facebook URL | URL or "—"                                                                             |
+| Primary Follower Count | Count on their primary platform                                                        |
+| Content Type           | What they primarily create (tutorials, opinion/takes, case studies, interviews, tools) |
+| Source                 | Where they were discovered                                                             |
 
 **Deduplication:** If the same person appears from multiple discovery sources, merge into one entry. Multiple discovery sources = stronger relevance signal.
 
@@ -122,25 +135,26 @@ Compile all discovered influencers into a single list. For each entry, record:
 
 Score every influencer on Relevance (1–5):
 
-| Score | Signal |
-|-------|--------|
-| 5 | Content is directly about the target audience's core problems — almost every post/video is on-target |
-| 4 | Strong match — most content is relevant, occasional tangents |
-| 3 | Adjacent — their niche overlaps meaningfully but isn't a perfect match |
-| 2 | Loose match — some relevant content but audience is broader or different |
-| 1 | Tangential — topic surface-level overlap but different audience |
+| Score | Signal                                                                                               |
+| ----- | ---------------------------------------------------------------------------------------------------- |
+| 5     | Content is directly about the target audience's core problems — almost every post/video is on-target |
+| 4     | Strong match — most content is relevant, occasional tangents                                         |
+| 3     | Adjacent — their niche overlaps meaningfully but isn't a perfect match                               |
+| 2     | Loose match — some relevant content but audience is broader or different                             |
+| 1     | Tangential — topic surface-level overlap but different audience                                      |
 
 #### Audience Overlap Rating
 
-| Rating | Criteria |
-|--------|----------|
-| **High** | Relevance ≥ 4 |
+| Rating     | Criteria      |
+| ---------- | ------------- |
+| **High**   | Relevance ≥ 4 |
 | **Medium** | Relevance = 3 |
-| **Low** | Relevance ≤ 2 |
+| **Low**    | Relevance ≤ 2 |
 
 ### Step 10: Sort and Finalize
 
 Sort the full list:
+
 1. **Primary:** Audience Overlap rating (High → Medium → Low)
 2. **Secondary:** Primary follower count (largest first within each tier)
 

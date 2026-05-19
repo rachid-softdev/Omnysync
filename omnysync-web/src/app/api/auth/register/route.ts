@@ -2,15 +2,15 @@
  * Route API: Inscription utilisateur
  * POST /api/auth/register
  */
-import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
-import { hashPassword, validatePasswordStrength } from "@/lib/auth/password"
-import { z } from "zod"
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { hashPassword, validatePasswordStrength } from '@/lib/auth/password'
+import { z } from 'zod'
 
 const registerSchema = z.object({
-  name: z.string().min(1, "Nom requis").max(100),
-  email: z.string().email("Email invalide"),
-  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères"),
+  name: z.string().min(1, 'Nom requis').max(100),
+  email: z.string().email('Email invalide'),
+  password: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères'),
 })
 
 export async function POST(request: NextRequest) {
@@ -21,10 +21,7 @@ export async function POST(request: NextRequest) {
     // Validate password strength
     const passwordValidation = validatePasswordStrength(password)
     if (!passwordValidation.valid) {
-      return NextResponse.json(
-        { error: passwordValidation.errors.join(", ") },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: passwordValidation.errors.join(', ') }, { status: 400 })
     }
 
     // Check if user already exists
@@ -33,10 +30,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: "Un compte avec cet email existe déjà" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Un compte avec cet email existe déjà' }, { status: 400 })
     }
 
     // Hash password
@@ -60,11 +54,11 @@ export async function POST(request: NextRequest) {
     // Create "Personal" organization for the new user
     await prisma.organization.create({
       data: {
-        name: "Personal",
+        name: 'Personal',
         users: {
           create: {
             userId: user.id,
-            role: "OWNER",
+            role: 'OWNER',
           },
         },
       },
@@ -77,22 +71,16 @@ export async function POST(request: NextRequest) {
           name: user.name,
           email: user.email,
         },
-        message: "Compte créé avec succès",
+        message: 'Compte créé avec succès',
       },
       { status: 201 }
     )
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: error.issues[0].message },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
     }
 
-    console.error("Registration error:", error)
-    return NextResponse.json(
-      { error: "Erreur lors de l'inscription" },
-      { status: 500 }
-    )
+    console.error('Registration error:', error)
+    return NextResponse.json({ error: "Erreur lors de l'inscription" }, { status: 500 })
   }
 }

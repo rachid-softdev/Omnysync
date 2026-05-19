@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { Home, ArrowLeft } from "lucide-react";
+import Link from 'next/link'
+import { Home, ArrowLeft } from 'lucide-react'
 
 export default function NotFound() {
   return (
@@ -10,7 +10,7 @@ export default function NotFound() {
         <p className="text-muted-foreground mb-8">
           Sorry, we couldn't find the page you're looking for.
         </p>
-        
+
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             href="/"
@@ -29,5 +29,5 @@ export default function NotFound() {
         </div>
       </div>
     </div>
-  );
+  )
 }

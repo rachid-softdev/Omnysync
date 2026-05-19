@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from 'zod'
 
 // Sync operations
 export const createSyncSchema = z.object({
@@ -14,7 +14,17 @@ export const checkRemoteSchema = z.object({
 
 // Connectors
 export const createConnectorSchema = z.object({
-  type: z.enum(["GOOGLE_DOCS", "NOTION", "WORDPRESS", "GHOST", "WEBFLOW", "SHOPIFY", "AIRTABLE", "CONTENTFUL", "MEDIUM"]),
+  type: z.enum([
+    'GOOGLE_DOCS',
+    'NOTION',
+    'WORDPRESS',
+    'GHOST',
+    'WEBFLOW',
+    'SHOPIFY',
+    'AIRTABLE',
+    'CONTENTFUL',
+    'MEDIUM',
+  ]),
   name: z.string().min(1).max(100),
   credentials: z.record(z.unknown()).optional(),
   config: z.record(z.unknown()).optional(),

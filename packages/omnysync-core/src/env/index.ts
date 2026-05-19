@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from "zod";
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
@@ -11,8 +11,12 @@ const envSchema = z.object({
   QSTASH_TOKEN: z.string().optional(),
   QSTASH_CURRENT_SIGNING_KEY: z.string().optional(),
   QSTASH_NEXT_SIGNING_KEY: z.string().optional(),
-  ENCRYPTION_KEY: z.string().min(32, "ENCRYPTION_KEY must be at least 32 characters"),
-  ENCRYPTION_SALT: z.string().min(16, "ENCRYPTION_SALT must be at least 16 characters"),
+  ENCRYPTION_KEY: z
+    .string()
+    .min(32, "ENCRYPTION_KEY must be at least 32 characters"),
+  ENCRYPTION_SALT: z
+    .string()
+    .min(16, "ENCRYPTION_SALT must be at least 16 characters"),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_PRICE_PRO_MONTHLY: z.string().optional(),
@@ -23,21 +27,21 @@ const envSchema = z.object({
   AWS_SECRET_ACCESS_KEY: z.string().optional(),
   AWS_REGION: z.string().optional(),
   AWS_S3_BUCKET: z.string().optional(),
-})
+});
 
-type Env = z.infer<typeof envSchema>
+type Env = z.infer<typeof envSchema>;
 
 function validateEnv(): Env {
-  const parsed = envSchema.safeParse(process.env)
+  const parsed = envSchema.safeParse(process.env);
 
   if (!parsed.success) {
     const issues = parsed.error.issues
       .map((e) => `  - ${e.path.join(".")}: ${e.message}`)
-      .join("\n")
-    throw new Error(`Environment validation failed:\n${issues}`)
+      .join("\n");
+    throw new Error(`Environment validation failed:\n${issues}`);
   }
 
-  return parsed.data
+  return parsed.data;
 }
 
-export const env = validateEnv()
+export const env = validateEnv();

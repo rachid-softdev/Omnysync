@@ -3,23 +3,23 @@
  * GET /api/webhooks
  * POST /api/webhooks
  */
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { z } from "zod"
-import { randomBytes } from "crypto"
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { z } from 'zod'
+import { randomBytes } from 'crypto'
 
 const createWebhookSchema = z.object({
-  connectorId: z.string().min(1, "Connecteur requis"),
-  type: z.enum(["WORDPRESS", "GHOST", "WEBFLOW", "SHOPIFY"]),
-  url: z.string().url("URL invalide"),
+  connectorId: z.string().min(1, 'Connecteur requis'),
+  type: z.enum(['WORDPRESS', 'GHOST', 'WEBFLOW', 'SHOPIFY']),
+  url: z.string().url('URL invalide'),
 })
 
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
     // Récupérer l'organisation de l'utilisateur
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!membership) {
-      return NextResponse.json({ error: "Organisation non trouvée" }, { status: 404 })
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
     }
 
     const webhooks = await prisma.webhookEndpoint.findMany({
@@ -39,11 +39,11 @@ export async function GET(request: NextRequest) {
           select: { name: true, type: true },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     })
 
     return NextResponse.json({
-      webhooks: webhooks.map(w => ({
+      webhooks: webhooks.map((w) => ({
         id: w.id,
         connectorId: w.connectorId,
         connectorName: w.connector?.name,
@@ -55,8 +55,8 @@ export async function GET(request: NextRequest) {
       })),
     })
   } catch (error) {
-    console.error("GET webhooks error:", error)
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+    console.error('GET webhooks error:', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!membership) {
-      return NextResponse.json({ error: "Organisation non trouvée" }, { status: 404 })
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
     }
 
     const connector = await prisma.connector.findFirst({
@@ -85,11 +85,11 @@ export async function POST(request: NextRequest) {
     })
 
     if (!connector) {
-      return NextResponse.json({ error: "Connecteur non trouvé" }, { status: 404 })
+      return NextResponse.json({ error: 'Connecteur non trouvé' }, { status: 404 })
     }
 
     // Générer un secret pour la signature
-    const secret = randomBytes(32).toString("hex")
+    const secret = randomBytes(32).toString('hex')
 
     const webhook = await prisma.webhookEndpoint.create({
       data: {
@@ -107,8 +107,8 @@ export async function POST(request: NextRequest) {
       data: {
         organizationId: membership.organizationId,
         userId: session.user.id,
-        action: "webhook.created",
-        targetType: "webhook",
+        action: 'webhook.created',
+        targetType: 'webhook',
         targetId: webhook.id,
         details: { type, url },
       },
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 })
     }
-    console.error("POST webhook error:", error)
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+    console.error('POST webhook error:', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

@@ -1,17 +1,17 @@
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { getUserOrgId } from "@/lib/auth/org"
-import { enqueueSyncJob } from "@/lib/services/queue"
-import { checkAndIncrementQuota } from "@/lib/auth/subscription"
-import { createSyncSchema } from "@/lib/validations"
-import { apiError, sanitizeError } from "@/lib/api-error"
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { getUserOrgId } from '@/lib/auth/org'
+import { enqueueSyncJob } from '@/lib/services/queue'
+import { checkAndIncrementQuota } from '@/lib/auth/subscription'
+import { createSyncSchema } from '@/lib/validations'
+import { apiError, sanitizeError } from '@/lib/api-error'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const orgId = await getUserOrgId(session.user.id)
@@ -25,13 +25,13 @@ export async function GET(req: NextRequest) {
       destConnector: true,
       syncLogs: {
         orderBy: {
-          createdAt: "desc",
+          createdAt: 'desc',
         },
         take: 5,
       },
     },
     orderBy: {
-      updatedAt: "desc",
+      updatedAt: 'desc',
     },
   })
 
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   const session = await auth()
 
   if (!session?.user?.id) {
-    return apiError("Unauthorized", 401)
+    return apiError('Unauthorized', 401)
   }
 
   const orgId = await getUserOrgId(session.user.id)
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
   const parsed = createSyncSchema.safeParse(body)
   if (!parsed.success) {
-    return apiError(parsed.error.issues[0]?.message || "Invalid request", 400)
+    return apiError(parsed.error.issues[0]?.message || 'Invalid request', 400)
   }
 
   const { sourceConnectorId, destConnectorId, sourceDocumentId, title } = parsed.data
@@ -58,10 +58,10 @@ export async function POST(req: NextRequest) {
   // Check sync limit before creating document
   const { allowed, upgradeUrl } = await checkAndIncrementQuota(session.user.id)
   if (!allowed) {
-    const message = upgradeUrl 
-      ? `Sync limit exceeded. Upgrade: ${upgradeUrl}` 
-      : "Sync limit exceeded. Please upgrade your plan."
-    return apiError(message, 429, "QUOTA_EXCEEDED")
+    const message = upgradeUrl
+      ? `Sync limit exceeded. Upgrade: ${upgradeUrl}`
+      : 'Sync limit exceeded. Please upgrade your plan.'
+    return apiError(message, 429, 'QUOTA_EXCEEDED')
   }
 
   const sourceConnector = await prisma.connector.findUnique({
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
   })
 
   if (!sourceConnector || !destConnector) {
-    return apiError("Invalid connectors", 400)
+    return apiError('Invalid connectors', 400)
   }
 
   const document = await prisma.document.create({
@@ -83,9 +83,9 @@ export async function POST(req: NextRequest) {
       sourceConnectorId,
       destConnectorId,
       sourceId: sourceDocumentId,
-      title: title || "New Document",
-      status: "DRAFT",
-      syncStatus: "NOT_SYNCED",
+      title: title || 'New Document',
+      status: 'DRAFT',
+      syncStatus: 'NOT_SYNCED',
     },
   })
 
@@ -94,9 +94,9 @@ export async function POST(req: NextRequest) {
       userId: session.user.id,
       organizationId: orgId,
       documentId: document.id,
-      action: "sync_started",
-      status: "INFO",
-      message: "Synchronization started",
+      action: 'sync_started',
+      status: 'INFO',
+      message: 'Synchronization started',
     },
   })
 

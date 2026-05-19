@@ -6,9 +6,9 @@
  * Changing the seed creates a new segment
  */
 
-import { ExperimentConfig, ExperimentBucket } from "./types"
-import { EXPERIMENT_DEFAULTS } from "./constants"
-import { getEntitlementRepository, FeatureData } from "./EntitlementRepository"
+import { ExperimentConfig, ExperimentBucket } from './types'
+import { EXPERIMENT_DEFAULTS } from './constants'
+import { getEntitlementRepository, FeatureData } from './EntitlementRepository'
 
 // ============================================================================
 // MURMURHASH IMPLEMENTATION (x64)
@@ -30,24 +30,24 @@ function murmurhash3(key: string, seed: number = 0): number {
   const c1 = 0x87c37b91114253d5n
   const c2 = 0x4cf5ad432745937fn
 
-// Process 16 bytes at a time (4 uint32)
+  // Process 16 bytes at a time (4 uint32)
   let i = 0
   while (i + 16 <= len) {
     const k1 =
-      (BigInt(data[i]) |
-        (BigInt(data[i + 1]) << 8n) |
-        (BigInt(data[i + 2]) << 16n) |
-        (BigInt(data[i + 3]) << 24n)) |
+      BigInt(data[i]) |
+      (BigInt(data[i + 1]) << 8n) |
+      (BigInt(data[i + 2]) << 16n) |
+      (BigInt(data[i + 3]) << 24n) |
       (BigInt(data[i + 4]) << 32n) |
       (BigInt(data[i + 5]) << 40n) |
       (BigInt(data[i + 6]) << 48n) |
       (BigInt(data[i + 7]) << 56n)
 
     const k2 =
-      (BigInt(data[i + 8]) |
-        (BigInt(data[i + 9]) << 8n) |
-        (BigInt(data[i + 10]) << 16n) |
-        (BigInt(data[i + 11]) << 24n)) |
+      BigInt(data[i + 8]) |
+      (BigInt(data[i + 9]) << 8n) |
+      (BigInt(data[i + 10]) << 16n) |
+      (BigInt(data[i + 11]) << 24n) |
       (BigInt(data[i + 12]) << 32n) |
       (BigInt(data[i + 13]) << 40n) |
       (BigInt(data[i + 14]) << 48n) |
@@ -71,47 +71,47 @@ function murmurhash3(key: string, seed: number = 0): number {
   switch (len % 16) {
     case 15:
       k2 ^= BigInt(data[i + 14]) << 48n
-      // eslint-disable-next-line no-fallthrough
+    // eslint-disable-next-line no-fallthrough
     case 14:
       k2 ^= BigInt(data[i + 13]) << 40n
-      // eslint-disable-next-line no-fallthrough
+    // eslint-disable-next-line no-fallthrough
     case 13:
       k2 ^= BigInt(data[i + 12]) << 32n
-      // eslint-disable-next-line no-fallthrough
+    // eslint-disable-next-line no-fallthrough
     case 12:
       k2 ^= BigInt(data[i + 11]) << 24n
-      // eslint-disable-next-line no-fallthrough
+    // eslint-disable-next-line no-fallthrough
     case 11:
       k2 ^= BigInt(data[i + 10]) << 16n
-      // eslint-disable-next-line no-fallthrough
+    // eslint-disable-next-line no-fallthrough
     case 10:
       k2 ^= BigInt(data[i + 9]) << 8n
-      // eslint-disable-next-line no-fallthrough
+    // eslint-disable-next-line no-fallthrough
     case 9:
       k2 ^= BigInt(data[i + 8])
       k2 *= c2
-      // eslint-disable-next-line no-fallthrough
+    // eslint-disable-next-line no-fallthrough
     case 8:
       k1 ^= BigInt(data[i + 7]) << 56n
-      // eslint-disable-next-line no-fallthrough
+    // eslint-disable-next-line no-fallthrough
     case 7:
       k1 ^= BigInt(data[i + 6]) << 48n
-      // eslint-disable-next-line no-fallthrough
+    // eslint-disable-next-line no-fallthrough
     case 6:
       k1 ^= BigInt(data[i + 5]) << 40n
-      // eslint-disable-next-line no-fallthrough
+    // eslint-disable-next-line no-fallthrough
     case 5:
       k1 ^= BigInt(data[i + 4]) << 32n
-      // eslint-disable-next-line no-fallthrough
+    // eslint-disable-next-line no-fallthrough
     case 4:
       k1 ^= BigInt(data[i + 3]) << 24n
-      // eslint-disable-next-line no-fallthrough
+    // eslint-disable-next-line no-fallthrough
     case 3:
       k1 ^= BigInt(data[i + 2]) << 16n
-      // eslint-disable-next-line no-fallthrough
+    // eslint-disable-next-line no-fallthrough
     case 2:
       k1 ^= BigInt(data[i + 1]) << 8n
-      // eslint-disable-next-line no-fallthrough
+    // eslint-disable-next-line no-fallthrough
     case 1:
       k1 ^= BigInt(data[i])
       k1 *= c1
@@ -150,7 +150,7 @@ function murmurhash3(key: string, seed: number = 0): number {
   h4 = h4 ^ (h4 >> 16n)
 
   // Combine into a single number (0-99 range)
-  return Number(((h1 + h2 + h3 + h4) % 100n))
+  return Number((h1 + h2 + h3 + h4) % 100n)
 }
 
 // ============================================================================
@@ -171,10 +171,7 @@ export class ExperimentService {
    * Check if a user is in an experiment
    * Uses stable hashing to determine bucket
    */
-  isInExperiment(
-    userId: string,
-    config: ExperimentConfig
-  ): ExperimentBucket {
+  isInExperiment(userId: string, config: ExperimentConfig): ExperimentBucket {
     const bucket = this.getBucket(userId, config.seed)
     const inExperiment = bucket < config.percentage
 
@@ -187,19 +184,15 @@ export class ExperimentService {
   /**
    * Get experiment config from repository
    */
-  async getExperimentConfig(
-    experimentKey: string
-  ): Promise<ExperimentConfig | null> {
+  async getExperimentConfig(experimentKey: string): Promise<ExperimentConfig | null> {
     const repo = getEntitlementRepository()
     const feature = await repo.getFeature(experimentKey)
 
-    if (!feature || feature.type !== "EXPERIMENT") {
+    if (!feature || feature.type !== 'EXPERIMENT') {
       return null
     }
 
-    const defaultConfig = feature.defaultConfig as
-      | { percentage: number; seed: string }
-      | null
+    const defaultConfig = feature.defaultConfig as { percentage: number; seed: string } | null
 
     return {
       percentage: defaultConfig?.percentage ?? EXPERIMENT_DEFAULTS.DEFAULT_PERCENTAGE,
@@ -214,7 +207,7 @@ export class ExperimentService {
   async isExperimentFeature(featureKey: string): Promise<boolean> {
     const repo = getEntitlementRepository()
     const feature = await repo.getFeature(featureKey)
-    return feature?.type === "EXPERIMENT"
+    return feature?.type === 'EXPERIMENT'
   }
 
   /**
@@ -223,7 +216,7 @@ export class ExperimentService {
    */
   getExperimentGroup(userId: string, config: ExperimentConfig): string {
     const { inExperiment } = this.isInExperiment(userId, config)
-    return inExperiment ? "treatment" : "control"
+    return inExperiment ? 'treatment' : 'control'
   }
 
   /**
@@ -267,20 +260,21 @@ export function calculateExpectedDistribution(
 /**
  * Validate experiment config
  */
-export function validateExperimentConfig(
-  config: ExperimentConfig
-): { valid: boolean; error?: string } {
+export function validateExperimentConfig(config: ExperimentConfig): {
+  valid: boolean
+  error?: string
+} {
   if (config.percentage < 0 || config.percentage > 100) {
     return {
       valid: false,
-      error: "Percentage must be between 0 and 100",
+      error: 'Percentage must be between 0 and 100',
     }
   }
 
   if (!config.seed || config.seed.length === 0) {
     return {
       valid: false,
-      error: "Seed is required for experiment",
+      error: 'Seed is required for experiment',
     }
   }
 

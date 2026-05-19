@@ -2,9 +2,9 @@
  * Route API: Supprimer une clé API
  * DELETE /api/api-keys/[id]
  */
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 export async function DELETE(
   request: NextRequest,
@@ -13,7 +13,7 @@ export async function DELETE(
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
     const { id } = await params
@@ -27,7 +27,7 @@ export async function DELETE(
     })
 
     if (!apiKey) {
-      return NextResponse.json({ error: "Clé API non trouvée" }, { status: 404 })
+      return NextResponse.json({ error: 'Clé API non trouvée' }, { status: 404 })
     }
 
     // Supprimer la clé
@@ -37,7 +37,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("DELETE api-key error:", error)
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+    console.error('DELETE api-key error:', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

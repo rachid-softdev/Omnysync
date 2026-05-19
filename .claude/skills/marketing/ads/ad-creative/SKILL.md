@@ -19,6 +19,7 @@ Use when producing ad images from brainstormed concepts, creating multiple ad va
 ### Step 1: Gather Inputs
 
 Ask the user for:
+
 1. **Headline text** — the main text on the ad image
 2. **Brand colors** (optional) — primary color, background color, text color (hex values). If not provided, defaults: background `#0f172a`, text `#ffffff`, accent `#3b82f6`
 3. **Font** (optional) — font family (default: system sans-serif stack)
@@ -37,6 +38,7 @@ Ask the user for:
 If no headline is provided, or the headline needs strengthening, use the Hook Formula Bank:
 
 **5 Qualities of an Irresistible Headline:**
+
 1. **Clear, not clever** — Reader immediately knows what it's about
 2. **Makes a PROMISE** — Not just "about X" but "here's what changes"
 3. **Specific** — Concrete numbers, outcomes, audiences
@@ -44,6 +46,7 @@ If no headline is provided, or the headline needs strengthening, use the Hook Fo
 5. **Teases without revealing** — The Curiosity Gap
 
 **Quick Headline Formulas:**
+
 - `[Number] [Things] [Audience] should [know/avoid/use]`
 - `How to [Outcome] without [Pain Point]`
 - `Still [Painful Activity]? There's a better way.`
@@ -51,12 +54,14 @@ If no headline is provided, or the headline needs strengthening, use the Hook Fo
 - `The [Number]-step [System] for [Outcome]`
 
 **Headline Length Rules (for ad images):**
+
 - Short headlines (< 40 chars) have the highest impact. Aim here.
 - If the headline needs explanation, it's too complex for an ad image.
 
 ### Step 1c: Direct Response Checklist
 
 Before building the HTML, verify the concept passes:
+
 - [ ] **Single message** — The ad communicates ONE idea
 - [ ] **Headline is benefit-oriented** — States what the prospect gets
 - [ ] **Visual matches the headline** — Product screenshot reinforces the claim
@@ -88,6 +93,7 @@ Create a self-contained HTML file using the selected template.
 ```
 
 Design rules:
+
 - Headline: Large, bold, high contrast. Max 2 lines.
 - Product image: Centered, subtle drop shadow, ~60% canvas width.
 - Background: Solid color or subtle gradient using brand colors.
@@ -111,6 +117,7 @@ Headline font size: < 40 chars → 64px, 40-70 chars → 52px, > 70 chars → 42
 ```
 
 Design rules:
+
 - Square format (1200x1200px) default
 - Text fills the top 60% of the canvas
 - No product images — text IS the creative
@@ -119,13 +126,13 @@ Design rules:
 
 **High-contrast color combos:**
 
-| Combo | Background | Text | Accent |
-|-------|-----------|------|--------|
-| Black/Yellow | `#000000` | `#FFD700` | `#FFFFFF` |
-| Red/White | `#CC0000` | `#FFFFFF` | `#FFD700` |
-| Blue/White | `#003366` | `#FFFFFF` | `#FFD700` |
-| White/Black | `#FFFFFF` | `#000000` | `#CC0000` |
-| Yellow/Black | `#FFD700` | `#000000` | `#CC0000` |
+| Combo        | Background | Text      | Accent    |
+| ------------ | ---------- | --------- | --------- |
+| Black/Yellow | `#000000`  | `#FFD700` | `#FFFFFF` |
+| Red/White    | `#CC0000`  | `#FFFFFF` | `#FFD700` |
+| Blue/White   | `#003366`  | `#FFFFFF` | `#FFD700` |
+| White/Black  | `#FFFFFF`  | `#000000` | `#CC0000` |
+| Yellow/Black | `#FFD700`  | `#000000` | `#CC0000` |
 
 Headline font size: < 30 chars → 96px, 30-60 chars → 72px, > 60 chars → 56px.
 
@@ -144,6 +151,7 @@ Headline font size: < 30 chars → 96px, 30-60 chars → 72px, > 60 chars → 56
 ```
 
 Design rules:
+
 - Use recognizable meme templates (Drake, Expanding Brain, etc.)
 - Top text = setup (problem or old way), Bottom text = punchline (product or new way)
 - Keep text short — memes with walls of text lose the format's power
@@ -165,6 +173,7 @@ Design rules:
 ```
 
 Design rules:
+
 - Use the brand's actual colors
 - Stats in accent color with muted labels
 - Product image with shadow, centered
@@ -188,6 +197,7 @@ Design rules:
 ```
 
 Design rules:
+
 - Light background (`#f8fafc` or white)
 - System font stack, normal weights
 - Body text reads like a genuine post, not a marketing headline
@@ -202,6 +212,7 @@ Write the HTML file. Name it descriptively: `ad-{slug}.html` where `{slug}` is a
 ### Step 4: Screenshot with Playwright MCP (if available)
 
 If Playwright MCP is configured:
+
 1. Set viewport to the exact dimensions using `browser_resize`
 2. Navigate to the HTML file using a `file://` URL
 3. Screenshot the viewport
@@ -214,11 +225,13 @@ Playwright MCP must be configured with `--allow-unrestricted-file-access` and `-
 ### Step 5: Verify, Present, and Iterate
 
 Present results to the user with:
+
 - The image preview for each ad (if screenshots were captured)
 - A summary table showing all rendered ads
 - File paths to both the PNG and HTML files
 
 Ask the user if they want to iterate:
+
 - Change a headline → update the HTML and re-screenshot
 - Change colors or style → rebuild from a different template
 - Change the product image → capture a new screenshot and rebuild

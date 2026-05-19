@@ -1,10 +1,19 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, TrendingUp, TrendingDown, Clock, CheckCircle, AlertCircle, FileText, Plug } from "lucide-react"
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Loader2,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  FileText,
+  Plug,
+} from 'lucide-react'
 
 interface AnalyticsData {
   totalSyncs: number
@@ -27,7 +36,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [period, setPeriod] = useState("30")
+  const [period, setPeriod] = useState('30')
 
   useEffect(() => {
     fetchAnalytics()
@@ -42,10 +51,10 @@ export default function AnalyticsPage() {
         const data = await res.json()
         setData(data)
       } else {
-        setError("Erreur lors du chargement des données analytiques")
+        setError('Erreur lors du chargement des données analytiques')
       }
     } catch (e) {
-      setError("Impossible de charger les données analytiques")
+      setError('Impossible de charger les données analytiques')
       console.error(e)
     } finally {
       setLoading(false)
@@ -123,7 +132,7 @@ export default function AnalyticsPage() {
             Suivez les performances de vos synchronisations
           </p>
         </div>
-        <select 
+        <select
           className="px-3 py-2 rounded-md border bg-background"
           value={period}
           onChange={(e) => setPeriod(e.target.value)}
@@ -157,7 +166,9 @@ export default function AnalyticsPage() {
                 <p className="text-sm text-muted-foreground">Taux de réussite</p>
                 <p className="text-3xl font-bold">{displayData.successRate}%</p>
               </div>
-              <div className={`p-3 rounded-lg ${displayData.successRate >= 80 ? "bg-green-500/10" : "bg-yellow-500/10"}`}>
+              <div
+                className={`p-3 rounded-lg ${displayData.successRate >= 80 ? 'bg-green-500/10' : 'bg-yellow-500/10'}`}
+              >
                 {displayData.successRate >= 80 ? (
                   <TrendingUp className="w-6 h-6 text-green-500" />
                 ) : (
@@ -213,17 +224,17 @@ export default function AnalyticsPage() {
             <CardContent>
               <div className="h-64 flex items-end justify-between gap-2">
                 {displayData.syncByDay.map((day, index) => {
-                  const maxCount = Math.max(...displayData.syncByDay.map(d => d.count))
+                  const maxCount = Math.max(...displayData.syncByDay.map((d) => d.count))
                   const height = (day.count / maxCount) * 100
-                  
+
                   return (
                     <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                      <div 
+                      <div
                         className="w-full bg-primary rounded-t"
-                        style={{ height: `${height}%`, minHeight: "4px" }}
+                        style={{ height: `${height}%`, minHeight: '4px' }}
                       />
                       <span className="text-xs text-muted-foreground">
-                        {new Date(day.date).toLocaleDateString("fr-FR", { weekday: "short" })}
+                        {new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'short' })}
                       </span>
                     </div>
                   )
@@ -244,15 +255,12 @@ export default function AnalyticsPage() {
                 {displayData.connectorsUsage.map((connector, index) => {
                   const total = displayData.connectorsUsage.reduce((acc, c) => acc + c.count, 0)
                   const percentage = Math.round((connector.count / total) * 100)
-                  
+
                   return (
                     <div key={index} className="flex items-center gap-4">
                       <div className="w-32 font-medium">{connector.type}</div>
                       <div className="flex-1 h-4 bg-secondary rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-primary"
-                          style={{ width: `${percentage}%` }}
-                        />
+                        <div className="h-full bg-primary" style={{ width: `${percentage}%` }} />
                       </div>
                       <div className="w-16 text-right text-sm text-muted-foreground">
                         {connector.count} ({percentage}%)
@@ -274,14 +282,14 @@ export default function AnalyticsPage() {
             <CardContent>
               <div className="space-y-3">
                 {displayData.recentActivity.map((activity) => (
-                  <div 
+                  <div
                     key={activity.id}
                     className="flex items-center justify-between p-3 rounded-lg border"
                   >
                     <div className="flex items-center gap-3">
-                      {activity.status === "SUCCESS" ? (
+                      {activity.status === 'SUCCESS' ? (
                         <CheckCircle className="w-4 h-4 text-green-500" />
-                      ) : activity.status === "ERROR" ? (
+                      ) : activity.status === 'ERROR' ? (
                         <AlertCircle className="w-4 h-4 text-red-500" />
                       ) : (
                         <Clock className="w-4 h-4 text-muted-foreground" />
@@ -289,7 +297,7 @@ export default function AnalyticsPage() {
                       <span className="text-sm">{activity.action}</span>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(activity.createdAt).toLocaleString("fr-FR")}
+                      {new Date(activity.createdAt).toLocaleString('fr-FR')}
                     </span>
                   </div>
                 ))}

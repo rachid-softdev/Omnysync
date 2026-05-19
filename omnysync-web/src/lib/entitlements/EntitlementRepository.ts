@@ -6,7 +6,7 @@
  * Designed for dependency injection and testability
  */
 
-import { prisma } from "@/lib/prisma"
+import { prisma } from '@/lib/prisma'
 import {
   FeatureType,
   OverrideScope,
@@ -18,8 +18,8 @@ import {
   DowngradePreview,
   DowngradeStrategy,
   ActiveSubscriptionStatus,
-} from "./types"
-import { PLAN_KEYS, DEFAULT_PLAN } from "./constants"
+} from './types'
+import { PLAN_KEYS, DEFAULT_PLAN } from './constants'
 
 // ============================================================================
 // TYPES
@@ -48,11 +48,7 @@ export interface IEntitlementRepository {
 
   // Usage Tracking
   getUsageTracking(orgId: string, featureKey: string): Promise<UsageData | null>
-  consumeUsage(
-    orgId: string,
-    featureKey: string,
-    amount: number
-  ): Promise<ConsumeResult>
+  consumeUsage(orgId: string, featureKey: string, amount: number): Promise<ConsumeResult>
 
   // Plans & Features (Admin)
   getPlanWithFeatures(planKey: string): Promise<PlanWithFeatures | null>
@@ -68,10 +64,7 @@ export interface IEntitlementRepository {
   updateFeature(featureKey: string, data: Partial<FeatureUpdateInput>): Promise<FeatureData>
 
   // Downgrade Preview
-  getDowngradePreview(
-    orgId: string,
-    targetPlanKey: string
-  ): Promise<DowngradePreview>
+  getDowngradePreview(orgId: string, targetPlanKey: string): Promise<DowngradePreview>
 
   // Webhooks
   isWebhookEventProcessed(eventId: string): Promise<boolean>
@@ -175,14 +168,14 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
 
     if (!subscription) return null
 
-    const isActive = ["ACTIVE", "TRIALING"].includes(subscription.status)
+    const isActive = ['ACTIVE', 'TRIALING'].includes(subscription.status)
     if (!isActive && !subscription.currentPeriodEnd) return null
 
     // Check if period has ended
     if (
       subscription.currentPeriodEnd &&
       new Date(subscription.currentPeriodEnd) < new Date() &&
-      subscription.status !== "TRIALING"
+      subscription.status !== 'TRIALING'
     ) {
       return null
     }
@@ -224,7 +217,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
 
   async getAllFeatures(): Promise<FeatureData[]> {
     const features = await prisma.feature.findMany({
-      orderBy: { key: "asc" },
+      orderBy: { key: 'asc' },
     })
 
     return features.map((f) => ({
@@ -273,7 +266,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
       features[pf.featureKey] = pf.enabled
 
       if (pf.enabled) {
-        if (pf.configJson && "percentage" in pf.configJson) {
+        if (pf.configJson && 'percentage' in pf.configJson) {
           // Experiment type
           experiments[pf.featureKey] = {
             percentage: (pf.configJson.percentage as number) || 0,
@@ -302,11 +295,11 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   async getUserOverride(userId: string, featureKey: string): Promise<OverrideData | null> {
     const override = await prisma.entitlementOverride.findFirst({
       where: {
-        scope: "USER",
+        scope: 'USER',
         scopeId: userId,
         featureKey,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     })
 
     if (!override) return null
@@ -331,11 +324,11 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   async getOrgOverride(orgId: string, featureKey: string): Promise<OverrideData | null> {
     const override = await prisma.entitlementOverride.findFirst({
       where: {
-        scope: "ORG",
+        scope: 'ORG',
         scopeId: orgId,
         featureKey,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     })
 
     if (!override) return null
@@ -360,10 +353,10 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   async getAllOverridesForOrg(orgId: string): Promise<OverrideData[]> {
     const overrides = await prisma.entitlementOverride.findMany({
       where: {
-        scope: "ORG",
+        scope: 'ORG',
         scopeId: orgId,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     })
 
     // Filter out expired
@@ -382,13 +375,11 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
       }))
   }
 
-  async createOverride(
-    input: OverrideInput & { createdBy: string }
-  ): Promise<OverrideData> {
+  async createOverride(input: OverrideInput & { createdBy: string }): Promise<OverrideData> {
     // For org-level overrides, we need the organizationId
     let organizationId: string | undefined = undefined
 
-    if (input.scope === "ORG") {
+    if (input.scope === 'ORG') {
       const org = await prisma.organization.findUnique({
         where: { id: input.scopeId },
         select: { id: true },
@@ -428,10 +419,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     })
   }
 
-  async getUsageTracking(
-    orgId: string,
-    featureKey: string
-  ): Promise<UsageData | null> {
+  async getUsageTracking(orgId: string, featureKey: string): Promise<UsageData | null> {
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
@@ -463,11 +451,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     }
   }
 
-  async consumeUsage(
-    orgId: string,
-    featureKey: string,
-    amount: number
-  ): Promise<ConsumeResult> {
+  async consumeUsage(orgId: string, featureKey: string, amount: number): Promise<ConsumeResult> {
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
@@ -556,7 +540,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
 
   async getAllPlansWithFeatures(): Promise<PlanWithFeatures[]> {
     const plans = await prisma.plan.findMany({
-      orderBy: [{ sortOrder: "asc" }, { key: "asc" }],
+      orderBy: [{ sortOrder: 'asc' }, { key: 'asc' }],
       include: {
         features: {
           include: {
@@ -619,7 +603,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
 
   async getAllFeaturesWithPlans(): Promise<FeatureWithPlans[]> {
     const features = await prisma.feature.findMany({
-      orderBy: { key: "asc" },
+      orderBy: { key: 'asc' },
       include: {
         plans: {
           include: {
@@ -656,7 +640,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     const feature = await prisma.feature.findUnique({ where: { key: featureKey } })
 
     if (!plan || !feature) {
-      throw new Error("Plan or Feature not found")
+      throw new Error('Plan or Feature not found')
     }
 
     const planFeature = await prisma.planFeature.upsert({
@@ -708,10 +692,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     }
   }
 
-  async updateFeature(
-    featureKey: string,
-    data: Partial<FeatureUpdateInput>
-  ): Promise<FeatureData> {
+  async updateFeature(featureKey: string, data: Partial<FeatureUpdateInput>): Promise<FeatureData> {
     const feature = await prisma.feature.update({
       where: { key: featureKey },
       data,
@@ -727,10 +708,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     }
   }
 
-  async getDowngradePreview(
-    orgId: string,
-    targetPlanKey: string
-  ): Promise<DowngradePreview> {
+  async getDowngradePreview(orgId: string, targetPlanKey: string): Promise<DowngradePreview> {
     const currentPlanKey = await this.getPlanKey(orgId)
     const currentFeatures = await this.getPlanFeatures(currentPlanKey)
     const targetFeatures = await this.getPlanFeatures(targetPlanKey)
@@ -740,7 +718,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
 
     const allFeatureKeys = new Set([...currentMap.keys(), ...targetMap.keys()])
 
-    const features: DowngradePreview["features"] = []
+    const features: DowngradePreview['features'] = []
     let affectedCount = 0
 
     for (const key of allFeatureKeys) {
@@ -768,19 +746,17 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
         targetPlanValue: target?.enabled ?? false,
         currentLimit: current?.limitValue ?? null,
         targetLimit: target?.limitValue ?? null,
-        downgradeStrategy: target?.downgradeStrategy ?? "GRACEFUL",
+        downgradeStrategy: target?.downgradeStrategy ?? 'GRACEFUL',
         willBeAffected,
         hasActiveUsage,
       })
     }
 
     // Determine recommended strategy
-    const hasActiveUsageInAffected = features.some(
-      (f) => f.willBeAffected && f.hasActiveUsage
-    )
+    const hasActiveUsageInAffected = features.some((f) => f.willBeAffected && f.hasActiveUsage)
     const recommendedStrategy: DowngradeStrategy = hasActiveUsageInAffected
-      ? "GRACEFUL"
-      : "IMMEDIATE"
+      ? 'GRACEFUL'
+      : 'IMMEDIATE'
 
     return {
       features,
@@ -795,10 +771,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     return event !== null
   }
 
-  async markWebhookEventProcessed(
-    eventId: string,
-    eventType: string
-  ): Promise<void> {
+  async markWebhookEventProcessed(eventId: string, eventType: string): Promise<void> {
     await prisma.webhookEvent.create({
       data: {
         eventId,

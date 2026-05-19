@@ -13,17 +13,17 @@ export {
   AlertDialogDescription,
   AlertDialogAction,
   AlertDialogCancel,
-} from "./alert-dialog"
+} from "./alert-dialog";
 
 // Avatar
-export { Avatar, AvatarImage, AvatarFallback } from "./avatar"
+export { Avatar, AvatarImage, AvatarFallback } from "./avatar";
 
 // Badge
-export { Badge, badgeVariants } from "./badge"
-export type { BadgeProps } from "./badge"
+export { Badge, badgeVariants } from "./badge";
+export type { BadgeProps } from "./badge";
 
 // Button
-export { Button, buttonVariants } from "./button"
+export { Button, buttonVariants } from "./button";
 
 // Card
 export {
@@ -33,10 +33,10 @@ export {
   CardTitle,
   CardDescription,
   CardContent,
-} from "./card"
+} from "./card";
 
 // Checkbox
-export { Checkbox } from "./checkbox"
+export { Checkbox } from "./checkbox";
 
 // Dialog
 export {
@@ -50,7 +50,7 @@ export {
   DialogFooter,
   DialogTitle,
   DialogDescription,
-} from "./dialog"
+} from "./dialog";
 
 // Dropdown Menu
 export {
@@ -70,20 +70,20 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuGroupLabel,
-} from "./dropdown-menu"
+} from "./dropdown-menu";
 
 // Input
-export { Input } from "./input"
+export { Input } from "./input";
 
 // Label
-export { Label } from "./label"
+export { Label } from "./label";
 
 // Pagination
-export { Pagination, PageSizeSelect, PaginationInfo } from "./pagination"
-export type { PaginationProps, PageSizeSelectProps } from "./pagination"
+export { Pagination, PageSizeSelect, PaginationInfo } from "./pagination";
+export type { PaginationProps, PageSizeSelectProps } from "./pagination";
 
 // Progress
-export { Progress } from "./progress"
+export { Progress } from "./progress";
 
 // Select
 export {
@@ -97,10 +97,10 @@ export {
   SelectSeparator,
   SelectScrollUpButton,
   SelectScrollDownButton,
-} from "./select"
+} from "./select";
 
 // Separator
-export { Separator } from "./separator"
+export { Separator } from "./separator";
 
 // Skeleton
 export {
@@ -110,7 +110,7 @@ export {
   TableRowSkeleton,
   StatsCardSkeleton,
   PageSkeleton,
-} from "./skeleton"
+} from "./skeleton";
 
 // Skeletons (additional skeleton components)
 export {
@@ -121,10 +121,10 @@ export {
   StatsSkeleton,
   PageSkeleton as FullPageSkeleton,
   DashboardSkeleton,
-} from "./skeletons"
+} from "./skeletons";
 
 // Switch
-export { Switch } from "./switch"
+export { Switch } from "./switch";
 
 // Table
 export {
@@ -136,11 +136,11 @@ export {
   TableRow,
   TableCell,
   TableCaption,
-} from "./table"
+} from "./table";
 
 // Tabs
-export { Tabs, TabsList, TabsTrigger, TabsContent } from "./tabs"
+export { Tabs, TabsList, TabsTrigger, TabsContent } from "./tabs";
 
 // Textarea
-export { Textarea } from "./textarea"
-export type { TextareaProps } from "./textarea"
+export { Textarea } from "./textarea";
+export type { TextareaProps } from "./textarea";

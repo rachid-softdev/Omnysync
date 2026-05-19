@@ -4,18 +4,18 @@
  * GET /admin/overrides - List overrides
  */
 
-import { NextRequest, NextResponse } from "next/server"
-import { getEntitlementRepository } from "@/lib/entitlements/EntitlementRepository"
-import { getFeatureGateService } from "@/lib/entitlements/FeatureGateService"
-import { prisma } from "@/lib/prisma"
-import { PAGINATION_DEFAULTS } from "@/lib/entitlements/constants"
+import { NextRequest, NextResponse } from 'next/server'
+import { getEntitlementRepository } from '@/lib/entitlements/EntitlementRepository'
+import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
+import { prisma } from '@/lib/prisma'
+import { PAGINATION_DEFAULTS } from '@/lib/entitlements/constants'
 
-export const runtime = "nodejs"
-export const dynamic = "force-dynamic"
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 async function requireAdmin(request: NextRequest): Promise<string | null> {
-  const adminHeader = request.headers.get("x-admin-role")
-  if (adminHeader === "admin") {
+  const adminHeader = request.headers.get('x-admin-role')
+  if (adminHeader === 'admin') {
     return adminHeader
   }
   return null
@@ -29,14 +29,17 @@ export async function GET(request: NextRequest) {
   try {
     const isAdmin = await requireAdmin(request)
     if (!isAdmin) {
-      return NextResponse.json({ error: "FORBIDDEN", message: "Admin access required" }, { status: 403 })
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Admin access required' },
+        { status: 403 }
+      )
     }
 
     const { searchParams } = new URL(request.url)
-    const orgId = searchParams.get("orgId")
-    const page = parseInt(searchParams.get("page") || "1")
+    const orgId = searchParams.get('orgId')
+    const page = parseInt(searchParams.get('page') || '1')
     const limit = Math.min(
-      parseInt(searchParams.get("limit") || "20"),
+      parseInt(searchParams.get('limit') || '20'),
       PAGINATION_DEFAULTS.MAX_LIMIT
     )
 
@@ -47,7 +50,7 @@ export async function GET(request: NextRequest) {
       overrides = await repo.getAllOverridesForOrg(orgId)
     } else {
       overrides = await prisma.entitlementOverride.findMany({
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
       })
     }
 
@@ -68,8 +71,11 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("[Admin Overrides GET] Error:", error)
-    return NextResponse.json({ error: "INTERNAL_ERROR", message: "Failed to fetch overrides" }, { status: 500 })
+    console.error('[Admin Overrides GET] Error:', error)
+    return NextResponse.json(
+      { error: 'INTERNAL_ERROR', message: 'Failed to fetch overrides' },
+      { status: 500 }
+    )
   }
 }
 
@@ -81,7 +87,10 @@ export async function POST(request: NextRequest) {
   try {
     const isAdmin = await requireAdmin(request)
     if (!isAdmin) {
-      return NextResponse.json({ error: "FORBIDDEN", message: "Admin access required" }, { status: 403 })
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Admin access required' },
+        { status: 403 }
+      )
     }
 
     const body = await request.json()
@@ -90,22 +99,31 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!scope || !scopeId || !featureKey || reason === undefined) {
       return NextResponse.json(
-        { error: "VALIDATION_ERROR", message: "scope, scopeId, featureKey, and reason are required" },
+        {
+          error: 'VALIDATION_ERROR',
+          message: 'scope, scopeId, featureKey, and reason are required',
+        },
         { status: 400 }
       )
     }
 
     // Validate scope
-    if (!["ORG", "USER"].includes(scope)) {
-      return NextResponse.json({ error: "VALIDATION_ERROR", message: "scope must be ORG or USER" }, { status: 400 })
+    if (!['ORG', 'USER'].includes(scope)) {
+      return NextResponse.json(
+        { error: 'VALIDATION_ERROR', message: 'scope must be ORG or USER' },
+        { status: 400 }
+      )
     }
 
     // Reason is required (for audit)
     if (!reason || reason.trim().length === 0) {
-      return NextResponse.json({ error: "VALIDATION_ERROR", message: "reason is required for audit trail" }, { status: 400 })
+      return NextResponse.json(
+        { error: 'VALIDATION_ERROR', message: 'reason is required for audit trail' },
+        { status: 400 }
+      )
     }
 
-    const createdBy = request.headers.get("x-user-id") || "admin"
+    const createdBy = request.headers.get('x-user-id') || 'admin'
 
     const repo = getEntitlementRepository()
     const override = await repo.createOverride({
@@ -120,14 +138,17 @@ export async function POST(request: NextRequest) {
     })
 
     // Invalidate cache for org-level overrides
-    if (scope === "ORG") {
+    if (scope === 'ORG') {
       const featureGate = getFeatureGateService()
       await featureGate.invalidateCache(scopeId)
     }
 
     return NextResponse.json(override, { status: 201 })
   } catch (error) {
-    console.error("[Admin Overrides POST] Error:", error)
-    return NextResponse.json({ error: "INTERNAL_ERROR", message: "Failed to create override" }, { status: 500 })
+    console.error('[Admin Overrides POST] Error:', error)
+    return NextResponse.json(
+      { error: 'INTERNAL_ERROR', message: 'Failed to create override' },
+      { status: 500 }
+    )
   }
 }

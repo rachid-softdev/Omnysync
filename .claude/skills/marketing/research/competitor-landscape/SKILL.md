@@ -19,6 +19,7 @@ Use after analyzing 2+ competitors — you have individual profiles and need the
 ### Step 1: Gather Inputs
 
 Ask the user for:
+
 1. **Your product info** — name, key features, pricing, differentiators
 2. **Competitor data** — for at least 2 competitors, provide for each:
    - Name and URL
@@ -37,13 +38,14 @@ If the user has previously run competitor-site-analysis or competitor-content-an
 Build a side-by-side feature comparison across all competitors and the user's product:
 
 | Feature / Capability | Your Product | Competitor A | Competitor B | Competitor C |
-|---------------------|-------------|-------------|-------------|-------------|
-| [feature 1] | [status] | [status] | [status] | [status] |
-| [feature 2] | [status] | [status] | [status] | [status] |
+| -------------------- | ------------ | ------------ | ------------ | ------------ |
+| [feature 1]          | [status]     | [status]     | [status]     | [status]     |
+| [feature 2]          | [status]     | [status]     | [status]     | [status]     |
 
 **Status values:** Full / Partial / Missing / Unknown
 
 Include:
+
 - Core features that define the category (everyone should have these)
 - Differentiating features (only some competitors have)
 - Your unique features (only you have — highlight these)
@@ -55,19 +57,20 @@ Sort rows by strategic importance, not alphabetically.
 
 Build a pricing comparison table:
 
-| Dimension | Your Product | Competitor A | Competitor B | Competitor C |
-|-----------|-------------|-------------|-------------|-------------|
-| **Model** | | | | |
-| **Free tier** | | | | |
-| **Entry price** | | | | |
-| **Mid-tier price** | | | | |
-| **Enterprise** | | | | |
-| **Value metric** | | | | |
-| **Annual discount** | | | | |
-| **Trial** | | | | |
-| **Key upgrade trigger** | | | | |
+| Dimension               | Your Product | Competitor A | Competitor B | Competitor C |
+| ----------------------- | ------------ | ------------ | ------------ | ------------ |
+| **Model**               |              |              |              |              |
+| **Free tier**           |              |              |              |              |
+| **Entry price**         |              |              |              |              |
+| **Mid-tier price**      |              |              |              |              |
+| **Enterprise**          |              |              |              |              |
+| **Value metric**        |              |              |              |              |
+| **Annual discount**     |              |              |              |              |
+| **Trial**               |              |              |              |              |
+| **Key upgrade trigger** |              |              |              |              |
 
 **Pricing signals to flag:**
+
 - Where you're significantly cheaper or more expensive than the market
 - Competitors using per-seat pricing where value doesn't scale with headcount (vulnerability)
 - Competitors with no free tier in a PLG market (acquisition barrier)
@@ -80,10 +83,12 @@ Plot all competitors + your product on a 2x2 positioning map.
 **Default axes:** Market Presence (low → high) vs. Product Breadth (focused → broad)
 
 Score each company 1-10 on both axes:
+
 - **Market presence** — traffic volume, review count, brand recognition signals, funding stage
 - **Product breadth** — number of features, integrations, use cases served
 
 **Alternative axis options** (offer to the user):
+
 - Customer satisfaction (from review scores) vs. Market share (from traffic)
 - Price level (low → high) vs. Feature depth (basic → advanced)
 - PLG friendliness (self-serve → sales-required) vs. Enterprise readiness (SMB → enterprise)
@@ -123,17 +128,18 @@ Synthesize across all competitors into a landscape-level view:
 
 Summarize the moat picture across all competitors:
 
-| Moat | Competitor A | Competitor B | Competitor C | You |
-|------|-------------|-------------|-------------|-----|
-| Network effects | | | | |
-| Switching costs | | | | |
-| Scale economies | | | | |
-| Brand recognition | | | | |
-| Regulatory / IP | | | | |
-| Distribution | | | | |
-| Data advantage | | | | |
+| Moat              | Competitor A | Competitor B | Competitor C | You |
+| ----------------- | ------------ | ------------ | ------------ | --- |
+| Network effects   |              |              |              |     |
+| Switching costs   |              |              |              |     |
+| Scale economies   |              |              |              |     |
+| Brand recognition |              |              |              |     |
+| Regulatory / IP   |              |              |              |     |
+| Distribution      |              |              |              |     |
+| Data advantage    |              |              |              |     |
 
 **Key insights:**
+
 - Moats that NO competitor has built = opportunity to build first-mover defensibility
 - Moats that ALL competitors have = table stakes, not differentiators
 - Your unique moats = lean into these in positioning
@@ -142,14 +148,14 @@ Summarize the moat picture across all competitors:
 
 If competitor data includes content strategy info, compare content approaches:
 
-| Content Type | Competitor A | Competitor B | Competitor C | You |
-|---|---|---|---|---|
-| Blog | | | | |
-| Comparison pages | | | | |
-| Guides / pillars | | | | |
-| Glossary / programmatic | | | | |
-| Templates / tools | | | | |
-| Gated content | | | | |
+| Content Type            | Competitor A | Competitor B | Competitor C | You |
+| ----------------------- | ------------ | ------------ | ------------ | --- |
+| Blog                    |              |              |              |     |
+| Comparison pages        |              |              |              |     |
+| Guides / pillars        |              |              |              |     |
+| Glossary / programmatic |              |              |              |     |
+| Templates / tools       |              |              |              |     |
+| Gated content           |              |              |              |     |
 
 If no content analysis data exists, skip this section and note it.
 
@@ -162,6 +168,7 @@ Synthesize everything into actionable recommendations:
 **Where you're vulnerable** — honest assessment of where competitors are ahead. What would you need to invest in to close the gap?
 
 **Market gaps** — opportunities no one is serving well, informed by:
+
 - Empty space on the positioning map
 - Features no competitor offers
 - Audience segments being ignored

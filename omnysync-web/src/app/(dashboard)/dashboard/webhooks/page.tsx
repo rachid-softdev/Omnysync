@@ -1,16 +1,40 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Plus, Webhook, Trash2, Play, Copy, CheckCircle, XCircle, AlertCircle } from "lucide-react"
-import { useTranslations } from "@/lib/i18n/useTranslations"
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Loader2,
+  Plus,
+  Webhook,
+  Trash2,
+  Play,
+  Copy,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+} from 'lucide-react'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 interface WebhookEndpoint {
   id: string
@@ -33,9 +57,9 @@ export default function WebhooksPage() {
 
   // Form state
   const [newWebhook, setNewWebhook] = useState({
-    connectorId: "",
-    type: "WORDPRESS",
-    url: "",
+    connectorId: '',
+    type: 'WORDPRESS',
+    url: '',
   })
 
   useEffect(() => {
@@ -44,7 +68,7 @@ export default function WebhooksPage() {
 
   const fetchWebhooks = async () => {
     try {
-      const res = await fetch("/api/webhooks")
+      const res = await fetch('/api/webhooks')
       if (res.ok) {
         const data = await res.json()
         setWebhooks(data.webhooks || [])
@@ -58,9 +82,9 @@ export default function WebhooksPage() {
 
   const createWebhook = async () => {
     try {
-      const res = await fetch("/api/webhooks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/webhooks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newWebhook),
       })
 
@@ -68,7 +92,7 @@ export default function WebhooksPage() {
         const data = await res.json()
         setWebhooks([...webhooks, data.webhook])
         setIsCreateOpen(false)
-        setNewWebhook({ connectorId: "", type: "WORDPRESS", url: "" })
+        setNewWebhook({ connectorId: '', type: 'WORDPRESS', url: '' })
       }
     } catch (e) {
       console.error(e)
@@ -76,12 +100,12 @@ export default function WebhooksPage() {
   }
 
   const deleteWebhook = async (id: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce webhook?")) return
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce webhook?')) return
 
     try {
-      const res = await fetch(`/api/webhook-endpoints/${id}`, { method: "DELETE" })
+      const res = await fetch(`/api/webhook-endpoints/${id}`, { method: 'DELETE' })
       if (res.ok) {
-        setWebhooks(webhooks.filter(w => w.id !== id))
+        setWebhooks(webhooks.filter((w) => w.id !== id))
       }
     } catch (e) {
       console.error(e)
@@ -91,13 +115,13 @@ export default function WebhooksPage() {
   const toggleWebhook = async (id: string, isActive: boolean) => {
     try {
       const res = await fetch(`/api/webhook-endpoints/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive }),
       })
 
       if (res.ok) {
-        setWebhooks(webhooks.map(w => w.id === id ? { ...w, isActive } : w))
+        setWebhooks(webhooks.map((w) => (w.id === id ? { ...w, isActive } : w)))
       }
     } catch (e) {
       console.error(e)
@@ -107,16 +131,16 @@ export default function WebhooksPage() {
   const testWebhook = async (id: string) => {
     setTestingId(id)
     try {
-      const res = await fetch(`/api/webhook-endpoints/${id}/test`, { method: "POST" })
+      const res = await fetch(`/api/webhook-endpoints/${id}/test`, { method: 'POST' })
       const data = await res.json()
-      
+
       if (res.ok && data.success) {
-        alert("Test envoyé avec succès!")
+        alert('Test envoyé avec succès!')
       } else {
         alert(`Erreur: ${data.error}`)
       }
     } catch (e) {
-      alert("Erreur lors du test")
+      alert('Erreur lors du test')
     } finally {
       setTestingId(null)
     }
@@ -124,7 +148,7 @@ export default function WebhooksPage() {
 
   const copySecret = (secret: string) => {
     navigator.clipboard.writeText(secret)
-    alert("Secret copié dans le presse-papiers")
+    alert('Secret copié dans le presse-papiers')
   }
 
   if (loading) {
@@ -139,9 +163,10 @@ export default function WebhooksPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">{t("WEBHOOKS_TITLE") || "Webhooks"}</h1>
+          <h1 className="text-3xl font-bold">{t('WEBHOOKS_TITLE') || 'Webhooks'}</h1>
           <p className="text-muted-foreground mt-1">
-            {t("WEBHOOKS_SUBTITLE") || "Gérez les webhooks pour la synchronisation bidirectionnelle"}
+            {t('WEBHOOKS_SUBTITLE') ||
+              'Gérez les webhooks pour la synchronisation bidirectionnelle'}
           </p>
         </div>
 
@@ -149,12 +174,12 @@ export default function WebhooksPage() {
           <DialogTrigger asChild>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
-              {t("WEBHOOKS_CREATE") || "Créer un webhook"}
+              {t('WEBHOOKS_CREATE') || 'Créer un webhook'}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{t("WEBHOOKS_CREATE_TITLE") || "Nouveau Webhook"}</DialogTitle>
+              <DialogTitle>{t('WEBHOOKS_CREATE_TITLE') || 'Nouveau Webhook'}</DialogTitle>
               <DialogDescription>
                 Configurez un endpoint pour recevoir les notifications de vos plateformes.
               </DialogDescription>
@@ -207,7 +232,9 @@ export default function WebhooksPage() {
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Annuler</Button>
+              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                Annuler
+              </Button>
               <Button onClick={createWebhook}>Créer</Button>
             </DialogFooter>
           </DialogContent>
@@ -235,20 +262,25 @@ export default function WebhooksPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-lg ${webhook.isActive ? "bg-green-500/10" : "bg-muted"}`}>
-                      <Webhook className={`w-5 h-5 ${webhook.isActive ? "text-green-500" : "text-muted-foreground"}`} />
+                    <div
+                      className={`p-3 rounded-lg ${webhook.isActive ? 'bg-green-500/10' : 'bg-muted'}`}
+                    >
+                      <Webhook
+                        className={`w-5 h-5 ${webhook.isActive ? 'text-green-500' : 'text-muted-foreground'}`}
+                      />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{webhook.type}</p>
-                        <Badge variant={webhook.isActive ? "default" : "secondary"}>
-                          {webhook.isActive ? "Actif" : "Inactif"}
+                        <Badge variant={webhook.isActive ? 'default' : 'secondary'}>
+                          {webhook.isActive ? 'Actif' : 'Inactif'}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">{webhook.url}</p>
                       {webhook.lastTriggeredAt && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Dernier déclenchement: {new Date(webhook.lastTriggeredAt).toLocaleString("fr-FR")}
+                          Dernier déclenchement:{' '}
+                          {new Date(webhook.lastTriggeredAt).toLocaleString('fr-FR')}
                         </p>
                       )}
                     </div>
@@ -272,11 +304,7 @@ export default function WebhooksPage() {
                       )}
                     </Button>
                     {webhook.secret && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copySecret(webhook.secret!)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => copySecret(webhook.secret!)}>
                         <Copy className="w-4 h-4" />
                       </Button>
                     )}

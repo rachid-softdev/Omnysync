@@ -2,12 +2,12 @@
  * Error Boundary Component
  * Capture les erreurs React et affiche une UI appropriée
  */
-"use client"
+'use client'
 
-import { Component, ReactNode } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle, RefreshCw, Home } from "lucide-react"
+import { Component, ReactNode } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 
 interface Props {
   children: ReactNode
@@ -30,8 +30,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("Error caught by boundary:", error, errorInfo)
-    
+    console.error('Error caught by boundary:', error, errorInfo)
+
     // TODO: Envoyer à Sentry
     // if (window.Sentry) {
     //   window.Sentry.captureException(error, { extra: errorInfo })
@@ -61,7 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {process.env.NODE_ENV === "development" && this.state.error && (
+              {process.env.NODE_ENV === 'development' && this.state.error && (
                 <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-32">
                   {this.state.error.message}
                 </pre>
@@ -71,7 +71,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Réessayer
                 </Button>
-                <Button variant="outline" onClick={() => window.location.href = "/"}>
+                <Button variant="outline" onClick={() => (window.location.href = '/')}>
                   <Home className="w-4 h-4 mr-2" />
                   Accueil
                 </Button>
@@ -94,7 +94,7 @@ export function useErrorHandler() {
 
   React.useEffect(() => {
     if (error) {
-      console.error("Error caught by hook:", error)
+      console.error('Error caught by hook:', error)
       // TODO: Sentry capture
     }
   }, [error])
@@ -105,4 +105,4 @@ export function useErrorHandler() {
 }
 
 // Need to import React for useState
-import React from "react"
+import React from 'react'

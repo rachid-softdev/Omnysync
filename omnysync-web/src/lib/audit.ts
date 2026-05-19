@@ -3,9 +3,9 @@
  * Omnysync - 2026
  */
 
-import { prisma } from "@/lib/prisma"
-import { headers } from "next/headers"
-import { auth } from "@/lib/auth"
+import { prisma } from '@/lib/prisma'
+import { headers } from 'next/headers'
+import { auth } from '@/lib/auth'
 
 // ============================================================================
 // TYPES
@@ -13,61 +13,61 @@ import { auth } from "@/lib/auth"
 
 export type AuditAction =
   // Organisation
-  | "org.created"
-  | "org.updated"
-  | "org.deleted"
-  | "org.settings.updated"
-  
+  | 'org.created'
+  | 'org.updated'
+  | 'org.deleted'
+  | 'org.settings.updated'
+
   // Membres
-  | "member.invited"
-  | "member.joined"
-  | "member.role.updated"
-  | "member.removed"
-  
+  | 'member.invited'
+  | 'member.joined'
+  | 'member.role.updated'
+  | 'member.removed'
+
   // Connecteurs
-  | "connector.created"
-  | "connector.updated"
-  | "connector.deleted"
-  | "connector.test"
-  | "connector.disconnected"
-  | "connector.reconnected"
-  
+  | 'connector.created'
+  | 'connector.updated'
+  | 'connector.deleted'
+  | 'connector.test'
+  | 'connector.disconnected'
+  | 'connector.reconnected'
+
   // Documents
-  | "document.created"
-  | "document.updated"
-  | "document.deleted"
-  | "document.archived"
-  | "document.restored"
-  
+  | 'document.created'
+  | 'document.updated'
+  | 'document.deleted'
+  | 'document.archived'
+  | 'document.restored'
+
   // Sync
-  | "sync.started"
-  | "sync.completed"
-  | "sync.failed"
-  | "sync.scheduled"
-  | "sync.cancelled"
-  | "sync.changes.detected"
-  | "sync.conflict.resolved"
-  
+  | 'sync.started'
+  | 'sync.completed'
+  | 'sync.failed'
+  | 'sync.scheduled'
+  | 'sync.cancelled'
+  | 'sync.changes.detected'
+  | 'sync.conflict.resolved'
+
   // Approvals
-  | "approval.requested"
-  | "approval.approved"
-  | "approval.rejected"
-  | "approval.expired"
-  
+  | 'approval.requested'
+  | 'approval.approved'
+  | 'approval.rejected'
+  | 'approval.expired'
+
   // Billing
-  | "billing.plan.upgraded"
-  | "billing.plan.downgraded"
-  | "billing.subscription.cancelled"
-  | "billing.payment.failed"
+  | 'billing.plan.upgraded'
+  | 'billing.plan.downgraded'
+  | 'billing.subscription.cancelled'
+  | 'billing.payment.failed'
 
 export type AuditTargetType =
-  | "org"
-  | "member"
-  | "connector"
-  | "document"
-  | "sync"
-  | "approval"
-  | "billing"
+  | 'org'
+  | 'member'
+  | 'connector'
+  | 'document'
+  | 'sync'
+  | 'approval'
+  | 'billing'
 
 export interface AuditDetails {
   // Pour les syncs
@@ -75,29 +75,29 @@ export interface AuditDetails {
   destType?: string
   syncDuration?: number
   tokensUsed?: number
-  
+
   // Pour les membres
   oldRole?: string
   newRole?: string
   inviteEmail?: string
-  
+
   // Pour les documents
   wordCount?: number
   seoScore?: number
-  
+
   // Pour les erreurs
   errorMessage?: string
   errorStack?: string
-  
+
   // Pour les connecteurs
   connectorName?: string
   connectionStatus?: string
-  
+
   // Pour les-factures
   amount?: number
   currency?: string
   invoiceUrl?: string
-  
+
   // Générique
   [key: string]: unknown
 }
@@ -111,12 +111,10 @@ export interface AuditDetails {
  */
 async function getRequestInfo() {
   const headersList = await headers()
-  
+
   return {
-    ipAddress: headersList.get("x-forwarded-for") || 
-               headersList.get("x-real-ip") || 
-               "unknown",
-    userAgent: headersList.get("user-agent") || "unknown",
+    ipAddress: headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown',
+    userAgent: headersList.get('user-agent') || 'unknown',
   }
 }
 
@@ -145,10 +143,10 @@ export async function auditLog(
   try {
     const userId = await getCurrentUser()
     const { ipAddress, userAgent } = await getRequestInfo()
-    
+
     // Si pas d'utilisateur, utiliser "system"
-    const finalUserId = userId || "system"
-    
+    const finalUserId = userId || 'system'
+
     await prisma.auditLog.create({
       data: {
         organizationId,
@@ -163,7 +161,7 @@ export async function auditLog(
     })
   } catch (error) {
     // Ne pas bloquer l'action principale si l'audit échoue
-    console.error("Audit log failed:", error)
+    console.error('Audit log failed:', error)
   }
 }
 
@@ -180,13 +178,13 @@ export async function withAudit<T>(
 ): Promise<T> {
   try {
     const result = await fn()
-    
+
     // Log succès (pas de details d'erreur)
     await auditLog(organizationId, action, targetType, targetId, {
       ...details,
       success: true,
     })
-    
+
     return result
   } catch (error) {
     // Log échec avec les détails de l'erreur
@@ -196,7 +194,7 @@ export async function withAudit<T>(
       errorMessage: (error as Error).message,
       errorStack: (error as Error).stack,
     })
-    
+
     throw error
   }
 }
@@ -246,7 +244,7 @@ export async function getAuditLogs(
   const [logs, total] = await Promise.all([
     prisma.auditLog.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,
       include: {
@@ -289,7 +287,7 @@ export async function getAuditLogsForResource(
       targetType,
       targetId,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     take: limit,
     include: {
       user: {
@@ -328,90 +326,93 @@ export async function cleanupOldAuditLogs(olderThanDays = 90): Promise<number> {
 
 // Organisation
 export const auditOrg = {
-  created: (orgId: string) => auditLog(orgId, "org.created", "org"),
-  updated: (orgId: string, details?: AuditDetails) => 
-    auditLog(orgId, "org.updated", "org", undefined, details),
-  deleted: (orgId: string) => auditLog(orgId, "org.deleted", "org"),
-  settingsUpdated: (orgId: string, details?: AuditDetails) => 
-    auditLog(orgId, "org.settings.updated", "org", undefined, details),
+  created: (orgId: string) => auditLog(orgId, 'org.created', 'org'),
+  updated: (orgId: string, details?: AuditDetails) =>
+    auditLog(orgId, 'org.updated', 'org', undefined, details),
+  deleted: (orgId: string) => auditLog(orgId, 'org.deleted', 'org'),
+  settingsUpdated: (orgId: string, details?: AuditDetails) =>
+    auditLog(orgId, 'org.settings.updated', 'org', undefined, details),
 }
 
 // Membres
 export const auditMember = {
-  invited: (orgId: string, email: string, role: string) => 
-    auditLog(orgId, "member.invited", "member", undefined, { inviteEmail: email, newRole: role }),
-  joined: (orgId: string, userId: string) => 
-    auditLog(orgId, "member.joined", "member", userId),
-  roleUpdated: (orgId: string, userId: string, oldRole: string, newRole: string) => 
-    auditLog(orgId, "member.role.updated", "member", userId, { oldRole, newRole }),
-  removed: (orgId: string, userId: string) => 
-    auditLog(orgId, "member.removed", "member", userId),
+  invited: (orgId: string, email: string, role: string) =>
+    auditLog(orgId, 'member.invited', 'member', undefined, { inviteEmail: email, newRole: role }),
+  joined: (orgId: string, userId: string) => auditLog(orgId, 'member.joined', 'member', userId),
+  roleUpdated: (orgId: string, userId: string, oldRole: string, newRole: string) =>
+    auditLog(orgId, 'member.role.updated', 'member', userId, { oldRole, newRole }),
+  removed: (orgId: string, userId: string) => auditLog(orgId, 'member.removed', 'member', userId),
 }
 
 // Connecteurs
 export const auditConnector = {
-  created: (orgId: string, connectorId: string, connectorName: string, type: string) => 
-    auditLog(orgId, "connector.created", "connector", connectorId, { connectorName, connectorType: type }),
-  updated: (orgId: string, connectorId: string, details?: AuditDetails) => 
-    auditLog(orgId, "connector.updated", "connector", connectorId, details),
-  deleted: (orgId: string, connectorId: string, connectorName: string) => 
-    auditLog(orgId, "connector.deleted", "connector", connectorId, { connectorName }),
-  tested: (orgId: string, connectorId: string, success: boolean) => 
-    auditLog(orgId, "connector.test", "connector", connectorId, { success }),
+  created: (orgId: string, connectorId: string, connectorName: string, type: string) =>
+    auditLog(orgId, 'connector.created', 'connector', connectorId, {
+      connectorName,
+      connectorType: type,
+    }),
+  updated: (orgId: string, connectorId: string, details?: AuditDetails) =>
+    auditLog(orgId, 'connector.updated', 'connector', connectorId, details),
+  deleted: (orgId: string, connectorId: string, connectorName: string) =>
+    auditLog(orgId, 'connector.deleted', 'connector', connectorId, { connectorName }),
+  tested: (orgId: string, connectorId: string, success: boolean) =>
+    auditLog(orgId, 'connector.test', 'connector', connectorId, { success }),
 }
 
 // Documents
 export const auditDocument = {
-  created: (orgId: string, docId: string, title: string) => 
-    auditLog(orgId, "document.created", "document", docId, { documentTitle: title }),
-  updated: (orgId: string, docId: string, details?: AuditDetails) => 
-    auditLog(orgId, "document.updated", "document", docId, details),
-  deleted: (orgId: string, docId: string, title: string) => 
-    auditLog(orgId, "document.deleted", "document", docId, { documentTitle: title }),
-  archived: (orgId: string, docId: string) => 
-    auditLog(orgId, "document.archived", "document", docId),
-  restored: (orgId: string, docId: string) => 
-    auditLog(orgId, "document.restored", "document", docId),
+  created: (orgId: string, docId: string, title: string) =>
+    auditLog(orgId, 'document.created', 'document', docId, { documentTitle: title }),
+  updated: (orgId: string, docId: string, details?: AuditDetails) =>
+    auditLog(orgId, 'document.updated', 'document', docId, details),
+  deleted: (orgId: string, docId: string, title: string) =>
+    auditLog(orgId, 'document.deleted', 'document', docId, { documentTitle: title }),
+  archived: (orgId: string, docId: string) =>
+    auditLog(orgId, 'document.archived', 'document', docId),
+  restored: (orgId: string, docId: string) =>
+    auditLog(orgId, 'document.restored', 'document', docId),
 }
 
 // Syncs
 export const auditSync = {
-  started: (orgId: string, syncId: string, details?: AuditDetails) => 
-    auditLog(orgId, "sync.started", "sync", syncId, details),
-  completed: (orgId: string, syncId: string, details?: AuditDetails) => 
-    auditLog(orgId, "sync.completed", "sync", syncId, details),
-  failed: (orgId: string, syncId: string, error: string) => 
-    auditLog(orgId, "sync.failed", "sync", syncId, { errorMessage: error }),
-  scheduled: (orgId: string, syncId: string, frequency: string) => 
-    auditLog(orgId, "sync.scheduled", "sync", syncId, { syncFrequency: frequency }),
-  cancelled: (orgId: string, syncId: string) => 
-    auditLog(orgId, "sync.cancelled", "sync", syncId),
-  changesDetected: (orgId: string, syncId: string) => 
-    auditLog(orgId, "sync.changes.detected", "sync", syncId),
-  conflictResolved: (orgId: string, syncId: string, resolution: string) => 
-    auditLog(orgId, "sync.conflict.resolved", "sync", syncId, { resolution }),
+  started: (orgId: string, syncId: string, details?: AuditDetails) =>
+    auditLog(orgId, 'sync.started', 'sync', syncId, details),
+  completed: (orgId: string, syncId: string, details?: AuditDetails) =>
+    auditLog(orgId, 'sync.completed', 'sync', syncId, details),
+  failed: (orgId: string, syncId: string, error: string) =>
+    auditLog(orgId, 'sync.failed', 'sync', syncId, { errorMessage: error }),
+  scheduled: (orgId: string, syncId: string, frequency: string) =>
+    auditLog(orgId, 'sync.scheduled', 'sync', syncId, { syncFrequency: frequency }),
+  cancelled: (orgId: string, syncId: string) => auditLog(orgId, 'sync.cancelled', 'sync', syncId),
+  changesDetected: (orgId: string, syncId: string) =>
+    auditLog(orgId, 'sync.changes.detected', 'sync', syncId),
+  conflictResolved: (orgId: string, syncId: string, resolution: string) =>
+    auditLog(orgId, 'sync.conflict.resolved', 'sync', syncId, { resolution }),
 }
 
 // Approvals
 export const auditApproval = {
-  requested: (orgId: string, approvalId: string, docId: string) => 
-    auditLog(orgId, "approval.requested", "approval", approvalId, { documentId: docId }),
-  approved: (orgId: string, approvalId: string, approverId: string) => 
-    auditLog(orgId, "approval.approved", "approval", approvalId, { approvedBy: approverId }),
-  rejected: (orgId: string, approvalId: string, approverId: string, reason?: string) => 
-    auditLog(orgId, "approval.rejected", "approval", approvalId, { approvedBy: approverId, reason }),
-  expired: (orgId: string, approvalId: string) => 
-    auditLog(orgId, "approval.expired", "approval", approvalId),
+  requested: (orgId: string, approvalId: string, docId: string) =>
+    auditLog(orgId, 'approval.requested', 'approval', approvalId, { documentId: docId }),
+  approved: (orgId: string, approvalId: string, approverId: string) =>
+    auditLog(orgId, 'approval.approved', 'approval', approvalId, { approvedBy: approverId }),
+  rejected: (orgId: string, approvalId: string, approverId: string, reason?: string) =>
+    auditLog(orgId, 'approval.rejected', 'approval', approvalId, {
+      approvedBy: approverId,
+      reason,
+    }),
+  expired: (orgId: string, approvalId: string) =>
+    auditLog(orgId, 'approval.expired', 'approval', approvalId),
 }
 
 // Billing
 export const auditBilling = {
-  planUpgraded: (orgId: string, fromPlan: string, toPlan: string) => 
-    auditLog(orgId, "billing.plan.upgraded", "billing", undefined, { fromPlan, toPlan }),
-  planDowngraded: (orgId: string, fromPlan: string, toPlan: string) => 
-    auditLog(orgId, "billing.plan.downgraded", "billing", undefined, { fromPlan, toPlan }),
-  subscriptionCancelled: (orgId: string) => 
-    auditLog(orgId, "billing.subscription.cancelled", "billing"),
-  paymentFailed: (orgId: string, amount: number, currency: string) => 
-    auditLog(orgId, "billing.payment.failed", "billing", undefined, { amount, currency }),
+  planUpgraded: (orgId: string, fromPlan: string, toPlan: string) =>
+    auditLog(orgId, 'billing.plan.upgraded', 'billing', undefined, { fromPlan, toPlan }),
+  planDowngraded: (orgId: string, fromPlan: string, toPlan: string) =>
+    auditLog(orgId, 'billing.plan.downgraded', 'billing', undefined, { fromPlan, toPlan }),
+  subscriptionCancelled: (orgId: string) =>
+    auditLog(orgId, 'billing.subscription.cancelled', 'billing'),
+  paymentFailed: (orgId: string, amount: number, currency: string) =>
+    auditLog(orgId, 'billing.payment.failed', 'billing', undefined, { amount, currency }),
 }

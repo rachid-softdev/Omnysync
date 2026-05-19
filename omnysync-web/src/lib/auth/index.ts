@@ -1,11 +1,11 @@
-import NextAuth from "next-auth"
-import Google from "next-auth/providers/google"
-import Credentials from "next-auth/providers/credentials"
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import { prisma } from "@/lib/prisma"
-import { sendWelcomeEmail } from "@/lib/email"
-import { verifyPassword } from "@/lib/auth/password"
-import { getTwoFactorStatus } from "@/lib/services/two-factor"
+import NextAuth from 'next-auth'
+import Google from 'next-auth/providers/google'
+import Credentials from 'next-auth/providers/credentials'
+import { PrismaAdapter } from '@auth/prisma-adapter'
+import { prisma } from '@/lib/prisma'
+import { sendWelcomeEmail } from '@/lib/email'
+import { verifyPassword } from '@/lib/auth/password'
+import { getTwoFactorStatus } from '@/lib/services/two-factor'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -15,10 +15,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
     Credentials({
-      name: "credentials",
+      name: 'credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -34,10 +34,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null
         }
 
-        const isValid = await verifyPassword(
-          credentials.password as string,
-          user.password
-        )
+        const isValid = await verifyPassword(credentials.password as string, user.password)
 
         if (!isValid) {
           return null
@@ -59,13 +56,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
-    signIn: "/auth/signin",
-    error: "/auth/error",
-    verifyRequest: "/auth/2fa-verify",
+    signIn: '/auth/signin',
+    error: '/auth/error',
+    verifyRequest: '/auth/2fa-verify',
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
@@ -83,7 +80,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
 
       // Update session from callback
-      if (trigger === "update" && session) {
+      if (trigger === 'update' && session) {
         token.twoFactorVerified = session.twoFactorVerified
       }
 
@@ -102,7 +99,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async signIn({ user, account }) {
       if (!user?.id) return true
 
-      if (account?.provider === "credentials") {
+      if (account?.provider === 'credentials') {
         // Check if user has 2FA enabled
         const twoFactor = await prisma.twoFactorAuth.findUnique({
           where: { userId: user.id },
@@ -111,12 +108,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (twoFactor) {
           // Store user ID in session for 2FA verification
           // Return special URL to trigger 2FA verification
-          return "/auth/2fa-verify?continue=true"
+          return '/auth/2fa-verify?continue=true'
         }
       }
 
       // Auto-create a "Personal" organization on first sign-in for OAuth
-      if (account?.provider === "google") {
+      if (account?.provider === 'google') {
         const existingMembership = await prisma.userOrganization.findFirst({
           where: { userId: user.id },
         })
@@ -124,29 +121,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!existingMembership) {
           await prisma.organization.create({
             data: {
-              name: "Personal",
+              name: 'Personal',
               users: {
                 create: {
                   userId: user.id,
-                  role: "OWNER",
+                  role: 'OWNER',
                 },
               },
             },
           })
 
           if (user.email) {
-            sendWelcomeEmail(user.email, user.name || "Utilisateur").catch((e) =>
-              console.error("Welcome email failed:", e)
+            sendWelcomeEmail(user.email, user.name || 'Utilisateur').catch((e) =>
+              console.error('Welcome email failed:', e)
             )
           }
         }
       }
 
       // Update last login
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { lastLoginAt: new Date() },
-      }).catch(() => {})
+      await prisma.user
+        .update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        })
+        .catch(() => {})
 
       return true
     },
@@ -154,7 +153,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 })
 
 // Extended types for session
-declare module "next-auth" {
+declare module 'next-auth' {
   interface Session {
     user: {
       id: string

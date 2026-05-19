@@ -9,9 +9,9 @@
  * Pub/sub for multi-instance cache invalidation (fan-out pattern)
  */
 
-import { Redis } from "@upstash/redis"
-import { CACHE_CONFIG, DEFAULT_PLAN } from "./constants"
-import { EntitlementMap } from "./types"
+import { Redis } from '@upstash/redis'
+import { CACHE_CONFIG, DEFAULT_PLAN } from './constants'
+import { EntitlementMap } from './types'
 
 // ============================================================================
 // TYPES
@@ -22,7 +22,7 @@ export interface CacheOptions {
 }
 
 export interface InvalidationMessage {
-  type: "invalidate"
+  type: 'invalidate'
   orgId: string
   timestamp: number
 }
@@ -113,10 +113,7 @@ export class CacheService {
 
   constructor() {
     // Initialize memory cache (30s TTL, 1000 entries max)
-    this.memoryCache = new LRUCache<EntitlementMap>(
-      1000,
-      CACHE_CONFIG.MEMORY_TTL * 1000
-    )
+    this.memoryCache = new LRUCache<EntitlementMap>(1000, CACHE_CONFIG.MEMORY_TTL * 1000)
 
     // Initialize Redis if available
     this.initRedis()
@@ -135,15 +132,15 @@ export class CacheService {
 
         // Test connection
         this.redis.ping().catch((err) => {
-          console.warn("[CacheService] Redis connection failed:", err)
+          console.warn('[CacheService] Redis connection failed:', err)
           this.redis = null
         })
       } catch (err) {
-        console.warn("[CacheService] Failed to initialize Redis:", err)
+        console.warn('[CacheService] Failed to initialize Redis:', err)
         this.redis = null
       }
     } else {
-      console.warn("[CacheService] Redis not configured, using memory cache only")
+      console.warn('[CacheService] Redis not configured, using memory cache only')
     }
   }
 
@@ -179,7 +176,7 @@ export class CacheService {
           return cached
         }
       } catch (err) {
-        console.warn("[CacheService] Redis get failed:", err)
+        console.warn('[CacheService] Redis get failed:', err)
       }
     }
 
@@ -197,11 +194,7 @@ export class CacheService {
   // SET
   // ============================================================================
 
-  async set(
-    orgId: string,
-    data: EntitlementMap,
-    options: CacheOptions = {}
-  ): Promise<void> {
+  async set(orgId: string, data: EntitlementMap, options: CacheOptions = {}): Promise<void> {
     const key = this.getCacheKey(orgId)
     const ttl = options.ttl ?? CACHE_CONFIG.REDIS_TTL
 
@@ -213,7 +206,7 @@ export class CacheService {
       try {
         await this.redis.set(key, JSON.stringify(data), { ex: ttl })
       } catch (err) {
-        console.warn("[CacheService] Redis set failed:", err)
+        console.warn('[CacheService] Redis set failed:', err)
       }
     }
   }
@@ -233,7 +226,7 @@ export class CacheService {
       try {
         await this.redis.del(key)
       } catch (err) {
-        console.warn("[CacheService] Redis delete failed:", err)
+        console.warn('[CacheService] Redis delete failed:', err)
       }
     }
 
@@ -249,47 +242,42 @@ export class CacheService {
     if (!this.redis) return
 
     const message: InvalidationMessage = {
-      type: "invalidate",
+      type: 'invalidate',
       orgId,
       timestamp: Date.now(),
     }
 
     try {
-      await this.redis.publish(
-        CACHE_CONFIG.INVALIDATION_CHANNEL,
-        JSON.stringify(message)
-      )
+      await this.redis.publish(CACHE_CONFIG.INVALIDATION_CHANNEL, JSON.stringify(message))
     } catch (err) {
-      console.warn("[CacheService] Failed to publish invalidation:", err)
+      console.warn('[CacheService] Failed to publish invalidation:', err)
     }
   }
 
-  async subscribeToInvalidations(
-    callback: (orgId: string) => void
-  ): Promise<void> {
+  async subscribeToInvalidations(callback: (orgId: string) => void): Promise<void> {
     if (!this.redis || this.subscribed) return
 
     try {
       this.subscriber = this.redis.duplicate()
       await this.subscriber.subscribe(CACHE_CONFIG.INVALIDATION_CHANNEL)
 
-      this.subscriber.on("message", (_channel, message) => {
+      this.subscriber.on('message', (_channel, message) => {
         try {
           const data = JSON.parse(message) as InvalidationMessage
-          if (data.type === "invalidate") {
+          if (data.type === 'invalidate') {
             // console.debug(`[CacheService] Received invalidation for org: ${data.orgId}`)
             this.memoryCache.delete(this.getCacheKey(data.orgId))
             callback(data.orgId)
           }
         } catch (err) {
-          console.warn("[CacheService] Failed to parse invalidation message:", err)
+          console.warn('[CacheService] Failed to parse invalidation message:', err)
         }
       })
 
       this.subscribed = true
-      console.log("[CacheService] Subscribed to cache invalidation channel")
+      console.log('[CacheService] Subscribed to cache invalidation channel')
     } catch (err) {
-      console.warn("[CacheService] Failed to subscribe to invalidations:", err)
+      console.warn('[CacheService] Failed to subscribe to invalidations:', err)
     }
   }
 
@@ -316,7 +304,7 @@ export class CacheService {
           await this.redis.del(...keys)
         }
       } catch (err) {
-        console.warn("[CacheService] Failed to clear Redis:", err)
+        console.warn('[CacheService] Failed to clear Redis:', err)
       }
     }
   }

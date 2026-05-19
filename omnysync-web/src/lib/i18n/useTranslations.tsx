@@ -1,13 +1,13 @@
-"use client"
+'use client'
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from 'react'
 
 const TranslationCache: Record<string, Record<string, string>> = {}
 
 function detectLocale(): string {
-  if (typeof navigator === "undefined") return "en"
-  const lang = navigator.language || "en"
-  return lang.startsWith("fr") ? "fr" : "en"
+  if (typeof navigator === 'undefined') return 'en'
+  const lang = navigator.language || 'en'
+  return lang.startsWith('fr') ? 'fr' : 'en'
 }
 
 export function useTranslations(locale?: string) {
@@ -28,7 +28,7 @@ export function useTranslations(locale?: string) {
       TranslationCache[resolvedLocale] = data
       setTranslations(data)
     } catch (error) {
-      console.error("Failed to load translations:", error)
+      console.error('Failed to load translations:', error)
     } finally {
       setLoading(false)
     }

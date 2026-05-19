@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma"
+import { prisma } from '@/lib/prisma'
 
 export interface AIUsageLog {
   id: string
@@ -20,7 +20,7 @@ export async function logAIUsage(data: {
 }): Promise<void> {
   try {
     // In production, store in database for analytics and billing
-    console.log("AI Usage:", {
+    console.log('AI Usage:', {
       userId: data.userId,
       model: data.model,
       feature: data.feature,
@@ -33,7 +33,7 @@ export async function logAIUsage(data: {
     // await prisma.aiUsageLog.create({ data: { ...data, createdAt: new Date() } })
   } catch (error) {
     // Don't fail the main operation if logging fails
-    console.error("Failed to log AI usage:", error)
+    console.error('Failed to log AI usage:', error)
   }
 }
 

@@ -19,6 +19,7 @@ Use when reviewing a running campaign to decide what to kill, keep, or scale. Wo
 ### Step 1: Gather Inputs
 
 Ask the user for:
+
 1. **Campaign data** — one of:
    - CSV or table with columns: ad/ad set name, impressions, clicks, conversions, spend, CPA
    - Pasted text from ads manager
@@ -35,9 +36,10 @@ Ask the user for:
 Normalize the input into a consistent table structure:
 
 | Ad / Ad Set | Impressions | Clicks | CTR | Conversions | Spend | CPA | Days Running |
-|-------------|------------|--------|-----|-------------|-------|-----|-------------|
+| ----------- | ----------- | ------ | --- | ----------- | ----- | --- | ------------ |
 
 Calculate any missing derived metrics:
+
 - **CTR** = clicks / impressions × 100
 - **CPA** = spend / conversions (∞ if 0 conversions)
 - **Conversion rate** = conversions / clicks × 100
@@ -49,6 +51,7 @@ Calculate any missing derived metrics:
 Kill this ad. It's burning money.
 
 Criteria (any one triggers Red):
+
 - Spent **1.5–2x target CPA** with zero conversions
 - CPA is **2x+ target CPA** with statistically significant spend
 - Consistently worsening metrics over multiple days with no improvement signs
@@ -61,6 +64,7 @@ Criteria (any one triggers Red):
 Don't touch it. It needs more data or is borderline.
 
 Criteria:
+
 - CPA is close to target (within 0.5–1.5x) but not enough data to be confident
 - Fewer than 1,000 impressions or fewer than 20 clicks — too early to judge
 - Spend is under 1x target CPA — hasn't had a fair chance yet
@@ -73,6 +77,7 @@ Criteria:
 This ad is working. Give it more budget.
 
 Criteria:
+
 - CPA is consistently **at or below target CPA**
 - Has statistically significant data (generally 10+ conversions)
 - Metrics are stable or improving over time
@@ -111,6 +116,7 @@ Before changing creative, check whether the ad is actually the problem. Work fro
 **Work from #1 → #5 in order.** Most founders jump to #3 or #4 when the actual problem is #1 or #2.
 
 **Data thresholds — don't debug on noise:**
+
 - **< 1,000 impressions per ad variant:** Too early to judge CTR.
 - **< 100 LP visitors:** Too early to judge landing page conversion.
 - **< 10 conversions on a green ad:** Scale cautiously — the trend may not hold.
@@ -125,6 +131,7 @@ Check for fatigue signals across the data:
 - **Frequency above 3** (same people seeing the ad too many times)
 
 If fatigue is detected, flag which ads are affected and recommend:
+
 - New creative variation (different angle, format, or style)
 - Audience refresh (new targeting or exclusions)
 - Copy refresh (same visual, new headline)
@@ -134,6 +141,7 @@ If fatigue is detected, flag which ads are affected and recommend:
 The North Star: **Is AOV > CPA?**
 
 For each green ad, calculate:
+
 - **Profit per conversion** = AOV − CPA
 - **ROAS** = AOV / CPA (must be > 1.0 to be profitable)
 - **Break-even CPA** = AOV (you make $0 at this point)
@@ -145,13 +153,14 @@ If LTV data is available, assess the pricing-level health of the campaign:
 
 **LTV:CAC Ratio Benchmarks:**
 
-| Pricing Function | Average LTV:CAC |
-|-----------------|----------------|
-| No pricing function | 1.68 |
-| Yearly pricing review | 3.23 |
-| Continuous optimization | 11.09 |
+| Pricing Function        | Average LTV:CAC |
+| ----------------------- | --------------- |
+| No pricing function     | 1.68            |
+| Yearly pricing review   | 3.23            |
+| Continuous optimization | 11.09           |
 
 **Interpret the ratio:**
+
 - **< 1:1** — Losing money on every customer. Stop spending until unit economics are fixed.
 - **1:1 – 3:1** — Marginal. Campaigns may appear profitable on front-end ROAS but are destroying value over time.
 - **3:1 – 5:1** — Healthy. Scale greens confidently.
@@ -162,6 +171,7 @@ If LTV data is available, assess the pricing-level health of the campaign:
 ### Step 6c: Attribution Notes
 
 When analyzing multi-channel campaigns, note attribution limitations:
+
 - Single-channel campaigns: last-click is sufficient.
 - Multi-channel campaigns: flag that attribution is approximate.
 - Don't over-complicate analytics. The goal is action (red/yellow/green), not perfect measurement.
@@ -171,11 +181,13 @@ When analyzing multi-channel campaigns, note attribution limitations:
 For each green ad, provide specific scaling numbers:
 
 **The 20% Rule:**
+
 - Current daily budget → recommended new budget (current × 1.2)
 - When to apply: 48 hours after last budget change
 - Next check-in date
 
 For the overall campaign:
+
 - Total daily spend recommendation
 - Budget reallocation from reds to greens
 - When to add new creatives to the mix

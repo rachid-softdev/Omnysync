@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { getUserOrgId } from "@/lib/auth/org"
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { getUserOrgId } from '@/lib/auth/org'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const orgId = await getUserOrgId(session.user.id)
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   const session = await auth()
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const orgId = await getUserOrgId(session.user.id)
@@ -59,10 +59,10 @@ export async function POST(req: NextRequest) {
   if (!user) {
     // In production, would send invitation email
     // For now, create a pending invitation
-    return NextResponse.json({ 
-      message: "Invitation envoyée",
+    return NextResponse.json({
+      message: 'Invitation envoyée',
       email,
-      role 
+      role,
     })
   }
 
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
   })
 
   if (existingMember) {
-    return NextResponse.json({ error: "Utilisateur déjà membre" }, { status: 400 })
+    return NextResponse.json({ error: 'Utilisateur déjà membre' }, { status: 400 })
   }
 
   // Add member
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     data: {
       userId: user.id,
       organizationId: orgId,
-      role: role || "MEMBER",
+      role: role || 'MEMBER',
     },
   })
 

@@ -39,78 +39,78 @@ pnpm dev
 
 ### Commandes principales
 
-| Commande | Description |
-|----------|-------------|
-| `pnpm dev` | Lancer toutes les apps en développement |
-| `pnpm build` | Build de toutes les apps |
-| `pnpm lint` | Linter le code |
-| `pnpm typecheck` | Vérifier les types |
-| `pnpm test` | Lancer les tests |
-| `pnpm check` | Vérification complète (format + lint + types) |
+| Commande         | Description                                   |
+| ---------------- | --------------------------------------------- |
+| `pnpm dev`       | Lancer toutes les apps en développement       |
+| `pnpm build`     | Build de toutes les apps                      |
+| `pnpm lint`      | Linter le code                                |
+| `pnpm typecheck` | Vérifier les types                            |
+| `pnpm test`      | Lancer les tests                              |
+| `pnpm check`     | Vérification complète (format + lint + types) |
 
 ### Packages
 
 Ce monorepo contient plusieurs packages et applications :
 
-| Package | Description |
-|---------|-------------|
-| `@omnysync/core` | Logique métier partagée |
-| `@omnysync/web` | Application Next.js |
-| `@omnysync/mobile` | Application React Native / Expo |
-| `omnysync-desktop` | Application Tauri |
-| `omnysync-extension` | Extension navigateur |
+| Package              | Description                     |
+| -------------------- | ------------------------------- |
+| `@omnysync/core`     | Logique métier partagée         |
+| `@omnysync/web`      | Application Next.js             |
+| `@omnysync/mobile`   | Application React Native / Expo |
+| `omnysync-desktop`   | Application Tauri               |
+| `omnysync-extension` | Extension navigateur            |
 
 ### Commandes par package
 
 #### Web (`@omnysync/web`)
 
-| Commande | Description |
-|----------|-------------|
-| `pnpm web:dev` | Lancer le serveur de développement |
-| `pnpm web:build` | Build de production |
-| `pnpm web:start` | Démarrer en production |
-| `pnpm web:test` | Lancer les tests |
-| `pnpm web:lint` | Linter le code |
-| `pnpm web:typecheck` | Vérifier les types |
+| Commande             | Description                        |
+| -------------------- | ---------------------------------- |
+| `pnpm web:dev`       | Lancer le serveur de développement |
+| `pnpm web:build`     | Build de production                |
+| `pnpm web:start`     | Démarrer en production             |
+| `pnpm web:test`      | Lancer les tests                   |
+| `pnpm web:lint`      | Linter le code                     |
+| `pnpm web:typecheck` | Vérifier les types                 |
 
 #### Mobile (`omnysync-mobile`)
 
-| Commande | Description |
-|----------|-------------|
-| `pnpm mobile:dev` | Lancer le serveur de développement |
-| `pnpm mobile:build` | Build de production |
-| `pnpm mobile:test` | Lancer les tests |
+| Commande            | Description                        |
+| ------------------- | ---------------------------------- |
+| `pnpm mobile:dev`   | Lancer le serveur de développement |
+| `pnpm mobile:build` | Build de production                |
+| `pnpm mobile:test`  | Lancer les tests                   |
 
 #### Desktop (`omnysync-desktop`)
 
-| Commande | Description |
-|----------|-------------|
-| `pnpm desktop:dev` | Lancer le serveur de développement |
-| `pnpm desktop:build` | Build de production |
-| `pnpm desktop:test` | Lancer les tests |
+| Commande             | Description                        |
+| -------------------- | ---------------------------------- |
+| `pnpm desktop:dev`   | Lancer le serveur de développement |
+| `pnpm desktop:build` | Build de production                |
+| `pnpm desktop:test`  | Lancer les tests                   |
 
 #### Extension (`omnysync-extension`)
 
-| Commande | Description |
-|----------|-------------|
-| `pnpm extension:dev` | Lancer le serveur de développement |
-| `pnpm extension:build` | Build de production |
-| `pnpm extension:test` | Lancer les tests |
+| Commande               | Description                        |
+| ---------------------- | ---------------------------------- |
+| `pnpm extension:dev`   | Lancer le serveur de développement |
+| `pnpm extension:build` | Build de production                |
+| `pnpm extension:test`  | Lancer les tests                   |
 
 #### Environment
 
-| Commande | Description |
-|----------|-------------|
+| Commande         | Description                           |
+| ---------------- | ------------------------------------- |
 | `pnpm check-env` | Valider les variables d'environnement |
-| `pnpm push-env` | Pousser les variables vers Vercel |
+| `pnpm push-env`  | Pousser les variables vers Vercel     |
 
 #### Base de données
 
-| Commande | Description |
-|----------|-------------|
-| `pnpm db:generate` | Générer le client Prisma |
-| `pnpm db:push` | Pouscher le schéma vers la DB |
-| `pnpm db:studio` | Ouvrir Prisma Studio |
+| Commande           | Description                   |
+| ------------------ | ----------------------------- |
+| `pnpm db:generate` | Générer le client Prisma      |
+| `pnpm db:push`     | Pouscher le schéma vers la DB |
+| `pnpm db:studio`   | Ouvrir Prisma Studio          |
 
 ---
 

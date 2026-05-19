@@ -2,41 +2,41 @@
  * Utilitaires de pagination
  * Omnysync - 2026
  */
-import { z } from "zod"
+import { z } from "zod";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export interface PaginationParams {
-  page?: number
-  limit?: number
-  cursor?: string
+  page?: number;
+  limit?: number;
+  cursor?: string;
 }
 
 export interface CursorPaginationParams {
-  cursor?: string
-  limit?: number
+  cursor?: string;
+  limit?: number;
 }
 
 export interface PaginationResult<T> {
-  data: T[]
+  data: T[];
   pagination: {
-    total: number
-    page: number
-    limit: number
-    totalPages: number
-    hasNext: boolean
-    nextCursor?: string
-    hasPrevious: boolean
-    previousCursor?: string
-  }
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNext: boolean;
+    nextCursor?: string;
+    hasPrevious: boolean;
+    previousCursor?: string;
+  };
 }
 
 export interface CursorPaginationResult<T> {
-  data: T[]
-  nextCursor?: string
-  hasMore: boolean
+  data: T[];
+  nextCursor?: string;
+  hasMore: boolean;
 }
 
 // ============================================================================
@@ -46,12 +46,12 @@ export interface CursorPaginationResult<T> {
 export const paginationSchema = z.object({
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(20),
-})
+});
 
 export const cursorPaginationSchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().min(1).max(100).default(20),
-})
+});
 
 // ============================================================================
 // FONCTIONS
@@ -62,22 +62,24 @@ export const cursorPaginationSchema = z.object({
  */
 export async function paginate<T>(
   query: {
-    skip: number
-    take: number
-    orderBy?: Record<string, "asc" | "desc">
-    where?: Record<string, unknown>
+    skip: number;
+    take: number;
+    orderBy?: Record<string, "asc" | "desc">;
+    where?: Record<string, unknown>;
   },
-  countQuery: Record<string, unknown>
+  countQuery: Record<string, unknown>,
 ): Promise<PaginationResult<T>> {
-  const { prisma } = await import("../../prisma")
+  const { prisma } = await import("../../prisma");
 
   const [data, total] = await Promise.all([
-    prisma.$queryRaw<T[]>`SELECT * FROM Document WHERE organizationId = ${query.where?.organizationId} OFFSET ${query.skip} LIMIT ${query.take}`,
+    prisma.$queryRaw<
+      T[]
+    >`SELECT * FROM Document WHERE organizationId = ${query.where?.organizationId} OFFSET ${query.skip} LIMIT ${query.take}`,
     prisma.document.count({ where: query.where as never }),
-  ])
+  ]);
 
-  const page = Math.floor(query.skip / query.take) + 1
-  const totalPages = Math.ceil(total / query.take)
+  const page = Math.floor(query.skip / query.take) + 1;
+  const totalPages = Math.ceil(total / query.take);
 
   return {
     data,
@@ -91,27 +93,30 @@ export async function paginate<T>(
       hasPrevious: page > 1,
       previousCursor: page > 1 ? String(page - 1) : undefined,
     },
-  }
+  };
 }
 
 /**
  * Pagination cursor-based (plus performant pour grandes数据集)
  */
 export async function cursorPaginate<T>(
-  getItems: (limit: number, cursor?: string) => Promise<{ items: T[]; nextCursor?: string }>,
+  getItems: (
+    limit: number,
+    cursor?: string,
+  ) => Promise<{ items: T[]; nextCursor?: string }>,
   limit: number = 20,
-  cursor?: string
+  cursor?: string,
 ): Promise<CursorPaginationResult<T>> {
-  const result = await getItems(limit + 1, cursor) // Get one extra to check if there's more
-  
-  const hasMore = result.items.length > limit
-  const data = hasMore ? result.items.slice(0, -1) : result.items
-  
+  const result = await getItems(limit + 1, cursor); // Get one extra to check if there's more
+
+  const hasMore = result.items.length > limit;
+  const data = hasMore ? result.items.slice(0, -1) : result.items;
+
   return {
     data,
     nextCursor: hasMore ? result.nextCursor : undefined,
     hasMore,
-  }
+  };
 }
 
 /**
@@ -119,15 +124,15 @@ export async function cursorPaginate<T>(
  */
 export function createPaginationParams(
   params: PaginationParams,
-  defaultLimit: number = 20
+  defaultLimit: number = 20,
 ): { skip: number; take: number } {
-  const page = params.page || 1
-  const limit = Math.min(params.limit || defaultLimit, 100)
-  
+  const page = params.page || 1;
+  const limit = Math.min(params.limit || defaultLimit, 100);
+
   return {
     skip: (page - 1) * limit,
     take: limit,
-  }
+  };
 }
 
 /**
@@ -135,12 +140,12 @@ export function createPaginationParams(
  */
 export function createCursorParams(
   params: CursorPaginationParams,
-  defaultLimit: number = 20
+  defaultLimit: number = 20,
 ): { take: number; cursorValue?: Date | string } {
   return {
     take: Math.min(params.limit || defaultLimit, 100),
     cursorValue: params.cursor,
-  }
+  };
 }
 
 // ============================================================================
@@ -152,7 +157,7 @@ export function createCursorParams(
  */
 export function paginatedResponse<T>(
   data: T[],
-  pagination: PaginationResult<T>["pagination"]
+  pagination: PaginationResult<T>["pagination"],
 ) {
   return {
     data,
@@ -166,7 +171,7 @@ export function paginatedResponse<T>(
         previous: pagination.hasPrevious ? { page: pagination.page - 1 } : null,
       },
     },
-  }
+  };
 }
 
 /**
@@ -175,13 +180,13 @@ export function paginatedResponse<T>(
 export function cursorResponse<T>(
   data: T[],
   nextCursor?: string,
-  hasMore?: boolean
+  hasMore?: boolean,
 ) {
   return {
     data,
     nextCursor,
     hasMore,
-  }
+  };
 }
 
 // ============================================================================
@@ -190,14 +195,14 @@ export function cursorResponse<T>(
 
 /**
  * Exemple d'utilisation dans une route API
- * 
+ *
  * // Dans la route:
  * const { page, limit } = paginationSchema.parse(
  *   Object.fromEntries(new URL(request.url).searchParams)
  * )
- * 
+ *
  * const { skip, take } = createPaginationParams({ page, limit })
- * 
+ *
  * const [documents, total] = await Promise.all([
  *   prisma.document.findMany({
  *     where: { organizationId },
@@ -207,7 +212,7 @@ export function cursorResponse<T>(
  *   }),
  *   prisma.document.count({ where: { organizationId } }),
  * ])
- * 
+ *
  * return Response.json(paginatedResponse(documents, {
  *   total,
  *   page,

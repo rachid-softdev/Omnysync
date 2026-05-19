@@ -3,14 +3,14 @@
  * Preview what features will be affected when downgrading to a target plan
  */
 
-import { NextRequest, NextResponse } from "next/server"
-import { getDowngradeService } from "@/lib/entitlements/DowngradeService"
+import { NextRequest, NextResponse } from 'next/server'
+import { getDowngradeService } from '@/lib/entitlements/DowngradeService'
 
-export const runtime = "nodejs"
+export const runtime = 'nodejs'
 
 async function requireAdmin(request: NextRequest): Promise<string | null> {
-  const adminHeader = request.headers.get("x-admin-role")
-  if (adminHeader === "admin") {
+  const adminHeader = request.headers.get('x-admin-role')
+  if (adminHeader === 'admin') {
     return adminHeader
   }
   return null
@@ -23,14 +23,20 @@ export async function GET(
   try {
     const isAdmin = await requireAdmin(request)
     if (!isAdmin) {
-      return NextResponse.json({ error: "FORBIDDEN", message: "Admin access required" }, { status: 403 })
+      return NextResponse.json(
+        { error: 'FORBIDDEN', message: 'Admin access required' },
+        { status: 403 }
+      )
     }
 
     const { searchParams } = new URL(request.url)
-    const targetPlanKey = searchParams.get("plan")
+    const targetPlanKey = searchParams.get('plan')
 
     if (!targetPlanKey) {
-      return NextResponse.json({ error: "VALIDATION_ERROR", message: "plan query param required" }, { status: 400 })
+      return NextResponse.json(
+        { error: 'VALIDATION_ERROR', message: 'plan query param required' },
+        { status: 400 }
+      )
     }
 
     const { orgId } = await params
@@ -51,7 +57,10 @@ export async function GET(
       recommendedStrategy: preview.recommendedStrategy,
     })
   } catch (error) {
-    console.error("[Admin Downgrade Preview] Error:", error)
-    return NextResponse.json({ error: "INTERNAL_ERROR", message: "Failed to generate preview" }, { status: 500 })
+    console.error('[Admin Downgrade Preview] Error:', error)
+    return NextResponse.json(
+      { error: 'INTERNAL_ERROR', message: 'Failed to generate preview' },
+      { status: 500 }
+    )
   }
 }

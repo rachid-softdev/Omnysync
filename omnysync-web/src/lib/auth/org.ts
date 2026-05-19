@@ -1,8 +1,6 @@
-import { prisma } from "@/lib/prisma"
+import { prisma } from '@/lib/prisma'
 
-export async function getUserOrgId(
-  userId: string
-): Promise<string> {
+export async function getUserOrgId(userId: string): Promise<string> {
   // Find the user's first organization
   const membership = await prisma.userOrganization.findFirst({
     where: { userId },
@@ -16,11 +14,11 @@ export async function getUserOrgId(
   // Auto-create a "Personal" organization if none exists
   const org = await prisma.organization.create({
     data: {
-      name: "Personal",
+      name: 'Personal',
       users: {
         create: {
           userId,
-          role: "OWNER",
+          role: 'OWNER',
         },
       },
     },

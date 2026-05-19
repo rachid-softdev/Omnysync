@@ -1,11 +1,11 @@
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "noreply@omnysync.com"
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "noreply@omnysync.com";
 
 async function getResend() {
   try {
-    const { Resend } = await import("resend")
-    return new Resend(process.env.RESEND_API_KEY)
+    const { Resend } = await import("resend");
+    return new Resend(process.env.RESEND_API_KEY);
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -14,20 +14,22 @@ export async function sendEmail({
   subject,
   html,
 }: {
-  to: string
-  subject: string
-  html: string
+  to: string;
+  subject: string;
+  html: string;
 }) {
   if (!process.env.RESEND_API_KEY) {
-    console.log(`[Email] Would send to ${to}: ${subject}`)
-    return
+    console.log(`[Email] Would send to ${to}: ${subject}`);
+    return;
   }
 
   try {
-    const resend = await getResend()
+    const resend = await getResend();
     if (!resend) {
-      console.log(`[Email] Resend not available, would send to ${to}: ${subject}`)
-      return
+      console.log(
+        `[Email] Resend not available, would send to ${to}: ${subject}`,
+      );
+      return;
     }
 
     await resend.emails.send({
@@ -35,9 +37,9 @@ export async function sendEmail({
       to,
       subject,
       html,
-    })
+    });
   } catch (error) {
-    console.error("Failed to send email:", error)
+    console.error("Failed to send email:", error);
   }
 }
 
@@ -56,16 +58,16 @@ export async function sendWelcomeEmail(email: string, name: string) {
       </ol>
       <p>À bientôt !</p>
     `,
-  })
+  });
 }
 
 export async function sendSyncCompleteEmail(
   email: string,
   documentTitle: string,
   success: boolean,
-  destinationUrl?: string
+  destinationUrl?: string,
 ) {
-  const status = success ? "réussie" : "échouée"
+  const status = success ? "réussie" : "échouée";
 
   await sendEmail({
     to: email,
@@ -76,5 +78,5 @@ export async function sendSyncCompleteEmail(
       ${success && destinationUrl ? `<p>Article publié : <a href="${destinationUrl}">${destinationUrl}</a></p>` : ""}
       ${!success ? `<p>Une erreur est survenue lors de la synchronisation. Vérifiez les logs dans votre dashboard.</p>` : ""}
     `,
-  })
+  });
 }

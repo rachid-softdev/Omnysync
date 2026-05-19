@@ -19,6 +19,7 @@ Use for a quick SEO snapshot of a competitor's organic presence, or as input to 
 ### Step 1: Gather Inputs
 
 Ask the user for:
+
 1. **Competitor name** — the company to analyze
 2. **Competitor domain** — e.g., `example.com` (no protocol)
 3. **Country code** (optional) — defaults to "us"
@@ -32,6 +33,7 @@ Check that Keywords Everywhere MCP is connected.
 ### Step 3: Domain Keywords
 
 Pull `get_domain_keywords`:
+
 - **domain:** competitor domain
 - **country:** from input or "us"
 - **num:** 100
@@ -41,6 +43,7 @@ This returns the top keywords the competitor ranks for, with estimated monthly t
 ### Step 4: Traffic Metrics
 
 Pull `get_domain_traffic_metrics`:
+
 - **domains:** [competitor domain]
 - **country:** same as Step 3
 
@@ -49,6 +52,7 @@ This returns estimated monthly organic traffic and total ranking keywords for th
 ### Step 5: Cluster into Content Themes
 
 Group the top keywords into 3-5 content themes by topic similarity. For each theme:
+
 - **Theme name** — descriptive label (e.g., "project management guides", "pricing comparisons")
 - **Keywords in theme** — count
 - **Combined estimated traffic** — sum of traffic for keywords in the theme

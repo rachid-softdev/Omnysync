@@ -1,7 +1,7 @@
 /**
  * Skeleton Components - Loading states pour les pages
  */
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from '@/components/ui/skeleton'
 
 /**
  * Table Skeleton - Pour les listes avec tableau

@@ -4,23 +4,20 @@
  * DELETE /api/webhook-endpoints/[id]
  * PATCH /api/webhook-endpoints/[id] - Toggle isActive
  */
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { z } from "zod"
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { z } from 'zod'
 
 const updateWebhookSchema = z.object({
   isActive: z.boolean().optional(),
 })
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
     const { id } = await params
@@ -32,7 +29,7 @@ export async function GET(
     })
 
     if (!membership) {
-      return NextResponse.json({ error: "Organisation non trouvée" }, { status: 404 })
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
     }
 
     const webhook = await prisma.webhookEndpoint.findFirst({
@@ -48,7 +45,7 @@ export async function GET(
     })
 
     if (!webhook) {
-      return NextResponse.json({ error: "Webhook non trouvé" }, { status: 404 })
+      return NextResponse.json({ error: 'Webhook non trouvé' }, { status: 404 })
     }
 
     return NextResponse.json({
@@ -59,25 +56,22 @@ export async function GET(
         type: webhook.type,
         url: webhook.url,
         isActive: webhook.isActive,
-        secret: webhook.secret ? "***" : null,
+        secret: webhook.secret ? '***' : null,
         createdAt: webhook.createdAt.toISOString(),
         updatedAt: webhook.updatedAt.toISOString(),
       },
     })
   } catch (error) {
-    console.error("GET webhook error:", error)
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+    console.error('GET webhook error:', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
     const { id } = await params
@@ -91,7 +85,7 @@ export async function PATCH(
     })
 
     if (!membership) {
-      return NextResponse.json({ error: "Organisation non trouvée" }, { status: 404 })
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
     }
 
     // Vérifier que le webhook existe et appartient à l'organisation
@@ -103,7 +97,7 @@ export async function PATCH(
     })
 
     if (!webhook) {
-      return NextResponse.json({ error: "Webhook non trouvé" }, { status: 404 })
+      return NextResponse.json({ error: 'Webhook non trouvé' }, { status: 404 })
     }
 
     // Mettre à jour
@@ -122,8 +116,8 @@ export async function PATCH(
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
     }
-    console.error("PATCH webhook error:", error)
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+    console.error('PATCH webhook error:', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
 
@@ -134,7 +128,7 @@ export async function DELETE(
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
     const { id } = await params
@@ -146,7 +140,7 @@ export async function DELETE(
     })
 
     if (!membership) {
-      return NextResponse.json({ error: "Organisation non trouvée" }, { status: 404 })
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
     }
 
     // Vérifier que le webhook existe et appartient à l'organisation
@@ -158,7 +152,7 @@ export async function DELETE(
     })
 
     if (!webhook) {
-      return NextResponse.json({ error: "Webhook non trouvé" }, { status: 404 })
+      return NextResponse.json({ error: 'Webhook non trouvé' }, { status: 404 })
     }
 
     // Supprimer le webhook
@@ -168,7 +162,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("DELETE webhook error:", error)
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+    console.error('DELETE webhook error:', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

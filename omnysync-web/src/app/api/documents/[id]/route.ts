@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { getUserOrgId } from "@/lib/auth/org"
-import { apiError } from "@/lib/api-error"
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { getUserOrgId } from '@/lib/auth/org'
+import { apiError } from '@/lib/api-error'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -11,9 +11,9 @@ interface RouteParams {
 export async function GET(req: NextRequest, { params }: RouteParams) {
   const { id } = await params
   const session = await auth()
-  
+
   if (!session?.user?.id) {
-    return apiError("Unauthorized", 401)
+    return apiError('Unauthorized', 401)
   }
 
   const orgId = await getUserOrgId(session.user.id)
@@ -24,14 +24,14 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       sourceConnector: true,
       destConnector: true,
       syncLogs: {
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
         take: 20,
       },
     },
   })
 
   if (!document) {
-    return apiError("Document not found", 404)
+    return apiError('Document not found', 404)
   }
 
   return NextResponse.json(document)
@@ -40,9 +40,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 export async function PUT(req: NextRequest, { params }: RouteParams) {
   const { id } = await params
   const session = await auth()
-  
+
   if (!session?.user?.id) {
-    return apiError("Unauthorized", 401)
+    return apiError('Unauthorized', 401)
   }
 
   const orgId = await getUserOrgId(session.user.id)
@@ -53,19 +53,19 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   })
 
   if (!existing) {
-    return apiError("Document not found", 404)
+    return apiError('Document not found', 404)
   }
 
   const allowedFields = [
-    "title",
-    "seoTitle",
-    "seoDescription",
-    "seoKeywords",
-    "excerpt",
-    "categories",
-    "tags",
-    "autoSyncEnabled",
-    "syncFrequency",
+    'title',
+    'seoTitle',
+    'seoDescription',
+    'seoKeywords',
+    'excerpt',
+    'categories',
+    'tags',
+    'autoSyncEnabled',
+    'syncFrequency',
   ]
 
   const updateData: Record<string, any> = {}
@@ -86,9 +86,9 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
   const { id } = await params
   const session = await auth()
-  
+
   if (!session?.user?.id) {
-    return apiError("Unauthorized", 401)
+    return apiError('Unauthorized', 401)
   }
 
   const orgId = await getUserOrgId(session.user.id)
@@ -98,13 +98,13 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   })
 
   if (!existing) {
-    return apiError("Document not found", 404)
+    return apiError('Document not found', 404)
   }
 
   // Soft delete - just mark as archived
   await prisma.document.update({
     where: { id },
-    data: { status: "ARCHIVED" },
+    data: { status: 'ARCHIVED' },
   })
 
   return NextResponse.json({ success: true })

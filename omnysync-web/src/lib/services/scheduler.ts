@@ -1,6 +1,6 @@
-import { prisma } from "@/lib/prisma"
-import { performSync } from "./sync"
-import { NextResponse } from "next/server"
+import { prisma } from '@/lib/prisma'
+import { performSync } from './sync'
+import { NextResponse } from 'next/server'
 
 // Note: QStash scheduling requires the serverless SDK or direct HTTP calls
 // For now, we'll use a simpler approach with setTimeout for development
@@ -9,33 +9,33 @@ import { NextResponse } from "next/server"
 /**
  * Calcule la prochaine date de sync basé sur la fréquence
  */
-export function calculateNextSync(frequency: "DAILY" | "WEEKLY" | "MONTHLY"): Date {
+export function calculateNextSync(frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY'): Date {
   const now = new Date()
-  
+
   switch (frequency) {
-    case "DAILY":
+    case 'DAILY':
       // Tomorrow at 9am
       const tomorrow = new Date(now)
       tomorrow.setDate(tomorrow.getDate() + 1)
       tomorrow.setHours(9, 0, 0, 0)
       return tomorrow
-    
-    case "WEEKLY":
+
+    case 'WEEKLY':
       // Next Monday at 9am
       const nextWeek = new Date(now)
       const daysUntilMonday = (8 - now.getDay()) % 7 || 7
       nextWeek.setDate(now.getDate() + daysUntilMonday)
       nextWeek.setHours(9, 0, 0, 0)
       return nextWeek
-    
-    case "MONTHLY":
+
+    case 'MONTHLY':
       // First day of next month at 9am
       const nextMonth = new Date(now)
       nextMonth.setMonth(nextMonth.getMonth() + 1)
       nextMonth.setDate(1)
       nextMonth.setHours(9, 0, 0, 0)
       return nextMonth
-    
+
     default:
       return now
   }
@@ -46,12 +46,12 @@ export function calculateNextSync(frequency: "DAILY" | "WEEKLY" | "MONTHLY"): Da
  */
 export async function scheduleSync(
   documentId: string,
-  frequency: "DAILY" | "WEEKLY" | "MONTHLY"
+  frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY'
 ): Promise<{ success: boolean; nextSyncAt: Date; error?: string }> {
   try {
     // Update document with scheduling settings
     const nextSyncAt = calculateNextSync(frequency)
-    
+
     await prisma.document.update({
       where: { id: documentId },
       data: {
@@ -86,7 +86,7 @@ export async function disableScheduledSync(documentId: string): Promise<boolean>
       where: { id: documentId },
       data: {
         autoSyncEnabled: false,
-        syncFrequency: "MANUAL",
+        syncFrequency: 'MANUAL',
         nextSyncAt: null,
       },
     })
@@ -117,8 +117,8 @@ export async function runScheduledSyncs(): Promise<{
         gte: startOfDay,
         lte: endOfDay,
       },
-      syncStatus: { not: "SYNCING" },
-      status: "PUBLISHED",
+      syncStatus: { not: 'SYNCING' },
+      status: 'PUBLISHED',
     },
     include: {
       sourceConnector: true,
@@ -132,30 +132,30 @@ export async function runScheduledSyncs(): Promise<{
     try {
       if (doc.sourceConnectorId && doc.destConnectorId) {
         await performSync(doc.id, doc.sourceConnectorId, doc.destConnectorId)
-        
+
         // Planifier le prochain sync
-        const frequency = doc.syncFrequency as "DAILY" | "WEEKLY" | "MONTHLY"
+        const frequency = doc.syncFrequency as 'DAILY' | 'WEEKLY' | 'MONTHLY'
         const nextSync = calculateNextSync(frequency)
-        
+
         await prisma.document.update({
           where: { id: doc.id },
           data: { nextSyncAt: nextSync },
         })
-        
+
         results.executed++
       }
     } catch (error) {
       results.failed++
       results.errors.push(`Doc ${doc.id}: ${(error as Error).message}`)
-      
+
       // Logger l'erreur
       await prisma.syncLog.create({
         data: {
           organizationId: doc.organizationId,
           userId: doc.userId,
           documentId: doc.id,
-          action: "scheduled_sync_failed",
-          status: "ERROR",
+          action: 'scheduled_sync_failed',
+          status: 'ERROR',
           message: (error as Error).message,
         },
       })
@@ -178,11 +178,11 @@ export async function handleScheduledSyncRun(documentId: string): Promise<NextRe
   })
 
   if (!doc) {
-    return NextResponse.json({ error: "Document not found" }, { status: 404 })
+    return NextResponse.json({ error: 'Document not found' }, { status: 404 })
   }
 
   if (!doc.autoSyncEnabled || !doc.sourceConnectorId || !doc.destConnectorId) {
-    return NextResponse.json({ error: "Sync not scheduled" }, { status: 400 })
+    return NextResponse.json({ error: 'Sync not scheduled' }, { status: 400 })
   }
 
   // Vérifier si assez de temps s'est écoulé depuis le dernier sync (éviter les boucles)
@@ -191,7 +191,7 @@ export async function handleScheduledSyncRun(documentId: string): Promise<NextRe
     const hoursSinceLastSync = (Date.now() - lastSync.getTime()) / (1000 * 60 * 60)
     if (hoursSinceLastSync < 1) {
       return NextResponse.json(
-        { message: "Skipped - sync too recent", hoursSinceLastSync },
+        { message: 'Skipped - sync too recent', hoursSinceLastSync },
         { status: 200 }
       )
     }
@@ -199,11 +199,11 @@ export async function handleScheduledSyncRun(documentId: string): Promise<NextRe
 
   try {
     const result = await performSync(documentId, doc.sourceConnectorId, doc.destConnectorId)
-    
+
     // Planifier le prochain sync
-    const frequency = doc.syncFrequency as "DAILY" | "WEEKLY" | "MONTHLY"
+    const frequency = doc.syncFrequency as 'DAILY' | 'WEEKLY' | 'MONTHLY'
     const nextSync = calculateNextSync(frequency)
-    
+
     await prisma.document.update({
       where: { id: documentId },
       data: { nextSyncAt: nextSync, lastSyncError: null },
@@ -221,9 +221,6 @@ export async function handleScheduledSyncRun(documentId: string): Promise<NextRe
       data: { lastSyncError: (error as Error).message },
     })
 
-    return NextResponse.json(
-      { error: (error as Error).message },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }

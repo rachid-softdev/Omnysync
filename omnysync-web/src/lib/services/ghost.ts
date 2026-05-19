@@ -1,14 +1,14 @@
-import { prisma } from "@/lib/prisma"
-import { ERR_UPLOAD_MEDIA } from "@/lib/errors"
-import { encrypt } from "@/lib/crypto"
-import { fetchWithRetry } from "@/lib/http-client"
+import { prisma } from '@/lib/prisma'
+import { ERR_UPLOAD_MEDIA } from '@/lib/errors'
+import { encrypt } from '@/lib/crypto'
+import { fetchWithRetry } from '@/lib/http-client'
 
 export interface GhostPost {
   id?: string
   title: string
   html: string
   excerpt?: string
-  status?: "draft" | "published" | "scheduled"
+  status?: 'draft' | 'published' | 'scheduled'
   tags?: string[]
   authors?: string[]
   feature_image?: string
@@ -29,43 +29,49 @@ export interface GhostAuthor {
 }
 
 export function createGhostClient(siteUrl: string, adminApiKey: string) {
-  const [id, secret] = adminApiKey.split(":")
-  const baseUrl = siteUrl.replace(/\/$/, "")
-  
+  const [id, secret] = adminApiKey.split(':')
+  const baseUrl = siteUrl.replace(/\/$/, '')
+
   const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Ghost ${Buffer.from(`${id}:${secret}`).toString("base64")}`,
+    'Content-Type': 'application/json',
+    Authorization: `Ghost ${Buffer.from(`${id}:${secret}`).toString('base64')}`,
   }
 
   async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const data = await fetchWithRetry<Record<string, unknown>>(`${baseUrl}/ghost/api/admin/api/canary/admin${endpoint}`, {
-      ...options,
-      headers: { ...headers, ...options.headers },
-    })
+    const data = await fetchWithRetry<Record<string, unknown>>(
+      `${baseUrl}/ghost/api/admin/api/canary/admin${endpoint}`,
+      {
+        ...options,
+        headers: { ...headers, ...options.headers },
+      }
+    )
     return data[Object.keys(data)[0]] as T
   }
 
   return {
     async getTags(): Promise<GhostTag[]> {
-      const result = await request<{ tags: GhostTag[] }>("/tags/?limit=all")
+      const result = await request<{ tags: GhostTag[] }>('/tags/?limit=all')
       return result.tags || []
     },
 
     async getAuthors(): Promise<GhostAuthor[]> {
-      const result = await request<{ authors: GhostAuthor[] }>("/authors/?limit=all")
+      const result = await request<{ authors: GhostAuthor[] }>('/authors/?limit=all')
       return result.authors || []
     },
 
     async createPost(post: GhostPost): Promise<{ posts: Array<{ id: string }> }> {
-      return request("/posts/", {
-        method: "POST",
+      return request('/posts/', {
+        method: 'POST',
         body: JSON.stringify({ posts: [post] }),
       })
     },
 
-    async updatePost(postId: string, post: Partial<GhostPost>): Promise<{ posts: Array<{ id: string }> }> {
+    async updatePost(
+      postId: string,
+      post: Partial<GhostPost>
+    ): Promise<{ posts: Array<{ id: string }> }> {
       return request(`/posts/${postId}/`, {
-        method: "PUT",
+        method: 'PUT',
         body: JSON.stringify({ posts: [post] }),
       })
     },
@@ -74,13 +80,16 @@ export function createGhostClient(siteUrl: string, adminApiKey: string) {
       return request(`/posts/${postId}/`)
     },
 
-    async uploadImage(image: { file: Blob; filename: string }): Promise<{ images: Array<{ url: string }> }> {
+    async uploadImage(image: {
+      file: Blob
+      filename: string
+    }): Promise<{ images: Array<{ url: string }> }> {
       const formData = new FormData()
-      formData.append("file", image.file, image.filename)
-      formData.append("purpose", "image")
+      formData.append('file', image.file, image.filename)
+      formData.append('purpose', 'image')
 
       const response = await fetch(`${baseUrl}/ghost/api/admin/api/canary/admin/images/upload`, {
-        method: "POST",
+        method: 'POST',
         headers: {
           Authorization: headers.Authorization,
         },
@@ -106,9 +115,9 @@ export async function saveGhostConnector(
     data: {
       userId,
       organizationId,
-      type: "GHOST",
+      type: 'GHOST',
       name: `Ghost - ${new URL(siteUrl).hostname}`,
-      status: "ACTIVE",
+      status: 'ACTIVE',
       config: { siteUrl },
       credentials: encrypt(adminApiKey),
     },

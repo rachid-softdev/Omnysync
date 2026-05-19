@@ -1,16 +1,16 @@
-import { prisma } from "@/lib/prisma"
-import { ERR_FETCH_CONTENT } from "@/lib/errors"
-import { encrypt } from "@/lib/crypto"
-import { fetchWithTimeout, fetchWithRetry } from "@/lib/http-client"
+import { prisma } from '@/lib/prisma'
+import { ERR_FETCH_CONTENT } from '@/lib/errors'
+import { encrypt } from '@/lib/crypto'
+import { fetchWithTimeout, fetchWithRetry } from '@/lib/http-client'
 import type {
   GoogleDriveFilesResponse,
   GoogleDocBody,
   GoogleDocElement,
   GoogleDocTableRow,
-} from "./types"
+} from './types'
 
-const GOOGLE_DOCS_API = "https://docs.googleapis.com/v1"
-const GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3"
+const GOOGLE_DOCS_API = 'https://docs.googleapis.com/v1'
+const GOOGLE_DRIVE_API = 'https://www.googleapis.com/drive/v3'
 
 export interface GoogleDoc {
   id: string
@@ -33,7 +33,7 @@ export async function listGoogleDocs(accessToken: string): Promise<GoogleDoc[]> 
   return data.files.map((file) => ({
     id: file.id,
     title: file.name,
-    content: "",
+    content: '',
     createdTime: file.createdTime,
     modifiedTime: file.modifiedTime,
   }))
@@ -43,33 +43,29 @@ export async function getGoogleDocContent(
   documentId: string,
   accessToken: string
 ): Promise<GoogleDoc> {
-  const data = await fetchWithRetry<GoogleDocBody>(
-    `${GOOGLE_DOCS_API}/documents/${documentId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
-  )
+  const data = await fetchWithRetry<GoogleDocBody>(`${GOOGLE_DOCS_API}/documents/${documentId}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
 
-  let content = ""
+  let content = ''
   if (data.body && data.body.content) {
     for (const element of data.body.content) {
       if (element.paragraph) {
-        content += element.paragraph.elements
-          ?.map((e) => e.textRun?.content || "")
-          .join("") || ""
-        content += "\n"
+        content += element.paragraph.elements?.map((e) => e.textRun?.content || '').join('') || ''
+        content += '\n'
       }
       if (element.table) {
         for (const row of element.table.tableRows || []) {
           for (const cell of row.tableCells || []) {
-            content += cell.content
-              ?.map((c) => c.paragraph?.elements?.map((e) => e.textRun?.content || "").join(""))
-              .join(" ") || ""
-            content += " | "
+            content +=
+              cell.content
+                ?.map((c) => c.paragraph?.elements?.map((e) => e.textRun?.content || '').join(''))
+                .join(' ') || ''
+            content += ' | '
           }
-          content += "\n"
+          content += '\n'
         }
       }
     }
@@ -77,7 +73,7 @@ export async function getGoogleDocContent(
 
   return {
     id: data.documentId,
-    title: data.title || "Untitled",
+    title: data.title || 'Untitled',
     content,
   }
 }
@@ -92,9 +88,9 @@ export async function saveGoogleDocsConnector(
     data: {
       userId,
       organizationId,
-      type: "GOOGLE_DOCS",
-      name: "Google Docs",
-      status: "ACTIVE",
+      type: 'GOOGLE_DOCS',
+      name: 'Google Docs',
+      status: 'ACTIVE',
       credentials: encrypt(JSON.stringify({ accessToken, refreshToken })),
     },
   })

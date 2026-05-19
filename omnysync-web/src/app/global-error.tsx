@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle, RefreshCw } from "lucide-react"
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { AlertTriangle, RefreshCw } from 'lucide-react'
 
 export default function GlobalError({
   error,
@@ -27,16 +27,12 @@ export default function GlobalError({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm font-mono text-muted-foreground">
-                  {error.message}
-                </p>
+                <p className="text-sm font-mono text-muted-foreground">{error.message}</p>
                 {error.digest && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    ID: {error.digest}
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">ID: {error.digest}</p>
                 )}
               </div>
-              
+
               <Button onClick={reset} className="w-full">
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Réessayer

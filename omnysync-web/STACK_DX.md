@@ -7,18 +7,18 @@
 
 ## Vue d'ensemble
 
-| Couche | Outil | Rôle |
-|---|---|---|
+| Couche      | Outil                                       | Rôle                                                |
+| ----------- | ------------------------------------------- | --------------------------------------------------- |
 | Format/Lint | **Biome** (formateur) + **ESLint** (linter) | Formate le code, ESLint conserve les règles Next.js |
-| Git hooks | **Husky** + **lint-staged** | Vérifie uniquement les fichiers stagés avant commit |
-| Commits | **commitlint** + Conventional Commits | Force un format de message standard |
-| Types | **TypeScript strict** | `strict: true`, `tsc --noEmit` |
-| Tests | **Vitest** + Testing Library | Unit/intégration avec `jsdom` |
-| CI | **GitHub Actions** | Lint, typecheck, build, audit, test, size |
-| Dépendances | **Dependabot** | Mise à jour automatique hebdomadaire |
-| Bundle | **size-limit** | Surveille la taille du build |
-| Sécurité | **CodeQL** (GitHub) | SAST gratuit sur GitHub |
-| Éditeurs | **.editorconfig** + **.nvmrc** | Cohérence entre contributeurs |
+| Git hooks   | **Husky** + **lint-staged**                 | Vérifie uniquement les fichiers stagés avant commit |
+| Commits     | **commitlint** + Conventional Commits       | Force un format de message standard                 |
+| Types       | **TypeScript strict**                       | `strict: true`, `tsc --noEmit`                      |
+| Tests       | **Vitest** + Testing Library                | Unit/intégration avec `jsdom`                       |
+| CI          | **GitHub Actions**                          | Lint, typecheck, build, audit, test, size           |
+| Dépendances | **Dependabot**                              | Mise à jour automatique hebdomadaire                |
+| Bundle      | **size-limit**                              | Surveille la taille du build                        |
+| Sécurité    | **CodeQL** (GitHub)                         | SAST gratuit sur GitHub                             |
+| Éditeurs    | **.editorconfig** + **.nvmrc**              | Cohérence entre contributeurs                       |
 
 ---
 
@@ -209,8 +209,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: ".nvmrc"
-          cache: "npm"
+          node-version-file: '.nvmrc'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -248,7 +248,7 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: "30 1 * * 1"
+    - cron: '30 1 * * 1'
 
 jobs:
   analyze:
@@ -279,7 +279,7 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:${{ matrix.language }}"
+          category: '/language:${{ matrix.language }}'
 ```
 
 ### 2.3 Dependabot — `.github/dependabot.yml`
@@ -288,29 +288,29 @@ jobs:
 version: 2
 
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Europe/Paris"
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Europe/Paris'
     open-pull-requests-limit: 10
     groups:
       all-dependencies:
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
 
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Europe/Paris"
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Europe/Paris'
 ```
 
 ---
@@ -326,37 +326,33 @@ npm install --save-dev vitest @testing-library/react @testing-library/jest-dom j
 **`vitest.config.ts`** :
 
 ```ts
-import path from "path";
-import { defineConfig } from "vitest/config";
+import path from 'path'
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
-    environment: "jsdom",
+    environment: 'jsdom',
     globals: true,
-    setupFiles: ["./tests/setup.ts"],
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    setupFiles: ['./tests/setup.ts'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
-      provider: "v8",
-      include: ["src/**"],
-      exclude: [
-        "src/**/*.test.{ts,tsx}",
-        "src/**/*.spec.{ts,tsx}",
-        "src/**/types.ts",
-      ],
+      provider: 'v8',
+      include: ['src/**'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}', 'src/**/types.ts'],
     },
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      '@': path.resolve(__dirname, './src'),
     },
   },
-});
+})
 ```
 
 **`tests/setup.ts`** :
 
 ```ts
-import "@testing-library/jest-dom/vitest";
+import '@testing-library/jest-dom/vitest'
 ```
 
 **Scripts `package.json`** :
@@ -370,15 +366,15 @@ import "@testing-library/jest-dom/vitest";
 **Test exemple `src/lib/utils.test.ts`** :
 
 ```ts
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest'
 
-const add = (a: number, b: number): number => a + b;
+const add = (a: number, b: number): number => a + b
 
-describe("utils", () => {
-  it("adds two numbers", () => {
-    expect(add(1, 2)).toBe(3);
-  });
-});
+describe('utils', () => {
+  it('adds two numbers', () => {
+    expect(add(1, 2)).toBe(3)
+  })
+})
 ```
 
 ### 3.2 size-limit
@@ -414,20 +410,20 @@ npm install --save-dev size-limit @size-limit/preset-app
 
 ## Résumé des fichiers à créer
 
-| Fichier | Rôle |
-|---|---|
-| `.editorconfig` | Standardisation éditeurs |
-| `.nvmrc` | Version Node épinglée |
-| `biome.json` | Configuration Biome |
-| `.commitlintrc.json` | Règles Conventional Commits |
-| `.husky/commit-msg` | Hook validation message de commit |
-| `.husky/pre-commit` | Hook lint-staged |
-| `.husky/pre-push` | Hook check rapide |
-| `.github/workflows/ci.yaml` | Pipeline CI principal |
-| `.github/workflows/codeql.yml` | Analyse de sécurité SAST |
-| `.github/dependabot.yml` | Mise à jour automatique dépendances |
-| `vitest.config.ts` | Configuration Vitest |
-| `tests/setup.ts` | Setup Testing Library |
+| Fichier                        | Rôle                                |
+| ------------------------------ | ----------------------------------- |
+| `.editorconfig`                | Standardisation éditeurs            |
+| `.nvmrc`                       | Version Node épinglée               |
+| `biome.json`                   | Configuration Biome                 |
+| `.commitlintrc.json`           | Règles Conventional Commits         |
+| `.husky/commit-msg`            | Hook validation message de commit   |
+| `.husky/pre-commit`            | Hook lint-staged                    |
+| `.husky/pre-push`              | Hook check rapide                   |
+| `.github/workflows/ci.yaml`    | Pipeline CI principal               |
+| `.github/workflows/codeql.yml` | Analyse de sécurité SAST            |
+| `.github/dependabot.yml`       | Mise à jour automatique dépendances |
+| `vitest.config.ts`             | Configuration Vitest                |
+| `tests/setup.ts`               | Setup Testing Library               |
 
 ## Résumé des dépendances à installer
 
@@ -442,14 +438,14 @@ npm install --save-dev \
 
 ## Commandes utiles après installation
 
-| Commande | Action |
-|---|---|
-| `npm run format` | Formate tout le projet (Biome) |
-| `npm run format:check` | Vérifie le formatage |
-| `npm run check` | Format + lint + typecheck |
-| `npm test` | Lance les tests |
-| `npm run test:coverage` | Tests + couverture |
-| `npm run size` | Vérifie la taille du bundle (après build) |
+| Commande                | Action                                    |
+| ----------------------- | ----------------------------------------- |
+| `npm run format`        | Formate tout le projet (Biome)            |
+| `npm run format:check`  | Vérifie le formatage                      |
+| `npm run check`         | Format + lint + typecheck                 |
+| `npm test`              | Lance les tests                           |
+| `npm run test:coverage` | Tests + couverture                        |
+| `npm run size`          | Vérifie la taille du bundle (après build) |
 
 ---
 

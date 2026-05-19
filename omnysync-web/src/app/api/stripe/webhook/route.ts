@@ -16,41 +16,41 @@
  * - Proper plan key resolution from Stripe price IDs
  */
 
-import { NextRequest, NextResponse } from "next/server"
-import Stripe from "stripe"
-import { prisma } from "@/lib/prisma"
-import { headers } from "next/headers"
-import { getFeatureGateService } from "@/lib/entitlements/FeatureGateService"
+import { NextRequest, NextResponse } from 'next/server'
+import Stripe from 'stripe'
+import { prisma } from '@/lib/prisma'
+import { headers } from 'next/headers'
+import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
 
 // Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2024-12-18.acacia",
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2024-12-18.acacia',
 })
 
 // Price ID to plan key mapping
 // In production, these should be in env vars or DB
 const PRICE_ID_TO_PLAN: Record<string, string> = {
-  [process.env.STRIPE_PRICE_PRO_MONTHLY || ""]: "pro",
-  [process.env.STRIPE_PRICE_PRO_YEARLY || ""]: "pro",
-  [process.env.STRIPE_PRICE_BUSINESS_MONTHLY || ""]: "business",
-  [process.env.STRIPE_PRICE_BUSINESS_YEARLY || ""]: "business",
+  [process.env.STRIPE_PRICE_PRO_MONTHLY || '']: 'pro',
+  [process.env.STRIPE_PRICE_PRO_YEARLY || '']: 'pro',
+  [process.env.STRIPE_PRICE_BUSINESS_MONTHLY || '']: 'business',
+  [process.env.STRIPE_PRICE_BUSINESS_YEARLY || '']: 'business',
 }
 
 // Default plan when no match found
-const DEFAULT_PLAN = "free"
+const DEFAULT_PLAN = 'free'
 
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
 
 type SupportedEventType =
-  | "checkout.session.completed"
-  | "customer.subscription.created"
-  | "customer.subscription.updated"
-  | "customer.subscription.deleted"
-  | "invoice.payment_succeeded"
-  | "invoice.payment_failed"
-  | "customer.subscription.trial_end"
+  | 'checkout.session.completed'
+  | 'customer.subscription.created'
+  | 'customer.subscription.updated'
+  | 'customer.subscription.deleted'
+  | 'invoice.payment_succeeded'
+  | 'invoice.payment_failed'
+  | 'customer.subscription.trial_end'
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -62,16 +62,16 @@ function getPlanFromPriceId(priceId: string): string {
 
 function getStatusFromStripeStatus(status: string): string {
   const statusMap: Record<string, string> = {
-    active: "ACTIVE",
-    trialing: "TRIALING",
-    past_due: "PAST_DUE",
-    canceled: "CANCELED",
-    incomplete: "INCOMPLETE",
-    incomplete_expired: "INCOMPLETE_EXPIRED",
-    unpaid: "PAST_DUE",
+    active: 'ACTIVE',
+    trialing: 'TRIALING',
+    past_due: 'PAST_DUE',
+    canceled: 'CANCELED',
+    incomplete: 'INCOMPLETE',
+    incomplete_expired: 'INCOMPLETE_EXPIRED',
+    unpaid: 'PAST_DUE',
   }
 
-  return statusMap[status] || "ACTIVE"
+  return statusMap[status] || 'ACTIVE'
 }
 
 async function invalidateEntitlementsCache(orgId: string): Promise<void> {
@@ -85,9 +85,7 @@ async function invalidateEntitlementsCache(orgId: string): Promise<void> {
   }
 }
 
-async function findOrganizationByCustomerId(
-  customerId: string
-): Promise<string | null> {
+async function findOrganizationByCustomerId(customerId: string): Promise<string | null> {
   const org = await prisma.organization.findFirst({
     where: { stripeCustomerId: customerId },
     select: { id: true },
@@ -96,9 +94,7 @@ async function findOrganizationByCustomerId(
   return org?.id ?? null
 }
 
-async function findOrganizationBySubscriptionId(
-  subscriptionId: string
-): Promise<string | null> {
+async function findOrganizationBySubscriptionId(subscriptionId: string): Promise<string | null> {
   const sub = await prisma.subscription.findFirst({
     where: { stripeSubscriptionId: subscriptionId },
     select: { organizationId: true },
@@ -111,23 +107,21 @@ async function findOrganizationBySubscriptionId(
 // EVENT HANDLERS
 // ============================================================================
 
-async function handleCheckoutSessionCompleted(
-  event: Stripe.Event
-): Promise<void> {
+async function handleCheckoutSessionCompleted(event: Stripe.Event): Promise<void> {
   const session = event.data.object as Stripe.Checkout.Session
 
   const customerId = session.customer as string
   const subscriptionId = session.subscription as string
 
   if (!customerId || !subscriptionId) {
-    console.warn("[StripeWebhook] Missing customer or subscription ID")
+    console.warn('[StripeWebhook] Missing customer or subscription ID')
     return
   }
 
   // Get full subscription details from Stripe
   const subscription = await stripe.subscriptions.retrieve(subscriptionId)
 
-  const priceId = subscription.items.data[0]?.price?.id || ""
+  const priceId = subscription.items.data[0]?.price?.id || ''
   const planKey = getPlanFromPriceId(priceId)
 
   // Find organization by customer ID
@@ -136,14 +130,14 @@ async function handleCheckoutSessionCompleted(
   // If no org found by customer ID, try by userId in client_reference_id
   if (!orgId && session.client_reference_id) {
     const userOrg = await prisma.userOrganization.findFirst({
-      where: { userId: session.client_reference_id, role: "OWNER" },
+      where: { userId: session.client_reference_id, role: 'OWNER' },
       select: { organizationId: true },
     })
     orgId = userOrg?.organizationId ?? null
   }
 
   if (!orgId) {
-    console.error("[StripeWebhook] Organization not found for customer:", customerId)
+    console.error('[StripeWebhook] Organization not found for customer:', customerId)
     return
   }
 
@@ -159,12 +153,8 @@ async function handleCheckoutSessionCompleted(
       stripePriceId: priceId,
       currentPeriodStart: new Date(subscription.current_period_start * 1000),
       currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      trialStart: subscription.trial_start
-        ? new Date(subscription.trial_start * 1000)
-        : null,
-      trialEnd: subscription.trial_end
-        ? new Date(subscription.trial_end * 1000)
-        : null,
+      trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
+      trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
     },
     update: {
       planKey,
@@ -174,12 +164,8 @@ async function handleCheckoutSessionCompleted(
       stripePriceId: priceId,
       currentPeriodStart: new Date(subscription.current_period_start * 1000),
       currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      trialStart: subscription.trial_start
-        ? new Date(subscription.trial_start * 1000)
-        : null,
-      trialEnd: subscription.trial_end
-        ? new Date(subscription.trial_end * 1000)
-        : null,
+      trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
+      trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
     },
   })
 
@@ -192,9 +178,7 @@ async function handleCheckoutSessionCompleted(
   // Invalidate cache
   await invalidateEntitlementsCache(orgId)
 
-  console.log(
-    `[StripeWebhook] Checkout completed: org=${orgId}, plan=${planKey}`
-  )
+  console.log(`[StripeWebhook] Checkout completed: org=${orgId}, plan=${planKey}`)
 }
 
 async function handleSubscriptionCreated(event: Stripe.Event): Promise<void> {
@@ -202,16 +186,13 @@ async function handleSubscriptionCreated(event: Stripe.Event): Promise<void> {
   const customerId = subscription.customer as string
   const subscriptionId = subscription.id
 
-  const priceId = subscription.items.data[0]?.price?.id || ""
+  const priceId = subscription.items.data[0]?.price?.id || ''
   const planKey = getPlanFromPriceId(priceId)
 
   const orgId = await findOrganizationByCustomerId(customerId)
 
   if (!orgId) {
-    console.warn(
-      "[StripeWebhook] Organization not found for customer:",
-      customerId
-    )
+    console.warn('[StripeWebhook] Organization not found for customer:', customerId)
     return
   }
 
@@ -247,7 +228,7 @@ async function handleSubscriptionUpdated(event: Stripe.Event): Promise<void> {
   const customerId = subscription.customer as string
   const subscriptionId = subscription.id
 
-  const priceId = subscription.items.data[0]?.price?.id || ""
+  const priceId = subscription.items.data[0]?.price?.id || ''
   const planKey = getPlanFromPriceId(priceId)
 
   // Find org by customer ID or subscription ID
@@ -258,7 +239,7 @@ async function handleSubscriptionUpdated(event: Stripe.Event): Promise<void> {
   }
 
   if (!orgId) {
-    console.warn("[StripeWebhook] Organization not found for subscription:", subscriptionId)
+    console.warn('[StripeWebhook] Organization not found for subscription:', subscriptionId)
     return
   }
 
@@ -288,7 +269,7 @@ async function handleSubscriptionDeleted(event: Stripe.Event): Promise<void> {
   const orgId = await findOrganizationBySubscriptionId(subscriptionId)
 
   if (!orgId) {
-    console.warn("[StripeWebhook] Organization not found for subscription:", subscriptionId)
+    console.warn('[StripeWebhook] Organization not found for subscription:', subscriptionId)
     return
   }
 
@@ -296,7 +277,7 @@ async function handleSubscriptionDeleted(event: Stripe.Event): Promise<void> {
   await prisma.subscription.update({
     where: { organizationId: orgId },
     data: {
-      status: "CANCELED",
+      status: 'CANCELED',
       cancelAtPeriodEnd: false,
     },
   })
@@ -317,7 +298,7 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event): Promise<void>
   const orgId = await findOrganizationBySubscriptionId(subscriptionId)
 
   if (!orgId) {
-    console.warn("[StripeWebhook] Organization not found for subscription:", subscriptionId)
+    console.warn('[StripeWebhook] Organization not found for subscription:', subscriptionId)
     return
   }
 
@@ -327,7 +308,7 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event): Promise<void>
   await prisma.subscription.update({
     where: { organizationId: orgId },
     data: {
-      status: "ACTIVE",
+      status: 'ACTIVE',
       currentPeriodStart: new Date(subscription.current_period_start * 1000),
       currentPeriodEnd: new Date(subscription.current_period_end * 1000),
       cancelAtPeriodEnd: false,
@@ -350,14 +331,14 @@ async function handleInvoicePaymentFailed(event: Stripe.Event): Promise<void> {
   const orgId = await findOrganizationBySubscriptionId(subscriptionId)
 
   if (!orgId) {
-    console.warn("[StripeWebhook] Organization not found for subscription:", subscriptionId)
+    console.warn('[StripeWebhook] Organization not found for subscription:', subscriptionId)
     return
   }
 
   await prisma.subscription.update({
     where: { organizationId: orgId },
     data: {
-      status: "PAST_DUE",
+      status: 'PAST_DUE',
     },
   })
 
@@ -375,7 +356,7 @@ async function handleTrialEnd(event: Stripe.Event): Promise<void> {
   const orgId = await findOrganizationBySubscriptionId(subscriptionId)
 
   if (!orgId) {
-    console.warn("[StripeWebhook] Organization not found for subscription:", subscriptionId)
+    console.warn('[StripeWebhook] Organization not found for subscription:', subscriptionId)
     return
   }
 
@@ -401,29 +382,19 @@ async function handleTrialEnd(event: Stripe.Event): Promise<void> {
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
-  const signature = (await headers()).get("stripe-signature")
+  const signature = (await headers()).get('stripe-signature')
 
   if (!signature) {
-    return NextResponse.json(
-      { error: "Missing signature" },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
   }
 
   let event: Stripe.Event
 
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET || ""
-    )
+    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET || '')
   } catch (err) {
-    console.error("[StripeWebhook] Invalid signature:", err)
-    return NextResponse.json(
-      { error: "Invalid signature" },
-      { status: 400 }
-    )
+    console.error('[StripeWebhook] Invalid signature:', err)
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
   const eventId = event.id
@@ -442,31 +413,31 @@ export async function POST(req: NextRequest) {
   // Process the event
   try {
     switch (eventType) {
-      case "checkout.session.completed":
+      case 'checkout.session.completed':
         await handleCheckoutSessionCompleted(event)
         break
 
-      case "customer.subscription.created":
+      case 'customer.subscription.created':
         await handleSubscriptionCreated(event)
         break
 
-      case "customer.subscription.updated":
+      case 'customer.subscription.updated':
         await handleSubscriptionUpdated(event)
         break
 
-      case "customer.subscription.deleted":
+      case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event)
         break
 
-      case "invoice.payment_succeeded":
+      case 'invoice.payment_succeeded':
         await handleInvoicePaymentSucceeded(event)
         break
 
-      case "invoice.payment_failed":
+      case 'invoice.payment_failed':
         await handleInvoicePaymentFailed(event)
         break
 
-      case "customer.subscription.trial_end":
+      case 'customer.subscription.trial_end':
         await handleTrialEnd(event)
         break
 
@@ -484,12 +455,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error("[StripeWebhook] Handler error:", error)
+    console.error('[StripeWebhook] Handler error:', error)
 
     // Log but don't fail - the event is still recorded as attempted
-    return NextResponse.json(
-      { error: "Handler error", eventId },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Handler error', eventId }, { status: 500 })
   }
 }
