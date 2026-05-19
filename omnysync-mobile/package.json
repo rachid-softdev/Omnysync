@@ -1,10 +1,10 @@
 {
-  "name": "@omnysync/mobile",
-  "version": "0.0.1",
-  "private": true,
+  "name": "omnysync-mobile",
+  "version": "1.0.0",
+  "description": "Omnysync Mobile Application",
+  "main": "index.js",
   "scripts": {
-    "dev": "echo 'Mobile app placeholder - React Native/Capacitor coming soon'",
-    "build": "echo 'Mobile app placeholder'",
-    "clean": "echo 'Cleaned'"
+    "dev": "echo 'Mobile dev not configured'",
+    "build": "echo 'Mobile build not configured'"
   }
 }

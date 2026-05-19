@@ -1,10 +1,10 @@
 {
-  "name": "@omnysync/desktop",
-  "version": "0.0.1",
-  "private": true,
+  "name": "omnysync-desktop",
+  "version": "1.0.0",
+  "description": "Omnysync Desktop Application",
+  "main": "index.js",
   "scripts": {
-    "dev": "echo 'Desktop app placeholder - Tauri/Electron coming soon'",
-    "build": "echo 'Desktop app placeholder'",
-    "clean": "echo 'Cleaned'"
+    "dev": "echo 'Desktop dev not configured'",
+    "build": "echo 'Desktop build not configured'"
   }
 }

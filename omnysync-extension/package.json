@@ -1,10 +1,10 @@
 {
-  "name": "@omnysync/extension",
-  "version": "0.0.1",
-  "private": true,
+  "name": "omnysync-extension",
+  "version": "1.0.0",
+  "description": "Omnysync Browser Extension",
+  "main": "index.js",
   "scripts": {
-    "dev": "echo 'Browser extension placeholder - coming soon'",
-    "build": "echo 'Extension placeholder'",
-    "clean": "echo 'Cleaned'"
+    "dev": "echo 'Extension dev not configured'",
+    "build": "echo 'Extension build not configured'"
   }
 }
