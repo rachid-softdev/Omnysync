@@ -100,7 +100,13 @@ export async function verifyEmail(token: string): Promise<{ success: boolean; er
   // Audit log
   await prisma.auditLog.create({
     data: {
-      organizationId: '',
+      organizationId:
+        (
+          await prisma.userOrganization.findFirst({
+            where: { userId: verification.userId },
+            orderBy: { role: 'asc' }, // OWNER first if exists
+          })
+        )?.organizationId || 'system',
       userId: verification.userId,
       action: 'email.verified',
       targetType: 'user',
@@ -145,7 +151,10 @@ export async function resendVerificationEmail(
     // Checker si moins de 1 heure
     const hourAgo = new Date(Date.now() - 60 * 60 * 1000)
     if (existing.createdAt > hourAgo) {
-      return { success: false, message: 'Email déjà envoyé récemment. Vérifiez votre boîte mail.' }
+      return {
+        success: false,
+        message: 'Email déjà envoyé récemment. Vérifiez votre boîte mail.',
+      }
     }
   }
 

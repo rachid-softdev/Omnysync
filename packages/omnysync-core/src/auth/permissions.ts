@@ -3,8 +3,8 @@
  * Omnysync - 2026
  */
 
-import { prisma } from "../../prisma";
-import { cache } from "../../cache";
+import { prisma } from "../prisma";
+import { cache } from "../cache";
 
 // ============================================================================
 // TYPES

@@ -5,25 +5,25 @@
  * Provides full entitlement map with features, limits, and usage.
  */
 
-import { useState, useEffect, useCallback } from "react"
-import type { EntitlementsResponse } from "../../entitlements/types"
+import { useState, useEffect, useCallback } from "react";
+import type { EntitlementsResponse } from "../entitlements/types";
 
 interface UseEntitlementsOptions {
   /** Refresh interval in seconds (default: 60) */
-  refreshInterval?: number
+  refreshInterval?: number;
   /** Whether to refetch on window focus */
-  refetchOnFocus?: boolean
+  refetchOnFocus?: boolean;
 }
 
 interface UseEntitlementsState {
-  data: EntitlementsResponse | null
-  isLoading: boolean
-  error: Error | null
-  refetch: () => Promise<void>
+  data: EntitlementsResponse | null;
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => Promise<void>;
 }
 
-const ENTITLEMENTS_CACHE_KEY = "user-entitlements"
-const DEFAULT_REFRESH_INTERVAL = 60 // seconds
+const ENTITLEMENTS_CACHE_KEY = "user-entitlements";
+const DEFAULT_REFRESH_INTERVAL = 60; // seconds
 
 /**
  * Hook to get user's entitlements
@@ -36,86 +36,89 @@ const DEFAULT_REFRESH_INTERVAL = 60 // seconds
  *   console.log("Features:", data.features)
  * }
  */
-export function useEntitlements(options: UseEntitlementsOptions = {}): UseEntitlementsState {
-  const { refreshInterval = DEFAULT_REFRESH_INTERVAL, refetchOnFocus = true } = options
+export function useEntitlements(
+  options: UseEntitlementsOptions = {},
+): UseEntitlementsState {
+  const { refreshInterval = DEFAULT_REFRESH_INTERVAL, refetchOnFocus = true } =
+    options;
 
-  const [data, setData] = useState<EntitlementsResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const [data, setData] = useState<EntitlementsResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const fetchEntitlements = useCallback(async () => {
     try {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
 
       const response = await fetch("/api/me/entitlements", {
         headers: {
           // Add auth headers as needed
         },
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to fetch entitlements")
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch entitlements");
       }
 
-      const result = await response.json()
+      const result = await response.json();
 
       // Cache in localStorage for offline access
-      localStorage.setItem(ENTITLEMENTS_CACHE_KEY, JSON.stringify(result))
+      localStorage.setItem(ENTITLEMENTS_CACHE_KEY, JSON.stringify(result));
 
-      setData(result)
+      setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Unknown error"))
+      setError(err instanceof Error ? err : new Error("Unknown error"));
 
       // Try to restore from cache
-      const cached = localStorage.getItem(ENTITLEMENTS_CACHE_KEY)
+      const cached = localStorage.getItem(ENTITLEMENTS_CACHE_KEY);
       if (cached) {
         try {
-          setData(JSON.parse(cached))
+          setData(JSON.parse(cached));
         } catch {
           // Ignore parse errors
         }
       }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
+  }, []);
 
   // Initial fetch
   useEffect(() => {
-    fetchEntitlements()
-  }, [fetchEntitlements])
+    fetchEntitlements();
+  }, [fetchEntitlements]);
 
   // Periodic refresh
   useEffect(() => {
-    if (refreshInterval <= 0) return
+    if (refreshInterval <= 0) return;
 
     const interval = setInterval(() => {
-      fetchEntitlements()
-    }, refreshInterval * 1000)
+      fetchEntitlements();
+    }, refreshInterval * 1000);
 
-    return () => clearInterval(interval)
-  }, [fetchEntitlements, refreshInterval])
+    return () => clearInterval(interval);
+  }, [fetchEntitlements, refreshInterval]);
 
   // Refetch on focus
   useEffect(() => {
-    if (!refetchOnFocus) return
+    if (!refetchOnFocus) return;
 
     const handleFocus = () => {
-      fetchEntitlements()
-    }
+      fetchEntitlements();
+    };
 
-    window.addEventListener("focus", handleFocus)
-    return () => window.removeEventListener("focus", handleFocus)
-  }, [fetchEntitlements, refetchOnFocus])
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [fetchEntitlements, refetchOnFocus]);
 
   return {
     data,
     isLoading,
     error,
     refetch: fetchEntitlements,
-  }
+  };
 }
 
 /**
@@ -129,9 +132,9 @@ export function useEntitlements(options: UseEntitlementsOptions = {}): UseEntitl
  * }
  */
 export function useFeature(featureKey: string): boolean {
-  const { data } = useEntitlements()
+  const { data } = useEntitlements();
 
-  return data?.features[featureKey] ?? false
+  return data?.features[featureKey] ?? false;
 }
 
 /**
@@ -148,25 +151,25 @@ export function useFeature(featureKey: string): boolean {
  * )
  */
 export function useLimit(featureKey: string): {
-  limit: number | null
-  used: number
-  resetAt: string | null
-  remaining: number | null
+  limit: number | null;
+  used: number;
+  resetAt: string | null;
+  remaining: number | null;
 } {
-  const { data } = useEntitlements()
+  const { data } = useEntitlements();
 
-  const limit = data?.limits[featureKey] ?? null
-  const used = data?.usage[featureKey] ?? 0
-  const resetAt = data?.resetAt[featureKey] ?? null
+  const limit = data?.limits[featureKey] ?? null;
+  const used = data?.usage[featureKey] ?? 0;
+  const resetAt = data?.resetAt[featureKey] ?? null;
 
-  let remaining: number | null
+  let remaining: number | null;
   if (limit === null) {
-    remaining = null // Unlimited
+    remaining = null; // Unlimited
   } else {
-    remaining = Math.max(0, limit - used)
+    remaining = Math.max(0, limit - used);
   }
 
-  return { limit, used, resetAt, remaining }
+  return { limit, used, resetAt, remaining };
 }
 
 /**
@@ -178,11 +181,11 @@ export function useLimit(featureKey: string): {
  * </FeatureGuard>
  */
 interface FeatureGuardProps {
-  feature: string
-  children: React.ReactNode
-  fallback?: React.ReactNode
+  feature: string;
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
   /** Show fallback even while loading (default: false) */
-  showFallbackWhileLoading?: boolean
+  showFallbackWhileLoading?: boolean;
 }
 
 export function FeatureGuard({
@@ -191,13 +194,13 @@ export function FeatureGuard({
   fallback = null,
   showFallbackWhileLoading = false,
 }: FeatureGuardProps) {
-  const isEnabled = useFeature(feature)
+  const isEnabled = useFeature(feature);
 
   if (!isEnabled) {
-    return <>{fallback}</>
+    return <>{fallback}</>;
   }
 
-  return <>{children}</>
+  return <>{children}</>;
 }
 
 /**
@@ -207,20 +210,24 @@ export function FeatureGuard({
  * <UsageBar feature="MAX_SYNCS_PER_MONTH" showUpgradeOnLimit />
  */
 interface UsageBarProps {
-  feature: string
-  showUpgradeOnLimit?: boolean
-  className?: string
+  feature: string;
+  showUpgradeOnLimit?: boolean;
+  className?: string;
 }
 
-export function UsageBar({ feature, showUpgradeOnLimit = false, className = "" }: UsageBarProps) {
-  const { limit, used, remaining } = useLimit(feature)
+export function UsageBar({
+  feature,
+  showUpgradeOnLimit = false,
+  className = "",
+}: UsageBarProps) {
+  const { limit, used, remaining } = useLimit(feature);
 
   if (limit === null) {
-    return null // Unlimited - no need to show bar
+    return null; // Unlimited - no need to show bar
   }
 
-  const percentage = Math.round((used / limit) * 100)
-  const isAtLimit = remaining === 0
+  const percentage = Math.round((used / limit) * 100);
+  const isAtLimit = remaining === 0;
 
   return (
     <div className={className}>
@@ -237,10 +244,13 @@ export function UsageBar({ feature, showUpgradeOnLimit = false, className = "" }
         />
       </div>
       {isAtLimit && showUpgradeOnLimit && (
-        <a href="/billing/upgrade" className="text-sm text-blue-500 hover:underline">
+        <a
+          href="/billing/upgrade"
+          className="text-sm text-blue-500 hover:underline"
+        >
           Upgrade to get more
         </a>
       )}
     </div>
-  )
+  );
 }

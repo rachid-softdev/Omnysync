@@ -84,6 +84,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           select: { role: true },
         })
         token.role = dbUser?.role ?? 'USER'
+
+        // Store passwordChangedAt in token for session invalidation
+        const pwUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { passwordChangedAt: true },
+        })
+        token.passwordChangedAt = pwUser?.passwordChangedAt?.getTime() || 0
+      }
+
+      // On every JWT access, check if password was changed
+      if (token.passwordChangedAt && trigger !== 'update') {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { passwordChangedAt: true },
+        })
+        if (dbUser?.passwordChangedAt) {
+          const dbTime = dbUser.passwordChangedAt.getTime()
+          if (dbTime > (token.passwordChangedAt as number)) {
+            // Password was changed after this JWT was issued — invalidate
+            return { ...token, exp: Math.floor(Date.now() / 1000) - 1 }
+          }
+        }
       }
 
       // Update session from callback

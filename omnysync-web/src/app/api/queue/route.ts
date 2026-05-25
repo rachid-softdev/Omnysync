@@ -49,16 +49,19 @@ export async function POST(req: NextRequest) {
 
     switch (type) {
       case 'sync_document': {
-        const { documentId, sourceConnectorId, destConnectorId } = payload
+        const { documentId, sourceConnectorId, destConnectorId, userId } = payload
         const result = await processJobWithRetry(job, async (j) => {
           return await performSync(
             j.payload.documentId as string,
             j.payload.sourceConnectorId as string,
-            j.payload.destConnectorId as string
+            j.payload.destConnectorId as string,
+            userId as string
           )
         })
         // Upload images after sync (fire and forget)
-        uploadAllImages(documentId).catch(console.error)
+        if (userId) {
+          uploadAllImages(documentId, userId as string).catch(console.error)
+        }
 
         // Mark as completed after successful processing
         if (idempotencyKey) {
@@ -68,9 +71,9 @@ export async function POST(req: NextRequest) {
       }
 
       case 'detect_changes': {
-        const { documentId } = payload
+        const { documentId, userId } = payload
         const result = await processJobWithRetry(job, async (j) => {
-          return await detectAndSyncChanges(j.payload.documentId as string)
+          return await detectAndSyncChanges(j.payload.documentId as string, userId as string)
         })
 
         if (idempotencyKey) {

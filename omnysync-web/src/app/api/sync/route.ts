@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  await enqueueSyncJob(document.id, sourceConnectorId, destConnectorId)
+  await enqueueSyncJob(document.id, sourceConnectorId, destConnectorId, session.user.id)
 
   return NextResponse.json(document)
 }

@@ -32,11 +32,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the code
-    const isValid = await verifyTotpCode(twoFactor.secret, code)
+    const result = await verifyTotpCode(session.user.id, code)
 
-    if (!isValid) {
-      // Increment failed attempts (could add lockout logic here)
-      return NextResponse.json({ error: 'Code invalide. Veuillez réessayer.' }, { status: 400 })
+    if (!result.valid) {
+      return NextResponse.json(
+        { error: result.error || 'Code invalide. Veuillez réessayer.' },
+        { status: 400 }
+      )
     }
 
     // Update session (mark as verified)

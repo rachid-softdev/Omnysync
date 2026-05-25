@@ -1,4 +1,4 @@
-import { prisma } from "../../prisma";
+import { prisma } from "../prisma";
 import {
   ERR_DOC_NOT_FOUND,
   ERR_DOC_NOT_PUBLISHED,
@@ -15,12 +15,29 @@ import { createWordPressClient } from "./wordpress";
 import { createGhostClient } from "./ghost";
 import { createWebflowClient } from "./webflow";
 import { createShopifyClient } from "./shopify";
+import { requireDocumentAccess } from "./authz";
+import { sanitizeErrorMessage } from "./sanitize";
 
 export interface SyncResult {
   success: boolean;
   error?: string;
   documentId: string;
   changesDetected?: boolean;
+}
+
+interface PublishDocument {
+  id: string;
+  title: string;
+  slug: string | null;
+  organizationId: string;
+  userId: string;
+  version: number;
+  destConnector: {
+    id: string;
+    type: string;
+    credentials: string | null;
+    config: Record<string, unknown> | null;
+  } | null;
 }
 
 /**
@@ -186,6 +203,7 @@ export async function performSync(
   documentId: string,
   sourceConnectorId: string,
   destConnectorId: string,
+  userId: string,
 ): Promise<SyncResult> {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
@@ -199,10 +217,30 @@ export async function performSync(
     return { success: false, error: ERR_DOC_NOT_FOUND, documentId };
   }
 
-  await prisma.document.update({
-    where: { id: documentId },
-    data: { syncStatus: "SYNCING" },
+  // Vérifier les droits d'accès
+  await requireDocumentAccess(documentId, userId);
+
+  // Optimistic locking: increment version atomically
+  const updated = await prisma.document.updateMany({
+    where: {
+      id: documentId,
+      syncStatus: { not: "SYNCING" },
+      version: document.version,
+    },
+    data: {
+      syncStatus: "SYNCING",
+      version: { increment: 1 },
+    },
   });
+
+  if (updated.count === 0) {
+    return {
+      success: false,
+      error:
+        "Document is currently being synced by another process. Please try again.",
+      documentId,
+    };
+  }
 
   // Log start of sync
   await prisma.syncLog.create({
@@ -381,13 +419,15 @@ export async function performSync(
     });
 
     // Send success email
-    const user = await prisma.user.findUnique({
-      where: { id: document.userId },
-    });
-    if (user?.email) {
-      sendSyncCompleteEmail(user.email, document.title, true).catch(
-        console.error,
-      );
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: document.userId },
+      });
+      if (user?.email) {
+        await sendSyncCompleteEmail(user.email, document.title, true);
+      }
+    } catch (emailError) {
+      console.error("Failed to send sync complete email:", emailError);
     }
 
     return {
@@ -398,7 +438,10 @@ export async function performSync(
   } catch (error) {
     await prisma.document.update({
       where: { id: documentId },
-      data: { syncStatus: "FAILED", lastSyncError: (error as Error).message },
+      data: {
+        syncStatus: "FAILED",
+        lastSyncError: sanitizeErrorMessage(error),
+      },
     });
 
     await prisma.syncLog.create({
@@ -408,18 +451,20 @@ export async function performSync(
         documentId,
         action: "sync_failed",
         status: "ERROR",
-        message: (error as Error).message,
+        message: sanitizeErrorMessage(error),
       },
     });
 
     // Send failure email
-    const user = await prisma.user.findUnique({
-      where: { id: document.userId },
-    });
-    if (user?.email) {
-      sendSyncCompleteEmail(user.email, document.title, false).catch(
-        console.error,
-      );
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: document.userId },
+      });
+      if (user?.email) {
+        await sendSyncCompleteEmail(user.email, document.title, false);
+      }
+    } catch (emailError) {
+      console.error("Failed to send sync failure email:", emailError);
     }
 
     return {
@@ -431,8 +476,7 @@ export async function performSync(
 }
 
 async function publishToDestination(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  document: any,
+  document: PublishDocument,
   htmlContent: string,
 ) {
   if (!document.destConnector) return;
@@ -590,6 +634,7 @@ async function publishToDestination(
 
 export async function detectAndSyncChanges(
   documentId: string,
+  userId: string,
 ): Promise<SyncResult> {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
@@ -602,6 +647,9 @@ export async function detectAndSyncChanges(
   if (!document) {
     return { success: false, error: ERR_DOC_NOT_FOUND, documentId };
   }
+
+  // Vérifier les droits d'accès
+  await requireDocumentAccess(documentId, userId);
 
   if (document.status !== "PUBLISHED") {
     return { success: false, error: ERR_DOC_NOT_PUBLISHED, documentId };
@@ -657,6 +705,7 @@ export async function detectAndSyncChanges(
       documentId,
       document.sourceConnectorId,
       document.destConnectorId,
+      userId,
     );
   } catch (error) {
     return {
@@ -667,7 +716,7 @@ export async function detectAndSyncChanges(
   }
 }
 
-export async function checkRemoteChanges(documentId: string) {
+export async function checkRemoteChanges(documentId: string, userId: string) {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
     include: {
@@ -676,6 +725,9 @@ export async function checkRemoteChanges(documentId: string) {
   });
 
   if (!document || !document.destConnector) return null;
+
+  // Vérifier les droits d'accès
+  await requireDocumentAccess(documentId, userId);
 
   const credentials = decrypt(document.destConnector.credentials || "");
   const config = (document.destConnector.config || {}) as Record<

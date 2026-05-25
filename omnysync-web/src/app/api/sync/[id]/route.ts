@@ -124,7 +124,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     })
 
     if (document.sourceConnectorId && document.destConnectorId) {
-      const result = await performSync(id, document.sourceConnectorId, document.destConnectorId)
+      const result = await performSync(
+        id,
+        document.sourceConnectorId,
+        document.destConnectorId,
+        session.user.id
+      )
       return NextResponse.json(result)
     }
 

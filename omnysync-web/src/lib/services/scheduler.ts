@@ -131,7 +131,7 @@ export async function runScheduledSyncs(): Promise<{
   for (const doc of scheduledDocs) {
     try {
       if (doc.sourceConnectorId && doc.destConnectorId) {
-        await performSync(doc.id, doc.sourceConnectorId, doc.destConnectorId)
+        await performSync(doc.id, doc.sourceConnectorId, doc.destConnectorId, doc.userId)
 
         // Planifier le prochain sync
         const frequency = doc.syncFrequency as 'DAILY' | 'WEEKLY' | 'MONTHLY'
@@ -198,7 +198,12 @@ export async function handleScheduledSyncRun(documentId: string): Promise<NextRe
   }
 
   try {
-    const result = await performSync(documentId, doc.sourceConnectorId, doc.destConnectorId)
+    const result = await performSync(
+      documentId,
+      doc.sourceConnectorId,
+      doc.destConnectorId,
+      doc.userId
+    )
 
     // Planifier le prochain sync
     const frequency = doc.syncFrequency as 'DAILY' | 'WEEKLY' | 'MONTHLY'

@@ -16,6 +16,14 @@
     "./ui": {
       "types": "./dist/ui/index.d.ts",
       "default": "./dist/ui/index.js"
+    },
+    "./crypto": {
+      "types": "./dist/crypto/index.d.ts",
+      "default": "./dist/crypto/index.js"
+    },
+    "./services/*": {
+      "types": "./dist/services/*.d.ts",
+      "default": "./dist/services/*.js"
     }
   },
   "scripts": {
@@ -45,6 +53,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.14.0",
+    "otpauth": "^9.5.1",
     "pg": "^8.20.0",
     "radix-ui": "^1.4.3",
     "resend": "^6.12.3",

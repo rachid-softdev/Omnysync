@@ -1,7 +1,7 @@
 /**
  * Service de vérification d'email
  */
-import { prisma } from "../../prisma";
+import { prisma } from "../prisma";
 import { sendEmail } from "../email";
 import { randomBytes } from "crypto";
 
@@ -107,7 +107,13 @@ export async function verifyEmail(
   // Audit log
   await prisma.auditLog.create({
     data: {
-      organizationId: "",
+      organizationId:
+        (
+          await prisma.userOrganization.findFirst({
+            where: { userId: verification.userId },
+            orderBy: { role: "asc" }, // OWNER first if exists
+          })
+        )?.organizationId || "system",
       userId: verification.userId,
       action: "email.verified",
       targetType: "user",
