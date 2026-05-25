@@ -77,6 +77,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         token.has2FA = !!twoFactor
         token.twoFactorVerified = false
+
+        // Fetch user role from DB
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { role: true },
+        })
+        token.role = dbUser?.role ?? 'USER'
       }
 
       // Update session from callback
@@ -93,6 +100,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Add 2FA status to session
         session.user.has2FA = token.has2FA as boolean
         session.user.twoFactorVerified = token.twoFactorVerified as boolean
+        session.user.role = (token.role as 'USER' | 'ADMIN') ?? 'USER'
       }
       return session
     },
@@ -160,6 +168,7 @@ declare module 'next-auth' {
       name?: string | null
       email?: string | null
       image?: string | null
+      role: 'USER' | 'ADMIN'
       has2FA?: boolean
       twoFactorVerified?: boolean
     }
