@@ -7,7 +7,7 @@ import {
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16;
-const AUTH_TAG_LENGTH = 16;
+// AUTH_TAG_LENGTH (16) is defined by AES-256-GCM specification
 
 function getSalt(): string {
   const salt = process.env.ENCRYPTION_SALT;
@@ -53,7 +53,9 @@ export function decrypt(encryptedText: string): string {
     return encryptedText;
   }
 
-  const [ivHex, authTagHex, ciphertext] = parts;
+  const ivHex = parts[0]!;
+  const authTagHex = parts[1]!;
+  const ciphertext = parts[2]!;
 
   const iv = Buffer.from(ivHex, "hex");
   const authTag = Buffer.from(authTagHex, "hex");

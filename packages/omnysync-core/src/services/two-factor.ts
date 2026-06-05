@@ -58,7 +58,6 @@ export async function setupTwoFactor(
     });
 
     // Audit log
-    const user = await prisma.user.findUnique({ where: { id: userId } });
     const org = await prisma.userOrganization.findFirst({
       where: { userId, role: "OWNER" },
       include: { organization: true },

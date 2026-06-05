@@ -8,11 +8,9 @@ import { decrypt } from "../crypto";
 import { auditSync } from "../audit";
 import { createWordPressClient } from "./wordpress";
 import { createGhostClient } from "./ghost";
-import { createWebflowClient } from "./webflow";
 import { createShopifyClient } from "./shopify";
 import { getNotionPageContent } from "./notion";
 import { getGoogleDocContent } from "./google-docs";
-import { detectContentChanges } from "./ai";
 import { requireDocumentAccess } from "./authz";
 import { sanitizeErrorMessage } from "./sanitize";
 
@@ -73,7 +71,7 @@ async function fetchRemoteContent(
   // WordPress
   if (document.destConnector.type === "WORDPRESS") {
     const creds = Buffer.from(rawCredentials, "base64").toString().split(":");
-    const client = createWordPressClient(config.siteUrl, creds[0], creds[1]);
+    const client = createWordPressClient(config.siteUrl, creds[0]!, creds[1]!);
     const post = await client.getPost(parseInt(document.slug || "0"));
     return {
       content: post.content,

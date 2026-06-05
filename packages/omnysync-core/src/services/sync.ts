@@ -48,6 +48,8 @@ async function enrichContentWithAI(
   documentId: string,
   htmlContent: string,
   title: string,
+  organizationId: string,
+  userId: string,
 ): Promise<{
   seoTitle: string;
   seoDescription: string;
@@ -69,6 +71,8 @@ async function enrichContentWithAI(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId,
+        userId,
         action: "ai_seo_started",
         status: "INFO",
         message: "Génération des métadonnées SEO...",
@@ -83,6 +87,8 @@ async function enrichContentWithAI(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId,
+        userId,
         action: "ai_seo_completed",
         status: "INFO",
         message: `SEO généré: ${seo.title.substring(0, 50)}...`,
@@ -93,6 +99,8 @@ async function enrichContentWithAI(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId,
+        userId,
         action: "ai_seo_failed",
         status: "WARNING",
         message: "Génération SEO échouée, utilisation du titre par défaut",
@@ -127,11 +135,17 @@ async function enrichContentWithAI(
     if (existingDocs.length > 0) {
       const links = await findInterlinkingOpportunities(
         htmlContent,
-        existingDocs.map((d) => ({
-          title: d.title,
-          url: d.slug || "",
-          excerpt: d.excerpt || "",
-        })),
+        existingDocs.map(
+          (d: {
+            title: string;
+            slug: string | null;
+            excerpt: string | null;
+          }) => ({
+            title: d.title,
+            url: d.slug || "",
+            excerpt: d.excerpt || "",
+          }),
+        ),
       );
 
       if (links.links.length > 0) {
@@ -139,6 +153,8 @@ async function enrichContentWithAI(
         await prisma.syncLog.create({
           data: {
             documentId,
+            organizationId,
+            userId,
             action: "ai_interlinking_found",
             status: "INFO",
             message: `${links.links.length} opportunités de liens internes détectées`,
@@ -160,6 +176,8 @@ async function enrichContentWithAI(
 async function generateAIImages(
   documentId: string,
   htmlContent: string,
+  organizationId: string,
+  userId: string,
 ): Promise<string | null> {
   const { generateAImage } = await import("./ai");
 
@@ -178,6 +196,8 @@ async function generateAIImages(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId,
+        userId,
         action: "ai_image_generated",
         status: "INFO",
         message: "Image générée via DALL-E 3",
@@ -190,6 +210,8 @@ async function generateAIImages(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId,
+        userId,
         action: "ai_image_failed",
         status: "WARNING",
         message: "Génération d'image IA échouée",
@@ -262,6 +284,8 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId: document.organizationId,
+        userId: document.userId,
         action: "fetch_content_started",
         status: "INFO",
         message: "Récupération du contenu depuis la source...",
@@ -297,6 +321,8 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId: document.organizationId,
+        userId: document.userId,
         action: "fetch_content_completed",
         status: "INFO",
         message: `Contenu récupéré (${content.length} caractères)`,
@@ -307,6 +333,8 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId: document.organizationId,
+        userId: document.userId,
         action: "parsing_html_started",
         status: "INFO",
         message: "Conversion en HTML...",
@@ -336,6 +364,8 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId: document.organizationId,
+        userId: document.userId,
         action: "parsing_html_completed",
         status: "INFO",
         message: "HTML généré avec succès",
@@ -346,6 +376,8 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId: document.organizationId,
+        userId: document.userId,
         action: "ai_enrichment_started",
         status: "INFO",
         message: "Enrichissement IA...",
@@ -356,14 +388,23 @@ export async function performSync(
       documentId,
       htmlContent,
       title,
+      document.organizationId,
+      document.userId,
     );
 
     // Check for AI image generation
-    const aiImageUrl = await generateAIImages(documentId, htmlContent);
+    const aiImageUrl = await generateAIImages(
+      documentId,
+      htmlContent,
+      document.organizationId,
+      document.userId,
+    );
 
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId: document.organizationId,
+        userId: document.userId,
         action: "ai_enrichment_completed",
         status: "INFO",
         message: "Enrichissement IA terminé",
@@ -389,6 +430,8 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId: document.organizationId,
+        userId: document.userId,
         action: "publish_started",
         status: "INFO",
         message: "Publication vers la destination...",
@@ -482,7 +525,10 @@ async function publishToDestination(
   if (!document.destConnector) return;
 
   const rawCredentials = decrypt(document.destConnector.credentials || "");
-  const config = document.destConnector.config || {};
+  const config = (document.destConnector.config || {}) as Record<
+    string,
+    string
+  >;
 
   if (document.destConnector.type === "WORDPRESS") {
     const { createWordPressClient } = await import("./wordpress");

@@ -14,6 +14,7 @@ export interface GhostPost {
   feature_image?: string;
   meta_title?: string;
   meta_description?: string;
+  updated_at?: string;
 }
 
 export interface GhostTag {

@@ -27,10 +27,13 @@ export {
   createCursorParams,
   paginatedResponse,
   cursorResponse,
+  cursorPaginationSchema,
+} from "./pagination";
+
+export type {
   CursorPaginationParams,
   PaginationResult,
   CursorPaginationResult,
-  cursorPaginationSchema,
 } from "./pagination";
 
 // Re-export validations explicitly (paginationSchema also exists in pagination)
