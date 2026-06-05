@@ -14,7 +14,8 @@ const prismaClientSingleton = () => {
   const client = new PrismaClient({ adapter });
 
   // Middleware : chiffrement/déchiffrement transparent des tokens OAuth
-  client.$use(createOAuthEncryptionMiddleware());
+  // eslint-disable-next-line @typescript-eslint/unbound-method
+  (client as any).$use(createOAuthEncryptionMiddleware());
 
   return client;
 };

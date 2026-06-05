@@ -3,7 +3,6 @@
  */
 import { prisma } from "../prisma";
 import { sendEmail } from "../email";
-import { encrypt, decrypt } from "../crypto";
 import { randomBytes } from "crypto";
 import { hash } from "bcrypt";
 
