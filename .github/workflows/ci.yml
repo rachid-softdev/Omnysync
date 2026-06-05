@@ -108,7 +108,18 @@ jobs:
         run: npm ci
 
       - name: Build
+        # Why: Next.js forces NODE_ENV=production during next build, so the
+        # env.ts Zod validation runs its production checks. All required
+        # env vars must be present at build time.
         run: npm run build
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          NEXTAUTH_SECRET: ci-build-secret-not-for-production-min-32-chars!
+          NEXTAUTH_URL: http://localhost:3000
+          GOOGLE_CLIENT_ID: ci-build-id
+          GOOGLE_CLIENT_SECRET: ci-build-secret
+          ENCRYPTION_KEY: ci-build-encryption-key-not-for-production-32+chars
+          ENCRYPTION_SALT: ci-build-salt-not-for-prod-16+
 
   build-docker:
     runs-on: ubuntu-latest
