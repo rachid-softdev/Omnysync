@@ -178,7 +178,33 @@ async function handleWordPressWebhook(
 // Webhook Ghost
 async function handleGhostWebhook(req: NextRequest, connectorId: string): Promise<NextResponse> {
   try {
-    const data = (await req.json()) as unknown as {
+    const body = await req.text()
+    const signature = req.headers.get('x-ghost-signature') || ''
+
+    // Ghost signature format: sha256=<hexdigest>[,sha1=<hexdigest>]
+    const ghostSignature = signature
+      .split(',')
+      .find((part) => part.startsWith('sha256='))
+      ?.replace('sha256=', '')
+
+    const webhook = await prisma.webhookEndpoint.findFirst({
+      where: {
+        connectorId,
+        type: 'GHOST',
+        isActive: true,
+      },
+    })
+
+    if (webhook?.secret && ghostSignature) {
+      const isValid = verifyWebhookSignature(body, ghostSignature, webhook.secret)
+      if (!isValid && process.env.NODE_ENV === 'production') {
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+      }
+    } else if (process.env.NODE_ENV === 'production' && !ghostSignature) {
+      return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
+    }
+
+    const data = JSON.parse(body) as unknown as {
       event?: string
       post?: { id?: string }
     }
@@ -222,7 +248,25 @@ async function handleGhostWebhook(req: NextRequest, connectorId: string): Promis
 // Webhook Webflow (simplified)
 async function handleWebflowWebhook(req: NextRequest, connectorId: string): Promise<NextResponse> {
   try {
-    const data = (await req.json()) as unknown as {
+    const body = await req.text()
+    const signature = req.headers.get('x-webflow-signature') || ''
+
+    const webhook = await prisma.webhookEndpoint.findFirst({
+      where: {
+        connectorId,
+        type: 'WEBFLOW',
+        isActive: true,
+      },
+    })
+
+    if (webhook?.secret) {
+      const isValid = verifyWebhookSignature(body, signature, webhook.secret)
+      if (!isValid && process.env.NODE_ENV === 'production') {
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+      }
+    }
+
+    const data = JSON.parse(body) as unknown as {
       type?: string
       data?: { item?: { id?: string } }
     }
@@ -264,6 +308,32 @@ async function handleWebflowWebhook(req: NextRequest, connectorId: string): Prom
 // Webhook Shopify (simplified)
 async function handleShopifyWebhook(req: NextRequest, connectorId: string): Promise<NextResponse> {
   try {
+    const body = await req.text()
+    const hmacHeader = req.headers.get('x-shopify-hmac-sha256') || ''
+
+    const webhook = await prisma.webhookEndpoint.findFirst({
+      where: {
+        connectorId,
+        type: 'SHOPIFY',
+        isActive: true,
+      },
+    })
+
+    if (webhook?.secret) {
+      // Shopify HMAC is base64-encoded HMAC-SHA256
+      const expected = crypto.createHmac('sha256', webhook.secret).update(body).digest('base64')
+      try {
+        const isValid = crypto.timingSafeEqual(Buffer.from(hmacHeader), Buffer.from(expected))
+        if (!isValid && process.env.NODE_ENV === 'production') {
+          return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+        }
+      } catch {
+        if (process.env.NODE_ENV === 'production') {
+          return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+        }
+      }
+    }
+
     const topic = req.headers.get('x-shopify-topic') || ''
 
     // Shopify webhook topics: article_created, article_updated, article_deleted

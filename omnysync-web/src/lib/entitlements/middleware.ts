@@ -11,6 +11,8 @@
 
 import { getFeatureGateService } from './FeatureGateService'
 import { handleFeatureGateError, FeatureGateError } from './errors'
+import { auth } from '@/lib/auth'
+import { getUserOrgId } from '@/lib/auth/org'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -28,23 +30,17 @@ export type MiddlewareHandler = (
 // ============================================================================
 
 /**
- * Default resolver - looks for x-org-id header
- * In production, this should extract from auth session/JWT
+ * Default resolver - extracts orgId from the auth session
  */
-export function createOrgIdResolver(headerName: string = 'x-org-id'): OrgIdResolver {
-  return async (request: Request): Promise<string | null> => {
-    // Try header first
-    const headerOrgId = request.headers.get(headerName)
-    if (headerOrgId) {
-      return headerOrgId
+export function createOrgIdResolver(_headerName?: string): OrgIdResolver {
+  return async (_request: Request): Promise<string | null> => {
+    try {
+      const session = await auth()
+      if (!session?.user?.id) return null
+      return getUserOrgId(session.user.id)
+    } catch {
+      return null
     }
-
-    // In a real implementation, this would:
-    // 1. Get session from cookies
-    // 2. Extract orgId from session
-    // 3. Validate org belongs to user
-
-    return null
   }
 }
 
@@ -215,7 +211,6 @@ export function consumeFeature(
  */
 export function toExpress(middleware: MiddlewareHandler) {
   return (_featureKey: string) => {
-
     return (
       req: { headers: Record<string, string | undefined> },
       res: unknown,
@@ -237,7 +232,9 @@ export function toExpress(middleware: MiddlewareHandler) {
       ;(middleware as MiddlewareHandler)(mockReq, handler)
         .then((response) => {
           if (response.status >= 400) {
-            ;(res as any).status(response.status).json({ error: 'Feature not available' })
+            ;(res as { status: (code: number) => { json: (body: object) => void } })
+              .status(response.status)
+              .json({ error: 'Feature not available' })
           } else {
             next()
           }
@@ -267,8 +264,16 @@ export function withFeature(featureKey: string) {
     return (async (req: Request) => {
       const featureGate = getFeatureGateService()
 
-      // Get orgId from session (implementation depends on auth setup)
-      const orgId = req.headers.get('x-org-id')
+      // Get orgId from auth session
+      let orgId: string | null = null
+      try {
+        const session = await auth()
+        if (session?.user?.id) {
+          orgId = await getUserOrgId(session.user.id)
+        }
+      } catch {
+        orgId = null
+      }
 
       if (!orgId) {
         return Response.json(
@@ -292,7 +297,17 @@ export function withConsume(featureKey: string, amount: number = 1) {
   return <T extends (req: Request) => Promise<Response>>(handler: T): T => {
     return (async (req: Request) => {
       const featureGate = getFeatureGateService()
-      const orgId = req.headers.get('x-org-id')
+
+      // Get orgId from auth session
+      let orgId: string | null = null
+      try {
+        const session = await auth()
+        if (session?.user?.id) {
+          orgId = await getUserOrgId(session.user.id)
+        }
+      } catch {
+        orgId = null
+      }
 
       if (!orgId) {
         return Response.json(
@@ -316,7 +331,17 @@ export function withLimit(featureKey: string) {
   return <T extends (req: Request) => Promise<Response>>(handler: T): T => {
     return (async (req: Request) => {
       const featureGate = getFeatureGateService()
-      const orgId = req.headers.get('x-org-id')
+
+      // Get orgId from auth session
+      let orgId: string | null = null
+      try {
+        const session = await auth()
+        if (session?.user?.id) {
+          orgId = await getUserOrgId(session.user.id)
+        }
+      } catch {
+        orgId = null
+      }
 
       if (!orgId) {
         return Response.json(
