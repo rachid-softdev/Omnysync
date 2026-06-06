@@ -43,7 +43,7 @@ export async function listAirtableBases(apiKey: string): Promise<AirtableBase[]>
       },
     })
     return data
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch Airtable bases')
   }
 }
@@ -62,7 +62,7 @@ export async function listAirtableTables(apiKey: string, baseId: string): Promis
       }
     )
     return data.tables || []
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch Airtable tables')
   }
 }
@@ -102,7 +102,7 @@ export async function getAirtableRecords(
       },
     })
     return data.records || []
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch Airtable records')
   }
 }
@@ -273,7 +273,7 @@ export async function getAirtableRecordContent(
     throw new Error('Record not found')
   }
 
-  const doc = airtableRecordToDocument(records[0])
+  const doc = airtableRecordToDocument(records[0]!)
 
   return {
     id: actualRecordId,
@@ -319,7 +319,7 @@ export async function createAirtableRecord(
       body: JSON.stringify({ fields }),
     })
     return { id: data.id }
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to create Airtable record')
   }
 }
@@ -347,7 +347,7 @@ export async function updateAirtableRecord(
       }
     )
     return { id: data.id }
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to update Airtable record')
   }
 }
@@ -369,7 +369,7 @@ export async function deleteAirtableRecord(
       },
     })
     return { id: recordId }
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to delete Airtable record')
   }
 }

@@ -5,7 +5,7 @@ import { performSync } from '@/lib/services/sync'
 import { scheduleSync, disableScheduledSync } from '@/lib/services/scheduler'
 import { checkAndIncrementQuota } from '@/lib/auth/subscription'
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
 
   if (!session?.user?.id) {
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     syncFrequency: document.syncFrequency,
     nextSyncAt: document.nextSyncAt,
     lastSyncError: document.lastSyncError,
-    logs: document.syncLogs.map((log) => ({
+    logs: document.syncLogs.map((log: any) => ({
       status: log.status,
       message: log.message,
       createdAt: log.createdAt,
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   })
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
 
   if (!session?.user?.id) {
@@ -124,7 +124,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     })
 
     if (document.sourceConnectorId && document.destConnectorId) {
-      const result = await performSync(id, document.sourceConnectorId, document.destConnectorId)
+      const result = await performSync(
+        id,
+        document.sourceConnectorId,
+        document.destConnectorId,
+        session.user.id
+      )
       return NextResponse.json(result)
     }
 

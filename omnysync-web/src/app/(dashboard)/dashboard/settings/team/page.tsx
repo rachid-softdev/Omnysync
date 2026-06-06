@@ -28,7 +28,6 @@ import {
   UserPlus,
   Mail,
   Shield,
-  MoreVertical,
   Crown,
   User,
   Trash2,

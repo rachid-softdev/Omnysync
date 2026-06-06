@@ -3,12 +3,13 @@
  */
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
-import { encrypt, decrypt } from '@/lib/crypto'
 import { randomBytes } from 'crypto'
+import { hash } from 'bcrypt'
 
 const RESET_TOKEN_EXPIRY_HOURS = 1
 const MAX_RESET_ATTEMPTS = 3
 const RATE_LIMIT_WINDOW_MINUTES = 15
+const BCRYPT_ROUNDS = 12
 
 /**
  * Génère un token de réinitialisation
@@ -22,7 +23,10 @@ export async function createPasswordResetToken(
 
   if (!user) {
     // Ne pas révéler si l'email existe
-    return { success: true, message: 'Si ce compte existe, un email a été envoyé' }
+    return {
+      success: true,
+      message: 'Si ce compte existe, un email a été envoyé',
+    }
   }
 
   // Vérifier le rate limit
@@ -36,7 +40,10 @@ export async function createPasswordResetToken(
   })
 
   if (recentResets >= MAX_RESET_ATTEMPTS) {
-    return { success: false, message: 'Trop de demandes. Réessayez dans 15 minutes' }
+    return {
+      success: false,
+      message: 'Trop de demandes. Réessayez dans 15 minutes',
+    }
   }
 
   // Générer token sécurisé
@@ -76,7 +83,10 @@ export async function createPasswordResetToken(
     `,
   })
 
-  return { success: true, message: 'Si ce compte existe, un email a été envoyé' }
+  return {
+    success: true,
+    message: 'Si ce compte existe, un email a été envoyé',
+  }
 }
 
 /**
@@ -106,7 +116,8 @@ export async function validateResetToken(
 }
 
 /**
- * Réinitialise le mot de passe
+ * Réinitialise le mot de passe — hash et stocke le nouveau mot de passe,
+ * et invalide toutes les sessions existantes.
  */
 export async function resetPassword(
   token: string,
@@ -118,9 +129,22 @@ export async function resetPassword(
     return { success: false, error: validation.error }
   }
 
-  // TODO: Hasher le mot de passe avec bcrypt et stocker
-  // Pour l'instant, les mots de passe sont gérés via OAuth Google
-  // Cette fonction serait utilisée si on ajoute password auth
+  // Hasher le mot de passe avec bcrypt
+  const hashedPassword = await hash(newPassword, BCRYPT_ROUNDS)
+
+  // Mettre à jour le mot de passe et la date de changement
+  await prisma.user.update({
+    where: { id: validation.userId },
+    data: {
+      password: hashedPassword,
+      passwordChangedAt: new Date(),
+    },
+  })
+
+  // Invalider toutes les sessions existantes (sauf celle en cours)
+  await prisma.session.deleteMany({
+    where: { userId: validation.userId },
+  })
 
   // Marquer le token comme utilisé
   await prisma.passwordReset.update({
@@ -131,7 +155,13 @@ export async function resetPassword(
   // Créer un audit log
   await prisma.auditLog.create({
     data: {
-      organizationId: '', // Pas d'organisation pour password reset
+      organizationId:
+        (
+          await prisma.userOrganization.findFirst({
+            where: { userId: validation.userId },
+            orderBy: { role: 'asc' },
+          })
+        )?.organizationId || 'system',
       userId: validation.userId,
       action: 'password.reset',
       targetType: 'user',

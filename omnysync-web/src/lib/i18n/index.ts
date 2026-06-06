@@ -13,5 +13,5 @@ export function getLocaleFromHeaders(headers: Headers): string {
 }
 
 export function t(key: string, locale: string = 'en'): string {
-  return translations[locale]?.[key] || translations.en[key] || key
+  return translations[locale]?.[key] || translations.en?.[key] || key
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { sendEmail } from '../email'
 
 describe('Email Service', () => {
@@ -25,7 +25,7 @@ describe('Email Service', () => {
 
       // Should log a message about sending (either "Would send" or "Resend not available")
       expect(consoleLogSpy).toHaveBeenCalled()
-      const logCall = consoleLogSpy.mock.calls[0][0] as string
+      const logCall = consoleLogSpy.mock.calls[0]![0] as string
       expect(logCall).toContain('user@example.com')
       expect(logCall).toContain('Test Subject')
 

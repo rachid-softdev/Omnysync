@@ -10,7 +10,7 @@
  * Simplified implementation: graceful by default (per user request)
  */
 
-import { DowngradePreview, DowngradeStrategy } from "./types";
+import type { DowngradePreview, DowngradeStrategy } from "./types";
 import { getEntitlementRepository } from "./EntitlementRepository";
 import { getFeatureGateService } from "./FeatureGateService";
 import { DEFAULT_DOWNGRADE_STRATEGY } from "./constants";

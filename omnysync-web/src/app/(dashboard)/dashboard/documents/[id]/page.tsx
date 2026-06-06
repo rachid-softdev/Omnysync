@@ -1,5 +1,4 @@
 import { auth } from '@/lib/auth'
-import { t } from '@/lib/i18n'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -7,19 +6,16 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+
 import {
   ArrowLeft,
   RefreshCw,
   Trash2,
   Edit,
-  Eye,
   Calendar,
   Clock,
   CheckCircle,
   AlertCircle,
-  ExternalLink,
-  Settings,
 } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -77,13 +73,6 @@ export default async function DocumentDetailPage({ params }: PageProps) {
     SYNCING: 'En cours',
     SYNCED: 'Synchronisé',
     FAILED: 'Échec',
-  }
-
-  const syncStatusVariants: Record<string, 'secondary' | 'default' | 'destructive' | 'outline'> = {
-    NOT_SYNCED: 'secondary',
-    SYNCING: 'default',
-    SYNCED: 'outline',
-    FAILED: 'destructive',
   }
 
   const connectorNames: Record<string, string> = {
@@ -322,7 +311,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 <p className="text-sm text-muted-foreground mb-1">Mots-clés</p>
                 <div className="flex flex-wrap gap-2">
                   {document.seoKeywords && document.seoKeywords.length > 0 ? (
-                    document.seoKeywords.map((keyword, index) => (
+                    document.seoKeywords.map((keyword: string, index: number) => (
                       <Badge key={index} variant="secondary">
                         {keyword}
                       </Badge>
@@ -349,7 +338,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {document.syncLogs.map((log) => (
+                   {document.syncLogs.map((log: any) => (
                     <div
                       key={log.id}
                       className="flex items-center justify-between p-3 rounded-lg border"

@@ -40,21 +40,21 @@ const validEnv = {
 describe('env validation schema', () => {
   it('throws error when DATABASE_URL is missing', () => {
     const env = { ...validEnv }
-    delete env.DATABASE_URL
+    delete (env as any).DATABASE_URL
     const result = envSchema.safeParse(env)
     expect(result.success).toBe(false)
   })
 
   it('throws error when NEXTAUTH_SECRET is missing', () => {
     const env = { ...validEnv }
-    delete env.NEXTAUTH_SECRET
+    delete (env as any).NEXTAUTH_SECRET
     const result = envSchema.safeParse(env)
     expect(result.success).toBe(false)
   })
 
   it('throws error when NEXTAUTH_URL is missing', () => {
     const env = { ...validEnv }
-    delete env.NEXTAUTH_URL
+    delete (env as any).NEXTAUTH_URL
     const result = envSchema.safeParse(env)
     expect(result.success).toBe(false)
   })
@@ -67,14 +67,14 @@ describe('env validation schema', () => {
 
   it('throws error when GOOGLE_CLIENT_ID is missing', () => {
     const env = { ...validEnv }
-    delete env.GOOGLE_CLIENT_ID
+    delete (env as any).GOOGLE_CLIENT_ID
     const result = envSchema.safeParse(env)
     expect(result.success).toBe(false)
   })
 
   it('throws error when GOOGLE_CLIENT_SECRET is missing', () => {
     const env = { ...validEnv }
-    delete env.GOOGLE_CLIENT_SECRET
+    delete (env as any).GOOGLE_CLIENT_SECRET
     const result = envSchema.safeParse(env)
     expect(result.success).toBe(false)
   })

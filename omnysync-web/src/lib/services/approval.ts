@@ -166,7 +166,7 @@ export async function respondToApproval(
     const userId = session?.user?.id || 'anonymous'
 
     // Mettre à jour la demande
-    const updatedApproval = await prisma.approvalRequest.update({
+    await prisma.approvalRequest.update({
       where: { id: approval.id },
       data: {
         status: response.action === 'APPROVED' ? 'APPROVED' : 'REJECTED',

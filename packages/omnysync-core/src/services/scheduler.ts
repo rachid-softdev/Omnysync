@@ -1,4 +1,4 @@
-import { prisma } from "../../prisma";
+import { prisma } from "../prisma";
 import { performSync } from "./sync";
 
 // Note: QStash scheduling requires the serverless SDK or direct HTTP calls
@@ -134,7 +134,12 @@ export async function runScheduledSyncs(): Promise<{
   for (const doc of scheduledDocs) {
     try {
       if (doc.sourceConnectorId && doc.destConnectorId) {
-        await performSync(doc.id, doc.sourceConnectorId, doc.destConnectorId);
+        await performSync(
+          doc.id,
+          doc.sourceConnectorId,
+          doc.destConnectorId,
+          doc.userId,
+        );
 
         // Planifier le prochain sync
         const frequency = doc.syncFrequency as "DAILY" | "WEEKLY" | "MONTHLY";
@@ -222,6 +227,7 @@ export async function handleScheduledSyncRun(
       documentId,
       doc.sourceConnectorId,
       doc.destConnectorId,
+      doc.userId,
     );
 
     // Planifier le prochain sync

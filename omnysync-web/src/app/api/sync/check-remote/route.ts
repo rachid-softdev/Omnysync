@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const remoteData = await checkRemoteChanges(documentId)
+    const remoteData = await checkRemoteChanges(documentId, session.user.id)
     return NextResponse.json({ remoteData })
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })

@@ -3,8 +3,8 @@
  * Omnysync - 2026
  */
 
-import { prisma } from "../../prisma";
-import { cache } from "../../cache";
+import { prisma } from "../prisma";
+import { cache } from "../cache";
 
 // ============================================================================
 // TYPES
@@ -28,6 +28,7 @@ export type Permission =
   // Sync
   | "sync:read"
   | "sync:create"
+  | "sync:update"
   | "sync:run"
   | "sync:delete"
 

@@ -6,8 +6,8 @@
  * Designed for dependency injection and testability
  */
 
-import { prisma } from "../../prisma";
-import {
+import { prisma } from "../prisma";
+import type {
   FeatureType,
   OverrideScope,
   SubscriptionStatus,

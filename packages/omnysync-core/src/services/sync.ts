@@ -1,4 +1,4 @@
-import { prisma } from "../../prisma";
+import { prisma } from "../prisma";
 import {
   ERR_DOC_NOT_FOUND,
   ERR_DOC_NOT_PUBLISHED,
@@ -15,12 +15,29 @@ import { createWordPressClient } from "./wordpress";
 import { createGhostClient } from "./ghost";
 import { createWebflowClient } from "./webflow";
 import { createShopifyClient } from "./shopify";
+import { requireDocumentAccess } from "./authz";
+import { sanitizeErrorMessage } from "./sanitize";
 
 export interface SyncResult {
   success: boolean;
   error?: string;
   documentId: string;
   changesDetected?: boolean;
+}
+
+interface PublishDocument {
+  id: string;
+  title: string;
+  slug: string | null;
+  organizationId: string;
+  userId: string;
+  version: number;
+  destConnector: {
+    id: string;
+    type: string;
+    credentials: string | null;
+    config: Record<string, unknown> | null;
+  } | null;
 }
 
 /**
@@ -31,6 +48,8 @@ async function enrichContentWithAI(
   documentId: string,
   htmlContent: string,
   title: string,
+  organizationId: string,
+  userId: string,
 ): Promise<{
   seoTitle: string;
   seoDescription: string;
@@ -52,6 +71,8 @@ async function enrichContentWithAI(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId,
+        userId,
         action: "ai_seo_started",
         status: "INFO",
         message: "Génération des métadonnées SEO...",
@@ -66,6 +87,8 @@ async function enrichContentWithAI(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId,
+        userId,
         action: "ai_seo_completed",
         status: "INFO",
         message: `SEO généré: ${seo.title.substring(0, 50)}...`,
@@ -76,6 +99,8 @@ async function enrichContentWithAI(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId,
+        userId,
         action: "ai_seo_failed",
         status: "WARNING",
         message: "Génération SEO échouée, utilisation du titre par défaut",
@@ -110,11 +135,17 @@ async function enrichContentWithAI(
     if (existingDocs.length > 0) {
       const links = await findInterlinkingOpportunities(
         htmlContent,
-        existingDocs.map((d) => ({
-          title: d.title,
-          url: d.slug || "",
-          excerpt: d.excerpt || "",
-        })),
+        existingDocs.map(
+          (d: {
+            title: string;
+            slug: string | null;
+            excerpt: string | null;
+          }) => ({
+            title: d.title,
+            url: d.slug || "",
+            excerpt: d.excerpt || "",
+          }),
+        ),
       );
 
       if (links.links.length > 0) {
@@ -122,6 +153,8 @@ async function enrichContentWithAI(
         await prisma.syncLog.create({
           data: {
             documentId,
+            organizationId,
+            userId,
             action: "ai_interlinking_found",
             status: "INFO",
             message: `${links.links.length} opportunités de liens internes détectées`,
@@ -143,6 +176,8 @@ async function enrichContentWithAI(
 async function generateAIImages(
   documentId: string,
   htmlContent: string,
+  organizationId: string,
+  userId: string,
 ): Promise<string | null> {
   const { generateAImage } = await import("./ai");
 
@@ -161,6 +196,8 @@ async function generateAIImages(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId,
+        userId,
         action: "ai_image_generated",
         status: "INFO",
         message: "Image générée via DALL-E 3",
@@ -173,6 +210,8 @@ async function generateAIImages(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId,
+        userId,
         action: "ai_image_failed",
         status: "WARNING",
         message: "Génération d'image IA échouée",
@@ -186,6 +225,7 @@ export async function performSync(
   documentId: string,
   sourceConnectorId: string,
   destConnectorId: string,
+  userId: string,
 ): Promise<SyncResult> {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
@@ -199,10 +239,30 @@ export async function performSync(
     return { success: false, error: ERR_DOC_NOT_FOUND, documentId };
   }
 
-  await prisma.document.update({
-    where: { id: documentId },
-    data: { syncStatus: "SYNCING" },
+  // Vérifier les droits d'accès
+  await requireDocumentAccess(documentId, userId);
+
+  // Optimistic locking: increment version atomically
+  const updated = await prisma.document.updateMany({
+    where: {
+      id: documentId,
+      syncStatus: { not: "SYNCING" },
+      version: document.version,
+    },
+    data: {
+      syncStatus: "SYNCING",
+      version: { increment: 1 },
+    },
   });
+
+  if (updated.count === 0) {
+    return {
+      success: false,
+      error:
+        "Document is currently being synced by another process. Please try again.",
+      documentId,
+    };
+  }
 
   // Log start of sync
   await prisma.syncLog.create({
@@ -224,6 +284,8 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId: document.organizationId,
+        userId: document.userId,
         action: "fetch_content_started",
         status: "INFO",
         message: "Récupération du contenu depuis la source...",
@@ -259,6 +321,8 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId: document.organizationId,
+        userId: document.userId,
         action: "fetch_content_completed",
         status: "INFO",
         message: `Contenu récupéré (${content.length} caractères)`,
@@ -269,6 +333,8 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId: document.organizationId,
+        userId: document.userId,
         action: "parsing_html_started",
         status: "INFO",
         message: "Conversion en HTML...",
@@ -298,6 +364,8 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId: document.organizationId,
+        userId: document.userId,
         action: "parsing_html_completed",
         status: "INFO",
         message: "HTML généré avec succès",
@@ -308,6 +376,8 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId: document.organizationId,
+        userId: document.userId,
         action: "ai_enrichment_started",
         status: "INFO",
         message: "Enrichissement IA...",
@@ -318,14 +388,23 @@ export async function performSync(
       documentId,
       htmlContent,
       title,
+      document.organizationId,
+      document.userId,
     );
 
     // Check for AI image generation
-    const aiImageUrl = await generateAIImages(documentId, htmlContent);
+    const aiImageUrl = await generateAIImages(
+      documentId,
+      htmlContent,
+      document.organizationId,
+      document.userId,
+    );
 
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId: document.organizationId,
+        userId: document.userId,
         action: "ai_enrichment_completed",
         status: "INFO",
         message: "Enrichissement IA terminé",
@@ -351,6 +430,8 @@ export async function performSync(
     await prisma.syncLog.create({
       data: {
         documentId,
+        organizationId: document.organizationId,
+        userId: document.userId,
         action: "publish_started",
         status: "INFO",
         message: "Publication vers la destination...",
@@ -381,13 +462,15 @@ export async function performSync(
     });
 
     // Send success email
-    const user = await prisma.user.findUnique({
-      where: { id: document.userId },
-    });
-    if (user?.email) {
-      sendSyncCompleteEmail(user.email, document.title, true).catch(
-        console.error,
-      );
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: document.userId },
+      });
+      if (user?.email) {
+        await sendSyncCompleteEmail(user.email, document.title, true);
+      }
+    } catch (emailError) {
+      console.error("Failed to send sync complete email:", emailError);
     }
 
     return {
@@ -398,7 +481,10 @@ export async function performSync(
   } catch (error) {
     await prisma.document.update({
       where: { id: documentId },
-      data: { syncStatus: "FAILED", lastSyncError: (error as Error).message },
+      data: {
+        syncStatus: "FAILED",
+        lastSyncError: sanitizeErrorMessage(error),
+      },
     });
 
     await prisma.syncLog.create({
@@ -408,18 +494,20 @@ export async function performSync(
         documentId,
         action: "sync_failed",
         status: "ERROR",
-        message: (error as Error).message,
+        message: sanitizeErrorMessage(error),
       },
     });
 
     // Send failure email
-    const user = await prisma.user.findUnique({
-      where: { id: document.userId },
-    });
-    if (user?.email) {
-      sendSyncCompleteEmail(user.email, document.title, false).catch(
-        console.error,
-      );
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: document.userId },
+      });
+      if (user?.email) {
+        await sendSyncCompleteEmail(user.email, document.title, false);
+      }
+    } catch (emailError) {
+      console.error("Failed to send sync failure email:", emailError);
     }
 
     return {
@@ -431,14 +519,16 @@ export async function performSync(
 }
 
 async function publishToDestination(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  document: any,
+  document: PublishDocument,
   htmlContent: string,
 ) {
   if (!document.destConnector) return;
 
   const rawCredentials = decrypt(document.destConnector.credentials || "");
-  const config = document.destConnector.config || {};
+  const config = (document.destConnector.config || {}) as Record<
+    string,
+    string
+  >;
 
   if (document.destConnector.type === "WORDPRESS") {
     const { createWordPressClient } = await import("./wordpress");
@@ -590,6 +680,7 @@ async function publishToDestination(
 
 export async function detectAndSyncChanges(
   documentId: string,
+  userId: string,
 ): Promise<SyncResult> {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
@@ -602,6 +693,9 @@ export async function detectAndSyncChanges(
   if (!document) {
     return { success: false, error: ERR_DOC_NOT_FOUND, documentId };
   }
+
+  // Vérifier les droits d'accès
+  await requireDocumentAccess(documentId, userId);
 
   if (document.status !== "PUBLISHED") {
     return { success: false, error: ERR_DOC_NOT_PUBLISHED, documentId };
@@ -657,6 +751,7 @@ export async function detectAndSyncChanges(
       documentId,
       document.sourceConnectorId,
       document.destConnectorId,
+      userId,
     );
   } catch (error) {
     return {
@@ -667,7 +762,7 @@ export async function detectAndSyncChanges(
   }
 }
 
-export async function checkRemoteChanges(documentId: string) {
+export async function checkRemoteChanges(documentId: string, userId: string) {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
     include: {
@@ -676,6 +771,9 @@ export async function checkRemoteChanges(documentId: string) {
   });
 
   if (!document || !document.destConnector) return null;
+
+  // Vérifier les droits d'accès
+  await requireDocumentAccess(documentId, userId);
 
   const credentials = decrypt(document.destConnector.credentials || "");
   const config = (document.destConnector.config || {}) as Record<

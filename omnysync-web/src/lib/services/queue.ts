@@ -203,6 +203,7 @@ export async function enqueueSyncJob(
   documentId: string,
   sourceConnectorId: string,
   destConnectorId: string,
+  userId: string,
   options?: { delay?: number; priority?: number }
 ) {
   return enqueueJob(
@@ -213,6 +214,7 @@ export async function enqueueSyncJob(
         documentId,
         sourceConnectorId,
         destConnectorId,
+        userId,
       },
       priority: options?.priority,
     },
@@ -257,12 +259,13 @@ export async function enqueueSEOProcessing(documentId: string) {
   })
 }
 
-export async function enqueueChangeDetection(documentId: string) {
+export async function enqueueChangeDetection(documentId: string, userId: string) {
   return enqueueJob({
     id: '',
     type: 'detect_changes',
     payload: {
       documentId,
+      userId,
     },
   })
 }

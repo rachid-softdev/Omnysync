@@ -17,23 +17,23 @@
  * - invalidateCache(orgId) → Promise<void>
  */
 
-import {
+import type {
   EntitlementMap,
   DebugTrace,
   ConsumeResult,
   ResolveSource,
   FeatureType,
   UsageInfo,
-  OverrideData,
+  Json,
 } from './types'
-import { getEntitlementRepository, IEntitlementRepository } from './EntitlementRepository'
-import { getCacheService, CacheService } from './CacheService'
-import { getExperimentService, ExperimentService } from './ExperimentService'
-import { DEFAULT_PLAN, ACTIVE_SUBSCRIPTION_STATUSES } from './constants'
+import type { ExperimentService } from './ExperimentService'
+import { getEntitlementRepository } from './EntitlementRepository'
+import type { IEntitlementRepository, OverrideData } from './EntitlementRepository'
+import { getCacheService } from './CacheService'
+import type { CacheService } from './CacheService'
 import {
   FeatureNotAvailableError,
   LimitReachedError,
-  SubscriptionExpiredError,
   InvalidFeatureError,
 } from './errors'
 
@@ -50,12 +50,10 @@ export interface FeatureGateConfig {
 export class FeatureGateService {
   private repo: IEntitlementRepository
   private cache: CacheService
-  private experiment: ExperimentService
 
   constructor(config: FeatureGateConfig = {}) {
     this.repo = config.repository ?? getEntitlementRepository()
     this.cache = config.cacheService ?? getCacheService()
-    this.experiment = config.experimentService ?? getExperimentService()
   }
 
   // ============================================================================
@@ -167,7 +165,7 @@ export class FeatureGateService {
     }
 
     // Atomically consume
-    const result = await this.repo.consumeUsage(orgId, featureKey, amount)
+    await this.repo.consumeUsage(orgId, featureKey, amount)
 
     // Get updated usage
     const updatedUsage = await this.getUsage(orgId, featureKey)
@@ -217,8 +215,7 @@ export class FeatureGateService {
     const resolved = await this.resolveFeatureValue(
       orgId,
       featureKey,
-      feature.type,
-      true // Include debug info
+      feature.type
     )
 
     const subscription = await this.repo.getActiveSubscription(orgId)
@@ -230,10 +227,10 @@ export class FeatureGateService {
       featureType: feature.type,
       overrideId: resolved.override?.id,
       overrideScope: resolved.override?.scope,
-      overrideExpiresAt: resolved.override?.expiresAt,
+      overrideExpiresAt: resolved.override?.expiresAt ?? undefined,
       planKey: resolved.planKey,
       planLimit: resolved.limitValue ?? undefined,
-      defaultConfig: feature.defaultConfig ?? undefined,
+      defaultConfig: (feature.defaultConfig ?? undefined) as Json | undefined,
       subscriptionStatus: subscription?.status,
       orgId,
     }
@@ -255,8 +252,7 @@ export class FeatureGateService {
   private async resolveFeatureValue(
     orgId: string,
     featureKey: string,
-    featureType: FeatureType,
-    includeDebug: boolean = false
+    featureType: FeatureType
   ): Promise<{
     value: boolean | number | null
     source: ResolveSource
@@ -348,9 +344,9 @@ export class FeatureGateService {
       }
     }
 
-    // Fallback
+    // Fallback (dead code: all FeatureType values are handled above)
     return {
-      value: featureType === 'LIMIT' ? 0 : false,
+      value: false,
       source: 'fallback',
     }
   }

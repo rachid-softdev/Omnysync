@@ -1,4 +1,4 @@
-import { prisma } from "../../prisma";
+import { prisma } from "../prisma";
 import { encrypt, decrypt } from "../crypto";
 import { fetchWithRetry } from "../http";
 import { ERR_FETCH_CONTENT } from "../errors";
@@ -34,6 +34,12 @@ export interface ContentfulEntry {
   createdAt: string;
   updatedAt: string;
   fields: Record<string, unknown>;
+}
+
+/** Raw Contentful API response format for entries */
+interface RawContentfulEntry {
+  sys?: { id?: string; createdAt?: string; updatedAt?: string };
+  fields?: Record<string, unknown>;
 }
 
 /**
@@ -98,7 +104,7 @@ export async function listContentfulEntries(
   });
 
   try {
-    const data = await fetchWithRetry<{ items: ContentfulEntry[] }>(
+    const data = await fetchWithRetry<{ items: RawContentfulEntry[] }>(
       `${CONTENTFUL_CDN}/spaces/${spaceId}/entries?${params}`,
       {
         headers: {
@@ -109,11 +115,11 @@ export async function listContentfulEntries(
 
     return (data.items || []).map((entry) => ({
       id: entry.sys?.id || "",
-      title: entry.fields?.title || entry.fields?.name || "Untitled",
+      title: (entry.fields?.title as string) || (entry.fields?.name as string) || "Untitled",
       content: JSON.stringify(entry.fields, null, 2),
       createdAt: entry.sys?.createdAt || "",
       updatedAt: entry.sys?.updatedAt || "",
-      fields: entry.fields || {},
+      fields: (entry.fields as Record<string, unknown>) || {},
     }));
   } catch (error) {
     throw new APIError(ERR_FETCH_CONTENT, "Failed to fetch entries");

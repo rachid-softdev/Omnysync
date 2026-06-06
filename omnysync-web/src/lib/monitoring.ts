@@ -106,11 +106,11 @@ export async function withMonitoring<T>(
 
   try {
     const result = await fn()
-    span.setStatus('ok')
+    span.setStatus('ok' as any)
     return result
   } catch (error) {
-    span.setStatus('internal_error')
-    span.setData('error', (error as Error).message)
+    span.setStatus('internal_error' as any)
+    span.setAttribute('error', (error as Error).message)
     captureError(error as Error, options.extra)
     throw error
   } finally {

@@ -30,6 +30,7 @@ export type Permission =
   | 'sync:read'
   | 'sync:create'
   | 'sync:run'
+  | 'sync:update'
   | 'sync:delete'
 
   // Team
@@ -84,6 +85,7 @@ const rolePermissions: Record<Role, Permission[]> = {
     'sync:read',
     'sync:create',
     'sync:run',
+    'sync:update',
     'sync:delete',
     // Team
     'team:read',
@@ -127,6 +129,7 @@ const rolePermissions: Record<Role, Permission[]> = {
     'sync:read',
     'sync:create',
     'sync:run',
+    'sync:update',
     'sync:delete',
     // Team
     'team:read',
@@ -224,14 +227,14 @@ export async function hasPermission(
   // Cache pendant 5 minutes
   const cacheKey = `perm:${userId}:${organizationId}:${permission}`
 
-  return cache.getOrSet(
-    cacheKey,
-    async () => {
-      const permissions = rolePermissions[role]
-      return permissions.includes(permission)
-    },
-    5 * 60 * 1000
-  )
+  const cached = await cache.get<boolean>(cacheKey)
+  if (cached !== null) return cached
+
+  const permissions = rolePermissions[role]
+  const result = permissions.includes(permission)
+
+  await cache.set(cacheKey, result, { ttl: 5 * 60 })
+  return result
 }
 
 /**

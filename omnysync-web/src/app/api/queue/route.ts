@@ -1,9 +1,21 @@
+import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { performSync, detectAndSyncChanges } from '@/lib/services/sync'
 import { generateAImage, generateSEO } from '@/lib/services/ai'
 import { uploadAllImages } from '@/lib/services/image-upload'
 import { prisma } from '@/lib/prisma'
 import { processJobWithRetry, isJobCompleted, markJobCompleted } from '@/lib/services/queue'
+
+function timingSafeCompare(a: string, b: string): boolean {
+  try {
+    const bufA = Buffer.from(a)
+    const bufB = Buffer.from(b)
+    if (bufA.length !== bufB.length) return false
+    return crypto.timingSafeEqual(bufA, bufB)
+  } catch {
+    return false
+  }
+}
 
 function verifyQStashSignature(req: NextRequest): boolean {
   // In development, allow unsigned requests for testing
@@ -26,7 +38,16 @@ function verifyQStashSignature(req: NextRequest): boolean {
     return false
   }
 
-  return signature === currentKey || signature === nextKey
+  // Use timingSafeEqual to prevent timing attacks
+  if (currentKey && timingSafeCompare(signature, currentKey)) {
+    return true
+  }
+
+  if (nextKey && timingSafeCompare(signature, nextKey)) {
+    return true
+  }
+
+  return false
 }
 
 export async function POST(req: NextRequest) {
@@ -49,16 +70,19 @@ export async function POST(req: NextRequest) {
 
     switch (type) {
       case 'sync_document': {
-        const { documentId, sourceConnectorId, destConnectorId } = payload
+        const { userId } = payload
         const result = await processJobWithRetry(job, async (j) => {
           return await performSync(
             j.payload.documentId as string,
             j.payload.sourceConnectorId as string,
-            j.payload.destConnectorId as string
+            j.payload.destConnectorId as string,
+            userId as string
           )
         })
         // Upload images after sync (fire and forget)
-        uploadAllImages(documentId).catch(console.error)
+        if (userId) {
+          uploadAllImages(job.payload.documentId as string, userId as string).catch(console.error)
+        }
 
         // Mark as completed after successful processing
         if (idempotencyKey) {
@@ -68,9 +92,9 @@ export async function POST(req: NextRequest) {
       }
 
       case 'detect_changes': {
-        const { documentId } = payload
+        const { userId } = payload
         const result = await processJobWithRetry(job, async (j) => {
-          return await detectAndSyncChanges(j.payload.documentId as string)
+          return await detectAndSyncChanges(j.payload.documentId as string, userId as string)
         })
 
         if (idempotencyKey) {
@@ -107,7 +131,6 @@ export async function POST(req: NextRequest) {
       }
 
       case 'generate_ai_image': {
-        const { documentId, prompt } = payload
         const result = await processJobWithRetry(job, async (j) => {
           const imageUrl = await generateAImage(j.payload.prompt as string)
 

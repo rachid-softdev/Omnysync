@@ -3,7 +3,7 @@
  * Omnysync - 2026
  */
 
-import { prisma } from "../../prisma";
+import { prisma } from "../prisma";
 import { auditApproval } from "../audit";
 import { randomBytes } from "crypto";
 
