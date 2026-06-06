@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getEntitlementRepository } from '@/lib/entitlements/EntitlementRepository'
 import { prisma } from '@/lib/prisma'
-import { FeatureType } from '@/lib/entitlements/types'
+import type { FeatureType } from '@/lib/entitlements/types'
 import { PAGINATION_DEFAULTS } from '@/lib/entitlements/constants'
 
 export const runtime = 'nodejs'

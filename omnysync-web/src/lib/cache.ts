@@ -128,11 +128,9 @@ export function withCache<T extends (...args: unknown[]) => Promise<unknown>>(
  * Hook pour utiliser le cache dans les composants React (côté client)
  */
 export function useCachedFetch<T>(
-  key: string,
   fetchFn: () => Promise<T>,
-  options: CacheOptions = {}
+  _options: CacheOptions = {}
 ) {
-  const { ttl = DEFAULT_TTL } = options
 
   // Implémentation simple - en production, utiliser SWR ou React Query
   return {

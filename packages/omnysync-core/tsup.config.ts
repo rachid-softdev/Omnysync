@@ -30,10 +30,10 @@ export default defineConfig({
     "services/contentful": "src/services/contentful.ts",
   },
   format: ["esm", "cjs"],
-  // DTS désactivé temporairement : la base de code a des erreurs préexistantes
-  // dans sync.ts que les flags stricts révèlent.
-  // Réactiver après refactoring de sync.ts, scheduler.ts, queue.ts
-  // Utiliser `tsc --noEmit --project tsconfig.strict.json` pour vérifier le typage
+  // DTS désactivé temporairement : le schéma Prisma a des erreurs (modèles en doublon,
+  // champs manquants) qui empêchent `prisma generate`, donc le type-check DTS échoue
+  // sur tous les fichiers qui dépendent de @prisma/client.
+  // Le type-check strict est fait via `tsconfig.strict.json` avec `tsc --noEmit`.
   dts: false,
   splitting: false,
   sourcemap: true,

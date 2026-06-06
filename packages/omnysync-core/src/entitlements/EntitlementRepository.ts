@@ -7,7 +7,7 @@
  */
 
 import { prisma } from "../prisma";
-import {
+import type {
   FeatureType,
   OverrideScope,
   SubscriptionStatus,

@@ -1,4 +1,4 @@
-import type { Config } from '@omnysync/config/tailwind'
+import type { Config } from 'tailwindcss'
 import { baseConfig } from '@omnysync/config/tailwind'
 
 export default {

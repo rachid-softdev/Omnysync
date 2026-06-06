@@ -88,7 +88,7 @@ export async function uploadImageToDestination(
     if (document.destConnector.type === 'WORDPRESS') {
       const { createWordPressClient } = await import('./wordpress')
       const creds = Buffer.from(rawCredentials, 'base64').toString().split(':')
-      const client = createWordPressClient(config.siteUrl, creds[0], creds[1])
+      const client = createWordPressClient(config.siteUrl as string, creds[0]!, creds[1]!)
 
       const blob = new Blob([buffer], { type: 'image/png' })
       const result = await client.uploadMedia({ file: blob, title: filename })
@@ -97,7 +97,7 @@ export async function uploadImageToDestination(
 
     if (document.destConnector.type === 'GHOST') {
       const { createGhostClient } = await import('./ghost')
-      const client = createGhostClient(config.siteUrl, rawCredentials)
+      const client = createGhostClient(config.siteUrl as string, rawCredentials)
 
       const blob = new Blob([buffer], { type: 'image/png' })
       const result = await client.uploadImage({ file: blob, filename })
@@ -106,7 +106,7 @@ export async function uploadImageToDestination(
 
     if (document.destConnector.type === 'WEBFLOW') {
       const { createWebflowClient } = await import('./webflow')
-      const client = createWebflowClient(rawCredentials, config.siteId)
+      const client = createWebflowClient(rawCredentials, config.siteId as string)
 
       const blob = new Blob([buffer], { type: 'image/png' })
       const result = await client.uploadMedia(blob, filename)
@@ -115,7 +115,7 @@ export async function uploadImageToDestination(
 
     if (document.destConnector.type === 'SHOPIFY') {
       const { createShopifyClient } = await import('./shopify')
-      const client = createShopifyClient(config.shopDomain, rawCredentials)
+      const client = createShopifyClient(config.shopDomain as string, rawCredentials)
 
       const base64 = buffer.toString('base64')
       const result = await client.uploadImage({ attachment: base64, filename })

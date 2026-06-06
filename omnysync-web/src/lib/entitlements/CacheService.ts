@@ -10,8 +10,8 @@
  */
 
 import { Redis } from '@upstash/redis'
-import { CACHE_CONFIG, DEFAULT_PLAN } from './constants'
-import { EntitlementMap } from './types'
+import { CACHE_CONFIG } from './constants'
+import type { EntitlementMap } from './types'
 
 // ============================================================================
 // TYPES
@@ -258,10 +258,10 @@ export class CacheService {
     if (!this.redis || this.subscribed) return
 
     try {
-      this.subscriber = this.redis.duplicate()
-      await this.subscriber.subscribe(CACHE_CONFIG.INVALIDATION_CHANNEL)
+      this.subscriber = (this.redis as any).duplicate()
+      await (this.subscriber as any).subscribe(CACHE_CONFIG.INVALIDATION_CHANNEL)
 
-      this.subscriber.on('message', (_channel, message) => {
+      ;(this.subscriber as any).on('message', (_channel: string, message: string) => {
         try {
           const data = JSON.parse(message) as InvalidationMessage
           if (data.type === 'invalidate') {

@@ -8,13 +8,8 @@ import {
 } from '@/lib/errors'
 import { decrypt } from '@/lib/crypto'
 import { sendSyncCompleteEmail } from '@/lib/email'
-import { detectContentChanges } from './ai'
 import { getGoogleDocContent } from './google-docs'
 import { getNotionPageContent } from './notion'
-import { createWordPressClient } from './wordpress'
-import { createGhostClient } from './ghost'
-import { createWebflowClient } from './webflow'
-import { createShopifyClient } from './shopify'
 import { requireDocumentAccess } from './authz'
 import { sanitizeErrorMessage } from './sanitize'
 
@@ -167,7 +162,7 @@ async function generateAIImages(documentId: string, htmlContent: string): Promis
   }
 
   try {
-    const prompt = matches[0][1] // Get first prompt
+    const prompt = matches[0]![1]! // Get first prompt
     const imageUrl = await generateAImage(prompt)
 
     await prisma.syncLog.create({
@@ -196,8 +191,8 @@ async function generateAIImages(documentId: string, htmlContent: string): Promis
 
 export async function performSync(
   documentId: string,
-  sourceConnectorId: string,
-  destConnectorId: string,
+  _sourceConnectorId: string,
+  _destConnectorId: string,
   userId: string
 ): Promise<SyncResult> {
   const document = await prisma.document.findUnique({
@@ -449,12 +444,12 @@ async function publishToDestination(document: PublishDocument, htmlContent: stri
   if (!document.destConnector) return
 
   const rawCredentials = decrypt(document.destConnector.credentials || '')
-  const config = document.destConnector.config || {}
+  const config = (document.destConnector.config || {}) as Record<string, string>
 
   if (document.destConnector.type === 'WORDPRESS') {
     const { createWordPressClient } = await import('./wordpress')
     const creds = Buffer.from(rawCredentials, 'base64').toString().split(':')
-    const client = createWordPressClient(config.siteUrl, creds[0], creds[1])
+    const client = createWordPressClient(config.siteUrl!, creds[0]!, creds[1]!)
 
     if (document.slug) {
       await client.updatePost(parseInt(document.slug), {
@@ -477,7 +472,7 @@ async function publishToDestination(document: PublishDocument, htmlContent: stri
 
   if (document.destConnector.type === 'GHOST') {
     const { createGhostClient } = await import('./ghost')
-    const client = createGhostClient(config.siteUrl, rawCredentials)
+    const client = createGhostClient(config.siteUrl!, rawCredentials)
 
     if (document.slug) {
       await client.updatePost(document.slug, {
@@ -493,26 +488,26 @@ async function publishToDestination(document: PublishDocument, htmlContent: stri
       })
       await prisma.document.update({
         where: { id: document.id },
-        data: { slug: result.posts[0].id },
+        data: { slug: result.posts[0]!.id },
       })
     }
   }
 
   if (document.destConnector.type === 'WEBFLOW') {
     const { createWebflowClient } = await import('./webflow')
-    const client = createWebflowClient(rawCredentials, config.siteId)
+    const client = createWebflowClient(rawCredentials, config.siteId!)
 
     const slug = document.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 
     if (document.slug) {
-      await client.updateItem(config.collectionId, document.slug, {
+      await client.updateItem(config.collectionId!, document.slug, {
         name: document.title,
         slug,
         content: htmlContent,
         status: 'published',
       })
     } else {
-      const result = await client.createItem(config.collectionId, {
+      const result = await client.createItem(config.collectionId!, {
         name: document.title,
         slug,
         content: htmlContent,
@@ -520,14 +515,14 @@ async function publishToDestination(document: PublishDocument, htmlContent: stri
       })
       await prisma.document.update({
         where: { id: document.id },
-        data: { slug: result.items[0].id },
+        data: { slug: result.items[0]!.id },
       })
     }
   }
 
   if (document.destConnector.type === 'SHOPIFY') {
     const { createShopifyClient } = await import('./shopify')
-    const client = createShopifyClient(config.shopDomain, rawCredentials)
+    const client = createShopifyClient(config.shopDomain!, rawCredentials)
 
     const blogs = await client.getBlogs()
     const blogId = blogs.blogs[0]?.id
@@ -545,7 +540,7 @@ async function publishToDestination(document: PublishDocument, htmlContent: stri
         })
         await prisma.document.update({
           where: { id: document.id },
-          data: { slug: result.article.id.toString() },
+          data: { slug: result.article!.id.toString() },
         })
       }
     }
@@ -554,9 +549,9 @@ async function publishToDestination(document: PublishDocument, htmlContent: stri
   // Contentful integration
   if (document.destConnector.type === 'CONTENTFUL') {
     const { createContentfulEntry, updateContentfulEntry } = await import('./contentful')
-    const spaceId = config.spaceId
+    const spaceId = config.spaceId!
     const accessToken = rawCredentials
-    const contentTypeId = config.contentTypeId || 'article'
+    const contentTypeId = config.contentTypeId! || 'article'
 
     const fields = {
       title: { 'en-US': document.title },
@@ -573,13 +568,13 @@ async function publishToDestination(document: PublishDocument, htmlContent: stri
         select: { version: true },
       })
       if (entry) {
-        await updateContentfulEntry(accessToken, spaceId, document.slug, fields, entry.version)
+        await updateContentfulEntry(accessToken, spaceId, document.slug!, fields, entry.version)
       }
     } else {
       const result = await createContentfulEntry(accessToken, spaceId, contentTypeId, fields)
       await prisma.document.update({
         where: { id: document.id },
-        data: { slug: result.id },
+        data: { slug: result.id! },
       })
     }
   }
@@ -610,14 +605,12 @@ export async function detectAndSyncChanges(
 
   try {
     let newContent = ''
-    let newTitle = document.title
 
     if (document.sourceConnector?.type === 'GOOGLE_DOCS') {
       const raw = decrypt(document.sourceConnector.credentials || '{}')
       const credentials = JSON.parse(raw)
       const docData = await getGoogleDocContent(document.sourceId!, credentials.accessToken)
       newContent = docData.content
-      newTitle = docData.title
     }
 
     const { detectContentChanges: detectChanges } = await import('./ai')
@@ -680,13 +673,13 @@ export async function checkRemoteChanges(documentId: string, userId: string) {
   if (document.destConnector.type === 'WORDPRESS') {
     const { createWordPressClient } = await import('./wordpress')
     const creds = Buffer.from(credentials, 'base64').toString().split(':')
-    const client = createWordPressClient(config.siteUrl, creds[0], creds[1])
+    const client = createWordPressClient(config.siteUrl!, creds[0]!, creds[1]!)
     return client.getPost(parseInt(document.slug || '0'))
   }
 
   if (document.destConnector.type === 'GHOST') {
     const { createGhostClient } = await import('./ghost')
-    const client = createGhostClient(config.siteUrl, credentials)
+    const client = createGhostClient(config.siteUrl!, credentials)
     return client.getPost(document.slug || '')
   }
 

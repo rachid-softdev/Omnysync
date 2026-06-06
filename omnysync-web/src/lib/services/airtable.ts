@@ -273,7 +273,7 @@ export async function getAirtableRecordContent(
     throw new Error('Record not found')
   }
 
-  const doc = airtableRecordToDocument(records[0])
+  const doc = airtableRecordToDocument(records[0]!)
 
   return {
     id: actualRecordId,

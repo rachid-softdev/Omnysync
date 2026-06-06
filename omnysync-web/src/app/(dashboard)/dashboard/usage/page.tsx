@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import {
   Loader2,
-  TrendingUp,
   Zap,
   FileText,
   Users,
@@ -16,7 +15,6 @@ import {
   Link2,
   BarChart3,
   Calendar,
-  Clock,
 } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 

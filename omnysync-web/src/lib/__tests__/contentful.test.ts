@@ -52,7 +52,7 @@ describe('contentful service', () => {
 
       const spaces = await listContentfulSpaces('valid-token')
       expect(spaces).toHaveLength(2)
-      expect(spaces[0].name).toBe('Space 1')
+      expect(spaces[0]!.name).toBe('Space 1')
     })
   })
 

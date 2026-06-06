@@ -1,8 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { auth } from '@/lib/auth'
-import { t } from '@/lib/i18n'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,20 +20,10 @@ import {
   Trash2,
   Loader2,
   CheckCircle,
-  AlertCircle,
   ExternalLink,
   Building,
-  Mail,
   Globe,
 } from 'lucide-react'
-
-interface UserData {
-  id: string
-  name: string | null
-  email: string | null
-  image: string | null
-  createdAt: Date
-}
 
 export default function SettingsPage() {
   const { t } = useTranslations()

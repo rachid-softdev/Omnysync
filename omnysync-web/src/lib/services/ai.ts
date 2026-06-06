@@ -159,7 +159,7 @@ Mots-clés: 5-10 mots-clés pertinents.`,
       })
     }
 
-    const result = safeParseJSON(response.choices[0].message.content || '{}', seoSchema, {
+    const result = safeParseJSON(response.choices[0]!.message.content || '{}', seoSchema, {
       title: title,
       description: '',
       keywords: [],
@@ -239,7 +239,7 @@ export async function improveContent(content: string, instructions: string): Pro
       })
     }
 
-    return response.choices[0].message.content || content
+    return response.choices[0]!.message.content || content
   } catch (error) {
     console.error('AI content improvement failed:', error)
     throw new Error('AI content improvement failed. Please try again.')
@@ -313,7 +313,7 @@ Renvoie un JSON avec la structure: { links: [{ url: string, text: string, positi
     }
 
     return safeParseJSON(
-      response.choices[0].message.content || '{"links": []}',
+      response.choices[0]!.message.content || '{"links": []}',
       interlinkingSchema,
       {
         links: [],
@@ -364,7 +364,7 @@ export async function generateExcerpt(content: string, maxLength: number = 160):
       })
     }
 
-    return (response.choices[0].message.content || plainText.substring(0, maxLength)).substring(
+    return (response.choices[0]!.message.content || plainText.substring(0, maxLength)).substring(
       0,
       maxLength
     )
@@ -426,7 +426,7 @@ export async function detectContentChanges(
     }
 
     return safeParseJSON(
-      response.choices[0].message.content || '{"hasChanges": false, "summary": ""}',
+      response.choices[0]!.message.content || '{"hasChanges": false, "summary": ""}',
       changesSchema,
       {
         hasChanges: false,

@@ -24,7 +24,7 @@ describe('AI Usage Service', () => {
 
       expect(consoleSpy).toHaveBeenCalled()
       // console.log("AI Usage:", {...}) - first arg is label, second is the object
-      const logCall = consoleSpy.mock.calls[0]
+      const logCall = consoleSpy.mock.calls[0]!
       expect(logCall[0]).toBe('AI Usage:')
       expect(logCall[1]).toHaveProperty('userId', 'user-123')
       expect(logCall[1]).toHaveProperty('model', 'gpt-4')
@@ -68,7 +68,7 @@ describe('AI Usage Service', () => {
 
   describe('getAIUsageStats', () => {
     it('should return default stats when no data', async () => {
-      const result = await getAIUsageStats('user-123')
+      const result = await getAIUsageStats()
 
       expect(result).toEqual({
         totalTokens: 0,
@@ -82,14 +82,14 @@ describe('AI Usage Service', () => {
       const startDate = new Date('2024-01-01')
       const endDate = new Date('2024-12-31')
 
-      const result = await getAIUsageStats('user-123', startDate, endDate)
+      const result = await getAIUsageStats(startDate, endDate)
 
       expect(result.period.start).toEqual(startDate)
       expect(result.period.end).toEqual(endDate)
     })
 
     it('should return zero values for user with no usage', async () => {
-      const result = await getAIUsageStats('nonexistent-user')
+      const result = await getAIUsageStats()
 
       expect(result.totalTokens).toBe(0)
       expect(result.totalCost).toBe(0)

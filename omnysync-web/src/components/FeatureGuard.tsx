@@ -48,7 +48,6 @@ export function FeatureGuard({
   feature,
   children,
   fallback = null,
-  showFallbackWhileLoading = false,
   hideWhenDisabled = false,
   className = '',
 }: FeatureGuardProps) {

@@ -165,5 +165,6 @@ export async function resendVerificationEmail(
     }
   }
 
-  return sendVerificationEmail(userId, user.email, user.name || undefined);
+  const sendResult = await sendVerificationEmail(userId, user.email, user.name || undefined);
+  return { ...sendResult, message: sendResult.error || "Email de vérification envoyé" };
 }

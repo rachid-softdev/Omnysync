@@ -123,17 +123,17 @@ export async function verifyEmail(token: string): Promise<{ success: boolean; er
  */
 export async function resendVerificationEmail(
   userId: string
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; error?: string; message?: string }> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
   })
 
   if (!user || !user.email) {
-    return { success: false, message: 'Utilisateur non trouvé' }
+    return { success: false, error: 'Utilisateur non trouvé' }
   }
 
   if (user.emailVerified) {
-    return { success: false, message: 'Email déjà vérifié' }
+    return { success: false, error: 'Email déjà vérifié' }
   }
 
   // Vérifier si un token recent existe
@@ -153,7 +153,7 @@ export async function resendVerificationEmail(
     if (existing.createdAt > hourAgo) {
       return {
         success: false,
-        message: 'Email déjà envoyé récemment. Vérifiez votre boîte mail.',
+        error: 'Email déjà envoyé récemment. Vérifiez votre boîte mail.',
       }
     }
   }

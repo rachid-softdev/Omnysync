@@ -28,6 +28,7 @@ export type Permission =
   // Sync
   | "sync:read"
   | "sync:create"
+  | "sync:update"
   | "sync:run"
   | "sync:delete"
 

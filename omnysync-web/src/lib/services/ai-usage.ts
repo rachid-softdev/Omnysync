@@ -1,5 +1,3 @@
-import { prisma } from '@/lib/prisma'
-
 export interface AIUsageLog {
   id: string
   userId: string | null
@@ -38,7 +36,7 @@ export async function logAIUsage(data: {
 }
 
 // Get AI usage stats for a user
-export async function getAIUsageStats(userId: string, startDate?: Date, endDate?: Date) {
+export async function getAIUsageStats(startDate?: Date, endDate?: Date) {
   // Placeholder for future AIUsageLog model
   // In production:
   // return await prisma.aiUsageLog.aggregate({

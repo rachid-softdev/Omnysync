@@ -1,16 +1,12 @@
 import { auth } from '@/lib/auth'
-import { t } from '@/lib/i18n'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import {
   ArrowLeft,
   RefreshCw,
-  Play,
-  Square,
   CheckCircle,
   AlertCircle,
   Clock,
@@ -130,7 +126,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
               'use server'
               // Trigger sync
               const { performSync } = await import('@/lib/services/sync')
-              await performSync(document.id, document.sourceConnectorId!, document.destConnectorId!)
+              await performSync(document.id, document.sourceConnectorId!, document.destConnectorId!, session.user.id)
             }}
           >
             <Button type="submit" size="sm">

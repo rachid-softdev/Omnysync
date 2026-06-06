@@ -1,12 +1,9 @@
 import { prisma } from '@/lib/prisma'
-import { ERR_FETCH_CONTENT } from '@/lib/errors'
 import { encrypt } from '@/lib/crypto'
-import { fetchWithTimeout, fetchWithRetry } from '@/lib/http-client'
+import { fetchWithRetry } from '@/lib/http-client'
 import type {
   GoogleDriveFilesResponse,
   GoogleDocBody,
-  GoogleDocElement,
-  GoogleDocTableRow,
 } from './types'
 
 const GOOGLE_DOCS_API = 'https://docs.googleapis.com/v1'

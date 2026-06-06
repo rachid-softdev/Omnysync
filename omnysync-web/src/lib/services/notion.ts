@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/prisma'
-import { ERR_FETCH_CONTENT } from '@/lib/errors'
 import { encrypt } from '@/lib/crypto'
 import { fetchWithRetry } from '@/lib/http-client'
 import type { NotionSearchResponse, NotionBlocksResponse, NotionBlock } from './types'
@@ -97,14 +96,19 @@ export async function getNotionPageContent(
       },
     }
   )
-  const title = pageData.properties?.title?.title?.[0]?.plain_text || 'Untitled'
+  const pd = pageData as {
+    properties?: { title?: { title?: Array<{ plain_text?: string }> } }
+    created_time?: string
+    last_edited_time?: string
+  }
+  const title = pd.properties?.title?.title?.[0]?.plain_text || 'Untitled'
 
   return {
     id: pageId,
     title,
     content,
-    createdTime: pageData.created_time,
-    lastEditedTime: pageData.last_edited_time,
+    createdTime: pd.created_time || '',
+    lastEditedTime: pd.last_edited_time || '',
   }
 }
 

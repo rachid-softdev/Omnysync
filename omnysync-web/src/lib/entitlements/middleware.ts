@@ -11,7 +11,6 @@
 
 import { getFeatureGateService } from './FeatureGateService'
 import { handleFeatureGateError, FeatureGateError } from './errors'
-import { ConsumeResult } from './types'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -214,9 +213,8 @@ export function consumeFeature(
  *   const requireFeatureExpress = toExpress(requireFeature("EXPORT_PDF"))
  *   app.get("/export", requireFeatureExpress, handler)
  */
-export function toExpress(factory: (orgIdResolver?: OrgIdResolver) => MiddlewareHandler) {
-  return (featureKey: string) => {
-    const middleware = factory(featureKey)
+export function toExpress(middleware: MiddlewareHandler) {
+  return (_featureKey: string) => {
 
     return (
       req: { headers: Record<string, string | undefined> },
@@ -236,10 +234,10 @@ export function toExpress(factory: (orgIdResolver?: OrgIdResolver) => Middleware
         return new Response('OK')
       }
 
-      middleware(mockReq, handler)
+      ;(middleware as MiddlewareHandler)(mockReq, handler)
         .then((response) => {
           if (response.status >= 400) {
-            res.status(response.status).json({ error: 'Feature not available' })
+            ;(res as any).status(response.status).json({ error: 'Feature not available' })
           } else {
             next()
           }

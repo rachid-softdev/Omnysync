@@ -274,7 +274,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('two-factor service', () => {
       } as unknown as Record<string, unknown>)
 
       const { compare } = await import('bcrypt')
-      vi.mocked(compare).mockResolvedValue(false as unknown as boolean)
+      vi.mocked(compare).mockImplementation(async () => false)
 
       const result = await disableTwoFactor(userId, wrongPassword)
 
@@ -304,7 +304,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('two-factor service', () => {
       vi.mocked(prisma.auditLog.create).mockResolvedValue({} as unknown as Record<string, unknown>)
 
       const { compare } = await import('bcrypt')
-      vi.mocked(compare).mockResolvedValue(true as unknown as boolean)
+      vi.mocked(compare).mockImplementation(async () => true)
 
       const result = await disableTwoFactor(userId, correctPassword)
 

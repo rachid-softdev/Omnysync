@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   FeatureNotAvailableError,
   LimitReachedError,
@@ -126,7 +126,7 @@ describe('Feature Gate Errors', () => {
       logFeatureGateError(error, { requestId: 'req-123' })
 
       expect(consoleSpy).toHaveBeenCalled()
-      const logCall = consoleSpy.mock.calls[0][0]
+      const logCall = consoleSpy.mock.calls[0]![0]
       expect(logCall).toBe('[FeatureGateError]')
 
       consoleSpy.mockRestore()

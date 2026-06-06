@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     switch (type) {
       case 'sync_document': {
-        const { documentId, sourceConnectorId, destConnectorId, userId } = payload
+        const { userId } = payload
         const result = await processJobWithRetry(job, async (j) => {
           return await performSync(
             j.payload.documentId as string,
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
         })
         // Upload images after sync (fire and forget)
         if (userId) {
-          uploadAllImages(documentId, userId as string).catch(console.error)
+          uploadAllImages(job.payload.documentId as string, userId as string).catch(console.error)
         }
 
         // Mark as completed after successful processing
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       }
 
       case 'detect_changes': {
-        const { documentId, userId } = payload
+        const { userId } = payload
         const result = await processJobWithRetry(job, async (j) => {
           return await detectAndSyncChanges(j.payload.documentId as string, userId as string)
         })
@@ -110,7 +110,6 @@ export async function POST(req: NextRequest) {
       }
 
       case 'generate_ai_image': {
-        const { documentId, prompt } = payload
         const result = await processJobWithRetry(job, async (j) => {
           const imageUrl = await generateAImage(j.payload.prompt as string)
 

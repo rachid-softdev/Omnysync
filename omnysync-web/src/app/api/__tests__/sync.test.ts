@@ -1,7 +1,7 @@
 /**
  * Tests pour les routes API de Sync
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 
 describe('GET /api/sync', () => {
   it('devrait retourner 401 sans auth', () => {

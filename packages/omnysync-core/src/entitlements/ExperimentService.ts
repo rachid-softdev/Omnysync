@@ -6,7 +6,7 @@
  * Changing the seed creates a new segment
  */
 
-import { ExperimentConfig, ExperimentBucket } from "./types";
+import type { ExperimentConfig, ExperimentBucket } from "./types";
 import { EXPERIMENT_DEFAULTS } from "./constants";
 import { getEntitlementRepository } from "./EntitlementRepository";
 
@@ -71,47 +71,47 @@ function murmurhash3(key: string, seed: number = 0): number {
   switch (len % 16) {
     case 15:
       k2 ^= BigInt(data[i + 14]) << 48n;
-    // eslint-disable-next-line no-fallthrough
+    // fall through
     case 14:
       k2 ^= BigInt(data[i + 13]) << 40n;
-    // eslint-disable-next-line no-fallthrough
+    // fall through
     case 13:
       k2 ^= BigInt(data[i + 12]) << 32n;
-    // eslint-disable-next-line no-fallthrough
+    // fall through
     case 12:
       k2 ^= BigInt(data[i + 11]) << 24n;
-    // eslint-disable-next-line no-fallthrough
+    // fall through
     case 11:
       k2 ^= BigInt(data[i + 10]) << 16n;
-    // eslint-disable-next-line no-fallthrough
+    // fall through
     case 10:
       k2 ^= BigInt(data[i + 9]) << 8n;
-    // eslint-disable-next-line no-fallthrough
+    // fall through
     case 9:
       k2 ^= BigInt(data[i + 8]);
       k2 *= c2;
-    // eslint-disable-next-line no-fallthrough
+    // fall through
     case 8:
       k1 ^= BigInt(data[i + 7]) << 56n;
-    // eslint-disable-next-line no-fallthrough
+    // fall through
     case 7:
       k1 ^= BigInt(data[i + 6]) << 48n;
-    // eslint-disable-next-line no-fallthrough
+    // fall through
     case 6:
       k1 ^= BigInt(data[i + 5]) << 40n;
-    // eslint-disable-next-line no-fallthrough
+    // fall through
     case 5:
       k1 ^= BigInt(data[i + 4]) << 32n;
-    // eslint-disable-next-line no-fallthrough
+    // fall through
     case 4:
       k1 ^= BigInt(data[i + 3]) << 24n;
-    // eslint-disable-next-line no-fallthrough
+    // fall through
     case 3:
       k1 ^= BigInt(data[i + 2]) << 16n;
-    // eslint-disable-next-line no-fallthrough
+    // fall through
     case 2:
       k1 ^= BigInt(data[i + 1]) << 8n;
-    // eslint-disable-next-line no-fallthrough
+    // fall through
     case 1:
       k1 ^= BigInt(data[i]);
       k1 *= c1;
