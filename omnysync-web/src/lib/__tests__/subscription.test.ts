@@ -10,7 +10,6 @@ import {
   checkConnectorLimit,
   checkDocumentLimit,
   getPlanFromPriceId,
-  Plan,
 } from '../auth/subscription'
 
 // Mock prisma

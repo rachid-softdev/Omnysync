@@ -1,22 +1,27 @@
 /**
  * Service d'authentification à deux facteurs (TOTP)
+ * Utilise otpauth pour la génération et validation TOTP conformes RFC 6238
  */
 import { prisma } from '@/lib/prisma'
 import { encrypt, decrypt } from '@/lib/crypto'
 import { randomBytes, createHash } from 'crypto'
-
-// TOTP: Time-based One-Time Password
-// Implementa
+import * as OTPAuth from 'otpauth'
 
 /**
- * Génère un secret TOTP pour l'utilisateur
+ * Génère un secret TOTP pour l'utilisateur (format Base32, compatible RFC 6238)
  */
 export function generateTotpSecret(): { secret: string; otpauthUrl: string } {
-  // Secret aléatoire base32 (20 bytes pour meilleur sécurité)
-  const secret = randomBytes(20).toString('base64').replace(/=/g, '')
+  // Générer un secret TOTP avec otpauth pour garantir le format Base32 correct
+  const secretObj = new OTPAuth.Secret({ size: 20 })
+  const secret = secretObj.base32
 
   // URL pour les apps d'authentification (Google Authenticator, etc.)
-  const otpauthUrl = `otpauth://totp/Omnysync?secret=${secret}&issuer=Omnysync`
+  const totp = new OTPAuth.TOTP({
+    secret: secretObj,
+    issuer: 'Omnysync',
+    label: 'Omnysync',
+  })
+  const otpauthUrl = totp.toString()
 
   return { secret, otpauthUrl }
 }
@@ -51,7 +56,6 @@ export async function setupTwoFactor(
     })
 
     // Audit log
-    const user = await prisma.user.findUnique({ where: { id: userId } })
     const org = await prisma.userOrganization.findFirst({
       where: { userId, role: 'OWNER' },
       include: { organization: true },
@@ -98,21 +102,17 @@ export async function verifyTotpCode(
     await prisma.twoFactorAuth.update({
       where: { userId },
       data: {
-        backupCodes: twoFactor.backupCodes.filter((c) => c !== codeHash),
+        backupCodes: twoFactor.backupCodes.filter((c: string) => c !== codeHash),
       },
     })
     return { valid: true }
   }
 
   // Décrypter le secret et vérifier le code TOTP
-  // Note: En production, utiliser une librarie comme 'otpauth'
-  // Ici implementation simplifiée pour demonstration
-
   const secret = decrypt(twoFactor.secret)
 
-  // Vérification TOTP (simplifiée)
-  // En production: utiliser https://www.npmjs.com/package/otpauth
-  const isValid = await verifyTotp(secret, code)
+  // Vérification TOTP avec otpauth (RFC 6238 compatible)
+  const isValid = verifyTotp(secret, code)
 
   if (!isValid) {
     return { valid: false, error: 'Code invalide' }
@@ -121,31 +121,32 @@ export async function verifyTotpCode(
   return { valid: true }
 }
 
-// Placeholder pour la vérification TOTP réelle
-async function verifyTotp(secret: string, code: string): Promise<boolean> {
-  // En production, utiliser une librarie comme 'otpauth' ou 'speakeasy'
-  // Exemple avec speakeasy:
-  // import speakeasy from 'speakeasy'
-  // return speakeasy.totp.verify({ secret, encoding: 'base32', token: code })
+/**
+ * Vérifie un code TOTP (6 chiffres) contre un secret Base32
+ * Utilise otpauth avec une fenêtre de +/- 1 pas (30s) pour tolérance
+ */
+function verifyTotp(secret: string, code: string): boolean {
+  try {
+    const totp = new OTPAuth.TOTP({
+      secret: OTPAuth.Secret.fromBase32(secret),
+      issuer: 'Omnysync',
+      label: 'Omnysync',
+    })
 
-  // Pour l'instant, retourner true si code = "123456" (DEV ONLY)
-  if (process.env.NODE_ENV === 'development' && code === '123456') {
-    return true
+    // delta = 0 means exact match, null means invalid
+    const delta = totp.validate({ token: code, window: 1 })
+    return delta !== null
+  } catch {
+    return false
   }
-
-  // Log pour debugging en développement
-  console.log(`[TOTP] Verifying code for secret starting with: ${secret.substring(0, 4)}...`)
-
-  // Placeholder: à implémenter avec librarie réelle
-  return false
 }
 
 /**
- * Désactive le 2FA
+ * Désactive le 2FA — nécessite confirmation par mot de passe
  */
 export async function disableTwoFactor(
   userId: string,
-  password: string // Pour confirmer la désactivation
+  password: string // Mot de passe requis pour confirmer la désactivation
 ): Promise<{ success: boolean; error?: string }> {
   const twoFactor = await prisma.twoFactorAuth.findUnique({
     where: { userId },
@@ -153,6 +154,25 @@ export async function disableTwoFactor(
 
   if (!twoFactor) {
     return { success: false, error: '2FA non activé' }
+  }
+
+  // Vérifier le mot de passe avant de désactiver le 2FA
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { password: true },
+  })
+
+  if (!user?.password) {
+    return {
+      success: false,
+      error: 'Mot de passe non configuré. Utilisez OAuth pour vous connecter.',
+    }
+  }
+
+  const { compare } = await import('bcrypt')
+  const isValid = await compare(password, user.password)
+  if (!isValid) {
+    return { success: false, error: 'Mot de passe incorrect' }
   }
 
   // Supprimer le 2FA

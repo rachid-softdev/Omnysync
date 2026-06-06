@@ -3,8 +3,8 @@
  * Omnysync - 2026
  */
 
-import { prisma } from "../../prisma";
-import { auth } from "../../auth";
+import { prisma } from "../prisma";
+import { auth } from "../auth";
 
 // ============================================================================
 // TYPES

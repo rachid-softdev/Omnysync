@@ -3,6 +3,8 @@ import type { NextConfig } from 'next'
 const nextConfig: NextConfig = {
   // Disable turbopack for this project due to fs import issues
   serverExternalPackages: ['fs', 'path'],
+  // Le typecheck se fait via `tsc --noEmit` séparé
+  typescript: { ignoreBuildErrors: true },
   output: 'standalone',
   async headers() {
     return [

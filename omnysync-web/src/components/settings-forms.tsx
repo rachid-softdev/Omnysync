@@ -16,7 +16,6 @@ import {
   AlertDialogTitle,
   AlertDialogDescription,
 } from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
 
 interface ApiKey {
   id: string
@@ -50,7 +49,6 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
   // API Keys state
   const [apiKeys, setApiKeys] = useState<ApiKey[]>(initialApiKeys)
   const [newKeyName, setNewKeyName] = useState('')
-  const [showNewKeyDialog, setShowNewKeyDialog] = useState(false)
   const [newKeyValue, setNewKeyValue] = useState('')
   const [keyLoading, setKeyLoading] = useState(false)
 
@@ -87,7 +85,7 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
       } else {
         setPasswordError(data.error || 'Erreur lors du changement de mot de passe')
       }
-    } catch (e) {
+    } catch {
       setPasswordError('Erreur de connexion')
     } finally {
       setPasswordLoading(false)

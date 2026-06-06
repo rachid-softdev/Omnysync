@@ -1,4 +1,4 @@
-import { prisma } from "../../prisma";
+import { prisma } from "../prisma";
 import { ERR_FETCH_CONTENT } from "../errors";
 import { encrypt } from "../crypto";
 import { fetchWithTimeout, fetchWithRetry } from "../http";

@@ -6,9 +6,9 @@
  * Changing the seed creates a new segment
  */
 
-import { ExperimentConfig, ExperimentBucket } from './types'
+import type { ExperimentConfig, ExperimentBucket } from './types'
 import { EXPERIMENT_DEFAULTS } from './constants'
-import { getEntitlementRepository, FeatureData } from './EntitlementRepository'
+import { getEntitlementRepository } from './EntitlementRepository'
 
 // ============================================================================
 // MURMURHASH IMPLEMENTATION (x64)
@@ -19,8 +19,9 @@ import { getEntitlementRepository, FeatureData } from './EntitlementRepository'
  * This implementation is based on the MurmurHash3 algorithm
  */
 function murmurhash3(key: string, seed: number = 0): number {
-  const data = new TextEncoder().encode(key)
-  const len = data.length
+  const rawData = new TextEncoder().encode(key)
+  const data = rawData as unknown as ArrayLike<number>
+  const len = rawData.length
 
   let h1 = BigInt(seed)
   let h2 = BigInt(seed)
@@ -34,24 +35,24 @@ function murmurhash3(key: string, seed: number = 0): number {
   let i = 0
   while (i + 16 <= len) {
     const k1 =
-      BigInt(data[i]) |
-      (BigInt(data[i + 1]) << 8n) |
-      (BigInt(data[i + 2]) << 16n) |
-      (BigInt(data[i + 3]) << 24n) |
-      (BigInt(data[i + 4]) << 32n) |
-      (BigInt(data[i + 5]) << 40n) |
-      (BigInt(data[i + 6]) << 48n) |
-      (BigInt(data[i + 7]) << 56n)
+      BigInt(data[i]!) |
+      (BigInt(data[i + 1]!) << 8n) |
+      (BigInt(data[i + 2]!) << 16n) |
+      (BigInt(data[i + 3]!) << 24n) |
+      (BigInt(data[i + 4]!) << 32n) |
+      (BigInt(data[i + 5]!) << 40n) |
+      (BigInt(data[i + 6]!) << 48n) |
+      (BigInt(data[i + 7]!) << 56n)
 
     const k2 =
-      BigInt(data[i + 8]) |
-      (BigInt(data[i + 9]) << 8n) |
-      (BigInt(data[i + 10]) << 16n) |
-      (BigInt(data[i + 11]) << 24n) |
-      (BigInt(data[i + 12]) << 32n) |
-      (BigInt(data[i + 13]) << 40n) |
-      (BigInt(data[i + 14]) << 48n) |
-      (BigInt(data[i + 15]) << 56n)
+      BigInt(data[i + 8]!) |
+      (BigInt(data[i + 9]!) << 8n) |
+      (BigInt(data[i + 10]!) << 16n) |
+      (BigInt(data[i + 11]!) << 24n) |
+      (BigInt(data[i + 12]!) << 32n) |
+      (BigInt(data[i + 13]!) << 40n) |
+      (BigInt(data[i + 14]!) << 48n) |
+      (BigInt(data[i + 15]!) << 56n)
 
     h1 = (h1 ^ (k1 * c1)) & 0xffffffffn
     h1 = ((h1 << 31n) | (h1 >> 1n)) & 0xffffffffn
@@ -69,52 +70,54 @@ function murmurhash3(key: string, seed: number = 0): number {
   let k2 = 0n
 
   switch (len % 16) {
+    // @ts-expect-error TS7029 - intentional fallthrough in MurmurHash
     case 15:
-      k2 ^= BigInt(data[i + 14]) << 48n
-    // eslint-disable-next-line no-fallthrough
+      k2 ^= BigInt(data[i + 14]!) << 48n
+    // @ts-expect-error TS7029
     case 14:
-      k2 ^= BigInt(data[i + 13]) << 40n
-    // eslint-disable-next-line no-fallthrough
+      k2 ^= BigInt(data[i + 13]!) << 40n
+    // @ts-expect-error TS7029
     case 13:
-      k2 ^= BigInt(data[i + 12]) << 32n
-    // eslint-disable-next-line no-fallthrough
+      k2 ^= BigInt(data[i + 12]!) << 32n
+    // @ts-expect-error TS7029
     case 12:
-      k2 ^= BigInt(data[i + 11]) << 24n
-    // eslint-disable-next-line no-fallthrough
+      k2 ^= BigInt(data[i + 11]!) << 24n
+    // @ts-expect-error TS7029
     case 11:
-      k2 ^= BigInt(data[i + 10]) << 16n
-    // eslint-disable-next-line no-fallthrough
+      k2 ^= BigInt(data[i + 10]!) << 16n
+    // @ts-expect-error TS7029
     case 10:
-      k2 ^= BigInt(data[i + 9]) << 8n
-    // eslint-disable-next-line no-fallthrough
+      k2 ^= BigInt(data[i + 9]!) << 8n
+    // @ts-expect-error TS7029
     case 9:
-      k2 ^= BigInt(data[i + 8])
+      k2 ^= BigInt(data[i + 8]!)
       k2 *= c2
-    // eslint-disable-next-line no-fallthrough
+      h2 ^= k2
+    // @ts-expect-error TS7029
     case 8:
-      k1 ^= BigInt(data[i + 7]) << 56n
-    // eslint-disable-next-line no-fallthrough
+      k1 ^= BigInt(data[i + 7]!) << 56n
+    // @ts-expect-error TS7029
     case 7:
-      k1 ^= BigInt(data[i + 6]) << 48n
-    // eslint-disable-next-line no-fallthrough
+      k1 ^= BigInt(data[i + 6]!) << 48n
+    // @ts-expect-error TS7029
     case 6:
-      k1 ^= BigInt(data[i + 5]) << 40n
-    // eslint-disable-next-line no-fallthrough
+      k1 ^= BigInt(data[i + 5]!) << 40n
+    // @ts-expect-error TS7029
     case 5:
-      k1 ^= BigInt(data[i + 4]) << 32n
-    // eslint-disable-next-line no-fallthrough
+      k1 ^= BigInt(data[i + 4]!) << 32n
+    // @ts-expect-error TS7029
     case 4:
-      k1 ^= BigInt(data[i + 3]) << 24n
-    // eslint-disable-next-line no-fallthrough
+      k1 ^= BigInt(data[i + 3]!) << 24n
+    // @ts-expect-error TS7029
     case 3:
-      k1 ^= BigInt(data[i + 2]) << 16n
-    // eslint-disable-next-line no-fallthrough
+      k1 ^= BigInt(data[i + 2]!) << 16n
+    // @ts-expect-error TS7029
     case 2:
-      k1 ^= BigInt(data[i + 1]) << 8n
-    // eslint-disable-next-line no-fallthrough
+      k1 ^= BigInt(data[i + 1]!) << 8n
     case 1:
-      k1 ^= BigInt(data[i])
+      k1 ^= BigInt(data[i]!)
       k1 *= c1
+      h1 ^= k1
   }
 
   // Finalization

@@ -182,17 +182,17 @@ const DropdownMenuShortcut = ({
 DropdownMenuShortcut.displayName = "DropdownMenuShortcut";
 
 const DropdownMenuGroupLabel = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.GroupLabel>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.GroupLabel>
+  React.ElementRef<typeof DropdownMenuPrimitive.Label>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label>
 >(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.GroupLabel
+  <DropdownMenuPrimitive.Label
     ref={ref}
     className={cn("px-2 py-1.5 text-sm font-semibold", className)}
     {...props}
   />
 ));
 DropdownMenuGroupLabel.displayName =
-  DropdownMenuPrimitive.GroupLabel.displayName;
+  DropdownMenuPrimitive.Label.displayName;
 
 export {
   DropdownMenu,

@@ -67,7 +67,6 @@ export async function paginate<T>(
     orderBy?: Record<string, 'asc' | 'desc'>
     where?: Record<string, unknown>
   },
-  countQuery: Record<string, unknown>
 ): Promise<PaginationResult<T>> {
   const { prisma } = await import('@/lib/prisma')
 

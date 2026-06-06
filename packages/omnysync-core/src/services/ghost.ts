@@ -1,4 +1,4 @@
-import { prisma } from "../../prisma";
+import { prisma } from "../prisma";
 import { ERR_UPLOAD_MEDIA } from "../errors";
 import { encrypt } from "../crypto";
 import { fetchWithRetry } from "../http";
@@ -14,6 +14,7 @@ export interface GhostPost {
   feature_image?: string;
   meta_title?: string;
   meta_description?: string;
+  updated_at?: string;
 }
 
 export interface GhostTag {

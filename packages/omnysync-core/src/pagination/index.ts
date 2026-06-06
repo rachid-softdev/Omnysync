@@ -69,7 +69,7 @@ export async function paginate<T>(
   },
   countQuery: Record<string, unknown>,
 ): Promise<PaginationResult<T>> {
-  const { prisma } = await import("../../prisma");
+  const { prisma } = await import("../prisma");
 
   const [data, total] = await Promise.all([
     prisma.$queryRaw<

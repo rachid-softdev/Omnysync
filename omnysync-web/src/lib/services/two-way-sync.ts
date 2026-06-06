@@ -8,11 +8,11 @@ import { decrypt } from '@/lib/crypto'
 import { auditSync } from '@/lib/audit'
 import { createWordPressClient } from './wordpress'
 import { createGhostClient } from './ghost'
-import { createWebflowClient } from './webflow'
 import { createShopifyClient } from './shopify'
 import { getNotionPageContent } from './notion'
 import { getGoogleDocContent } from './google-docs'
-import { detectContentChanges } from './ai'
+import { requireDocumentAccess } from './authz'
+import { sanitizeErrorMessage } from './sanitize'
 
 // ============================================================================
 // TYPES
@@ -68,7 +68,7 @@ async function fetchRemoteContent(documentId: string): Promise<RemoteContent | n
   // WordPress
   if (document.destConnector.type === 'WORDPRESS') {
     const creds = Buffer.from(rawCredentials, 'base64').toString().split(':')
-    const client = createWordPressClient(config.siteUrl, creds[0], creds[1])
+    const client = createWordPressClient(config.siteUrl!, creds[0]!, creds[1]!)
     const post = await client.getPost(parseInt(document.slug || '0'))
     return {
       content: post.content,
@@ -80,7 +80,7 @@ async function fetchRemoteContent(documentId: string): Promise<RemoteContent | n
 
   // Ghost
   if (document.destConnector.type === 'GHOST') {
-    const client = createGhostClient(config.siteUrl, rawCredentials)
+    const client = createGhostClient(config.siteUrl!, rawCredentials)
     const post = await client.getPost(document.slug || '')
     return {
       content: post.posts?.[0]?.html || '',
@@ -102,7 +102,7 @@ async function fetchRemoteContent(documentId: string): Promise<RemoteContent | n
 
   // Shopify
   if (document.destConnector.type === 'SHOPIFY') {
-    const client = createShopifyClient(config.shopDomain, rawCredentials)
+    const client = createShopifyClient(config.shopDomain!, rawCredentials)
     const blogs = await client.getBlogs()
     const blogId = blogs.blogs[0]?.id
     if (!blogId) return null
@@ -131,7 +131,6 @@ async function fetchSourceContent(documentId: string): Promise<RemoteContent | n
   }
 
   const rawCredentials = decrypt(document.sourceConnector.credentials || '{}')
-  const config = (document.sourceConnector.config as Record<string, string>) || {}
 
   if (document.sourceConnector.type === 'GOOGLE_DOCS') {
     const credentials = JSON.parse(rawCredentials)
@@ -162,13 +161,17 @@ async function fetchSourceContent(documentId: string): Promise<RemoteContent | n
 /**
  * Détecte les conflits entre source et destination
  */
-export async function detectConflicts(documentId: string): Promise<ConflictInfo> {
+export async function detectConflicts(documentId: string, userId?: string): Promise<ConflictInfo> {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
   })
 
   if (!document) {
     return { hasConflict: false }
+  }
+
+  if (userId) {
+    await requireDocumentAccess(documentId, userId)
   }
 
   const [sourceContent, destContent] = await Promise.all([
@@ -235,7 +238,10 @@ export async function detectConflicts(documentId: string): Promise<ConflictInfo>
 /**
  * Synchronise les changements détectés vers la destination
  */
-export async function syncFromSource(documentId: string): Promise<TwoWaySyncResult> {
+export async function syncFromSource(
+  documentId: string,
+  userId: string
+): Promise<TwoWaySyncResult> {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
     include: { sourceConnector: true, destConnector: true },
@@ -249,6 +255,8 @@ export async function syncFromSource(documentId: string): Promise<TwoWaySyncResu
       message: 'Document not found',
     }
   }
+
+  await requireDocumentAccess(documentId, userId)
 
   // Récupérer le contenu source actuel
   const sourceContent = await fetchSourceContent(documentId)
@@ -265,7 +273,7 @@ export async function syncFromSource(documentId: string): Promise<TwoWaySyncResu
   const { performSync } = await import('./sync')
 
   try {
-    await performSync(documentId, document.sourceConnectorId, document.destConnectorId)
+    await performSync(documentId, document.sourceConnectorId, document.destConnectorId, userId)
 
     // Mettre à jour sourceUpdatedAt
     await prisma.document.update({
@@ -286,12 +294,12 @@ export async function syncFromSource(documentId: string): Promise<TwoWaySyncResu
       message: 'Changes synced from source to destination',
     }
   } catch (error) {
-    await auditSync.failed(document.organizationId, documentId, (error as Error).message)
+    await auditSync.failed(document.organizationId, documentId, sanitizeErrorMessage(error))
     return {
       success: false,
       direction: 'source-to-dest',
       changesDetected: true,
-      message: (error as Error).message,
+      message: sanitizeErrorMessage(error),
     }
   }
 }
@@ -300,7 +308,7 @@ export async function syncFromSource(documentId: string): Promise<TwoWaySyncResu
  * Synchronise les changements depuis la destination vers la source
  * Note: Cela ne fonctionne que pour Notion (modifiable via API)
  */
-export async function syncFromDest(documentId: string): Promise<TwoWaySyncResult> {
+export async function syncFromDest(documentId: string, userId: string): Promise<TwoWaySyncResult> {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
     include: { sourceConnector: true, destConnector: true },
@@ -314,6 +322,8 @@ export async function syncFromDest(documentId: string): Promise<TwoWaySyncResult
       message: 'Document not found',
     }
   }
+
+  await requireDocumentAccess(documentId, userId)
 
   // Pour le moment, seulement Notion peut être modifié via API
   if (document.sourceConnector.type !== 'NOTION') {
@@ -365,7 +375,8 @@ export async function syncFromDest(documentId: string): Promise<TwoWaySyncResult
  */
 export async function resolveConflict(
   documentId: string,
-  strategy: 'source-wins' | 'dest-wins' | 'keep-both'
+  strategy: 'source-wins' | 'dest-wins' | 'keep-both',
+  userId: string
 ): Promise<TwoWaySyncResult> {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
@@ -381,6 +392,8 @@ export async function resolveConflict(
     }
   }
 
+  await requireDocumentAccess(documentId, userId)
+
   const conflict = await detectConflicts(documentId)
 
   if (!conflict.hasConflict) {
@@ -394,10 +407,10 @@ export async function resolveConflict(
 
   switch (strategy) {
     case 'source-wins':
-      return syncFromSource(documentId)
+      return syncFromSource(documentId, userId)
 
     case 'dest-wins':
-      return syncFromDest(documentId)
+      return syncFromDest(documentId, userId)
 
     case 'keep-both':
       // Créer une copie du document avec le contenu distant
@@ -449,7 +462,12 @@ export async function resolveConflict(
 /**
  * Vérifie et synchronise automatiquement les changements
  */
-export async function checkAndAutoSync(documentId: string): Promise<TwoWaySyncResult> {
+export async function checkAndAutoSync(
+  documentId: string,
+  userId: string
+): Promise<TwoWaySyncResult> {
+  await requireDocumentAccess(documentId, userId)
+
   const conflict = await detectConflicts(documentId)
 
   if (!conflict.hasConflict) {
@@ -467,5 +485,5 @@ export async function checkAndAutoSync(documentId: string): Promise<TwoWaySyncRe
     documentId
   )
 
-  return syncFromSource(documentId)
+  return syncFromSource(documentId, userId)
 }

@@ -68,10 +68,10 @@ describe('Notion Service', () => {
       const pages = await listNotionPages('test-token')
 
       expect(pages).toHaveLength(2)
-      expect(pages[0].id).toBe('page-1')
-      expect(pages[0].title).toBe('Page 1')
-      expect(pages[1].id).toBe('page-2')
-      expect(pages[1].title).toBe('Page 2')
+      expect(pages[0]!.id).toBe('page-1')
+      expect(pages[0]!.title).toBe('Page 1')
+      expect(pages[1]!.id).toBe('page-2')
+      expect(pages[1]!.title).toBe('Page 2')
     })
 
     it('should filter out non-page results', async () => {
@@ -99,7 +99,7 @@ describe('Notion Service', () => {
       const pages = await listNotionPages('test-token')
 
       expect(pages).toHaveLength(1)
-      expect(pages[0].id).toBe('page-1')
+      expect(pages[0]!.id).toBe('page-1')
     })
 
     it('should handle pages without title', async () => {
@@ -117,7 +117,7 @@ describe('Notion Service', () => {
 
       const pages = await listNotionPages('test-token')
 
-      expect(pages[0].title).toBe('Untitled')
+      expect(pages[0]!.title).toBe('Untitled')
     })
   })
 

@@ -25,7 +25,7 @@ export function getClientIp(request: NextRequest): string {
   const realIp = request.headers.get('x-real-ip')
 
   if (forwarded) {
-    return forwarded.split(',')[0].trim()
+    return forwarded.split(',')[0]!.trim()
   }
 
   return realIp ?? request.headers.get('cf-connecting-ip') ?? 'unknown'

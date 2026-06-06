@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { listGoogleDocs } from '@/lib/services/google-docs'
 import { listNotionPages } from '@/lib/services/notion'
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
 
   if (!session?.user?.id) {

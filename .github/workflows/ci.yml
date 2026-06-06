@@ -85,7 +85,7 @@ jobs:
         run: npm test -- --coverage
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: true
@@ -108,7 +108,18 @@ jobs:
         run: npm ci
 
       - name: Build
+        # Why: Next.js forces NODE_ENV=production during next build, so the
+        # env.ts Zod validation runs its production checks. All required
+        # env vars must be present at build time.
         run: npm run build
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          NEXTAUTH_SECRET: ci-build-secret-not-for-production-min-32-chars!
+          NEXTAUTH_URL: http://localhost:3000
+          GOOGLE_CLIENT_ID: ci-build-id
+          GOOGLE_CLIENT_SECRET: ci-build-secret
+          ENCRYPTION_KEY: ci-build-encryption-key-not-for-production-32+chars
+          ENCRYPTION_SALT: ci-build-salt-not-for-prod-16+
 
   build-docker:
     runs-on: ubuntu-latest
@@ -121,7 +132,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: false

@@ -11,7 +11,7 @@
 
 import { Redis } from "@upstash/redis";
 import { CACHE_CONFIG, DEFAULT_PLAN } from "./constants";
-import { EntitlementMap } from "./types";
+import type { EntitlementMap } from "./types";
 
 // ============================================================================
 // TYPES
@@ -292,7 +292,6 @@ export class CacheService {
       });
 
       this.subscribed = true;
-      console.log("[CacheService] Subscribed to cache invalidation channel");
     } catch (err) {
       console.warn("[CacheService] Failed to subscribe to invalidations:", err);
     }

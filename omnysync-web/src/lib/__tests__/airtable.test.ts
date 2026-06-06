@@ -49,7 +49,7 @@ describe('airtable service', () => {
 
       const bases = await listAirtableBases('valid-key')
       expect(bases).toHaveLength(2)
-      expect(bases[0].name).toBe('Base 1')
+      expect(bases[0]!.name).toBe('Base 1')
     })
   })
 

@@ -6,6 +6,16 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const AI_CONFIG = {
+  model: "gpt-4o",
+  imageModel: "dall-e-3",
+  maxTokens: 2000,
+  costPer1kTokens: 0.005,
+  costPerImage: 0.04,
+  maxPromptLength: 10000,
+  maxContentContext: 3000,
+} as const;
+
 export interface SEOData {
   title: string;
   description: string;
@@ -38,16 +48,27 @@ const changesSchema = z.object({
   summary: z.string(),
 });
 
-// Sanitize function to prevent prompt injection
+// Patterns de prompt injection à bloquer
+const INJECTION_PATTERNS = [
+  /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions|directives|context|messages)/gi,
+  /disregard\s+(all\s+)?(previous|prior|above)/gi,
+  /you\s+are\s+(now|currently|not\s+an?\s+ai|a\s+human|the\s+system)/gi,
+  /forget\s+(all\s+)?(previous|prior|above)/gi,
+  /system(\s*:\s*|:\s*prompt| instruction)/gi,
+  /\[SYSTEM\]/gi,
+  /new\s+system\s+(prompt|message|instruction)/gi,
+  /override\s+(system|previous|all).*(instruction|directive|rule)/gi,
+  /you\s+must\s+(ignore|disregard|forget)/gi,
+  /do\s+not\s+(follow|obey|adhere\s+to)/gi,
+];
+
 function sanitizePrompt(input: string): string {
   if (!input) return "";
-  return input
-    .replace(/Ignore previous instructions/gi, "")
-    .replace(/You are now/gi, "")
-    .replace(/Previous behavior/gi, "")
-    .replace(/System:/gi, "")
-    .replace(/\\[SYSTEM\\]/gi, "")
-    .substring(0, 10000);
+  let sanitized = input.substring(0, AI_CONFIG.maxPromptLength);
+  for (const pattern of INJECTION_PATTERNS) {
+    sanitized = sanitized.replace(pattern, "[REDACTED]");
+  }
+  return sanitized;
 }
 
 // Retry with exponential backoff
@@ -102,7 +123,7 @@ export async function generateSEO(
 
     const response = await withRetry(() =>
       openai.chat.completions.create({
-        model: "gpt-4o",
+        model: AI_CONFIG.model,
         messages: [
           {
             role: "system",
@@ -113,10 +134,10 @@ Mots-clés: 5-10 mots-clés pertinents.`,
           },
           {
             role: "user",
-            content: `Titre: ${title}\n\nContenu:\n${sanitizedContent.substring(0, 3000)}${targetKeyword ? `\nMot-clé cible: ${targetKeyword}` : ""}`,
+            content: `Titre: ${title}\n\nContenu:\n${sanitizedContent.substring(0, AI_CONFIG.maxContentContext)}${targetKeyword ? `\nMot-clé cible: ${targetKeyword}` : ""}`,
           },
         ],
-        max_tokens: 2000,
+        max_tokens: AI_CONFIG.maxTokens,
         response_format: {
           type: "json_schema",
           json_schema: {
@@ -139,10 +160,10 @@ Mots-clés: 5-10 mots-clés pertinents.`,
     if (usage) {
       logAIUsage({
         userId: null,
-        model: "gpt-4o",
+        model: AI_CONFIG.model,
         feature: "generateSEO",
         tokens: usage.total_tokens,
-        costEstimate: (usage.total_tokens / 1000) * 0.005,
+        costEstimate: (usage.total_tokens / 1000) * AI_CONFIG.costPer1kTokens,
       });
     }
 
@@ -173,7 +194,7 @@ export async function generateAImage(prompt: string): Promise<string> {
 
     const response = await withRetry(() =>
       openai.images.generate({
-        model: "dall-e-3",
+        model: AI_CONFIG.imageModel,
         prompt: sanitizedPrompt,
         size: "1024x1024",
         quality: "standard",
@@ -183,10 +204,10 @@ export async function generateAImage(prompt: string): Promise<string> {
 
     logAIUsage({
       userId: null,
-      model: "dall-e-3",
+      model: AI_CONFIG.imageModel,
       feature: "generateImage",
       tokens: 0,
-      costEstimate: 0.04,
+      costEstimate: AI_CONFIG.costPerImage,
     });
 
     return response.data?.[0]?.url || "";
@@ -206,7 +227,7 @@ export async function improveContent(
 
     const response = await withRetry(() =>
       openai.chat.completions.create({
-        model: "gpt-4o",
+        model: AI_CONFIG.model,
         messages: [
           {
             role: "system",
@@ -218,7 +239,7 @@ export async function improveContent(
             content: `Instructions: ${sanitizedInstructions}\n\nContenu:\n${sanitizedContent}`,
           },
         ],
-        max_tokens: 2000,
+        max_tokens: AI_CONFIG.maxTokens,
       }),
     );
 
@@ -226,10 +247,10 @@ export async function improveContent(
     if (usage) {
       logAIUsage({
         userId: null,
-        model: "gpt-4o",
+        model: AI_CONFIG.model,
         feature: "improveContent",
         tokens: usage.total_tokens,
-        costEstimate: (usage.total_tokens / 1000) * 0.005,
+        costEstimate: (usage.total_tokens / 1000) * AI_CONFIG.costPer1kTokens,
       });
     }
 
@@ -254,7 +275,7 @@ export async function findInterlinkingOpportunities(
 
     const response = await withRetry(() =>
       openai.chat.completions.create({
-        model: "gpt-4o",
+        model: AI_CONFIG.model,
         messages: [
           {
             role: "system",
@@ -264,10 +285,10 @@ Renvoie un JSON avec la structure: { links: [{ url: string, text: string, positi
           },
           {
             role: "user",
-            content: `Articles existants:\n${articlesText}\n\nContenu à analyser:\n${sanitizedContent.substring(0, 4000)}`,
+            content: `Articles existants:\n${articlesText}\n\nContenu à analyser:\n${sanitizedContent.substring(0, AI_CONFIG.maxContentContext)}`,
           },
         ],
-        max_tokens: 2000,
+        max_tokens: AI_CONFIG.maxTokens,
         response_format: {
           type: "json_schema",
           json_schema: {
@@ -299,10 +320,10 @@ Renvoie un JSON avec la structure: { links: [{ url: string, text: string, positi
     if (usage) {
       logAIUsage({
         userId: null,
-        model: "gpt-4o",
+        model: AI_CONFIG.model,
         feature: "findInterlinkingOpportunities",
         tokens: usage.total_tokens,
-        costEstimate: (usage.total_tokens / 1000) * 0.005,
+        costEstimate: (usage.total_tokens / 1000) * AI_CONFIG.costPer1kTokens,
       });
     }
 
@@ -335,7 +356,7 @@ export async function generateExcerpt(
 
     const response = await withRetry(() =>
       openai.chat.completions.create({
-        model: "gpt-4o",
+        model: AI_CONFIG.model,
         messages: [
           {
             role: "system",
@@ -343,10 +364,10 @@ export async function generateExcerpt(
           },
           {
             role: "user",
-            content: plainText.substring(0, 2000),
+            content: plainText.substring(0, AI_CONFIG.maxContentContext),
           },
         ],
-        max_tokens: 2000,
+        max_tokens: AI_CONFIG.maxTokens,
       }),
     );
 
@@ -354,10 +375,10 @@ export async function generateExcerpt(
     if (usage) {
       logAIUsage({
         userId: null,
-        model: "gpt-4o",
+        model: AI_CONFIG.model,
         feature: "generateExcerpt",
         tokens: usage.total_tokens,
-        costEstimate: (usage.total_tokens / 1000) * 0.005,
+        costEstimate: (usage.total_tokens / 1000) * AI_CONFIG.costPer1kTokens,
       });
     }
 
@@ -380,7 +401,7 @@ export async function detectContentChanges(
 
     const response = await withRetry(() =>
       openai.chat.completions.create({
-        model: "gpt-4o",
+        model: AI_CONFIG.model,
         messages: [
           {
             role: "system",
@@ -389,10 +410,10 @@ export async function detectContentChanges(
           },
           {
             role: "user",
-            content: `Ancienne version:\n${sanitizedOldContent.substring(0, 2000)}\n\nNouvelle version:\n${sanitizedNewContent.substring(0, 2000)}`,
+            content: `Ancienne version:\n${sanitizedOldContent.substring(0, AI_CONFIG.maxContentContext)}\n\nNouvelle version:\n${sanitizedNewContent.substring(0, AI_CONFIG.maxContentContext)}`,
           },
         ],
-        max_tokens: 2000,
+        max_tokens: AI_CONFIG.maxTokens,
         response_format: {
           type: "json_schema",
           json_schema: {
@@ -414,10 +435,10 @@ export async function detectContentChanges(
     if (usage) {
       logAIUsage({
         userId: null,
-        model: "gpt-4o",
+        model: AI_CONFIG.model,
         feature: "detectContentChanges",
         tokens: usage.total_tokens,
-        costEstimate: (usage.total_tokens / 1000) * 0.005,
+        costEstimate: (usage.total_tokens / 1000) * AI_CONFIG.costPer1kTokens,
       });
     }
 

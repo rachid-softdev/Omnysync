@@ -4,9 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent } from '@/components/ui/card'
-import { Loader2, CheckCircle, XCircle } from 'lucide-react'
-import { useTranslations } from '@/lib/i18n/useTranslations'
+import { Loader2, CheckCircle, CircleX } from 'lucide-react'
 
 const PLATFORM_FIELDS: Record<
   string,
@@ -61,7 +59,6 @@ interface ConnectorDialogProps {
 }
 
 export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDialogProps) {
-  const { t } = useTranslations()
   const [fields, setFields] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -195,7 +192,7 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
 
             {error && (
               <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
-                <XCircle className="w-4 h-4" />
+                <CircleX className="w-4 h-4" />
                 {error}
               </div>
             )}

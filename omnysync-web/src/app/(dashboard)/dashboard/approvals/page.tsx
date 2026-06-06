@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
@@ -12,7 +12,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   Loader2,
@@ -21,7 +20,6 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  ExternalLink,
   Eye,
 } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/useTranslations'

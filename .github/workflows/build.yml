@@ -16,17 +16,18 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npx prisma generate
+      # Why: Next.js forces NODE_ENV=production during next build, so the
+      # env.ts Zod validation runs its production checks. All required
+      # env vars must be present at build time.
       - run: npm run build
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
-          ENCRYPTION_SALT: ${{ secrets.ENCRYPTION_SALT }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-          STRIPE_PRICE_PRO_MONTHLY: ${{ secrets.STRIPE_PRICE_PRO_MONTHLY }}
-          STRIPE_PRICE_BUSINESS_MONTHLY: ${{ secrets.STRIPE_PRICE_BUSINESS_MONTHLY }}
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          NEXTAUTH_SECRET: ci-build-secret-not-for-production-min-32-chars!
+          NEXTAUTH_URL: http://localhost:3000
+          GOOGLE_CLIENT_ID: ci-build-id
+          GOOGLE_CLIENT_SECRET: ci-build-secret
+          ENCRYPTION_KEY: ci-build-encryption-key-not-for-production-32+chars
+          ENCRYPTION_SALT: ci-build-salt-not-for-prod-16+
+          OPENAI_API_KEY: sk-ci-placeholder
+          STRIPE_SECRET_KEY: sk_test_ci
+          STRIPE_WEBHOOK_SECRET: whsec_ci

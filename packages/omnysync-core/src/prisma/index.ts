@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
+import { createOAuthEncryptionMiddleware } from "./middleware/oauth-encryption";
 
 const { Pool } = pg;
 
@@ -10,7 +11,13 @@ const prismaClientSingleton = () => {
   }
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const adapter = new PrismaPg(pool);
-  return new PrismaClient({ adapter });
+  const client = new PrismaClient({ adapter });
+
+  // Middleware : chiffrement/déchiffrement transparent des tokens OAuth
+  // eslint-disable-next-line @typescript-eslint/unbound-method
+  (client as any).$use(createOAuthEncryptionMiddleware());
+
+  return client;
 };
 
 declare const globalThis: {

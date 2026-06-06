@@ -1,4 +1,4 @@
-import { prisma } from "../../prisma";
+import { prisma } from "../prisma";
 import { ERR_FETCH_CONTENT } from "../errors";
 import { encrypt } from "../crypto";
 import { fetchWithRetry } from "../http";
@@ -111,15 +111,20 @@ export async function getNotionPageContent(
       },
     },
   );
+  const page = pageData as {
+    properties?: { title?: { title?: Array<{ plain_text?: string }> } };
+    created_time?: string;
+    last_edited_time?: string;
+  };
   const title =
-    pageData.properties?.title?.title?.[0]?.plain_text || "Untitled";
+    page.properties?.title?.title?.[0]?.plain_text || "Untitled";
 
   return {
     id: pageId,
     title,
     content,
-    createdTime: pageData.created_time,
-    lastEditedTime: pageData.last_edited_time,
+    createdTime: page.created_time || "",
+    lastEditedTime: page.last_edited_time || "",
   };
 }
 

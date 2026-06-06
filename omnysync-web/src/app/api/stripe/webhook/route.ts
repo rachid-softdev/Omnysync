@@ -25,7 +25,26 @@ import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2024-12-18.acacia',
-})
+}) as unknown as StripeInstance
+
+// Local type workaround for missing stripe .d.ts files
+type StripeInstance = {
+  subscriptions: { retrieve: (id: string) => Promise<Record<string, any>> }
+  invoices: { retrieve: (id: string) => Promise<Record<string, any>> }
+  webhooks: {
+    constructEvent: (body: string, signature: string, secret: string) => StripeEvent
+  }
+}
+
+type StripeEvent = {
+  id: string
+  type: string
+  data: { object: Record<string, any> }
+}
+
+type StripeCheckoutSession = Record<string, any>
+type StripeSubscription = Record<string, any>
+type StripeInvoice = Record<string, any>
 
 // Price ID to plan key mapping
 // In production, these should be in env vars or DB
@@ -107,8 +126,8 @@ async function findOrganizationBySubscriptionId(subscriptionId: string): Promise
 // EVENT HANDLERS
 // ============================================================================
 
-async function handleCheckoutSessionCompleted(event: Stripe.Event): Promise<void> {
-  const session = event.data.object as Stripe.Checkout.Session
+async function handleCheckoutSessionCompleted(event: StripeEvent): Promise<void> {
+  const session = event.data.object as StripeCheckoutSession
 
   const customerId = session.customer as string
   const subscriptionId = session.subscription as string
@@ -181,8 +200,8 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event): Promise<void
   console.log(`[StripeWebhook] Checkout completed: org=${orgId}, plan=${planKey}`)
 }
 
-async function handleSubscriptionCreated(event: Stripe.Event): Promise<void> {
-  const subscription = event.data.object as Stripe.Subscription
+async function handleSubscriptionCreated(event: StripeEvent): Promise<void> {
+  const subscription = event.data.object as StripeSubscription
   const customerId = subscription.customer as string
   const subscriptionId = subscription.id
 
@@ -223,8 +242,8 @@ async function handleSubscriptionCreated(event: Stripe.Event): Promise<void> {
   console.log(`[StripeWebhook] Subscription created: org=${orgId}, plan=${planKey}`)
 }
 
-async function handleSubscriptionUpdated(event: Stripe.Event): Promise<void> {
-  const subscription = event.data.object as Stripe.Subscription
+async function handleSubscriptionUpdated(event: StripeEvent): Promise<void> {
+  const subscription = event.data.object as StripeSubscription
   const customerId = subscription.customer as string
   const subscriptionId = subscription.id
 
@@ -262,8 +281,8 @@ async function handleSubscriptionUpdated(event: Stripe.Event): Promise<void> {
   )
 }
 
-async function handleSubscriptionDeleted(event: Stripe.Event): Promise<void> {
-  const subscription = event.data.object as Stripe.Subscription
+async function handleSubscriptionDeleted(event: StripeEvent): Promise<void> {
+  const subscription = event.data.object as StripeSubscription
   const subscriptionId = subscription.id
 
   const orgId = await findOrganizationBySubscriptionId(subscriptionId)
@@ -287,8 +306,8 @@ async function handleSubscriptionDeleted(event: Stripe.Event): Promise<void> {
   console.log(`[StripeWebhook] Subscription deleted: org=${orgId}`)
 }
 
-async function handleInvoicePaymentSucceeded(event: Stripe.Event): Promise<void> {
-  const invoice = event.data.object as Stripe.Invoice
+async function handleInvoicePaymentSucceeded(event: StripeEvent): Promise<void> {
+  const invoice = event.data.object as StripeInvoice
   const subscriptionId = invoice.subscription as string
 
   if (!subscriptionId) {
@@ -320,8 +339,8 @@ async function handleInvoicePaymentSucceeded(event: Stripe.Event): Promise<void>
   console.log(`[StripeWebhook] Payment succeeded: org=${orgId}`)
 }
 
-async function handleInvoicePaymentFailed(event: Stripe.Event): Promise<void> {
-  const invoice = event.data.object as Stripe.Invoice
+async function handleInvoicePaymentFailed(event: StripeEvent): Promise<void> {
+  const invoice = event.data.object as StripeInvoice
   const subscriptionId = invoice.subscription as string
 
   if (!subscriptionId) {
@@ -349,8 +368,8 @@ async function handleInvoicePaymentFailed(event: Stripe.Event): Promise<void> {
   console.log(`[StripeWebhook] Payment failed: org=${orgId}`)
 }
 
-async function handleTrialEnd(event: Stripe.Event): Promise<void> {
-  const subscription = event.data.object as Stripe.Subscription
+async function handleTrialEnd(event: StripeEvent): Promise<void> {
+  const subscription = event.data.object as StripeSubscription
   const subscriptionId = subscription.id
 
   const orgId = await findOrganizationBySubscriptionId(subscriptionId)
@@ -388,7 +407,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
   }
 
-  let event: Stripe.Event
+  let event: StripeEvent
 
   try {
     event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET || '')

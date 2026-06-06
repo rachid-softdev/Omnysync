@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -58,8 +58,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         body: JSON.stringify(testPayload),
         signal: AbortSignal.timeout(10000),
       })
-
-      const responseBody = await response.text()
 
       // Enregistrer le test dans les logs
       await prisma.syncLog.create({

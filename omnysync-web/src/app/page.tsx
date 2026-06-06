@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Zap, Globe, BarChart3, ArrowDownUp, Shield } from 'lucide-react'
+import { ArrowRight, Zap, Globe, BarChart3, ArrowUpDown, Shield } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { t } from '@/lib/i18n'
 
@@ -128,7 +128,7 @@ export default function Home() {
             {/* Feature 1 */}
             <div className="p-8 rounded-3xl border border-border bg-card">
               <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center mb-4">
-                <ArrowDownUp className="w-6 h-6" />
+                <ArrowUpDown className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-semibold mb-2">{t('feature_two_way_title')}</h3>
               <p className="text-sm text-muted-foreground">{t('feature_two_way_desc')}</p>

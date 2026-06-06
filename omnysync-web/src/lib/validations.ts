@@ -26,14 +26,14 @@ export const createConnectorSchema = z.object({
     'MEDIUM',
   ]),
   name: z.string().min(1).max(100),
-  credentials: z.record(z.unknown()).optional(),
-  config: z.record(z.unknown()).optional(),
+  credentials: z.record(z.string(), z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
 })
 
 // Queue jobs
 export const queueJobSchema = z.object({
   type: z.string(),
-  payload: z.record(z.unknown()),
+  payload: z.record(z.string(), z.unknown()),
   documentId: z.string().uuid().optional(),
 })
 

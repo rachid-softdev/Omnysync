@@ -50,23 +50,23 @@ export type ConnectorType = (typeof connectorTypes)[number];
 export const createConnectorSchema = z.object({
   type: z.enum(connectorTypes),
   name: z.string().min(1).max(100),
-  credentials: z.record(z.string()).optional(),
-  config: z.record(z.unknown()).optional(),
+  credentials: z.record(z.string(), z.string()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
 });
 
 /** Mise à jour d'un connecteur */
 export const updateConnectorSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   status: z.enum(["ACTIVE", "DISCONNECTED", "ERROR"]).optional(),
-  credentials: z.record(z.string()).optional(),
-  config: z.record(z.unknown()).optional(),
+  credentials: z.record(z.string(), z.string()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
 });
 
 /** Test de connexion */
 export const testConnectionSchema = z.object({
   type: z.enum(connectorTypes),
-  config: z.record(z.unknown()),
-  credentials: z.record(z.string()),
+  config: z.record(z.string(), z.unknown()),
+  credentials: z.record(z.string(), z.string()),
 });
 
 /** WordPress specific */
@@ -260,7 +260,7 @@ export const createOrganizationSchema = z.object({
 export const updateOrganizationSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(500).optional(),
-  settings: z.record(z.unknown()).optional(),
+  settings: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type InviteMemberInput = z.infer<typeof inviteMemberSchema>;
@@ -314,10 +314,10 @@ export function validate<T>(
     return { success: true, data: result.data };
   }
 
-  const errors = result.error.errors
-    .map((e) => `${e.path.join(".")}: ${e.message}`)
+  const errMsg = result.error.issues
+    .map((e: z.ZodIssue) => `${e.path.join(".")}: ${e.message}`)
     .join(", ");
-  return { success: false, error: errors };
+  return { success: false, error: errMsg };
 }
 
 /**
@@ -356,8 +356,8 @@ export function validateQuery<T>(
     return { success: true, data: result.data };
   }
 
-  const errors = result.error.errors
-    .map((e) => `${e.path.join(".")}: ${e.message}`)
+  const errMsg = result.error.issues
+    .map((e: z.ZodIssue) => `${e.path.join(".")}: ${e.message}`)
     .join(", ");
-  return { success: false, error: errors };
+  return { success: false, error: errMsg };
 }

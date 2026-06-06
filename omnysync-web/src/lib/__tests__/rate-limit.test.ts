@@ -8,7 +8,7 @@ describe('getClientIp logic', () => {
     cfIp: string | null
   ): string {
     if (forwarded) {
-      return forwarded.split(',')[0].trim()
+      return forwarded.split(',')[0]!.trim()
     }
 
     return realIp ?? cfIp ?? 'unknown'

@@ -4,13 +4,8 @@ import {
   rateLimit,
   RATE_LIMIT_MAX,
   RATE_LIMIT_WINDOW_MS,
-  getClientIp,
   startRateLimitCleanup,
 } from '@/lib/rate-limit'
-
-// Rate limit configuration
-const API_RATE_LIMIT = 30 // requests per window
-const API_RATE_WINDOW = 60 * 1000 // 1 minute
 
 /**
  * Global middleware for rate limiting
@@ -25,22 +20,12 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // Start cleanup for rate limit entries
   startRateLimitCleanup()
 
-  // Check rate limit
-  const ip = getClientIp(request)
+  // Check rate limit via imported function (not dynamic import)
+  const result = rateLimit(request)
   const now = Date.now()
 
-  // Simple in-memory rate limiting for middleware
-  // Note: For production with multiple instances, use Redis (@upstash/ratelimit)
-  const key = `middleware:${ip}`
-
-  // Import and use the rate limit logic from rate-limit.ts
-  const {
-    default: { rateLimit: RL },
-  } = await import('@/lib/rate-limit')
-  const result = RL(request)
-
   if (!result.allowed) {
-    const retryAfter = Math.ceil((result.remainingTime || API_RATE_WINDOW) / 1000)
+    const retryAfter = Math.ceil((result.remainingTime || RATE_LIMIT_WINDOW_MS) / 1000)
 
     return new NextResponse(
       JSON.stringify({
@@ -52,9 +37,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         headers: {
           'Content-Type': 'application/json',
           'Retry-After': String(retryAfter),
-          'X-RateLimit-Limit': String(API_RATE_LIMIT),
+          'X-RateLimit-Limit': String(RATE_LIMIT_MAX),
           'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': String(now + (result.remainingTime || API_RATE_WINDOW)),
+          'X-RateLimit-Reset': String(now + (result.remainingTime || RATE_LIMIT_WINDOW_MS)),
         },
       }
     )

@@ -24,7 +24,7 @@ export function getClientIp(request: NextRequest): string {
 
   if (forwarded) {
     // x-forwarded-for can contain multiple IPs, take the first (client)
-    return forwarded.split(',')[0].trim()
+    return forwarded.split(',')[0]!.trim()
   }
 
   return realIp ?? request.headers.get('cf-connecting-ip') ?? 'unknown'

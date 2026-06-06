@@ -5,14 +5,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { generateTotpSecret, setupTwoFactor, getTwoFactorStatus } from '@/lib/services/two-factor'
+import * as OTPAuth from 'otpauth'
 import { z } from 'zod'
+
+// Stockage temporaire des secrets 2FA en mémoire
+// En production, utiliser Redis ou une session chiffrée
+const pendingSecrets = new Map<string, { secret: string; expiresAt: Date }>()
+// Nettoyer les secrets expirés toutes les 5 minutes
+setInterval(
+  () => {
+    const now = new Date()
+    for (const [key, value] of pendingSecrets) {
+      if (value.expiresAt < now) pendingSecrets.delete(key)
+    }
+  },
+  5 * 60 * 1000
+)
 
 const setupSchema = z.object({
   action: z.enum(['initiate', 'verify', 'cancel']),
   code: z.string().optional(),
 })
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -61,8 +76,11 @@ export async function POST(request: NextRequest) {
       // Générer le secret pour l'initiation
       const { secret, otpauthUrl } = generateTotpSecret()
 
-      // Stocker temporairement le secret en session (non implémenté ici)
-      // En production, utiliser une session chiffrée ou Redis
+      // Stocker le secret temporairement (expire dans 10 minutes)
+      pendingSecrets.set(session.user.id, {
+        secret,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      })
 
       return NextResponse.json({
         secret,
@@ -72,23 +90,42 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'verify' && code) {
-      // Ici, en production, vérifier le code avec le secret stocké temporairement
-      // Pour l'instant, on simule la vérification
+      // Récupérer le secret stocké lors de l'initiation
+      const pending = pendingSecrets.get(session.user.id)
+      if (!pending) {
+        return NextResponse.json(
+          {
+            error: 'Session expirée. Veuillez recommencer la configuration du 2FA.',
+          },
+          { status: 400 }
+        )
+      }
 
-      // TODO: Implémenter la vérification réelle du code TOTP
-      // const { secret } = getStoredSecret(session.user.id)
-      // const isValid = await verifyTotp(secret, code)
+      if (pending.expiresAt < new Date()) {
+        pendingSecrets.delete(session.user.id)
+        return NextResponse.json(
+          {
+            error: 'Session expirée. Veuillez recommencer la configuration du 2FA.',
+          },
+          { status: 400 }
+        )
+      }
 
-      // Pour démo: accepter "123456" en développement
-      const isValid = process.env.NODE_ENV === 'development' && code === '123456'
+      // Vérifier le code TOTP avec le secret stocké
+      const totp = new OTPAuth.TOTP({
+        secret: OTPAuth.Secret.fromBase32(pending.secret),
+        issuer: 'Omnysync',
+        label: 'Omnysync',
+      })
 
-      if (!isValid) {
+      const delta = totp.validate({ token: code, window: 1 })
+      if (delta === null) {
         return NextResponse.json({ error: 'Code invalide. Veuillez réessayer.' }, { status: 400 })
       }
 
-      // Configurer le 2FA
-      // TODO: Utiliser le secret stocké
-      const result = await setupTwoFactor(session.user.id, 'DEMO_SECRET_' + Date.now())
+      // Configurer le 2FA avec le vrai secret vérifié
+      const result = await setupTwoFactor(session.user.id, pending.secret)
+      pendingSecrets.delete(session.user.id) // Nettoyer
 
       if (!result.success) {
         return NextResponse.json({ error: result.error }, { status: 500 })
@@ -104,7 +141,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Action invalide' }, { status: 400 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors[0].message }, { status: 400 })
+      return NextResponse.json({ error: error.issues[0]?.message }, { status: 400 })
     }
 
     console.error('2FA setup POST error:', error)

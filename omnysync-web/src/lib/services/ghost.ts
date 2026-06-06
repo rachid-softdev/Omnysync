@@ -14,6 +14,7 @@ export interface GhostPost {
   feature_image?: string
   meta_title?: string
   meta_description?: string
+  updated_at?: string
 }
 
 export interface GhostTag {
@@ -45,7 +46,7 @@ export function createGhostClient(siteUrl: string, adminApiKey: string) {
         headers: { ...headers, ...options.headers },
       }
     )
-    return data[Object.keys(data)[0]] as T
+    return data[Object.keys(data)[0]!] as T
   }
 
   return {

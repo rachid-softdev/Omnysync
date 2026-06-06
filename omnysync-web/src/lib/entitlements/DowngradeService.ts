@@ -10,10 +10,9 @@
  * Simplified implementation: graceful by default (per user request)
  */
 
-import { DowngradePreview, DowngradeStrategy } from './types'
+import type { DowngradePreview, DowngradeStrategy } from './types'
 import { getEntitlementRepository } from './EntitlementRepository'
 import { getFeatureGateService } from './FeatureGateService'
-import { DEFAULT_DOWNGRADE_STRATEGY } from './constants'
 
 export class DowngradeService {
   /**
@@ -169,7 +168,6 @@ export class DowngradeService {
    * This is called by FeatureGateService when checking access
    */
   shouldGrantAccess(
-    featureKey: string,
     isCurrentlyEnabled: boolean,
     newPlanEnabled: boolean,
     strategy: DowngradeStrategy,

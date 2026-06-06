@@ -142,7 +142,7 @@ export function withSentryCapture(handler: (req: Request) => Promise<Response>) 
 }
 
 // Export par défaut pour la configuration Next.js
-export default {
+const sentryConfig = {
   initSentry,
   captureError,
   captureMessage,
@@ -152,3 +152,5 @@ export default {
   capturePromiseError,
   withSentryCapture,
 }
+
+export default sentryConfig
