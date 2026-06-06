@@ -5,29 +5,16 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
+import { requireAdmin, AuthError } from '@/lib/auth/require-admin'
 
 export const runtime = 'nodejs'
 
-async function requireAdmin(request: NextRequest): Promise<string | null> {
-  const adminHeader = request.headers.get('x-admin-role')
-  if (adminHeader === 'admin') {
-    return adminHeader
-  }
-  return null
-}
-
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ orgId: string }> }
 ) {
   try {
-    const isAdmin = await requireAdmin(request)
-    if (!isAdmin) {
-      return NextResponse.json(
-        { error: 'FORBIDDEN', message: 'Admin access required' },
-        { status: 403 }
-      )
-    }
+    await requireAdmin()
 
     const { orgId } = await params
 
@@ -39,7 +26,10 @@ export async function POST(
       orgId,
       message: 'Cache invalidated successfully',
     })
-  } catch (error) {
+  } catch (error: unknown) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     console.error('[Admin Cache Invalidate] Error:', error)
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'Failed to invalidate cache' },

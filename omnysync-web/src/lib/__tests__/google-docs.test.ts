@@ -65,11 +65,11 @@ describe('Google Docs Service', () => {
       const docs = await listGoogleDocs('test-token')
 
       expect(docs).toHaveLength(2)
-      expect(docs[0].id).toBe('doc-1')
-      expect(docs[0].title).toBe('Document 1')
-      expect(docs[0].createdTime).toBe('2024-01-01T00:00:00Z')
-      expect(docs[1].id).toBe('doc-2')
-      expect(docs[1].title).toBe('Document 2')
+      expect(docs[0]!.id).toBe('doc-1')
+      expect(docs[0]!.title).toBe('Document 1')
+      expect(docs[0]!.createdTime).toBe('2024-01-01T00:00:00Z')
+      expect(docs[1]!.id).toBe('doc-2')
+      expect(docs[1]!.title).toBe('Document 2')
     })
 
     it('should return empty content for each doc', async () => {
@@ -83,7 +83,7 @@ describe('Google Docs Service', () => {
 
       const docs = await listGoogleDocs('test-token')
 
-      expect(docs[0].content).toBe('')
+      expect(docs[0]!.content).toBe('')
     })
   })
 
@@ -266,7 +266,7 @@ describe('Google Docs Service', () => {
         credentials: 'encrypted_new_credentials',
       } as any)
 
-      const result = await updateConnectorCredentials(
+      await updateConnectorCredentials(
         'connector-1',
         'new-access-token',
         'new-refresh-token'

@@ -9,17 +9,10 @@ import { getEntitlementRepository } from '@/lib/entitlements/EntitlementReposito
 import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
 import { prisma } from '@/lib/prisma'
 import { PAGINATION_DEFAULTS } from '@/lib/entitlements/constants'
+import { requireAdmin, AuthError } from '@/lib/auth/require-admin'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-async function requireAdmin(request: NextRequest): Promise<string | null> {
-  const adminHeader = request.headers.get('x-admin-role')
-  if (adminHeader === 'admin') {
-    return adminHeader
-  }
-  return null
-}
 
 // ============================================================================
 // GET /admin/overrides
@@ -27,13 +20,7 @@ async function requireAdmin(request: NextRequest): Promise<string | null> {
 
 export async function GET(request: NextRequest) {
   try {
-    const isAdmin = await requireAdmin(request)
-    if (!isAdmin) {
-      return NextResponse.json(
-        { error: 'FORBIDDEN', message: 'Admin access required' },
-        { status: 403 }
-      )
-    }
+    await requireAdmin()
 
     const { searchParams } = new URL(request.url)
     const orgId = searchParams.get('orgId')
@@ -70,7 +57,10 @@ export async function GET(request: NextRequest) {
         totalPages,
       },
     })
-  } catch (error) {
+  } catch (error: unknown) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     console.error('[Admin Overrides GET] Error:', error)
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'Failed to fetch overrides' },
@@ -85,13 +75,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const isAdmin = await requireAdmin(request)
-    if (!isAdmin) {
-      return NextResponse.json(
-        { error: 'FORBIDDEN', message: 'Admin access required' },
-        { status: 403 }
-      )
-    }
+    await requireAdmin()
 
     const body = await request.json()
     const { scope, scopeId, featureKey, enabled, limitValue, expiresAt, reason } = body
@@ -144,7 +128,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(override, { status: 201 })
-  } catch (error) {
+  } catch (error: unknown) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     console.error('[Admin Overrides POST] Error:', error)
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'Failed to create override' },

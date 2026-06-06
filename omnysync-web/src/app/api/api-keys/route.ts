@@ -14,7 +14,7 @@ const createApiKeySchema = z.object({
   expiresInDays: z.number().optional(),
 })
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
+      return NextResponse.json({ error: error.issues[0]?.message }, { status: 400 })
     }
     console.error('POST api-keys error:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

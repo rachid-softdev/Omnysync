@@ -11,27 +11,14 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
+import { requireAdmin, AuthError } from '@/lib/auth/require-admin'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-async function requireAdmin(request: NextRequest): Promise<string | null> {
-  const adminHeader = request.headers.get('x-admin-role')
-  if (adminHeader === 'admin') {
-    return adminHeader
-  }
-  return null
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const isAdmin = await requireAdmin(request)
-    if (!isAdmin) {
-      return NextResponse.json(
-        { error: 'FORBIDDEN', message: 'Admin access required' },
-        { status: 403 }
-      )
-    }
+    await requireAdmin()
 
     const { searchParams } = new URL(request.url)
     const orgId = searchParams.get('orgId')
@@ -53,6 +40,9 @@ export async function GET(request: NextRequest) {
     console.error('[Debug Entitlements] Error:', error)
 
     // Handle known error types
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: 'ERROR', message: error.message }, { status: 400 })
     }

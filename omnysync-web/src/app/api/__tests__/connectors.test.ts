@@ -1,7 +1,7 @@
 /**
  * Tests pour les routes API des Connectors
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 
 // Mock Prisma
 vi.mock('@/lib/prisma', () => ({

@@ -18,8 +18,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
 import { getExperimentService } from '@/lib/entitlements/ExperimentService'
-import { EntitlementsResponse } from '@/lib/entitlements/types'
-import { prisma } from '@/lib/prisma'
+import type { EntitlementsResponse } from '@/lib/entitlements/types'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -64,7 +63,6 @@ export async function GET(request: NextRequest) {
         // Get current usage
         const feature = await featureGate.hasFeature(orgId, key)
         if (feature) {
-          const limitValue = await featureGate.getLimit(orgId, key)
           // Usage tracking would be fetched here
           // For now, just pass limits
         }

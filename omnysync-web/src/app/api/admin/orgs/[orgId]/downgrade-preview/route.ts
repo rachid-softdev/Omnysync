@@ -5,29 +5,16 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getDowngradeService } from '@/lib/entitlements/DowngradeService'
+import { requireAdmin, AuthError } from '@/lib/auth/require-admin'
 
 export const runtime = 'nodejs'
-
-async function requireAdmin(request: NextRequest): Promise<string | null> {
-  const adminHeader = request.headers.get('x-admin-role')
-  if (adminHeader === 'admin') {
-    return adminHeader
-  }
-  return null
-}
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ orgId: string }> }
 ) {
   try {
-    const isAdmin = await requireAdmin(request)
-    if (!isAdmin) {
-      return NextResponse.json(
-        { error: 'FORBIDDEN', message: 'Admin access required' },
-        { status: 403 }
-      )
-    }
+    await requireAdmin()
 
     const { searchParams } = new URL(request.url)
     const targetPlanKey = searchParams.get('plan')
@@ -56,7 +43,10 @@ export async function GET(
       affectedFeaturesCount: validation.affectedFeatures,
       recommendedStrategy: preview.recommendedStrategy,
     })
-  } catch (error) {
+  } catch (error: unknown) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     console.error('[Admin Downgrade Preview] Error:', error)
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'Failed to generate preview' },

@@ -5,7 +5,6 @@ import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import { sendWelcomeEmail } from '@/lib/email'
 import { verifyPassword } from '@/lib/auth/password'
-import { getTwoFactorStatus } from '@/lib/services/two-factor'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),

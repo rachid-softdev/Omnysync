@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, RefreshCw, Loader2 } from 'lucide-react'
+import { RefreshCw, Loader2 } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 
 const ConnectorDialog = dynamic(

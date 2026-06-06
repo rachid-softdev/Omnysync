@@ -4,7 +4,6 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
 const passwordSchema = z.object({
@@ -20,7 +19,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { currentPassword, newPassword } = passwordSchema.parse(body)
+    passwordSchema.parse(body)
 
     // Vérifier le mot de passe actuel
     // NOTE: Since we only have Google OAuth, we cannot verify the current password
@@ -34,7 +33,7 @@ export async function PUT(request: NextRequest) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
+      return NextResponse.json({ error: error.issues[0]?.message }, { status: 400 })
     }
     console.error('PUT password error:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
