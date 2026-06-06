@@ -17,6 +17,7 @@ import {
   Send,
 } from 'lucide-react'
 import Link from 'next/link'
+import { ConnectorIcon } from '@/components/connector-icon'
 import { notFound } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -233,12 +234,8 @@ export default async function SyncDetailPage({ params }: PageProps) {
             <CardTitle>Source</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                <span className="text-xl">
-                  {document.sourceConnector?.type === 'GOOGLE_DOCS' ? '📄' : '📝'}
-                </span>
-              </div>
+              <div className="flex items-center gap-3">
+              <ConnectorIcon type={document.sourceConnector?.type || ''} className="w-10 h-10" />
               <div>
                 <p className="font-medium">
                   {connectorNames[document.sourceConnector?.type || ''] || 'Source'}
@@ -256,20 +253,8 @@ export default async function SyncDetailPage({ params }: PageProps) {
             <CardTitle>Destination</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                <span className="text-xl">
-                  {document.destConnector?.type === 'WORDPRESS'
-                    ? '🔵'
-                    : document.destConnector?.type === 'GHOST'
-                      ? '👻'
-                      : document.destConnector?.type === 'WEBFLOW'
-                        ? '🌐'
-                        : document.destConnector?.type === 'SHOPIFY'
-                          ? '🛒'
-                          : '📤'}
-                </span>
-              </div>
+              <div className="flex items-center gap-3">
+              <ConnectorIcon type={document.destConnector?.type || ''} className="w-10 h-10" />
               <div>
                 <p className="font-medium">
                   {connectorNames[document.destConnector?.type || ''] || 'Destination'}

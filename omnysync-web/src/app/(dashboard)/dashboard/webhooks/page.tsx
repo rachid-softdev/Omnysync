@@ -31,6 +31,18 @@ import {
   Play,
   Copy,
 } from 'lucide-react'
+import { toast } from '@/components/toast-provider'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 
 interface WebhookEndpoint {
@@ -51,6 +63,7 @@ export default function WebhooksPage() {
   const [webhooks, setWebhooks] = useState<WebhookEndpoint[]>([])
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [testingId, setTestingId] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
   // Form state
   const [newWebhook, setNewWebhook] = useState({
@@ -96,16 +109,21 @@ export default function WebhooksPage() {
     }
   }
 
-  const deleteWebhook = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce webhook?')) return
-
+  const confirmDeleteWebhook = async () => {
+    if (!deleteTarget) return
     try {
-      const res = await fetch(`/api/webhook-endpoints/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/webhook-endpoints/${deleteTarget}`, { method: 'DELETE' })
       if (res.ok) {
-        setWebhooks(webhooks.filter((w) => w.id !== id))
+        setWebhooks(webhooks.filter((w) => w.id !== deleteTarget))
+        toast.success('Webhook supprimé')
+      } else {
+        toast.error('Erreur lors de la suppression')
       }
     } catch (e) {
       console.error(e)
+      toast.error('Erreur lors de la suppression')
+    } finally {
+      setDeleteTarget(null)
     }
   }
 
@@ -132,12 +150,12 @@ export default function WebhooksPage() {
       const data = await res.json()
 
       if (res.ok && data.success) {
-        alert('Test envoyé avec succès!')
+        toast.success('Test envoyé avec succès!')
       } else {
-        alert(`Erreur: ${data.error}`)
+        toast.error(`Erreur: ${data.error}`)
       }
     } catch {
-      alert('Erreur lors du test')
+      toast.error('Erreur lors du test')
     } finally {
       setTestingId(null)
     }
@@ -145,7 +163,7 @@ export default function WebhooksPage() {
 
   const copySecret = (secret: string) => {
     navigator.clipboard.writeText(secret)
-    alert('Secret copié dans le presse-papiers')
+    toast.success('Secret copié dans le presse-papiers')
   }
 
   if (loading) {
@@ -305,14 +323,30 @@ export default function WebhooksPage() {
                         <Copy className="w-4 h-4" />
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive"
-                      onClick={() => deleteWebhook(webhook.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <AlertDialog open={deleteTarget === webhook.id} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive"
+                          onClick={() => setDeleteTarget(webhook.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Supprimer le webhook</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Êtes-vous sûr de vouloir supprimer ce webhook ? Cette action est irréversible.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel onClick={() => setDeleteTarget(null)}>Annuler</AlertDialogCancel>
+                          <AlertDialogAction onClick={confirmDeleteWebhook}>Supprimer</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </CardContent>
