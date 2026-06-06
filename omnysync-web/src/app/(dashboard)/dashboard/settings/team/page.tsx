@@ -33,6 +33,18 @@ import {
   Trash2,
   Loader2,
 } from 'lucide-react'
+import { toast } from '@/components/toast-provider'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 
 interface TeamMember {
@@ -52,6 +64,7 @@ export default function TeamSettingsPage() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('MEMBER')
   const [inviting, setInviting] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
   useEffect(() => {
     fetchTeam()
@@ -95,19 +108,24 @@ export default function TeamSettingsPage() {
     }
   }
 
-  const handleRemoveMember = async (memberId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce membre ?')) return
-
+  const confirmRemoveMember = async () => {
+    if (!deleteTarget) return
     try {
-      const res = await fetch(`/api/team/${memberId}`, {
+      const res = await fetch(`/api/team/${deleteTarget}`, {
         method: 'DELETE',
       })
 
       if (res.ok) {
         fetchTeam()
+        toast.success('Membre supprimé')
+      } else {
+        toast.error('Erreur lors de la suppression')
       }
     } catch (e) {
       console.error(e)
+      toast.error('Erreur lors de la suppression')
+    } finally {
+      setDeleteTarget(null)
     }
   }
 
@@ -278,14 +296,31 @@ export default function TeamSettingsPage() {
                             <SelectItem value="ADMIN">Admin</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive"
-                          onClick={() => handleRemoveMember(member.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <AlertDialog open={deleteTarget === member.id} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive"
+                              aria-label="Supprimer le membre"
+                              onClick={() => setDeleteTarget(member.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Supprimer le membre</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Êtes-vous sûr de vouloir supprimer ce membre ? Cette action est irréversible.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={() => setDeleteTarget(null)}>Annuler</AlertDialogCancel>
+                              <AlertDialogAction onClick={confirmRemoveMember}>Supprimer</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     )}
                   </div>

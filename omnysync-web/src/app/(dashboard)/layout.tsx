@@ -51,6 +51,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="min-h-screen flex">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-background focus:text-foreground focus:ring-2 focus:ring-ring focus:rounded-lg"
+      >
+        Aller au contenu
+      </a>
       {/* Desktop sidebar - hidden on mobile */}
       <aside className="hidden md:flex w-64 bg-card border-r border-border flex-col">
         <div className="p-6 border-b border-border">
@@ -100,7 +106,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </aside>
       {/* Mobile navigation */}
       <MobileNav navItems={navItems} user={user} />
-      <main className="flex-1 bg-background md:pt-0 pt-14">{children}</main>
+      <main id="main-content" className="flex-1 bg-background md:pt-0 pt-14">{children}</main>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { Check, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ProCheckoutButton } from '@/components/pro-checkout-button'
 import Link from 'next/link'
 import { t } from '@/lib/i18n'
 import type { Metadata } from 'next'
@@ -104,25 +105,7 @@ export default function PricingPage() {
                   ))}
                 </ul>
                 {plan.href.startsWith('/api') ? (
-                  <form
-                    action={async () => {
-                      'use server'
-                      const res = await fetch(`${process.env.NEXTAUTH_URL}/api/stripe/checkout`, {
-                        method: 'POST',
-                      })
-                      if (res.ok) {
-                        const data = await res.json()
-                        if (data.url) {
-                          // This won't work server-side, so the checkout will be triggered from client
-                        }
-                      }
-                    }}
-                  >
-                    <Button className="w-full" variant={plan.highlighted ? 'default' : 'outline'}>
-                      <Zap className="w-4 h-4 mr-2" />
-                      {t(plan.ctaKey)}
-                    </Button>
-                  </form>
+                  <ProCheckoutButton label={t(plan.ctaKey)} />
                 ) : (
                   <Link href={plan.href}>
                     <Button className="w-full" variant={plan.highlighted ? 'default' : 'outline'}>

@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { RefreshCw, Loader2 } from 'lucide-react'
+import { ConnectorIcon } from '@/components/connector-icon'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 
 const ConnectorDialog = dynamic(
@@ -35,17 +36,6 @@ const connectorNames: Record<string, string> = {
   MEDIUM: 'Medium',
 }
 
-const connectorIcons: Record<string, string> = {
-  GOOGLE_DOCS: '📄',
-  NOTION: '📝',
-  WORDPRESS: '🔵',
-  GHOST: '👻',
-  WEBFLOW: '🌐',
-  SHOPIFY: '🛒',
-  AIRTABLE: '📊',
-  CONTENTFUL: '🏗️',
-  MEDIUM: '📰',
-}
 
 const connectorDescriptions: Record<string, string> = {
   GOOGLE_DOCS: 'Récupérez le contenu depuis Google Docs',
@@ -154,7 +144,7 @@ export default function ConnectorsPage() {
             return (
               <Card key={type} className="hover:shadow-md transition-shadow">
                 <CardContent className="flex flex-col items-center text-center p-6">
-                  <span className="text-4xl mb-3">{connectorIcons[type]}</span>
+                  <ConnectorIcon type={type} className="w-14 h-14 mb-3" />
                   <p className="font-semibold">{connectorNames[type]}</p>
                   <p className="text-xs text-muted-foreground mt-1 mb-4">
                     {connectorDescriptions[type]}
@@ -190,7 +180,7 @@ export default function ConnectorsPage() {
             return (
               <Card key={type} className="hover:shadow-md transition-shadow">
                 <CardContent className="flex flex-col items-center text-center p-6">
-                  <span className="text-4xl mb-3">{connectorIcons[type]}</span>
+                  <ConnectorIcon type={type} className="w-14 h-14 mb-3" />
                   <p className="font-semibold">{connectorNames[type]}</p>
                   <p className="text-xs text-muted-foreground mt-1 mb-4">
                     {connectorDescriptions[type]}
@@ -223,7 +213,7 @@ export default function ConnectorsPage() {
             {connectors.map((connector) => (
               <Card key={connector.id}>
                 <CardContent className="flex items-center gap-4 p-4">
-                  <span className="text-2xl">{connectorIcons[connector.type]}</span>
+                  <ConnectorIcon type={connector.type} className="w-10 h-10" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{connector.name}</p>
                     <p className="text-sm text-muted-foreground">
