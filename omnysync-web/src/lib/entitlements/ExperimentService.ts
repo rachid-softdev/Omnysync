@@ -92,6 +92,7 @@ function murmurhash3(key: string, seed: number = 0): number {
     case 9:
       k2 ^= BigInt(data[i + 8]!)
       k2 *= c2
+      h2 ^= k2
     // @ts-expect-error TS7029
     case 8:
       k1 ^= BigInt(data[i + 7]!) << 56n
@@ -116,6 +117,7 @@ function murmurhash3(key: string, seed: number = 0): number {
     case 1:
       k1 ^= BigInt(data[i]!)
       k1 *= c1
+      h1 ^= k1
   }
 
   // Finalization

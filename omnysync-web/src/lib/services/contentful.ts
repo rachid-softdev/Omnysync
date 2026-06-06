@@ -56,7 +56,7 @@ export async function listContentfulSpaces(accessToken: string): Promise<Content
       }
     )
     return data.items || []
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch Contentful spaces')
   }
 }
@@ -78,7 +78,7 @@ export async function listContentfulContentTypes(
       }
     )
     return data.items || []
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch content types')
   }
 }
@@ -122,7 +122,7 @@ export async function listContentfulEntries(
         fields: entry.fields || {},
       }
     })
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch entries')
   }
 }
@@ -186,7 +186,7 @@ export async function createContentfulEntry(
     )
 
     return { id: data.sys.id }
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to create entry')
   }
 }
@@ -216,7 +216,7 @@ export async function updateContentfulEntry(
     )
 
     return { id: data.sys.id }
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to update entry')
   }
 }

@@ -32,8 +32,8 @@ export type MiddlewareHandler = (
 /**
  * Default resolver - extracts orgId from the auth session
  */
-export function createOrgIdResolver(_headerName?: string): OrgIdResolver {
-  return async (_request: Request): Promise<string | null> => {
+export function createOrgIdResolver(): OrgIdResolver {
+  return async (): Promise<string | null> => {
     try {
       const session = await auth()
       if (!session?.user?.id) return null
@@ -210,7 +210,7 @@ export function consumeFeature(
  *   app.get("/export", requireFeatureExpress, handler)
  */
 export function toExpress(middleware: MiddlewareHandler) {
-  return (_featureKey: string) => {
+  return () => {
     return (
       req: { headers: Record<string, string | undefined> },
       res: unknown,

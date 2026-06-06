@@ -298,7 +298,7 @@ export default function UsagePage() {
 
                 <div className="p-6 rounded-lg border bg-muted/50">
                   <div className="flex items-center gap-3 mb-4">
-                    <Image className="w-5 h-5 text-primary" />
+                    <Image className="w-5 h-5 text-primary" alt="" />
                     <h3 className="font-semibold">Images</h3>
                   </div>
                   <p className="text-4xl font-bold">{displayUsage.aiImages}</p>

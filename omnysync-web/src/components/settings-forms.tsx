@@ -85,7 +85,7 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
       } else {
         setPasswordError(data.error || 'Erreur lors du changement de mot de passe')
       }
-    } catch (e) {
+    } catch {
       setPasswordError('Erreur de connexion')
     } finally {
       setPasswordLoading(false)

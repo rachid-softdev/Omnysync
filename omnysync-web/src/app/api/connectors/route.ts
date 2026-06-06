@@ -13,7 +13,7 @@ import { createConnectorSchema } from '@/lib/validations'
 import { apiError } from '@/lib/api-error'
 import { checkConnectorLimit } from '@/lib/auth/subscription'
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const session = await auth()
 
   if (!session?.user?.id) {

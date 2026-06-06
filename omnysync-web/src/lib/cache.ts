@@ -129,6 +129,7 @@ export function withCache<T extends (...args: unknown[]) => Promise<unknown>>(
  */
 export function useCachedFetch<T>(
   fetchFn: () => Promise<T>,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _options: CacheOptions = {}
 ) {
 

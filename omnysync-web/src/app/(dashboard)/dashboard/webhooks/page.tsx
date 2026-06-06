@@ -136,7 +136,7 @@ export default function WebhooksPage() {
       } else {
         alert(`Erreur: ${data.error}`)
       }
-    } catch (e) {
+    } catch {
       alert('Erreur lors du test')
     } finally {
       setTestingId(null)

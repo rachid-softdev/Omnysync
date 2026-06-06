@@ -718,7 +718,6 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     const allFeatureKeys = new Set([...currentMap.keys(), ...targetMap.keys()])
 
     const features: DowngradePreview['features'] = []
-    let affectedCount = 0
 
     for (const key of allFeatureKeys) {
       const current = currentMap.get(key)
@@ -729,10 +728,6 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
         (current?.limitValue !== null &&
           target?.limitValue !== null &&
           target!.limitValue < current!.limitValue)
-
-      if (willBeAffected) {
-        affectedCount++
-      }
 
       // Check if there's active usage
       const usage = await this.getUsageTracking(orgId, key)

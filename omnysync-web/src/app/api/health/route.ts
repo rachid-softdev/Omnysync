@@ -13,7 +13,7 @@ export async function GET() {
       status: 'ok',
       responseTime: Date.now() - dbStart,
     }
-  } catch (error) {
+  } catch {
     checks.database = {
       status: 'error',
       message: 'Database connection failed',

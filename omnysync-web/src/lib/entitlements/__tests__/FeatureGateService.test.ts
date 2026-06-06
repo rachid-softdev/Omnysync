@@ -33,7 +33,6 @@ import type {
   SubscriptionData,
   FeatureData,
   PlanFeatureData,
-  PlanFeatureUpdate,
   OverrideData,
   UsageData,
 } from '../EntitlementRepository'
@@ -160,7 +159,7 @@ class MockEntitlementRepository implements IEntitlementRepository {
     return this.usage.get(key) ?? null
   }
 
-  async getOrganizationStripeCustomerId(_orgId: string): Promise<string | null> {
+  async getOrganizationStripeCustomerId(): Promise<string | null> {
     return null
   }
 
@@ -195,11 +194,7 @@ class MockEntitlementRepository implements IEntitlementRepository {
   async getAllFeaturesWithPlans() {
     return []
   }
-  async updatePlanFeature(
-    _planKey: string,
-    _featureKey: string,
-    _data: Partial<PlanFeatureUpdate>
-  ): Promise<PlanFeatureData> {
+  async updatePlanFeature(): Promise<PlanFeatureData> {
     return {
       featureKey: '',
       featureName: '',
@@ -229,7 +224,7 @@ class MockEntitlementRepository implements IEntitlementRepository {
       defaultConfig: null,
     }
   }
-  async getDowngradePreview(_orgId: string, _targetPlanKey: string): Promise<DowngradePreview> {
+  async getDowngradePreview(): Promise<DowngradePreview> {
     return { features: [], recommendedStrategy: 'GRACEFUL' as DowngradeStrategy }
   }
   async isWebhookEventProcessed() {

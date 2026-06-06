@@ -13,7 +13,7 @@ const createApprovalSchema = z.object({
   documentId: z.string().min(1, 'Document requis'),
 })
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const session = await auth()
     if (!session?.user?.id) {

@@ -14,7 +14,7 @@ const createApiKeySchema = z.object({
   expiresInDays: z.number().optional(),
 })
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const session = await auth()
     if (!session?.user?.id) {
