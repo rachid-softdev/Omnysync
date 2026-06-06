@@ -14,12 +14,9 @@ const forgotPasswordSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = await rateLimit(request, {
-      limit: 3,
-      window: 15 * 60 * 1000, // 15 minutes
-    })
+    const rateLimitResult = rateLimit(request)
 
-    if (!rateLimitResult.success) {
+    if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Trop de demandes. Réessayez plus tard.' }, { status: 429 })
     }
 
@@ -35,7 +32,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors[0].message }, { status: 400 })
+      return NextResponse.json({ error: error.issues[0]!.message }, { status: 400 })
     }
 
     console.error('Forgot password error:', error)

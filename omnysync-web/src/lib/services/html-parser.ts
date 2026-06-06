@@ -1,40 +1,5 @@
 import type { GoogleDocElement } from './types'
 
-interface TextStyleProps {
-  bold?: boolean
-  italic?: boolean
-  underline?: boolean
-  strikethrough?: boolean
-  link?: { url?: string }
-  baselineOffset?: string
-  fontSize?: { magnitude: number; unit: string }
-  weightedFontFamily?: { fontFamily: string }
-  foregroundColor?: { color?: { rgbColor?: { rgbColor: string } } }
-}
-
-interface TextElement {
-  textRun?: {
-    content?: string
-    textStyle?: TextStyleProps
-  }
-}
-
-interface ParagraphElement {
-  paragraph?: {
-    elements?: TextElement[]
-    paragraphStyle?: { namedStyleType?: string }
-  }
-  table?: {
-    tableRows?: Array<{
-      tableCells?: Array<{
-        content?: ParagraphElement[]
-      }>
-    }>
-  }
-  tableOfContents?: Record<string, unknown>
-  sectionBreak?: Record<string, unknown>
-}
-
 export interface ParsedContent {
   title: string
   html: string
@@ -93,7 +58,6 @@ export function parseGoogleDocToHtml(
                 runText = `<a href="${style.link.url}" target="_blank" rel="noopener">${runText}</a>`
               }
 
-              const fonts = []
               if (style.baselineOffset === 'SUPERSCRIPT') {
                 runText = `<sup>${runText}</sup>`
               }

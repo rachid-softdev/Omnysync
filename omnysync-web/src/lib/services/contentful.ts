@@ -34,6 +34,12 @@ export interface ContentfulEntry {
   createdAt: string
   updatedAt: string
   fields: Record<string, unknown>
+  sys?: {
+    id?: string
+    createdAt?: string
+    updatedAt?: string
+    contentType?: { sys?: { id?: string } }
+  }
 }
 
 /**
@@ -50,7 +56,7 @@ export async function listContentfulSpaces(accessToken: string): Promise<Content
       }
     )
     return data.items || []
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch Contentful spaces')
   }
 }
@@ -72,7 +78,7 @@ export async function listContentfulContentTypes(
       }
     )
     return data.items || []
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch content types')
   }
 }
@@ -96,7 +102,7 @@ export async function listContentfulEntries(
   })
 
   try {
-    const data = await fetchWithRetry<{ items: ContentfulEntry[] }>(
+    const rawData = await fetchWithRetry<{ items: Record<string, unknown>[] }>(
       `${CONTENTFUL_CDN}/spaces/${spaceId}/entries?${params}`,
       {
         headers: {
@@ -105,15 +111,18 @@ export async function listContentfulEntries(
       }
     )
 
-    return (data.items || []).map((entry) => ({
-      id: entry.sys?.id || '',
-      title: entry.fields?.title || entry.fields?.name || 'Untitled',
-      content: JSON.stringify(entry.fields, null, 2),
-      createdAt: entry.sys?.createdAt || '',
-      updatedAt: entry.sys?.updatedAt || '',
-      fields: entry.fields || {},
-    }))
-  } catch (error) {
+    return (rawData.items || []).map((rawEntry) => {
+      const entry = rawEntry as { sys?: { id?: string; createdAt?: string; updatedAt?: string }; fields?: Record<string, unknown> }
+      return {
+        id: entry.sys?.id || '',
+        title: (entry.fields?.title as string) || (entry.fields?.name as string) || 'Untitled',
+        content: JSON.stringify(entry.fields, null, 2),
+        createdAt: entry.sys?.createdAt || '',
+        updatedAt: entry.sys?.updatedAt || '',
+        fields: entry.fields || {},
+      }
+    })
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to fetch entries')
   }
 }
@@ -177,7 +186,7 @@ export async function createContentfulEntry(
     )
 
     return { id: data.sys.id }
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to create entry')
   }
 }
@@ -207,7 +216,7 @@ export async function updateContentfulEntry(
     )
 
     return { id: data.sys.id }
-  } catch (error) {
+  } catch {
     throw new APIError(ERR_FETCH_CONTENT, 'Failed to update entry')
   }
 }

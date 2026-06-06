@@ -7,7 +7,7 @@
  */
 
 import { prisma } from '@/lib/prisma'
-import {
+import type {
   FeatureType,
   OverrideScope,
   SubscriptionStatus,
@@ -17,9 +17,9 @@ import {
   OverrideInput,
   DowngradePreview,
   DowngradeStrategy,
-  ActiveSubscriptionStatus,
+  Json,
 } from './types'
-import { PLAN_KEYS, DEFAULT_PLAN } from './constants'
+import { DEFAULT_PLAN } from './constants'
 
 // ============================================================================
 // TYPES
@@ -244,7 +244,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
 
     if (!plan) return []
 
-    return plan.features.map((pf) => ({
+    return plan.features.map((pf: { feature: { key: string; name: string }; enabled: boolean; limitValue: number | null; configJson: unknown; downgradeStrategy: string }) => ({
       featureKey: pf.feature.key,
       featureName: pf.feature.name,
       enabled: pf.enabled,
@@ -422,7 +422,6 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   async getUsageTracking(orgId: string, featureKey: string): Promise<UsageData | null> {
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
 
     const usage = await prisma.usageTracking.findUnique({
       where: {
@@ -527,7 +526,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
       priceYearly: plan.priceYearly ? Number(plan.priceYearly) : null,
       isActive: plan.isActive,
       sortOrder: plan.sortOrder,
-      features: plan.features.map((pf) => ({
+      features: plan.features.map((pf: { feature: { key: string; name: string }; enabled: boolean; limitValue: number | null; configJson: unknown; downgradeStrategy: string }) => ({
         featureKey: pf.feature.key,
         featureName: pf.feature.name,
         enabled: pf.enabled,
@@ -558,7 +557,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
       priceYearly: plan.priceYearly ? Number(plan.priceYearly) : null,
       isActive: plan.isActive,
       sortOrder: plan.sortOrder,
-      features: plan.features.map((pf) => ({
+      features: plan.features.map((pf: { feature: { key: string; name: string }; enabled: boolean; limitValue: number | null; configJson: unknown; downgradeStrategy: string }) => ({
         featureKey: pf.feature.key,
         featureName: pf.feature.name,
         enabled: pf.enabled,
@@ -589,13 +588,13 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
       name: feature.name,
       description: feature.description,
       type: feature.type as FeatureType,
-      defaultConfig: feature.defaultConfig as Record<string, unknown> | null,
-      plans: feature.plans.map((pp) => ({
+      defaultConfig: feature.defaultConfig as Json,
+      plans: feature.plans.map((pp: { enabled: boolean; limitValue: number | null; configJson: unknown; downgradeStrategy: string }) => ({
         featureKey: feature.key,
         featureName: feature.name,
         enabled: pp.enabled,
         limitValue: pp.limitValue,
-        configJson: pp.configJson as Record<string, unknown> | null,
+        configJson: pp.configJson as Json,
         downgradeStrategy: pp.downgradeStrategy as DowngradeStrategy,
       })),
     }
@@ -619,13 +618,13 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
       name: f.name,
       description: f.description,
       type: f.type as FeatureType,
-      defaultConfig: f.defaultConfig as Record<string, unknown> | null,
-      plans: f.plans.map((pp) => ({
+      defaultConfig: f.defaultConfig as Json,
+      plans: f.plans.map((pp: { enabled: boolean; limitValue: number | null; configJson: unknown; downgradeStrategy: string }) => ({
         featureKey: f.key,
         featureName: f.name,
         enabled: pp.enabled,
         limitValue: pp.limitValue,
-        configJson: pp.configJson as Record<string, unknown> | null,
+        configJson: pp.configJson as Json,
         downgradeStrategy: pp.downgradeStrategy as DowngradeStrategy,
       })),
     }))
@@ -719,7 +718,6 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     const allFeatureKeys = new Set([...currentMap.keys(), ...targetMap.keys()])
 
     const features: DowngradePreview['features'] = []
-    let affectedCount = 0
 
     for (const key of allFeatureKeys) {
       const current = currentMap.get(key)
@@ -729,11 +727,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
         (current?.enabled === true && target?.enabled === false) ||
         (current?.limitValue !== null &&
           target?.limitValue !== null &&
-          target.limitValue < current.limitValue)
-
-      if (willBeAffected) {
-        affectedCount++
-      }
+          target!.limitValue < current!.limitValue)
 
       // Check if there's active usage
       const usage = await this.getUsageTracking(orgId, key)

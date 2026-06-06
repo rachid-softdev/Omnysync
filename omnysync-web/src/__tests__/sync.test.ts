@@ -168,10 +168,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
         ...baseDocument,
         sourceConnector: undefined,
         destConnector: undefined,
-      } as unknown as Record<string, unknown>)
+      } as any)
       vi.mocked(prisma.document.updateMany).mockResolvedValue({
         count: 0,
-      } as unknown as Record<string, unknown>)
+      } as any)
 
       const result = await performSync('doc-1', 'conn-source', 'conn-dest', 'user-1')
 
@@ -181,17 +181,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
 
     it('should sync a Google Docs source to WordPress successfully', async () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue(
-        baseDocument as unknown as Record<string, unknown>
+        baseDocument as any
       )
       vi.mocked(prisma.document.updateMany).mockResolvedValue({
         count: 1,
-      } as unknown as Record<string, unknown>)
-      vi.mocked(prisma.document.update).mockResolvedValue({} as unknown as Record<string, unknown>)
-      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as unknown as Record<string, unknown>)
+      } as any)
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any)
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any)
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         id: 'user-1',
         email: 'test@example.com',
-      } as unknown as Record<string, unknown>)
+      } as any)
 
       const result = await performSync('doc-1', 'conn-source', 'conn-dest', 'user-1')
 
@@ -215,12 +215,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
 
     it('should handle an error during sync and update status to FAILED', async () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue(
-        baseDocument as unknown as Record<string, unknown>
+        baseDocument as any
       )
       vi.mocked(prisma.document.updateMany).mockResolvedValue({
         count: 1,
-      } as unknown as Record<string, unknown>)
-      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as unknown as Record<string, unknown>)
+      } as any)
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any)
       // Make the first document.update (content save) throw
       vi.mocked(prisma.document.update).mockRejectedValueOnce(new Error('Database timeout'))
 
@@ -247,17 +247,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
       }
 
       vi.mocked(prisma.document.findUnique).mockResolvedValue(
-        notionDoc as unknown as Record<string, unknown>
+        notionDoc as any
       )
       vi.mocked(prisma.document.updateMany).mockResolvedValue({
         count: 1,
-      } as unknown as Record<string, unknown>)
-      vi.mocked(prisma.document.update).mockResolvedValue({} as unknown as Record<string, unknown>)
-      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as unknown as Record<string, unknown>)
+      } as any)
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any)
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any)
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         id: 'user-1',
         email: 'test@example.com',
-      } as unknown as Record<string, unknown>)
+      } as any)
 
       const result = await performSync('doc-1', 'conn-source', 'conn-dest', 'user-1')
 
@@ -287,7 +287,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
         status: 'DRAFT',
         sourceConnector: undefined,
         destConnector: undefined,
-      } as unknown as Record<string, unknown>)
+      } as any)
 
       const result = await detectAndSyncChanges('doc-1', 'user-1')
 
@@ -302,17 +302,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
       }
 
       vi.mocked(prisma.document.findUnique).mockResolvedValue(
-        publishedDoc as unknown as Record<string, unknown>
+        publishedDoc as any
       )
       vi.mocked(prisma.document.updateMany).mockResolvedValue({
         count: 1,
-      } as unknown as Record<string, unknown>)
-      vi.mocked(prisma.document.update).mockResolvedValue({} as unknown as Record<string, unknown>)
-      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as unknown as Record<string, unknown>)
+      } as any)
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any)
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any)
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         id: 'user-1',
         email: 'test@example.com',
-      } as unknown as Record<string, unknown>)
+      } as any)
 
       const result = await detectAndSyncChanges('doc-1', 'user-1')
 
@@ -330,7 +330,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
       }
 
       vi.mocked(prisma.document.findUnique).mockResolvedValue(
-        noConnectorsDoc as unknown as Record<string, unknown>
+        noConnectorsDoc as any
       )
 
       const { detectContentChanges } = await import('@/lib/services/ai')
@@ -361,7 +361,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue({
         id: 'doc-1',
         destConnector: null,
-      } as unknown as Record<string, unknown>)
+      } as any)
 
       const result = await checkRemoteChanges('doc-1', 'user-1')
 
@@ -377,7 +377,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
           credentials: Buffer.from('user:pass').toString('base64'),
           config: { siteUrl: 'https://example.com' },
         },
-      } as unknown as Record<string, unknown>)
+      } as any)
 
       const result = await checkRemoteChanges('doc-1', 'user-1')
 
@@ -393,7 +393,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
           credentials: JSON.stringify({ apiKey: 'ghost-key' }),
           config: { siteUrl: 'https://ghost.example.com' },
         },
-      } as unknown as Record<string, unknown>)
+      } as any)
 
       const result = await checkRemoteChanges('doc-2', 'user-1')
 
@@ -409,7 +409,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
           credentials: Buffer.from('user:pass').toString('base64'),
           config: { siteUrl: 'https://example.com' },
         },
-      } as unknown as Record<string, unknown>)
+      } as any)
 
       await checkRemoteChanges('doc-1', 'user-1')
 

@@ -38,10 +38,6 @@ export default function AnalyticsPage() {
   const [error, setError] = useState<string | null>(null)
   const [period, setPeriod] = useState('30')
 
-  useEffect(() => {
-    fetchAnalytics()
-  }, [period])
-
   const fetchAnalytics = async () => {
     setLoading(true)
     setError(null)
@@ -60,6 +56,11 @@ export default function AnalyticsPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchAnalytics()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period])
 
   if (loading) {
     return (

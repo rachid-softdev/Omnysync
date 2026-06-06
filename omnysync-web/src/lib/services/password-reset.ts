@@ -3,7 +3,6 @@
  */
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
-import { encrypt, decrypt } from '@/lib/crypto'
 import { randomBytes } from 'crypto'
 import { hash } from 'bcrypt'
 

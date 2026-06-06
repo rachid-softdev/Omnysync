@@ -214,10 +214,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('password-reset service', () => 
         user: { id: 'user-1', email: 'user@example.com' },
       } as unknown as Record<string, unknown>)
       vi.mocked(prisma.user.update).mockResolvedValue({} as unknown as Record<string, unknown>)
-      vi.mocked(prisma.session.deleteMany).mockResolvedValue({ count: 2 } as unknown as Record<
-        string,
-        unknown
-      >)
+      vi.mocked(prisma.session.deleteMany).mockResolvedValue({ count: 2 } as unknown as { count: number })
       vi.mocked(prisma.passwordReset.update).mockResolvedValue(
         {} as unknown as Record<string, unknown>
       )
@@ -277,7 +274,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('password-reset service', () => 
     it('should delete expired tokens and return count', async () => {
       vi.mocked(prisma.passwordReset.deleteMany).mockResolvedValue({
         count: 5,
-      } as unknown as Record<string, unknown>)
+      } as { count: number })
 
       const count = await cleanupExpiredTokens()
 

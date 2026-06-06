@@ -13,7 +13,7 @@ const updateWebhookSchema = z.object({
   isActive: z.boolean().optional(),
 })
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -114,7 +114,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
+      return NextResponse.json({ error: error.issues[0]?.message }, { status: 400 })
     }
     console.error('PATCH webhook error:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
@@ -122,8 +122,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 }
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  _req: NextRequest, { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()

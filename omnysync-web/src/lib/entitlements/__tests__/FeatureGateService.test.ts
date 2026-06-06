@@ -27,8 +27,8 @@ vi.mock('@/lib/prisma', () => ({
 import { CacheService, resetCacheService } from '../CacheService'
 import { ExperimentService, resetExperimentService } from '../ExperimentService'
 import { FeatureGateService, resetFeatureGateService } from '../FeatureGateService'
-import { FeatureType, EntitlementMap } from '../types'
-import {
+import type { FeatureType, EntitlementMap, DowngradePreview, DowngradeStrategy } from '../types'
+import type {
   IEntitlementRepository,
   SubscriptionData,
   FeatureData,
@@ -159,6 +159,10 @@ class MockEntitlementRepository implements IEntitlementRepository {
     return this.usage.get(key) ?? null
   }
 
+  async getOrganizationStripeCustomerId(): Promise<string | null> {
+    return null
+  }
+
   async consumeUsage(orgId: string, featureKey: string, amount: number) {
     const key = `${orgId}:${featureKey}`
     const existing = this.usage.get(key)
@@ -190,14 +194,14 @@ class MockEntitlementRepository implements IEntitlementRepository {
   async getAllFeaturesWithPlans() {
     return []
   }
-  async updatePlanFeature() {
+  async updatePlanFeature(): Promise<PlanFeatureData> {
     return {
       featureKey: '',
       featureName: '',
       enabled: false,
       limitValue: null,
       configJson: null,
-      downgradeStrategy: 'GRACEFUL',
+      downgradeStrategy: 'GRACEFUL' as DowngradeStrategy,
     }
   }
   async createFeature() {
@@ -220,8 +224,8 @@ class MockEntitlementRepository implements IEntitlementRepository {
       defaultConfig: null,
     }
   }
-  async getDowngradePreview() {
-    return { features: [], recommendedStrategy: 'GRACEFUL' }
+  async getDowngradePreview(): Promise<DowngradePreview> {
+    return { features: [], recommendedStrategy: 'GRACEFUL' as DowngradeStrategy }
   }
   async isWebhookEventProcessed() {
     return false

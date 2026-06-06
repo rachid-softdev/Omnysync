@@ -8,11 +8,9 @@ import { decrypt } from '@/lib/crypto'
 import { auditSync } from '@/lib/audit'
 import { createWordPressClient } from './wordpress'
 import { createGhostClient } from './ghost'
-import { createWebflowClient } from './webflow'
 import { createShopifyClient } from './shopify'
 import { getNotionPageContent } from './notion'
 import { getGoogleDocContent } from './google-docs'
-import { detectContentChanges } from './ai'
 import { requireDocumentAccess } from './authz'
 import { sanitizeErrorMessage } from './sanitize'
 
@@ -70,7 +68,7 @@ async function fetchRemoteContent(documentId: string): Promise<RemoteContent | n
   // WordPress
   if (document.destConnector.type === 'WORDPRESS') {
     const creds = Buffer.from(rawCredentials, 'base64').toString().split(':')
-    const client = createWordPressClient(config.siteUrl, creds[0], creds[1])
+    const client = createWordPressClient(config.siteUrl!, creds[0]!, creds[1]!)
     const post = await client.getPost(parseInt(document.slug || '0'))
     return {
       content: post.content,
@@ -82,7 +80,7 @@ async function fetchRemoteContent(documentId: string): Promise<RemoteContent | n
 
   // Ghost
   if (document.destConnector.type === 'GHOST') {
-    const client = createGhostClient(config.siteUrl, rawCredentials)
+    const client = createGhostClient(config.siteUrl!, rawCredentials)
     const post = await client.getPost(document.slug || '')
     return {
       content: post.posts?.[0]?.html || '',
@@ -104,7 +102,7 @@ async function fetchRemoteContent(documentId: string): Promise<RemoteContent | n
 
   // Shopify
   if (document.destConnector.type === 'SHOPIFY') {
-    const client = createShopifyClient(config.shopDomain, rawCredentials)
+    const client = createShopifyClient(config.shopDomain!, rawCredentials)
     const blogs = await client.getBlogs()
     const blogId = blogs.blogs[0]?.id
     if (!blogId) return null
@@ -133,7 +131,6 @@ async function fetchSourceContent(documentId: string): Promise<RemoteContent | n
   }
 
   const rawCredentials = decrypt(document.sourceConnector.credentials || '{}')
-  const config = (document.sourceConnector.config as Record<string, string>) || {}
 
   if (document.sourceConnector.type === 'GOOGLE_DOCS') {
     const credentials = JSON.parse(rawCredentials)

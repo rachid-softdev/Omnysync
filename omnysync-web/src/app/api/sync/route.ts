@@ -5,9 +5,9 @@ import { getUserOrgId } from '@/lib/auth/org'
 import { enqueueSyncJob } from '@/lib/services/queue'
 import { checkAndIncrementQuota } from '@/lib/auth/subscription'
 import { createSyncSchema } from '@/lib/validations'
-import { apiError, sanitizeError } from '@/lib/api-error'
+import { apiError } from '@/lib/api-error'
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const session = await auth()
 
   if (!session?.user?.id) {

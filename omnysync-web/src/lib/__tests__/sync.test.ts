@@ -112,7 +112,7 @@ describe('performSync', () => {
   it('should return error if document not found', async () => {
     vi.mocked(prisma.document.findUnique).mockResolvedValue(null)
 
-    const result = await performSync('doc-123', 'conn-1', 'conn-2')
+    const result = await performSync('doc-123', 'conn-1', 'conn-2', 'user-1')
 
     expect(result.success).toBe(false)
     expect(result.error).toBe(ERR_DOC_NOT_FOUND)
@@ -144,7 +144,7 @@ describe('performSync', () => {
       email: 'test@example.com',
     } as any)
 
-    const result = await performSync('doc-123', 'conn-1', 'conn-2')
+    const result = await performSync('doc-123', 'conn-1', 'conn-2', 'user-1')
 
     expect(result.success).toBe(true)
     expect(prisma.document.update).toHaveBeenCalled()
@@ -178,7 +178,7 @@ describe('performSync', () => {
       email: 'test@example.com',
     } as any)
 
-    const result = await performSync('doc-456', 'conn-3', 'conn-4')
+    const result = await performSync('doc-456', 'conn-3', 'conn-4', 'user-1')
 
     expect(result.success).toBe(true)
   })
@@ -209,7 +209,7 @@ describe('performSync', () => {
       email: 'test@example.com',
     } as any)
 
-    await performSync('doc-789', 'conn-1', 'conn-2')
+    await performSync('doc-789', 'conn-1', 'conn-2', 'user-1')
 
     // Verify AI functions were called
     const { generateSEO, generateExcerpt } = await import('../services/ai')
@@ -227,7 +227,7 @@ describe('detectAndSyncChanges', () => {
   it('should return error if document not found', async () => {
     vi.mocked(prisma.document.findUnique).mockResolvedValue(null)
 
-    const result = await detectAndSyncChanges('doc-missing')
+    const result = await detectAndSyncChanges('doc-missing', 'user-1')
 
     expect(result.success).toBe(false)
   })
@@ -238,7 +238,7 @@ describe('detectAndSyncChanges', () => {
       status: 'DRAFT',
     } as any)
 
-    const result = await detectAndSyncChanges('doc-123')
+    const result = await detectAndSyncChanges('doc-123', 'user-1')
 
     expect(result.success).toBe(false)
     expect(result.error).toBe(ERR_DOC_NOT_PUBLISHED)
@@ -271,7 +271,7 @@ describe('detectAndSyncChanges', () => {
       email: 'test@example.com',
     } as any)
 
-    await detectAndSyncChanges('doc-123')
+    await detectAndSyncChanges('doc-123', 'user-1')
 
     // Should detect changes
     const { detectContentChanges } = await import('../services/ai')

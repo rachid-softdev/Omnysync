@@ -8,18 +8,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getEntitlementRepository } from '@/lib/entitlements/EntitlementRepository'
 import { prisma } from '@/lib/prisma'
 import { PAGINATION_DEFAULTS } from '@/lib/entitlements/constants'
+import { requireAdmin, AuthError } from '@/lib/auth/require-admin'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-// Check admin role (implementation depends on your auth)
-async function requireAdmin(request: NextRequest): Promise<string | null> {
-  const adminHeader = request.headers.get('x-admin-role')
-  if (adminHeader === 'admin') {
-    return 'admin'
-  }
-  return null
-}
 
 // ============================================================================
 // GET /admin/plans
@@ -27,13 +19,7 @@ async function requireAdmin(request: NextRequest): Promise<string | null> {
 
 export async function GET(request: NextRequest) {
   try {
-    const isAdmin = await requireAdmin(request)
-    if (!isAdmin) {
-      return NextResponse.json(
-        { error: 'FORBIDDEN', message: 'Admin access required' },
-        { status: 403 }
-      )
-    }
+    await requireAdmin()
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
@@ -61,7 +47,10 @@ export async function GET(request: NextRequest) {
         totalPages,
       },
     })
-  } catch (error) {
+  } catch (error: unknown) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     console.error('[Admin Plans GET] Error:', error)
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'Failed to fetch plans' },
@@ -76,13 +65,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const isAdmin = await requireAdmin(request)
-    if (!isAdmin) {
-      return NextResponse.json(
-        { error: 'FORBIDDEN', message: 'Admin access required' },
-        { status: 403 }
-      )
-    }
+    await requireAdmin()
 
     const body = await request.json()
     const { key, name, priceMonthly, priceYearly, isActive, sortOrder } = body
@@ -115,7 +98,10 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(plan, { status: 201 })
-  } catch (error) {
+  } catch (error: unknown) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     console.error('[Admin Plans POST] Error:', error)
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'Failed to create plan' },

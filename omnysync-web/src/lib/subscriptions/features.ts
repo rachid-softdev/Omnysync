@@ -4,7 +4,6 @@
  */
 
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
 import { auditBilling } from '@/lib/audit'
 
 // ============================================================================
@@ -325,13 +324,13 @@ export async function getUsageStats(organizationId: string) {
 
   return {
     syncCount: quota?.syncCount || 0,
-    maxSyncs: plan.maxSyncsPerMonth,
+    maxSyncs: plan!.maxSyncsPerMonth,
     connectorCount: await prisma.connector.count({ where: { organizationId } }),
-    maxConnectors: plan.maxConnectors,
+    maxConnectors: plan!.maxConnectors,
     documentCount: await prisma.document.count({ where: { organizationId } }),
-    maxDocuments: plan.maxDocuments,
+    maxDocuments: plan!.maxDocuments,
     memberCount: await prisma.userOrganization.count({ where: { organizationId } }),
-    maxMembers: plan.maxTeamMembers,
+    maxMembers: plan!.maxTeamMembers,
   }
 }
 

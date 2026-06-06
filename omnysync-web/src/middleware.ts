@@ -4,7 +4,6 @@ import {
   rateLimit,
   RATE_LIMIT_MAX,
   RATE_LIMIT_WINDOW_MS,
-  getClientIp,
   startRateLimitCleanup,
 } from '@/lib/rate-limit'
 

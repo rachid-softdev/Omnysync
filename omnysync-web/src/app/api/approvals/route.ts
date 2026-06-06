@@ -13,7 +13,7 @@ const createApprovalSchema = z.object({
   documentId: z.string().min(1, 'Document requis'),
 })
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors[0].message }, { status: 400 })
+      return NextResponse.json({ error: error.issues[0]?.message }, { status: 400 })
     }
     console.error('POST approval error:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

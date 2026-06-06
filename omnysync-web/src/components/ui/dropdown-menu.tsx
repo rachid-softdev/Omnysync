@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu'
-import { Check, ChevronRight, Circle } from 'lucide-react'
+import { Check, ChevronRight, CircleDot } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
@@ -127,7 +127,7 @@ const DropdownMenuRadioItem = React.forwardRef<
   >
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
       <DropdownMenuPrimitive.ItemIndicator>
-        <Circle className="h-2 w-2 fill-current" />
+        <CircleDot className="h-2 w-2 fill-current" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}
@@ -167,16 +167,16 @@ const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTML
 DropdownMenuShortcut.displayName = 'DropdownMenuShortcut'
 
 const DropdownMenuGroupLabel = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.GroupLabel>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.GroupLabel>
+  React.ElementRef<typeof DropdownMenuPrimitive.Label>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label>
 >(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.GroupLabel
+  <DropdownMenuPrimitive.Label
     ref={ref}
     className={cn('px-2 py-1.5 text-sm font-semibold', className)}
     {...props}
   />
 ))
-DropdownMenuGroupLabel.displayName = DropdownMenuPrimitive.GroupLabel.displayName
+DropdownMenuGroupLabel.displayName = DropdownMenuPrimitive.Label.displayName
 
 export {
   DropdownMenu,
