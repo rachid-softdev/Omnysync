@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, validatePasswordStrength } from '@/lib/auth/password'
+import { rateLimitRedisWithConfig } from '@/lib/rate-limit-redis'
 import { z } from 'zod'
 
 const registerSchema = z.object({
@@ -15,6 +16,28 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
+
+    const rateResult = await rateLimitRedisWithConfig(
+      `auth:register:${ip}`,
+      {
+        max: 5,
+        windowMs: 60 * 60 * 1000, // 1 hour
+      },
+      request
+    )
+
+    if (!rateResult.allowed) {
+      return NextResponse.json(
+        { error: 'Trop de tentatives. Réessayez plus tard.' },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const { name, email, password } = registerSchema.parse(body)
 

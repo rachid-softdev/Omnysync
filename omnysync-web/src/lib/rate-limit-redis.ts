@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { Redis } from '@upstash/redis'
+import { rateLimit as inMemoryRateLimit, getClientIp as getClientIpMemory } from '@/lib/rate-limit'
 
 export const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute
 export const RATE_LIMIT_MAX = 30 // requests per window
@@ -41,7 +42,7 @@ export async function rateLimitRedis(
   if (!redis) {
     // Fallback to in-memory if Redis not configured
     console.warn('Redis not configured, falling back to in-memory rate limiting')
-    return { allowed: true }
+    return inMemoryRateLimit(request)
   }
 
   const ip = getClientIp(request)
@@ -68,9 +69,8 @@ export async function rateLimitRedis(
 
     return { allowed: true }
   } catch (error) {
-    console.error('Redis rate limit error:', error)
-    // Fail open if Redis fails
-    return { allowed: true }
+    console.error('Redis rate limit error, using in-memory fallback:', error)
+    return inMemoryRateLimit(request)
   }
 }
 
@@ -104,6 +104,60 @@ export async function checkRateLimitRedis(request: NextRequest): Promise<NextRes
   }
 
   return null
+}
+
+export interface RateLimitConfig {
+  max: number
+  windowMs: number
+}
+
+/**
+ * Rate limit check with configurable limits for per-endpoint use
+ * Falls back to in-memory rate limit if Redis is unavailable (when fallbackRequest is provided)
+ */
+export async function rateLimitRedisWithConfig(
+  identifier: string,
+  config: RateLimitConfig,
+  fallbackRequest?: NextRequest
+): Promise<{ allowed: boolean; remainingTime?: number }> {
+  if (!redis) {
+    if (fallbackRequest) {
+      console.warn(
+        `Redis not configured — per-endpoint rate limit for "${identifier}" using in-memory fallback`
+      )
+      return inMemoryRateLimit(fallbackRequest)
+    }
+    console.warn(`Redis not configured — per-endpoint rate limit for "${identifier}" bypassed`)
+    return { allowed: true }
+  }
+
+  const key = `ratelimit:${identifier}`
+  const windowSeconds = Math.ceil(config.windowMs / 1000)
+
+  try {
+    const count = await redis.incr(key)
+
+    if (count === 1) {
+      await redis.expire(key, windowSeconds)
+    }
+
+    if (count > config.max) {
+      const ttl = await redis.ttl(key)
+      return {
+        allowed: false,
+        remainingTime: ttl > 0 ? ttl * 1000 : config.windowMs,
+      }
+    }
+
+    return { allowed: true }
+  } catch (error) {
+    console.error(`Redis rate limit error for "${identifier}":`, error)
+    if (fallbackRequest) {
+      console.warn(`Using in-memory fallback for "${identifier}"`)
+      return inMemoryRateLimit(fallbackRequest)
+    }
+    return { allowed: true }
+  }
 }
 
 /**
