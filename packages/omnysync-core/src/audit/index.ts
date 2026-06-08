@@ -86,7 +86,6 @@ export interface AuditDetails {
 
   // Pour les erreurs
   errorMessage?: string;
-  errorStack?: string;
 
   // Pour les connecteurs
   connectorName?: string;
@@ -191,7 +190,6 @@ export async function withAudit<T>(
       ...details,
       success: false,
       errorMessage: (error as Error).message,
-      errorStack: (error as Error).stack,
     });
 
     throw error;
