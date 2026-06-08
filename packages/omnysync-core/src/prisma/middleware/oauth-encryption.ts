@@ -51,7 +51,7 @@ function decryptField(encryptedText: string): string {
   const key = getOAuthKey();
   const parts = encryptedText.split(":");
 
-  if (parts.length !== 5) {
+  if (parts.length !== 4) {
     throw new Error("Invalid encrypted format");
   }
 
