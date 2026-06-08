@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createPasswordResetToken } from '@/lib/services/password-reset'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitRedisWithConfig } from '@/lib/rate-limit-redis'
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Email invalide'),
@@ -14,10 +14,25 @@ const forgotPasswordSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = rateLimit(request)
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
 
-    if (!rateLimitResult.allowed) {
-      return NextResponse.json({ error: 'Trop de demandes. Réessayez plus tard.' }, { status: 429 })
+    const rateResult = await rateLimitRedisWithConfig(
+      `auth:forgot-password:${ip}`,
+      {
+        max: 3,
+        windowMs: 60 * 60 * 1000, // 1 hour
+      },
+      request
+    )
+
+    if (!rateResult.allowed) {
+      return NextResponse.json(
+        { error: 'Trop de tentatives. Réessayez plus tard.' },
+        { status: 429 }
+      )
     }
 
     const body = await request.json()
@@ -32,7 +47,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0]!.message }, { status: 400 })
+      return NextResponse.json({ error: error.issues[0]?.message }, { status: 400 })
     }
 
     console.error('Forgot password error:', error)

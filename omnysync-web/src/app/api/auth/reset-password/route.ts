@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { resetPassword, validateResetToken } from '@/lib/services/password-reset'
+import { rateLimitRedisWithConfig } from '@/lib/rate-limit-redis'
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Token requis'),
@@ -13,6 +14,28 @@ const resetPasswordSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
+
+    const rateResult = await rateLimitRedisWithConfig(
+      `auth:reset-password:${ip}`,
+      {
+        max: 5,
+        windowMs: 60 * 60 * 1000, // 1 hour
+      },
+      request
+    )
+
+    if (!rateResult.allowed) {
+      return NextResponse.json(
+        { error: 'Trop de tentatives. Réessayez plus tard.' },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const { token, password } = resetPasswordSchema.parse(body)
 

@@ -65,49 +65,40 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      // Initial sign in
+      // Initial sign in — single query for all data
       if (user) {
-        token.id = user.id
-
-        // Check if user has 2FA enabled
-        const twoFactor = await prisma.twoFactorAuth.findUnique({
-          where: { userId: user.id },
-        })
-
-        token.has2FA = !!twoFactor
-        token.twoFactorVerified = false
-
-        // Fetch user role from DB
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
-          select: { role: true },
+          select: {
+            role: true,
+            passwordChangedAt: true,
+            twoFactorAuth: { select: { id: true } },
+          },
         })
-        token.role = dbUser?.role ?? 'USER'
 
-        // Store passwordChangedAt in token for session invalidation
-        const pwUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { passwordChangedAt: true },
-        })
-        token.passwordChangedAt = pwUser?.passwordChangedAt?.getTime() || 0
-      }
-
-      // On every JWT access, check if password was changed
-      if (token.passwordChangedAt && trigger !== 'update') {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { passwordChangedAt: true },
-        })
-        if (dbUser?.passwordChangedAt) {
-          const dbTime = dbUser.passwordChangedAt.getTime()
-          if (dbTime > (token.passwordChangedAt as number)) {
-            // Password was changed after this JWT was issued — invalidate
-            return { ...token, exp: Math.floor(Date.now() / 1000) - 1 }
-          }
+        if (dbUser) {
+          token.role = dbUser.role ?? 'USER'
+          token.passwordChangedAt = dbUser.passwordChangedAt?.getTime() ?? 0
+          token.has2FA = !!dbUser.twoFactorAuth
+          token.twoFactorVerified = false
         }
       }
 
-      // Update session from callback
+      // On-access password invalidation: lightweight (single indexed field query)
+      // Without this, a compromised JWT remains valid after password change (30 days maxAge).
+      // DB session deletion (in resetPassword) has NO effect on JWT strategy tokens.
+      if (token.passwordChangedAt && trigger !== 'update') {
+        const pwChanged = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { passwordChangedAt: true },
+        })
+        if (pwChanged?.passwordChangedAt?.getTime() > (token.passwordChangedAt as number)) {
+          // Password was changed after this JWT was issued — invalidate
+          return { ...token, exp: Math.floor(Date.now() / 1000) - 1 }
+        }
+      }
+
+      // Update session from 2FA verification
       if (trigger === 'update' && session) {
         token.twoFactorVerified = session.twoFactorVerified
       }

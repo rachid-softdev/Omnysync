@@ -76,29 +76,6 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model Organization {
-  id          String    @id @default(cuid())
-  name        String
-  slug        String?   @unique
-  description String?
-  settings    Json?
-  lastSyncAt  DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  // Quota limits (from subscription)
-  maxConnectors Int @default(2)
-  maxDocuments  Int @default(100)
-
-  users         UserOrganization[]
-  connectors    Connector[]
-  documents     Document[]
-  syncLogs      SyncLog[]
-  webhookEndpoints WebhookEndpoint[]
-  apiKeys       ApiKey[]
-  auditLogs     AuditLog[]
-}
-
 model UserOrganization {
   id             String           @id @default(cuid())
   userId         String
@@ -476,7 +453,7 @@ enum DowngradeStrategy {
   FREEZE   // Block new actions, keep existing data
 }
 
-// Organization - Add stripe_customer_id
+// THIS IS THE SOLE Organization definition — previously had a duplicate at lines 79-100 (removed S2-10)
 model Organization {
   id                 String    @id @default(cuid())
   name               String
@@ -487,8 +464,9 @@ model Organization {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  // Quota limits (legacy - will be replaced by entitlements)
+  // DEPRECATED: use Entitlements system instead
   maxConnectors      Int       @default(2)
+  // DEPRECATED: use Entitlements system instead
   maxDocuments       Int       @default(100)
 
   // Stripe integration
