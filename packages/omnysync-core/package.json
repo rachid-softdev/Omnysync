@@ -20,6 +20,31 @@
       "require": "./dist/hooks.js",
       "default": "./dist/hooks.js"
     },
+    "./auth/subscription": {
+      "import": "./dist/auth/subscription.mjs",
+      "require": "./dist/auth/subscription.js",
+      "default": "./dist/auth/subscription.js"
+    },
+    "./entitlements/types": {
+      "import": "./dist/entitlements/types.mjs",
+      "require": "./dist/entitlements/types.js",
+      "default": "./dist/entitlements/types.js"
+    },
+    "./entitlements/constants": {
+      "import": "./dist/entitlements/constants.mjs",
+      "require": "./dist/entitlements/constants.js",
+      "default": "./dist/entitlements/constants.js"
+    },
+    "./entitlements/errors": {
+      "import": "./dist/entitlements/errors.mjs",
+      "require": "./dist/entitlements/errors.js",
+      "default": "./dist/entitlements/errors.js"
+    },
+    "./entitlements/CacheService": {
+      "import": "./dist/entitlements/CacheService.mjs",
+      "require": "./dist/entitlements/CacheService.js",
+      "default": "./dist/entitlements/CacheService.js"
+    },
     "./ui": {
       "import": "./dist/ui.mjs",
       "require": "./dist/ui.js",

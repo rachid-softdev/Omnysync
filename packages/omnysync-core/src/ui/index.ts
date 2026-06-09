@@ -1,3 +1,5 @@
+"use client";
+
 // UI Components - Re-exports from individual component files
 
 // Alert Dialog
