@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
-import { testWordPressConnection } from '@/lib/services/wordpress'
-import { testGhostConnection } from '@/lib/services/ghost'
-import { testWebflowConnection } from '@/lib/services/webflow'
-import { testShopifyConnection } from '@/lib/services/shopify'
-import { testMediumConnection } from '@/lib/services/medium'
-import { testAirtableConnection } from '@/lib/services/airtable'
-import { testContentfulConnection } from '@/lib/services/contentful'
+import { testWordPressConnection } from '@omnysync/core/services/wordpress'
+import { testGhostConnection } from '@omnysync/core/services/ghost'
+import { testWebflowConnection } from '@omnysync/core/services/webflow'
+import { testShopifyConnection } from '@omnysync/core/services/shopify'
+import { testMediumConnection } from '@omnysync/core/services/medium'
+import { testAirtableConnection } from '@omnysync/core/services/airtable'
+import { testContentfulConnection } from '@omnysync/core/services/contentful'
 import { createConnectorSchema } from '@/lib/validations'
 import { apiError } from '@/lib/api-error'
 import { checkConnectorLimit } from '@/lib/auth/subscription'
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
 
   switch (type) {
     case 'WORDPRESS': {
-      const { saveWordPressConnector } = await import('@/lib/services/wordpress')
+      const { saveWordPressConnector } = await import('@omnysync/core/services/wordpress')
       connector = await saveWordPressConnector(
         session.user.id,
         orgId,
@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
       break
     }
     case 'GHOST': {
-      const { saveGhostConnector } = await import('@/lib/services/ghost')
+      const { saveGhostConnector } = await import('@omnysync/core/services/ghost')
       connector = await saveGhostConnector(
         session.user.id,
         orgId,
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
       break
     }
     case 'WEBFLOW': {
-      const { saveWebflowConnector } = await import('@/lib/services/webflow')
+      const { saveWebflowConnector } = await import('@omnysync/core/services/webflow')
       connector = await saveWebflowConnector(
         session.user.id,
         orgId,
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
       break
     }
     case 'SHOPIFY': {
-      const { saveShopifyConnector } = await import('@/lib/services/shopify')
+      const { saveShopifyConnector } = await import('@omnysync/core/services/shopify')
       connector = await saveShopifyConnector(
         session.user.id,
         orgId,
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
       break
     }
     case 'GOOGLE_DOCS': {
-      const { saveGoogleDocsConnector } = await import('@/lib/services/google-docs')
+      const { saveGoogleDocsConnector } = await import('@omnysync/core/services/google-docs')
       connector = await saveGoogleDocsConnector(
         session.user.id,
         orgId,
@@ -169,12 +169,12 @@ export async function POST(req: NextRequest) {
       break
     }
     case 'NOTION': {
-      const { saveNotionConnector } = await import('@/lib/services/notion')
+      const { saveNotionConnector } = await import('@omnysync/core/services/notion')
       connector = await saveNotionConnector(session.user.id, orgId, credentials!.accessToken!)
       break
     }
     case 'MEDIUM': {
-      const { saveMediumConnector } = await import('@/lib/services/medium')
+      const { saveMediumConnector } = await import('@omnysync/core/services/medium')
       connector = await saveMediumConnector(
         session.user.id,
         orgId,
@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
       break
     }
     case 'AIRTABLE': {
-      const { saveAirtableConnector } = await import('@/lib/services/airtable')
+      const { saveAirtableConnector } = await import('@omnysync/core/services/airtable')
       connector = await saveAirtableConnector(session.user.id, orgId, credentials!.apiKey!, {
         baseId: config!.baseId!,
         tableId: config!.tableId!,
@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
       break
     }
     case 'CONTENTFUL': {
-      const { saveContentfulConnector } = await import('@/lib/services/contentful')
+      const { saveContentfulConnector } = await import('@omnysync/core/services/contentful')
       connector = await saveContentfulConnector(session.user.id, orgId, credentials!.accessToken!, {
         spaceId: config!.spaceId!,
         contentTypeId: config!.contentTypeId!,

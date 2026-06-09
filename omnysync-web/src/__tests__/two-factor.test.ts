@@ -42,7 +42,7 @@ import {
   verifyTotpCode,
   disableTwoFactor,
   getTwoFactorStatus,
-} from '@/lib/services/two-factor'
+} from '@omnysync/core/services/two-factor'
 import { prisma } from '@/lib/prisma'
 
 // ── Suite ───────────────────────────────────────────────────────────────────

@@ -1,10 +1,10 @@
 import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { performSync, detectAndSyncChanges } from '@/lib/services/sync'
-import { generateAImage, generateSEO } from '@/lib/services/ai'
-import { uploadAllImages } from '@/lib/services/image-upload'
+import { performSync, detectAndSyncChanges } from '@omnysync/core/services/sync'
+import { generateAImage, generateSEO } from '@omnysync/core/services/ai'
+import { uploadAllImages } from '@omnysync/core/services/image-upload'
 import { prisma } from '@/lib/prisma'
-import { processJobWithRetry, isJobCompleted, markJobCompleted } from '@/lib/services/queue'
+import { processJobWithRetry, isJobCompleted, markJobCompleted } from '@omnysync/core/services/queue'
 
 function timingSafeCompare(a: string, b: string): boolean {
   try {

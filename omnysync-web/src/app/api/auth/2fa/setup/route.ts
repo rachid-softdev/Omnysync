@@ -4,7 +4,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { generateTotpSecret, setupTwoFactor, getTwoFactorStatus } from '@/lib/services/two-factor'
+import { generateTotpSecret, setupTwoFactor, getTwoFactorStatus } from '@omnysync/core/services/two-factor'
 import * as OTPAuth from 'otpauth'
 import { z } from 'zod'
 

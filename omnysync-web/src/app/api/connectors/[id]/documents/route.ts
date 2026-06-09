@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { listGoogleDocs } from '@/lib/services/google-docs'
-import { listNotionPages } from '@/lib/services/notion'
+import { listGoogleDocs } from '@omnysync/core/services/google-docs'
+import { listNotionPages } from '@omnysync/core/services/notion'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()

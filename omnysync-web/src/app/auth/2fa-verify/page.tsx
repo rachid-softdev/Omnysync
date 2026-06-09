@@ -58,7 +58,11 @@ export default function TwoFactorVerifyPage() {
         <CardContent>
           <form onSubmit={handleVerify} className="space-y-4">
             <div className="space-y-2">
+              <label htmlFor="2fa-code" className="sr-only">
+                Code à 6 chiffres
+              </label>
               <Input
+                id="2fa-code"
                 type="text"
                 placeholder="000000"
                 value={code}

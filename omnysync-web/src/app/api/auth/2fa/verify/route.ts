@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { verifyTotpCode } from '@/lib/services/two-factor'
+import { verifyTotpCode } from '@omnysync/core/services/two-factor'
 import { z } from 'zod'
 
 const verifySchema = z.object({

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { performSync } from '@/lib/services/sync'
-import { scheduleSync, disableScheduledSync } from '@/lib/services/scheduler'
+import { performSync } from '@omnysync/core/services/sync'
+import { scheduleSync, disableScheduledSync } from '@omnysync/core/services/scheduler'
 import { checkAndIncrementQuota } from '@/lib/auth/subscription'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

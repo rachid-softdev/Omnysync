@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { decrypt } from '@/lib/crypto'
-import { createWordPressClient } from '@/lib/services/wordpress'
-import { createGhostClient } from '@/lib/services/ghost'
+import { createWordPressClient } from '@omnysync/core/services/wordpress'
+import { createGhostClient } from '@omnysync/core/services/ghost'
 import crypto from 'crypto'
 
 /**

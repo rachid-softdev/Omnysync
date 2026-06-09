@@ -47,5 +47,6 @@ export default defineConfig({
     "@prisma/adapter-pg",
     "pg",
     "otpauth",
+    "@/lib/utils",
   ],
 });

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { headers } from 'next/headers'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
@@ -36,13 +37,17 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const headersList = await headers()
+  const acceptLanguage = headersList.get('accept-language') || ''
+  const locale = acceptLanguage.split(',')[0]?.split('-')[0] || 'en'
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen bg-background`}>
         <Providers>
           <Header />

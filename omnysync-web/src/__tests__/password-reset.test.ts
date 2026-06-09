@@ -42,7 +42,7 @@ import {
   validateResetToken,
   resetPassword,
   cleanupExpiredTokens,
-} from '@/lib/services/password-reset'
+} from '@omnysync/core/services/password-reset'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
 

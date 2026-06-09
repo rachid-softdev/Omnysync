@@ -12,6 +12,7 @@ const toastOptions: ToasterProps = {
   position: 'bottom-right',
   theme: 'light',
   visibleToasts: 3,
+  containerAriaLabel: 'Notifications',
 }
 
 export function ToastProvider(props: ToasterProps) {

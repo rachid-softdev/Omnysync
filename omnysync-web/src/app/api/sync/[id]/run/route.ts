@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { handleScheduledSyncRun } from '@/lib/services/scheduler'
+import { handleScheduledSyncRun } from '@omnysync/core/services/scheduler'
 
 // Route pour exécuter un sync programmé (appelé par QStash cron)
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

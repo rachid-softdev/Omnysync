@@ -31,14 +31,14 @@ vi.mock('@/lib/email', () => ({
   sendSyncCompleteEmail: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('@/lib/services/google-docs', () => ({
+vi.mock('@omnysync/core/services/google-docs', () => ({
   getGoogleDocContent: vi.fn().mockResolvedValue({
     title: 'Google Doc Title',
     content: 'Content from Google Docs',
   }),
 }))
 
-vi.mock('@/lib/services/notion', () => ({
+vi.mock('@omnysync/core/services/notion', () => ({
   getNotionPageContent: vi.fn().mockResolvedValue({
     id: 'notion-page-1',
     title: 'Notion Page',
@@ -48,12 +48,12 @@ vi.mock('@/lib/services/notion', () => ({
   }),
 }))
 
-vi.mock('@/lib/services/html-parser', () => ({
+vi.mock('@omnysync/core/services/html-parser', () => ({
   parseMarkdownToHtml: vi.fn((content: string) => `<p>${content}</p>`),
   parseGoogleDocToHtml: vi.fn(() => ({ html: '<p>Parsed HTML</p>' })),
 }))
 
-vi.mock('@/lib/services/ai', () => ({
+vi.mock('@omnysync/core/services/ai', () => ({
   detectContentChanges: vi.fn().mockResolvedValue({ hasChanges: true, summary: 'content updated' }),
   generateSEO: vi.fn().mockResolvedValue({
     title: 'SEO Title',
@@ -65,11 +65,11 @@ vi.mock('@/lib/services/ai', () => ({
   generateAImage: vi.fn().mockResolvedValue('https://example.com/ai-img.png'),
 }))
 
-vi.mock('@/lib/services/authz', () => ({
+vi.mock('@omnysync/core/services/authz', () => ({
   requireDocumentAccess: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('@/lib/services/wordpress', () => ({
+vi.mock('@omnysync/core/services/wordpress', () => ({
   createWordPressClient: vi.fn(() => ({
     createPost: vi.fn().mockResolvedValue({ id: 123 }),
     updatePost: vi.fn().mockResolvedValue(undefined),
@@ -77,7 +77,7 @@ vi.mock('@/lib/services/wordpress', () => ({
   })),
 }))
 
-vi.mock('@/lib/services/ghost', () => ({
+vi.mock('@omnysync/core/services/ghost', () => ({
   createGhostClient: vi.fn(() => ({
     createPost: vi.fn().mockResolvedValue({ posts: [{ id: 'ghost-post-1' }] }),
     updatePost: vi.fn().mockResolvedValue(undefined),
@@ -85,14 +85,14 @@ vi.mock('@/lib/services/ghost', () => ({
   })),
 }))
 
-vi.mock('@/lib/services/webflow', () => ({
+vi.mock('@omnysync/core/services/webflow', () => ({
   createWebflowClient: vi.fn(() => ({
     createItem: vi.fn().mockResolvedValue({ items: [{ id: 'wf-item-1' }] }),
     updateItem: vi.fn().mockResolvedValue(undefined),
   })),
 }))
 
-vi.mock('@/lib/services/shopify', () => ({
+vi.mock('@omnysync/core/services/shopify', () => ({
   createShopifyClient: vi.fn(() => ({
     getBlogs: vi.fn().mockResolvedValue({ blogs: [{ id: 1 }] }),
     createArticle: vi.fn().mockResolvedValue({ article: { id: 'shopify-article-1' } }),
@@ -100,7 +100,7 @@ vi.mock('@/lib/services/shopify', () => ({
   })),
 }))
 
-vi.mock('@/lib/services/sanitize', () => ({
+vi.mock('@omnysync/core/services/sanitize', () => ({
   sanitizeErrorMessage: vi.fn((err: unknown) =>
     err instanceof Error ? err.message : 'Unknown error'
   ),
@@ -108,9 +108,9 @@ vi.mock('@/lib/services/sanitize', () => ({
 
 // ── Imports ─────────────────────────────────────────────────────────────────
 
-import { performSync, detectAndSyncChanges, checkRemoteChanges } from '@/lib/services/sync'
+import { performSync, detectAndSyncChanges, checkRemoteChanges } from '@omnysync/core/services/sync'
 import { prisma } from '@/lib/prisma'
-import { requireDocumentAccess } from '@/lib/services/authz'
+import { requireDocumentAccess } from '@omnysync/core/services/authz'
 import { ERR_DOC_NOT_FOUND, ERR_DOC_NOT_PUBLISHED } from '@/lib/errors'
 
 // ── Suite ───────────────────────────────────────────────────────────────────
@@ -264,7 +264,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
       expect(result.success).toBe(true)
 
       // Verify Notion parser was used (parseMarkdownToHtml)
-      const { parseMarkdownToHtml } = await import('@/lib/services/html-parser')
+      const { parseMarkdownToHtml } = await import('@omnysync/core/services/html-parser')
       expect(parseMarkdownToHtml).toHaveBeenCalled()
     })
   })
@@ -333,7 +333,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
         noConnectorsDoc as any
       )
 
-      const { detectContentChanges } = await import('@/lib/services/ai')
+      const { detectContentChanges } = await import('@omnysync/core/services/ai')
       vi.mocked(detectContentChanges).mockResolvedValue({
         hasChanges: true,
         summary: 'Changes found',

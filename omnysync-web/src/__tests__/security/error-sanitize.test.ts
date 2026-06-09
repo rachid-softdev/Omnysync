@@ -5,7 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 /**
  * S1-5 — Stack trace filtering tests
  *
- * The sanitizeErrorMessage function in @/lib/services/sanitize already
+ * The sanitizeErrorMessage function in @omnysync/core/services/sanitize already
  * strips stack traces and redacts secrets from error messages.
  * The sanitizeError function in @/lib/api-error prevents internal details
  * from leaking to API clients.
@@ -49,7 +49,7 @@ describe('S1-5: Error sanitization / stack trace filtering', () => {
 
   describe('sanitizeErrorMessage — strips stack traces', () => {
     it('strips the stack trace portion from an Error', async () => {
-      const { sanitizeErrorMessage } = await import('@/lib/services/sanitize')
+      const { sanitizeErrorMessage } = await import('@omnysync/core/services/sanitize')
 
       const error = new Error('Something broke')
       error.stack = `Error: Something broke
@@ -67,7 +67,7 @@ describe('S1-5: Error sanitization / stack trace filtering', () => {
     })
 
     it('preserves the original error message', async () => {
-      const { sanitizeErrorMessage } = await import('@/lib/services/sanitize')
+      const { sanitizeErrorMessage } = await import('@omnysync/core/services/sanitize')
 
       const error = new Error('Rate limit exceeded: try again in 60 seconds')
       const result = sanitizeErrorMessage(error)
@@ -76,7 +76,7 @@ describe('S1-5: Error sanitization / stack trace filtering', () => {
     })
 
     it('handles Error objects without a stack property', async () => {
-      const { sanitizeErrorMessage } = await import('@/lib/services/sanitize')
+      const { sanitizeErrorMessage } = await import('@omnysync/core/services/sanitize')
 
       const error = new Error('Simple error')
       // Some environments may not populate stack
@@ -88,7 +88,7 @@ describe('S1-5: Error sanitization / stack trace filtering', () => {
     })
 
     it('handles string errors', async () => {
-      const { sanitizeErrorMessage } = await import('@/lib/services/sanitize')
+      const { sanitizeErrorMessage } = await import('@omnysync/core/services/sanitize')
 
       const result = sanitizeErrorMessage('string error message')
 
@@ -96,7 +96,7 @@ describe('S1-5: Error sanitization / stack trace filtering', () => {
     })
 
     it('redacts API keys in "key=value" format from error messages', async () => {
-      const { sanitizeErrorMessage } = await import('@/lib/services/sanitize')
+      const { sanitizeErrorMessage } = await import('@omnysync/core/services/sanitize')
 
       // The regex matches api_key=... format, not "API key: ..." natural language
       const error = new Error('Invalid api_key=sk-1234567890abcdef found in response')
@@ -108,7 +108,7 @@ describe('S1-5: Error sanitization / stack trace filtering', () => {
     })
 
     it('redacts Bearer tokens', async () => {
-      const { sanitizeErrorMessage } = await import('@/lib/services/sanitize')
+      const { sanitizeErrorMessage } = await import('@omnysync/core/services/sanitize')
 
       const error = new Error('Unauthorized: Bearer ghp_abc123def456')
       const result = sanitizeErrorMessage(error)
@@ -119,7 +119,7 @@ describe('S1-5: Error sanitization / stack trace filtering', () => {
     })
 
     it('truncates long messages to 500 characters', async () => {
-      const { sanitizeErrorMessage } = await import('@/lib/services/sanitize')
+      const { sanitizeErrorMessage } = await import('@omnysync/core/services/sanitize')
 
       const longMessage = 'A'.repeat(1000)
       const error = new Error(longMessage)

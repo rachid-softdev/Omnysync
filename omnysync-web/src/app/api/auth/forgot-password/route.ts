@@ -4,7 +4,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createPasswordResetToken } from '@/lib/services/password-reset'
+import { createPasswordResetToken } from '@omnysync/core/services/password-reset'
 import { rateLimitRedisWithConfig } from '@/lib/rate-limit-redis'
 
 const forgotPasswordSchema = z.object({
