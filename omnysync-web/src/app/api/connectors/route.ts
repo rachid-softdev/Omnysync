@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
@@ -54,7 +54,11 @@ export async function POST(req: NextRequest) {
     return apiError(parsed.error.issues[0]?.message || 'Invalid connector data', 400)
   }
 
-  const { type, config: configVal, credentials: credentialsVal } = parsed.data as {
+  const {
+    type,
+    config: configVal,
+    credentials: credentialsVal,
+  } = parsed.data as {
     type: (typeof parsed.data)['type']
     config?: Record<string, string>
     credentials?: Record<string, string>
@@ -111,7 +115,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (!testResult.success) {
-    return NextResponse.json({ error: `Connection failed: ${testResult.error}` }, { status: 400 })
+    // SECURITY: Log the real error server-side, never expose credentials/API keys to client
+    console.error('Connector test failed:', type, testResult.error)
+    return NextResponse.json(
+      { error: 'Connection failed. Please verify your credentials.' },
+      { status: 400 }
+    )
   }
 
   let connector

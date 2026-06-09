@@ -140,13 +140,7 @@ export async function checkQuota(
   const org = await prisma.organization.findUnique({
     where: { id: organizationId },
     include: {
-      users: {
-        include: {
-          user: {
-            include: { subscription: true },
-          },
-        },
-      },
+      subscriptions: { take: 1 },
     },
   });
 
@@ -155,8 +149,8 @@ export async function checkQuota(
   }
 
   // Get plan
-  const subscription = org.users[0]?.user?.subscription;
-  const planKey = subscription?.plan || "free";
+  const subscription = org.subscriptions[0];
+  const planKey = subscription?.planKey || "free";
   const plan = plans[planKey];
 
   if (!plan) {
@@ -310,7 +304,7 @@ export async function getUsageStats(organizationId: string) {
   const now = new Date();
   const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-  // Get the owner user ID
+  // Get org with owner and subscription
   const org = await prisma.organization.findUnique({
     where: { id: organizationId },
     include: {
@@ -318,6 +312,7 @@ export async function getUsageStats(organizationId: string) {
         where: { role: "OWNER" },
         take: 1,
       },
+      subscriptions: { take: 1 },
     },
   });
 
@@ -329,12 +324,9 @@ export async function getUsageStats(organizationId: string) {
     where: { userId_month: { userId, month: monthKey } },
   });
 
-  // Get plan
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId },
-  });
-
-  const planKey = subscription?.plan || "free";
+  // Get plan from org-level subscription
+  const subscription = org.subscriptions?.[0];
+  const planKey = subscription?.planKey || "free";
   const plan = plans[planKey];
 
   return {
@@ -356,7 +348,8 @@ export async function getUsageStats(organizationId: string) {
 // ============================================================================
 
 /**
- * Met à jour le plan d'un utilisateur
+ * Met à jour le plan d'une organisation
+ * Uses org-level subscription (new model)
  */
 export async function updateUserPlan(
   userId: string,
@@ -364,46 +357,46 @@ export async function updateUserPlan(
   stripeCustomerId?: string,
   stripeSubscriptionId?: string,
 ): Promise<void> {
+  // Find org for user
+  const orgMembership = await prisma.userOrganization.findFirst({
+    where: { userId, role: "OWNER" },
+  });
+  if (!orgMembership) return;
+
+  const organizationId = orgMembership.organizationId;
+
   const oldSubscription = await prisma.subscription.findUnique({
-    where: { userId },
+    where: { organizationId },
   });
 
-  const oldPlan = oldSubscription?.plan || "free";
+  const oldPlan = oldSubscription?.planKey || "free";
 
   // Update subscription
   await prisma.subscription.upsert({
-    where: { userId },
+    where: { organizationId },
     create: {
-      userId,
-      plan: planKey,
-      status: "active",
+      organizationId,
+      planKey,
+      status: "ACTIVE",
       stripeCustomerId,
       stripeSubscriptionId,
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     },
     update: {
-      plan: planKey,
+      planKey,
       stripeCustomerId,
       stripeSubscriptionId,
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      status: "active",
+      status: "ACTIVE",
     },
   });
 
   // Audit log
   if (oldPlan !== planKey) {
-    const org = await prisma.organization.findFirst({
-      where: {
-        users: { some: { userId, role: "OWNER" } },
-      },
-    });
-
-    if (org) {
-      if (plans[planKey]!.price > plans[oldPlan]!.price) {
-        await auditBilling.planUpgraded(org.id, oldPlan, planKey);
-      } else {
-        await auditBilling.planDowngraded(org.id, oldPlan, planKey);
-      }
+    if (plans[planKey]!.price > plans[oldPlan]!.price) {
+      await auditBilling.planUpgraded(organizationId, oldPlan, planKey);
+    } else {
+      await auditBilling.planDowngraded(organizationId, oldPlan, planKey);
     }
   }
 }
@@ -412,21 +405,21 @@ export async function updateUserPlan(
  * Annule un abonnement
  */
 export async function cancelSubscription(userId: string): Promise<void> {
+  // Find org for user
+  const orgMembership = await prisma.userOrganization.findFirst({
+    where: { userId, role: "OWNER" },
+  });
+  if (!orgMembership) return;
+
+  const organizationId = orgMembership.organizationId;
+
   await prisma.subscription.update({
-    where: { userId },
+    where: { organizationId },
     data: {
       cancelAtPeriodEnd: true,
     },
   });
 
   // Audit log
-  const org = await prisma.organization.findFirst({
-    where: {
-      users: { some: { userId, role: "OWNER" } },
-    },
-  });
-
-  if (org) {
-    await auditBilling.subscriptionCancelled(org.id);
-  }
+  await auditBilling.subscriptionCancelled(organizationId);
 }

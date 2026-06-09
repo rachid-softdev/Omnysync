@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
@@ -47,6 +47,23 @@ export async function POST(req: NextRequest) {
   }
 
   const orgId = await getUserOrgId(session.user.id)
+
+  // SECURITY: Verify caller has OWNER or ADMIN role in this organization
+  const callerMembership = await prisma.userOrganization.findFirst({
+    where: {
+      organizationId: orgId,
+      userId: session.user.id,
+      role: { in: ['OWNER', 'ADMIN'] },
+    },
+  })
+
+  if (!callerMembership) {
+    return NextResponse.json(
+      { error: 'Only organization owners and admins can add members' },
+      { status: 403 }
+    )
+  }
+
   const body = await req.json()
 
   const { email, role } = body

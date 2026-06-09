@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Admin Overrides API
  * POST /admin/overrides - Create override
  * GET /admin/overrides - List overrides
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAdmin()
+    const admin = await requireAdmin()
 
     const body = await request.json()
     const { scope, scopeId, featureKey, enabled, limitValue, expiresAt, reason } = body
@@ -107,7 +107,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const createdBy = request.headers.get('x-user-id') || 'admin'
+    // Use session user id from requireAdmin() — NOT the forgeable x-user-id header
+    const createdBy = admin.id
 
     const repo = getEntitlementRepository()
     const override = await repo.createOverride({

@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+﻿import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import { createOAuthEncryptionMiddleware } from "./middleware/oauth-encryption";
@@ -29,3 +29,6 @@ export const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
 if (process.env.NODE_ENV !== "production") {
   globalThis.prismaGlobal = prisma;
 }
+
+// Export middleware factory so other prisma instances (e.g. web) can use it
+export { createOAuthEncryptionMiddleware };
