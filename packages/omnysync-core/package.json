@@ -15,6 +15,11 @@
       "require": "./dist/prisma.js",
       "default": "./dist/prisma.js"
     },
+    "./hooks": {
+      "import": "./dist/hooks.mjs",
+      "require": "./dist/hooks.js",
+      "default": "./dist/hooks.js"
+    },
     "./ui": {
       "import": "./dist/ui.mjs",
       "require": "./dist/ui.js",
