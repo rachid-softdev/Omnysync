@@ -4,6 +4,7 @@ export default defineConfig({
   entry: {
     index: "src/index.ts",
     prisma: "src/prisma/index.ts",
+    hooks: "src/hooks/index.ts",
     ui: "src/ui/index.ts",
     crypto: "src/crypto/index.ts",
     "services/two-factor": "src/services/two-factor.ts",
