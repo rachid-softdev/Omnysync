@@ -1,4 +1,14 @@
-import { FileText, StickyNote, Database, Layout, Globe, ShoppingCart, Table, Box, Newspaper } from 'lucide-react'
+import {
+  FileText,
+  StickyNote,
+  Database,
+  Layout,
+  Globe,
+  ShoppingCart,
+  Table,
+  Box,
+  Newspaper,
+} from 'lucide-react'
 
 const iconMap: Record<string, { icon: typeof FileText; color: string; bg: string }> = {
   GOOGLE_DOCS: { icon: FileText, color: '#4285F4', bg: '#E8F0FE' },
@@ -12,9 +22,22 @@ const iconMap: Record<string, { icon: typeof FileText; color: string; bg: string
   MEDIUM: { icon: Newspaper, color: '#00AB6C', bg: '#E6F9F1' },
 }
 
-export function ConnectorIcon({ type, className = 'w-10 h-10' }: { type: string; className?: string }) {
+export function ConnectorIcon({
+  type,
+  className = 'w-10 h-10',
+}: {
+  type: string
+  className?: string
+}) {
   const config = iconMap[type]
-  if (!config) return <div className={`${className} rounded-full bg-muted flex items-center justify-center text-lg`}>?</div>
+  if (!config)
+    return (
+      <div
+        className={`${className} rounded-full bg-muted flex items-center justify-center text-lg`}
+      >
+        ?
+      </div>
+    )
 
   const Icon = config.icon
   return (

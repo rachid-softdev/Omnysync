@@ -191,8 +191,7 @@ const DropdownMenuGroupLabel = React.forwardRef<
     {...props}
   />
 ));
-DropdownMenuGroupLabel.displayName =
-  DropdownMenuPrimitive.Label.displayName;
+DropdownMenuGroupLabel.displayName = DropdownMenuPrimitive.Label.displayName;
 
 export {
   DropdownMenu,

@@ -36,7 +36,6 @@ const connectorNames: Record<string, string> = {
   MEDIUM: 'Medium',
 }
 
-
 const connectorDescriptions: Record<string, string> = {
   GOOGLE_DOCS: 'Récupérez le contenu depuis Google Docs',
   NOTION: 'Importez vos pages Notion',

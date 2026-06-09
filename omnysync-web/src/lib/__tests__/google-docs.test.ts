@@ -266,11 +266,7 @@ describe('Google Docs Service', () => {
         credentials: 'encrypted_new_credentials',
       } as any)
 
-      await updateConnectorCredentials(
-        'connector-1',
-        'new-access-token',
-        'new-refresh-token'
-      )
+      await updateConnectorCredentials('connector-1', 'new-access-token', 'new-refresh-token')
 
       expect(prisma.connector.update).toHaveBeenCalledWith({
         where: { id: 'connector-1' },

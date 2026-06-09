@@ -13,15 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Loader2,
-  FileCheck,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Eye,
-} from 'lucide-react'
+import { Loader2, FileCheck, Clock, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 
 interface ApprovalRequest {

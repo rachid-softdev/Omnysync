@@ -132,7 +132,6 @@ export function useCachedFetch<T>(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _options: CacheOptions = {}
 ) {
-
   // Implémentation simple - en production, utiliser SWR ou React Query
   return {
     data: null as T | null,

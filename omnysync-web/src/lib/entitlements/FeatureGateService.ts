@@ -31,11 +31,7 @@ import { getEntitlementRepository } from './EntitlementRepository'
 import type { IEntitlementRepository, OverrideData } from './EntitlementRepository'
 import { getCacheService } from './CacheService'
 import type { CacheService } from './CacheService'
-import {
-  FeatureNotAvailableError,
-  LimitReachedError,
-  InvalidFeatureError,
-} from './errors'
+import { FeatureNotAvailableError, LimitReachedError, InvalidFeatureError } from './errors'
 
 // ============================================================================
 // SERVICE CONFIG
@@ -212,11 +208,7 @@ export class FeatureGateService {
       throw new InvalidFeatureError(featureKey)
     }
 
-    const resolved = await this.resolveFeatureValue(
-      orgId,
-      featureKey,
-      feature.type
-    )
+    const resolved = await this.resolveFeatureValue(orgId, featureKey, feature.type)
 
     const subscription = await this.repo.getActiveSubscription(orgId)
 

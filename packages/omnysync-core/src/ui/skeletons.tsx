@@ -95,15 +95,15 @@ export function FormSkeleton({ fields = 3 }: { fields?: number }) {
  * Stats Skeleton - Pour les cartes de stats
  */
 const gridCols: Record<number, string> = {
-  1: 'md:grid-cols-1',
-  2: 'md:grid-cols-2',
-  3: 'md:grid-cols-3',
-  4: 'md:grid-cols-4',
-}
+  1: "md:grid-cols-1",
+  2: "md:grid-cols-2",
+  3: "md:grid-cols-3",
+  4: "md:grid-cols-4",
+};
 
 export function StatsSkeleton({ count = 4 }: { count?: number }) {
   return (
-    <div className={`grid gap-4 ${gridCols[count] || 'md:grid-cols-4'}`}>
+    <div className={`grid gap-4 ${gridCols[count] || "md:grid-cols-4"}`}>
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="rounded-lg border p-6">
           <div className="flex items-center justify-between">

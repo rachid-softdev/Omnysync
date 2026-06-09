@@ -23,14 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Loader2,
-  Plus,
-  Webhook,
-  Trash2,
-  Play,
-  Copy,
-} from 'lucide-react'
+import { Loader2, Plus, Webhook, Trash2, Play, Copy } from 'lucide-react'
 import { toast } from '@/components/toast-provider'
 import {
   AlertDialog,
@@ -323,7 +316,12 @@ export default function WebhooksPage() {
                         <Copy className="w-4 h-4" />
                       </Button>
                     )}
-                    <AlertDialog open={deleteTarget === webhook.id} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+                    <AlertDialog
+                      open={deleteTarget === webhook.id}
+                      onOpenChange={(open) => {
+                        if (!open) setDeleteTarget(null)
+                      }}
+                    >
                       <AlertDialogTrigger asChild>
                         <Button
                           variant="ghost"
@@ -338,12 +336,17 @@ export default function WebhooksPage() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Supprimer le webhook</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Êtes-vous sûr de vouloir supprimer ce webhook ? Cette action est irréversible.
+                            Êtes-vous sûr de vouloir supprimer ce webhook ? Cette action est
+                            irréversible.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel onClick={() => setDeleteTarget(null)}>Annuler</AlertDialogCancel>
-                          <AlertDialogAction onClick={confirmDeleteWebhook}>Supprimer</AlertDialogAction>
+                          <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
+                            Annuler
+                          </AlertDialogCancel>
+                          <AlertDialogAction onClick={confirmDeleteWebhook}>
+                            Supprimer
+                          </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>

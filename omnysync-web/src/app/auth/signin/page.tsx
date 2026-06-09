@@ -130,7 +130,9 @@ export default function SignInPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div>
-                <label htmlFor="name" className="text-sm font-medium mb-1 block">Name</label>
+                <label htmlFor="name" className="text-sm font-medium mb-1 block">
+                  Name
+                </label>
                 <input
                   id="name"
                   type="text"
@@ -144,7 +146,9 @@ export default function SignInPage() {
             )}
 
             <div>
-              <label htmlFor="email" className="text-sm font-medium mb-1 block">Email</label>
+              <label htmlFor="email" className="text-sm font-medium mb-1 block">
+                Email
+              </label>
               <input
                 id="email"
                 type="email"
@@ -158,9 +162,14 @@ export default function SignInPage() {
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label htmlFor="password" className="text-sm font-medium">Password</label>
+                <label htmlFor="password" className="text-sm font-medium">
+                  Password
+                </label>
                 {isLogin && (
-                  <Link href="/auth/reset-password" className="text-xs text-primary hover:underline">
+                  <Link
+                    href="/auth/reset-password"
+                    className="text-xs text-primary hover:underline"
+                  >
                     Forgot password?
                   </Link>
                 )}
@@ -177,7 +186,11 @@ export default function SignInPage() {
               />
             </div>
 
-            {error && <p className="text-sm text-red-500" role="alert">{error}</p>}
+            {error && (
+              <p className="text-sm text-red-500" role="alert">
+                {error}
+              </p>
+            )}
 
             <button
               type="submit"

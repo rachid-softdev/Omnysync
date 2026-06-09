@@ -127,7 +127,12 @@ export default async function SyncDetailPage({ params }: PageProps) {
               'use server'
               // Trigger sync
               const { performSync } = await import('@omnysync/core/services/sync')
-              await performSync(document.id, document.sourceConnectorId!, document.destConnectorId!, session.user.id)
+              await performSync(
+                document.id,
+                document.sourceConnectorId!,
+                document.destConnectorId!,
+                session.user.id
+              )
             }}
           >
             <Button type="submit" size="sm">
@@ -234,7 +239,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
             <CardTitle>Source</CardTitle>
           </CardHeader>
           <CardContent>
-              <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
               <ConnectorIcon type={document.sourceConnector?.type || ''} className="w-10 h-10" />
               <div>
                 <p className="font-medium">
@@ -253,7 +258,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
             <CardTitle>Destination</CardTitle>
           </CardHeader>
           <CardContent>
-              <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
               <ConnectorIcon type={document.destConnector?.type || ''} className="w-10 h-10" />
               <div>
                 <p className="font-medium">

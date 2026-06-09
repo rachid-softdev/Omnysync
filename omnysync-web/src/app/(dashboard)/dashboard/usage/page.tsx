@@ -6,16 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
-import {
-  Loader2,
-  Zap,
-  FileText,
-  Users,
-  Image,
-  Link2,
-  BarChart3,
-  Calendar,
-} from 'lucide-react'
+import { Loader2, Zap, FileText, Users, Image, Link2, BarChart3, Calendar } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 
 interface UsageData {

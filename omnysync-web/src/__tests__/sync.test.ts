@@ -180,9 +180,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
     })
 
     it('should sync a Google Docs source to WordPress successfully', async () => {
-      vi.mocked(prisma.document.findUnique).mockResolvedValue(
-        baseDocument as any
-      )
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(baseDocument as any)
       vi.mocked(prisma.document.updateMany).mockResolvedValue({
         count: 1,
       } as any)
@@ -214,9 +212,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
     })
 
     it('should handle an error during sync and update status to FAILED', async () => {
-      vi.mocked(prisma.document.findUnique).mockResolvedValue(
-        baseDocument as any
-      )
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(baseDocument as any)
       vi.mocked(prisma.document.updateMany).mockResolvedValue({
         count: 1,
       } as any)
@@ -246,9 +242,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
         },
       }
 
-      vi.mocked(prisma.document.findUnique).mockResolvedValue(
-        notionDoc as any
-      )
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(notionDoc as any)
       vi.mocked(prisma.document.updateMany).mockResolvedValue({
         count: 1,
       } as any)
@@ -301,9 +295,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
         status: 'PUBLISHED',
       }
 
-      vi.mocked(prisma.document.findUnique).mockResolvedValue(
-        publishedDoc as any
-      )
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(publishedDoc as any)
       vi.mocked(prisma.document.updateMany).mockResolvedValue({
         count: 1,
       } as any)
@@ -329,9 +321,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
         destConnector: undefined,
       }
 
-      vi.mocked(prisma.document.findUnique).mockResolvedValue(
-        noConnectorsDoc as any
-      )
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(noConnectorsDoc as any)
 
       const { detectContentChanges } = await import('@omnysync/core/services/ai')
       vi.mocked(detectContentChanges).mockResolvedValue({

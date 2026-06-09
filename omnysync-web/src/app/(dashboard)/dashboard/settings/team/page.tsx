@@ -23,16 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Users,
-  UserPlus,
-  Mail,
-  Shield,
-  Crown,
-  User,
-  Trash2,
-  Loader2,
-} from 'lucide-react'
+import { Users, UserPlus, Mail, Shield, Crown, User, Trash2, Loader2 } from 'lucide-react'
 import { toast } from '@/components/toast-provider'
 import {
   AlertDialog,
@@ -296,7 +287,12 @@ export default function TeamSettingsPage() {
                             <SelectItem value="ADMIN">Admin</SelectItem>
                           </SelectContent>
                         </Select>
-                        <AlertDialog open={deleteTarget === member.id} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+                        <AlertDialog
+                          open={deleteTarget === member.id}
+                          onOpenChange={(open) => {
+                            if (!open) setDeleteTarget(null)
+                          }}
+                        >
                           <AlertDialogTrigger asChild>
                             <Button
                               variant="ghost"
@@ -312,12 +308,17 @@ export default function TeamSettingsPage() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Supprimer le membre</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Êtes-vous sûr de vouloir supprimer ce membre ? Cette action est irréversible.
+                                Êtes-vous sûr de vouloir supprimer ce membre ? Cette action est
+                                irréversible.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel onClick={() => setDeleteTarget(null)}>Annuler</AlertDialogCancel>
-                              <AlertDialogAction onClick={confirmRemoveMember}>Supprimer</AlertDialogAction>
+                              <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
+                                Annuler
+                              </AlertDialogCancel>
+                              <AlertDialogAction onClick={confirmRemoveMember}>
+                                Supprimer
+                              </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>

@@ -338,7 +338,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 </p>
               ) : (
                 <div className="space-y-3">
-                   {document.syncLogs.map((log: any) => (
+                  {document.syncLogs.map((log: any) => (
                     <div
                       key={log.id}
                       className="flex items-center justify-between p-3 rounded-lg border"
