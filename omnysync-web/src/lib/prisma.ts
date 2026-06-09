@@ -1,6 +1,7 @@
-import { PrismaClient } from '@prisma/client'
+﻿import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
+import { createOAuthEncryptionMiddleware } from '@omnysync/core'
 
 const { Pool } = pg
 
@@ -13,7 +14,13 @@ const prismaClientSingleton = () => {
     connectionString: process.env.DATABASE_URL,
   })
   const adapter = new PrismaPg(pool)
-  return new PrismaClient({ adapter })
+  const client = new PrismaClient({ adapter })
+
+  // Middleware: transparent encryption/decryption of OAuth tokens
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(client as any).$use(createOAuthEncryptionMiddleware())
+
+  return client
 }
 
 declare const globalThis: {

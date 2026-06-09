@@ -1,27 +1,40 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createHash } from 'crypto'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 // Must be hoisted before module imports
 
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
-    twoFactorAuth: {
-      findUnique: vi.fn(),
-      upsert: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-    user: {
-      findUnique: vi.fn(),
-    },
-    userOrganization: {
-      findFirst: vi.fn(),
-    },
-    auditLog: {
-      create: vi.fn(),
-    },
+// The two-factor service imports prisma from @omnysync/core (relative: "../prisma"),
+// not from @/lib/prisma. Both mocks must point to the SAME mock functions
+// so test assertions via import { prisma } from '@/lib/prisma' stay in sync.
+const sharedMockPrisma = vi.hoisted(() => ({
+  twoFactorAuth: {
+    findUnique: vi.fn(),
+    upsert: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
   },
+  user: {
+    findUnique: vi.fn(),
+  },
+  userOrganization: {
+    findFirst: vi.fn(),
+  },
+  auditLog: {
+    create: vi.fn(),
+  },
+}))
+
+vi.mock('@/lib/prisma', () => ({
+  prisma: sharedMockPrisma,
+}))
+
+// The two-factor service imports prisma via "../prisma" (relative to the source file).
+// From the test file, the resolved path is ../../../packages/omnysync-core/src/prisma.
+vi.mock('../../../packages/omnysync-core/src/prisma', () => ({
+  prisma: sharedMockPrisma,
 }))
 
 vi.mock('@/lib/crypto', () => ({
@@ -34,6 +47,25 @@ vi.mock('bcrypt', () => ({
   hash: vi.fn(),
 }))
 
+// Mock otpauth for controlled TOTP verification
+// Use vi.hoisted to create a mutable container that both the mock factory
+// and test helpers can reference
+const mockTotpContainer = vi.hoisted(() => ({
+  /** vi.fn() so tests can call .mockReturnValue() to control TOTP validation */
+  validate: vi.fn(),
+}))
+vi.mock('otpauth', () => ({
+  Secret: function Secret() {
+    return { base32: 'JBSWY3DPEHPK3PXP' }
+  },
+  TOTP: function TOTP() {
+    return {
+      validate: mockTotpContainer.validate,
+      toString: () => 'otpauth://totp/Omnysync:test?secret=TEST',
+    }
+  },
+}))
+
 // ── Imports ─────────────────────────────────────────────────────────────────
 
 import {
@@ -42,8 +74,11 @@ import {
   verifyTotpCode,
   disableTwoFactor,
   getTwoFactorStatus,
-} from '@omnysync/core/services/two-factor'
+} from '../../../packages/omnysync-core/src/services/two-factor'
 import { prisma } from '@/lib/prisma'
+
+// Get the mock validate function for controlling TOTP verification
+const getMockTotpValidate = () => mockTotpContainer.validate
 
 // ── Suite ───────────────────────────────────────────────────────────────────
 
@@ -175,6 +210,30 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('two-factor service', () => {
       expect(result.success).toBe(false)
       expect(result.error).toBe('Échec de la configuration du 2FA')
     })
+
+    it('should hash backup codes with SHA-256 before storing', async () => {
+      vi.mocked(prisma.twoFactorAuth.upsert).mockResolvedValue(
+        {} as unknown as Record<string, unknown>
+      )
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({} as unknown as Record<string, unknown>)
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null)
+
+      await setupTwoFactor(userId, secret)
+
+      const createCall = vi.mocked(prisma.twoFactorAuth.upsert).mock.calls[0][0]
+      const storedBackupCodes = createCall.create.backupCodes as string[]
+
+      // Each backup code should be a SHA-256 hash (64 hex chars)
+      storedBackupCodes.forEach((code) => {
+        expect(code).toMatch(/^[a-f0-9]{64}$/)
+      })
+
+      // The plaintext backup codes returned should be 8 hex chars
+      const result = await setupTwoFactor(userId, secret)
+      result.backupCodes!.forEach((code) => {
+        expect(code).toMatch(/^[0-9A-F]{8}$/)
+      })
+    })
   })
 
   // ── verifyTotpCode ────────────────────────────────────────────────────────
@@ -182,6 +241,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('two-factor service', () => {
   describe('verifyTotpCode', () => {
     const userId = 'user-1'
     const secret = 'JBSWY3DPEHPK3PXP'
+
+    beforeEach(() => {
+      // Reset the mock validate to default behavior (return null for invalid)
+      getMockTotpValidate().mockReturnValue(null)
+    })
 
     it('should return error if 2FA is not enabled', async () => {
       vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue(null)
@@ -226,6 +290,175 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('two-factor service', () => {
 
       expect(result.valid).toBe(false)
       expect(result.error).toBe('Code invalide')
+    })
+
+    // ── NEW: Backup code edge cases ─────────────────────────────────────────
+
+    it('should consume backup codes one at a time (decrementing count)', async () => {
+      const backupCode1 = 'FIRST123'
+      const backupCode2 = 'SECOND456'
+      const hash1 = createHash('sha256').update(backupCode1).digest('hex')
+      const hash2 = createHash('sha256').update(backupCode2).digest('hex')
+
+      // First call: both codes available
+      vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
+        userId,
+        secret: `encrypted:${secret}`,
+        backupCodes: [hash1, hash2],
+      } as unknown as Record<string, unknown>)
+
+      // Mock update to simulate removing the used code (for second call)
+      vi.mocked(prisma.twoFactorAuth.update).mockImplementation(async () => ({}) as any)
+
+      // Use first backup code
+      const result1 = await verifyTotpCode(userId, backupCode1)
+      expect(result1.valid).toBe(true)
+
+      // Verify it was removed
+      const updateCall1 = vi.mocked(prisma.twoFactorAuth.update).mock.calls[0]?.[0]
+      expect(updateCall1.data.backupCodes).toEqual([hash2])
+    })
+
+    it('should accept backup code case-insensitively', async () => {
+      const backupCode = 'AbCd1234'
+      const codeHash = createHash('sha256').update('ABCD1234').digest('hex') // Uppercased by service
+
+      vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
+        userId,
+        secret: `encrypted:${secret}`,
+        backupCodes: [codeHash],
+      } as unknown as Record<string, unknown>)
+      vi.mocked(prisma.twoFactorAuth.update).mockResolvedValue(
+        {} as unknown as Record<string, unknown>
+      )
+
+      // Provide mixed case code - service uppercases before hashing
+      const result = await verifyTotpCode(userId, backupCode)
+
+      expect(result.valid).toBe(true)
+    })
+
+    it('should fall through to TOTP verification when backup codes list is empty', async () => {
+      vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
+        userId,
+        secret: `encrypted:${secret}`,
+        backupCodes: [],
+      } as unknown as Record<string, unknown>)
+
+      // Make TOTP validate return a valid delta
+      getMockTotpValidate().mockReturnValue(0)
+
+      const result = await verifyTotpCode(userId, '123456')
+
+      expect(result.valid).toBe(true)
+    })
+
+    it('should fall through to TOTP when no backup code matches', async () => {
+      vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
+        userId,
+        secret: `encrypted:${secret}`,
+        backupCodes: ['SOMEHASH'],
+      } as unknown as Record<string, unknown>)
+
+      // Make TOTP validate return a valid delta
+      getMockTotpValidate().mockReturnValue(0)
+
+      // Code that doesn't match any backup code
+      const result = await verifyTotpCode(userId, '654321')
+
+      expect(result.valid).toBe(true)
+      // Should NOT have called update to remove backup code (TOTP path)
+      expect(prisma.twoFactorAuth.update).not.toHaveBeenCalled()
+    })
+
+    // ── NEW: TOTP verification edge cases ───────────────────────────────────
+
+    it('should accept TOTP code when delta=0 (exact match)', async () => {
+      vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
+        userId,
+        secret: `encrypted:${secret}`,
+        backupCodes: [],
+      } as unknown as Record<string, unknown>)
+
+      getMockTotpValidate().mockReturnValue(0)
+
+      const result = await verifyTotpCode(userId, '123456')
+      expect(result.valid).toBe(true)
+    })
+
+    it('should accept TOTP code when delta=1 (window tolerance)', async () => {
+      vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
+        userId,
+        secret: `encrypted:${secret}`,
+        backupCodes: [],
+      } as unknown as Record<string, unknown>)
+
+      getMockTotpValidate().mockReturnValue(1)
+
+      const result = await verifyTotpCode(userId, '123456')
+      expect(result.valid).toBe(true)
+    })
+
+    it('should accept TOTP code when delta=-1 (window tolerance)', async () => {
+      vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
+        userId,
+        secret: `encrypted:${secret}`,
+        backupCodes: [],
+      } as unknown as Record<string, unknown>)
+
+      getMockTotpValidate().mockReturnValue(-1)
+
+      const result = await verifyTotpCode(userId, '123456')
+      expect(result.valid).toBe(true)
+    })
+
+    it('should reject TOTP code when delta is null (invalid)', async () => {
+      vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
+        userId,
+        secret: `encrypted:${secret}`,
+        backupCodes: [],
+      } as unknown as Record<string, unknown>)
+
+      getMockTotpValidate().mockReturnValue(null)
+
+      const result = await verifyTotpCode(userId, '000000')
+      expect(result.valid).toBe(false)
+      expect(result.error).toBe('Code invalide')
+    })
+
+    it('should decrypt the secret before TOTP verification', async () => {
+      const encryptedSecret = `encrypted:${secret}`
+
+      vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
+        userId,
+        secret: encryptedSecret,
+        backupCodes: [],
+      } as unknown as Record<string, unknown>)
+
+      getMockTotpValidate().mockReturnValue(0)
+
+      await verifyTotpCode(userId, '123456')
+
+      // Verify decrypt was called (the mock strips 'encrypted:' prefix)
+      const decrypt = vi.mocked(require('@/lib/crypto')).decrypt
+      expect(decrypt).toHaveBeenCalledWith(encryptedSecret)
+    })
+
+    it('should handle TOTP validation throwing an error gracefully', async () => {
+      vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
+        userId,
+        secret: `encrypted:${secret}`,
+        backupCodes: ['SOMEHASH'],
+      } as unknown as Record<string, unknown>)
+
+      // Make TOTP constructor throw
+      const otpauth = require('otpauth')
+      otpauth.TOTP.mockImplementationOnce(() => {
+        throw new Error('Invalid secret')
+      })
+
+      const result = await verifyTotpCode(userId, '654321')
+      expect(result.valid).toBe(false)
     })
   })
 
@@ -347,6 +580,52 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('two-factor service', () => {
 
       expect(result.enabled).toBe(true)
       expect(result.enabledAt).toEqual(enabledAt)
+    })
+
+    it('should return enabled=true when 2FA exists without enabledAt date', async () => {
+      vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
+        userId: 'user-1',
+        secret: 'encrypted:secret',
+        backupCodes: [],
+      } as unknown as Record<string, unknown>)
+
+      const result = await getTwoFactorStatus('user-1')
+
+      expect(result.enabled).toBe(true)
+      expect(result.enabledAt).toBeUndefined()
+    })
+  })
+
+  // ── NEW: Combined activation flow tests ───────────────────────────────────
+
+  describe('Activation flow (generate → verify → setup)', () => {
+    it('should generate a valid secret then setup 2FA with it', async () => {
+      // Step 1: Generate secret
+      const { secret, otpauthUrl } = generateTotpSecret()
+      expect(secret).toMatch(/^[A-Z2-7]+=*$/)
+      expect(otpauthUrl).toContain('otpauth://totp/')
+
+      // Step 2: Setup with generated secret
+      vi.mocked(prisma.twoFactorAuth.upsert).mockResolvedValue(
+        {} as unknown as Record<string, unknown>
+      )
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({} as unknown as Record<string, unknown>)
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null)
+
+      const setupResult = await setupTwoFactor('user-1', secret)
+      expect(setupResult.success).toBe(true)
+      expect(setupResult.backupCodes).toBeDefined()
+      expect(setupResult.backupCodes!.length).toBe(10)
+
+      // Step 3: Verify the secret was stored encrypted
+      expect(prisma.twoFactorAuth.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user-1' },
+          create: expect.objectContaining({
+            secret: `encrypted:${secret}`,
+          }),
+        })
+      )
     })
   })
 })

@@ -5,6 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, CheckCircle, CircleX } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 const PLATFORM_FIELDS: Record<
   string,
@@ -63,8 +70,6 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-
-  if (!open) return null
 
   const platformFields = PLATFORM_FIELDS[type]
   if (!platformFields) return null
@@ -158,30 +163,30 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={onClose}
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) onClose()
+      }}
     >
-      <div
-        className="bg-card border border-border rounded-xl shadow-xl p-6 w-full max-w-md mx-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold">Connecter {connectorName[type] || type}</h3>
-          <p className="text-sm text-muted-foreground">{connectorDescriptions[type]}</p>
-        </div>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Connecter {connectorName[type] || type}</DialogTitle>
+          <DialogDescription>{connectorDescriptions[type]}</DialogDescription>
+        </DialogHeader>
 
         {success ? (
           <div className="flex flex-col items-center gap-3 py-8">
-            <CheckCircle className="w-10 h-10 text-green-500" />
+            <CheckCircle className="w-10 h-10 text-green-500" aria-hidden="true" />
             <p className="text-sm text-muted-foreground">Connecté avec succès !</p>
           </div>
         ) : (
           <div className="space-y-4">
             {platformFields.map((field) => (
               <div key={field.key} className="space-y-1.5">
-                <Label>{field.label}</Label>
+                <Label htmlFor={field.key}>{field.label}</Label>
                 <Input
+                  id={field.key}
                   type={field.type}
                   placeholder={field.placeholder}
                   value={fields[field.key] || ''}
@@ -191,8 +196,11 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
             ))}
 
             {error && (
-              <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
-                <CircleX className="w-4 h-4" />
+              <div
+                className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg"
+                role="alert"
+              >
+                <CircleX className="w-4 h-4" aria-hidden="true" />
                 {error}
               </div>
             )}
@@ -202,13 +210,13 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
                 Annuler
               </Button>
               <Button className="flex-1" onClick={handleConnect} disabled={loading}>
-                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />}
                 Connecter
               </Button>
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

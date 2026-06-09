@@ -1,4 +1,4 @@
-import NextAuth from 'next-auth'
+﻿import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
 import Credentials from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'
@@ -56,7 +56,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days (was 30 days — S8 security fix)
   },
   pages: {
     signIn: '/auth/signin',
@@ -85,7 +85,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
 
       // On-access password invalidation: lightweight (single indexed field query)
-      // Without this, a compromised JWT remains valid after password change (30 days maxAge).
+      // Without this, a compromised JWT remains valid after password change (7 days maxAge).
       // DB session deletion (in resetPassword) has NO effect on JWT strategy tokens.
       if (token.passwordChangedAt && trigger !== 'update') {
         const pwChanged = await prisma.user.findUnique({

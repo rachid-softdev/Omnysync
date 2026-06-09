@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -160,6 +160,18 @@ export default function NewSyncPage() {
     setCurrentStep(3)
   }
 
+  // Refs for polling cleanup
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [])
+
   const handleSync = async () => {
     if (!source || !sourceDocId || !destination) {
       setError('Tous les champs sont requis')
@@ -196,15 +208,16 @@ export default function NewSyncPage() {
       addLog('Sync lancée, suivi en cours...', 'info')
 
       // Poll for completion
-      const pollInterval = setInterval(async () => {
+      pollIntervalRef.current = setInterval(async () => {
         try {
           const statusRes = await fetch(`/api/sync/${document.id}`)
           if (!statusRes.ok) return
 
           const status = await statusRes.json()
 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           status.logs?.forEach((log: any) => {
-            const status =
+            const logStatus =
               log.status === 'SUCCESS'
                 ? 'success'
                 : log.status === 'ERROR'
@@ -212,15 +225,15 @@ export default function NewSyncPage() {
                   : log.status === 'WARNING'
                     ? 'warning'
                     : 'info'
-            addLog(log.message || log.status, status)
+            addLog(log.message || log.status, logStatus)
           })
 
           if (status.syncStatus === 'SYNCED') {
-            clearInterval(pollInterval)
+            clearInterval(pollIntervalRef.current!)
             addLog('Synchronisation terminée avec succès !', 'success')
             setIsSyncing(false)
           } else if (status.syncStatus === 'FAILED') {
-            clearInterval(pollInterval)
+            clearInterval(pollIntervalRef.current!)
             addLog('La synchronisation a échoué', 'error')
             setIsSyncing(false)
           }
@@ -230,15 +243,19 @@ export default function NewSyncPage() {
       }, 3000)
 
       // Stop polling after 2 minutes max
-      setTimeout(() => {
-        clearInterval(pollInterval)
-        if (isSyncing) {
-          setIsSyncing(false)
-          addLog('Timeout — la synchronisation prend plus de temps que prévu', 'warning')
+      timeoutRef.current = setTimeout(() => {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current)
         }
+        // Use a callback to access latest isSyncing state
+        setIsSyncing((prev) => {
+          if (prev) {
+            addLog('Timeout — la synchronisation prend plus de temps que prévu', 'warning')
+            return false
+          }
+          return prev
+        })
       }, 120000)
-
-      setIsSyncing(false)
     } catch (e) {
       addLog((e as Error).message, 'error')
       setError((e as Error).message)

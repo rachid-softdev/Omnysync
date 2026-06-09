@@ -1,12 +1,26 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { checkRateLimitRedis } from '@/lib/rate-limit-redis'
 
 /**
- * Global middleware for rate limiting
+ * Global middleware for rate limiting and CORS preflight
  * Uses Redis (Upstash) with automatic fallback to allow-all if Redis unavailable
  */
 export async function middleware(request: NextRequest): Promise<NextResponse> {
+  // Handle CORS preflight (OPTIONS) - respond immediately with CORS headers
+  if (request.method === 'OPTIONS') {
+    const origin = process.env.NODE_ENV === 'production' ? 'https://omnysync.app' : '*'
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': origin,
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Max-Age': '86400',
+      },
+    })
+  }
+
   // Only rate limit API routes
   if (!request.nextUrl.pathname.startsWith('/api/')) {
     return NextResponse.next()

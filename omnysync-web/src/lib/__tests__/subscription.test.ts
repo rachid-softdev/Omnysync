@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   PLAN_LIMITS,
@@ -15,7 +17,10 @@ import {
 // Mock prisma
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    subscription: {
+    userOrganization: {
+      findFirst: vi.fn(),
+    },
+    organization: {
       findUnique: vi.fn(),
     },
     quotaUsage: {
@@ -23,6 +28,7 @@ vi.mock('@/lib/prisma', () => ({
       create: vi.fn(),
       update: vi.fn(),
       updateMany: vi.fn(),
+      upsert: vi.fn(),
     },
     connector: {
       count: vi.fn(),
@@ -41,6 +47,22 @@ vi.mock('next/server', () => ({
 }))
 
 import { prisma } from '@/lib/prisma'
+
+// Helper to build mock userOrg lookup response
+function mockUserOrgLookup(planKey: string | null, status: string | null) {
+  return planKey
+    ? {
+        organization: {
+          subscriptions: [
+            {
+              planKey,
+              status: status || 'ACTIVE',
+            },
+          ],
+        },
+      }
+    : null
+}
 
 describe('Subscription Service', () => {
   beforeEach(() => {
@@ -87,41 +109,44 @@ describe('Subscription Service', () => {
   })
 
   describe('getUserPlan', () => {
+    it('should return free when no org membership', async () => {
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null)
+
+      const plan = await getUserPlan('user-123')
+      expect(plan).toBe('free')
+    })
+
     it('should return free when no subscription', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue(null)
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue({
+        organization: { subscriptions: [] },
+      } as any)
 
       const plan = await getUserPlan('user-123')
       expect(plan).toBe('free')
     })
 
     it('should return free when subscription is not active', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
-        userId: 'user-123',
-        plan: 'pro',
-        status: 'cancelled',
-      } as any)
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
+        mockUserOrgLookup('pro', 'CANCELED') as any
+      )
 
       const plan = await getUserPlan('user-123')
       expect(plan).toBe('free')
     })
 
     it('should return the plan when subscription is active', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
-        userId: 'user-123',
-        plan: 'pro',
-        status: 'active',
-      } as any)
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
+        mockUserOrgLookup('pro', 'ACTIVE') as any
+      )
 
       const plan = await getUserPlan('user-123')
       expect(plan).toBe('pro')
     })
 
     it('should return business for business plan', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
-        userId: 'user-123',
-        plan: 'business',
-        status: 'active',
-      } as any)
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
+        mockUserOrgLookup('business', 'ACTIVE') as any
+      )
 
       const plan = await getUserPlan('user-123')
       expect(plan).toBe('business')
@@ -147,7 +172,7 @@ describe('Subscription Service', () => {
 
   describe('getQuotaUsage', () => {
     it('should return quota for free user', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue(null)
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null)
       vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue(null)
       vi.mocked(prisma.connector.count).mockResolvedValue(1)
       vi.mocked(prisma.document.count).mockResolvedValue(10)
@@ -162,7 +187,7 @@ describe('Subscription Service', () => {
     })
 
     it('should calculate percent for free plan', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue(null)
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null)
       vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue({
         userId: 'user-123',
         month: '2024-01',
@@ -178,11 +203,9 @@ describe('Subscription Service', () => {
     })
 
     it('should return 0 percent for paid plans', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
-        userId: 'user-123',
-        plan: 'pro',
-        status: 'active',
-      } as any)
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
+        mockUserOrgLookup('pro', 'ACTIVE') as any
+      )
       vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue(null)
       vi.mocked(prisma.connector.count).mockResolvedValue(1)
       vi.mocked(prisma.document.count).mockResolvedValue(10)
@@ -195,11 +218,9 @@ describe('Subscription Service', () => {
 
   describe('checkAndIncrementQuota', () => {
     it('should allow sync for business plan', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
-        userId: 'user-123',
-        plan: 'business',
-        status: 'active',
-      } as any)
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
+        mockUserOrgLookup('business', 'ACTIVE') as any
+      )
 
       const result = await checkAndIncrementQuota('user-123')
 
@@ -208,51 +229,32 @@ describe('Subscription Service', () => {
     })
 
     it('should allow sync when quota available', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue(null) // free plan
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null) // free plan
+      vi.mocked(prisma.quotaUsage.upsert).mockResolvedValue({} as any)
+      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 1 } as any)
       vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue({
         id: 'quota-1',
         userId: 'user-123',
         month: '2024-01',
-        syncCount: 2,
+        syncCount: 3,
       } as any)
-      vi.mocked(prisma.quotaUsage.update).mockResolvedValue({} as any)
 
       const result = await checkAndIncrementQuota('user-123')
 
       expect(result.allowed).toBe(true)
-      expect(result.remaining).toBe(2) // 5 - 2 = 3, but -1 after increment = 2
+      expect(result.remaining).toBe(2) // 5 - 3 = 2
     })
 
     it('should deny sync when quota exceeded', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue(null) // free plan
-      vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue({
-        id: 'quota-1',
-        userId: 'user-123',
-        month: '2024-01',
-        syncCount: 5,
-      } as any)
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null) // free plan
+      vi.mocked(prisma.quotaUsage.upsert).mockResolvedValue({} as any)
+      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 0 } as any)
 
       const result = await checkAndIncrementQuota('user-123')
 
       expect(result.allowed).toBe(false)
       expect(result.remaining).toBe(0)
       expect(result.upgradeUrl).toBe('/pricing')
-    })
-
-    it('should create quota entry when not exists', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue(null) // free plan
-      vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue(null)
-      vi.mocked(prisma.quotaUsage.create).mockResolvedValue({
-        id: 'quota-1',
-        userId: 'user-123',
-        month: '2024-01',
-        syncCount: 0,
-      } as any)
-      vi.mocked(prisma.quotaUsage.update).mockResolvedValue({} as any)
-
-      await checkAndIncrementQuota('user-123')
-
-      expect(prisma.quotaUsage.create).toHaveBeenCalled()
     })
   })
 
@@ -278,7 +280,7 @@ describe('Subscription Service', () => {
 
   describe('checkConnectorLimit', () => {
     it('should allow connector when under limit', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue(null) // free plan
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null) // free plan
       vi.mocked(prisma.connector.count).mockResolvedValue(1)
 
       const result = await checkConnectorLimit('user-123')
@@ -289,7 +291,7 @@ describe('Subscription Service', () => {
     })
 
     it('should deny connector when at limit', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue(null) // free plan
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null) // free plan
       vi.mocked(prisma.connector.count).mockResolvedValue(2)
 
       const result = await checkConnectorLimit('user-123')
@@ -301,7 +303,7 @@ describe('Subscription Service', () => {
 
   describe('checkDocumentLimit', () => {
     it('should allow document when under limit', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue(null) // free plan
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null) // free plan
       vi.mocked(prisma.document.count).mockResolvedValue(49)
 
       const result = await checkDocumentLimit('user-123')
@@ -312,7 +314,7 @@ describe('Subscription Service', () => {
     })
 
     it('should deny document when at limit', async () => {
-      vi.mocked(prisma.subscription.findUnique).mockResolvedValue(null) // free plan
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null) // free plan
       vi.mocked(prisma.document.count).mockResolvedValue(50)
 
       const result = await checkDocumentLimit('user-123')
