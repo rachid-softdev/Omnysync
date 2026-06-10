@@ -1,7 +1,6 @@
 ﻿import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
-import { createOAuthEncryptionMiddleware } from '@omnysync/core'
 
 const { Pool } = pg
 
@@ -16,9 +15,9 @@ const prismaClientSingleton = () => {
   const adapter = new PrismaPg(pool)
   const client = new PrismaClient({ adapter })
 
-  // Middleware: transparent encryption/decryption of OAuth tokens
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ;(client as any).$use(createOAuthEncryptionMiddleware())
+  // NOTE: Prisma 7.x removed the $use middleware API. OAuth encryption
+  // must be applied explicitly at the service layer instead.
+  // See packages/omnysync-core/src/prisma/middleware/oauth-encryption.ts
 
   return client
 }

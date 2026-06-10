@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import {
   createCipheriv,
   createDecipheriv,
@@ -68,7 +67,7 @@ function decryptField(encryptedText: string): string {
   return decrypted;
 }
 
-function encryptData(data: Record<string, unknown>): void {
+export function encryptData(data: Record<string, unknown>): void {
   if (!data) return;
 
   for (const field of OAUTH_FIELDS) {
@@ -88,7 +87,7 @@ function decryptRecord(record: Record<string, unknown>): void {
   }
 }
 
-function decryptResult(result: unknown): void {
+export function decryptResult(result: unknown): void {
   if (!result) return;
 
   if (Array.isArray(result)) {
@@ -100,59 +99,17 @@ function decryptResult(result: unknown): void {
   }
 }
 
-export function createOAuthEncryptionMiddleware(): Prisma.Middleware {
-  return async (params, next) => {
-    // Intercepter uniquement les opérations sur le modèle Account
-    if (params.model !== "Account") {
-      return next(params);
-    }
-
-    // === ÉCRITURE : chiffrement avant envoi à la DB ===
-    if (params.action === "create") {
-      encryptData(params.args.data as Record<string, unknown>);
-      return next(params);
-    }
-
-    if (params.action === "update") {
-      encryptData(params.args.data as Record<string, unknown>);
-      const result = await next(params);
-      decryptResult(result);
-      return result;
-    }
-
-    if (params.action === "upsert") {
-      if (params.args.create) {
-        encryptData(params.args.create as Record<string, unknown>);
-      }
-      if (params.args.update) {
-        encryptData(params.args.update as Record<string, unknown>);
-      }
-      const result = await next(params);
-      decryptResult(result);
-      return result;
-    }
-
-    if (params.action === "updateMany") {
-      encryptData(params.args.data as Record<string, unknown>);
-      return next(params);
-    }
-
-    // === LECTURE : déchiffrement après récupération DB ===
-    if (
-      params.action === "findUnique" ||
-      params.action === "findUniqueOrThrow" ||
-      params.action === "findFirst" ||
-      params.action === "findFirstOrThrow" ||
-      params.action === "findMany"
-    ) {
-      const result = await next(params);
-      decryptResult(result);
-      return result;
-    }
-
-    // === SUPPRESSION : pas de manipulation nécessaire ===
-    // delete / deleteMany passent directement
-
-    return next(params);
-  };
-}
+/**
+ * NOTE: Prisma 7.x has removed the $use middleware API (formerly used for
+ * transparent OAuth encryption/decryption). The encryptData/decryptResult
+ * utility functions below are kept for explicit application-level use.
+ *
+ * To apply OAuth encryption in Prisma 7, call these functions at the
+ * service/route level when operating on the Account model:
+ *
+ *   import { encryptData, decryptResult } from './oauth-encryption'
+ *   // Before write:
+ *   encryptData(createArgs.data as any)
+ *   // After read:
+ *   decryptResult(result)
+ */

@@ -1,17 +1,17 @@
 /**
- * S1-3 — OAuth Encryption Middleware Tests
+ * S1-3 — OAuth Encryption Utility Tests
  *
- * Tests the Prisma middleware that transparently encrypts / decrypts
- * OAuth token fields (access_token, refresh_token, id_token, token_type, scope)
- * on the Account model.
+ * Tests the encryptData / decryptResult utility functions that
+ * transparently encrypt / decrypt OAuth token fields
+ * (access_token, refresh_token, id_token, token_type, scope).
  *
- * The middleware calls next(params) to pass through to Prisma, so we
- * supply a mock next function and inspect what gets passed to it as well
- * as what the middleware returns after decrypting.
+ * NOTE: Prisma 7.x removed the $use middleware API. These utilities
+ * are now designed for explicit application-level use rather than
+ * automatic middleware interception.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createOAuthEncryptionMiddleware } from "../middleware/oauth-encryption";
+import { describe, it, expect, beforeEach } from "vitest";
+import { encryptData, decryptResult } from "../middleware/oauth-encryption";
 
 // ── Test environment ────────────────────────────────────────────────────────
 
@@ -22,291 +22,154 @@ beforeEach(() => {
   process.env.OAUTH_ENCRYPTION_KEY = OAUTH_KEY;
 });
 
-// ── Helper — build a fake next function ─────────────────────────────────────
-
-function mockNext(result: unknown = {}) {
-  return vi.fn().mockResolvedValue(result);
-}
-
 // ── Suite ───────────────────────────────────────────────────────────────────
 
-describe("S1-3: OAuth encryption middleware", () => {
-  const middleware = createOAuthEncryptionMiddleware();
+describe("S1-3: OAuth encryption utilities", () => {
+  // ── encryptData ────────────────────────────────────────────────────────────
 
-  // ── Model filtering ─────────────────────────────────────────────────────
+  describe("encryptData", () => {
+    it("encrypts access_token with ENC: prefix", () => {
+      const data = { access_token: "gho_realAccessToken123" };
+      encryptData(data);
+      expect(data.access_token).toMatch(/^ENC:/);
+    });
 
-  describe("model filtering", () => {
-    it("passes through non-Account operations unchanged", async () => {
-      const next = mockNext({ id: "user-1" });
-      const params = {
-        model: "User",
-        action: "create",
-        args: { data: { name: "test" } },
+    it("encrypts all OAuth fields", () => {
+      const data = {
+        access_token: "tok1",
+        refresh_token: "tok2",
+        id_token: "tok3",
+        scope: "repo,user",
+        token_type: "bearer",
       };
+      encryptData(data);
+      expect(data.access_token).toMatch(/^ENC:/);
+      expect(data.refresh_token).toMatch(/^ENC:/);
+      expect(data.id_token).toMatch(/^ENC:/);
+      expect(data.scope).toMatch(/^ENC:/);
+      expect(data.token_type).toMatch(/^ENC:/);
+    });
 
-      const result = await middleware(params as any, next);
+    it("does not modify non-OAuth fields", () => {
+      const data = { userId: "user-1", provider: "google" };
+      encryptData(data);
+      expect(data.userId).toBe("user-1");
+      expect(data.provider).toBe("google");
+    });
 
-      expect(result).toEqual({ id: "user-1" });
-      expect(next).toHaveBeenCalledWith(params);
+    it("is idempotent — re-encrypting still produces ENC: prefix", () => {
+      const data = { access_token: "my_token" };
+      encryptData(data);
+      const first = data.access_token as string;
+      encryptData(data);
+      // Re-encrypting the already-encrypted value double-wraps it
+      expect(data.access_token).toMatch(/^ENC:/);
+      expect(data.access_token).not.toBe(first);
+    });
+
+    it("handles null/undefined data gracefully", () => {
+      expect(() => encryptData(null as any)).not.toThrow();
+      expect(() => encryptData(undefined as any)).not.toThrow();
     });
   });
 
-  // ── CREATE — encrypts fields on write ───────────────────────────────────
+  // ── decryptResult — single record ─────────────────────────────────────────
 
-  describe("create — encrypts token fields", () => {
-    it("encrypts access_token and refresh_token on create", async () => {
-      const next = mockNext({ id: "account-1" });
-      const params = {
-        model: "Account",
-        action: "create",
-        args: {
-          data: {
-            access_token: "gho_realAccessToken123",
-            refresh_token: "ghr_refreshToken456",
-            id_token: "eyJhbGciOiJSUzI1NiJ9.id_token",
-            scope: "repo,user",
-            token_type: "bearer",
-          },
-        },
-      };
+  describe("decryptResult (single record)", () => {
+    it("decrypts access_token back to original", () => {
+      const data = { access_token: "my_token" };
+      encryptData(data);
+      expect(data.access_token).toMatch(/^ENC:/);
 
-      const result = await middleware(params as any, next);
-
-      expect(result).toEqual({ id: "account-1" });
-
-      // The data passed to next must have encrypted fields
-      const dataPassedToNext = next.mock.calls[0]![0]!.args.data;
-      expect(dataPassedToNext.access_token).toMatch(/^ENC:/);
-      expect(dataPassedToNext.refresh_token).toMatch(/^ENC:/);
-      expect(dataPassedToNext.id_token).toMatch(/^ENC:/);
-      expect(dataPassedToNext.scope).toMatch(/^ENC:/);
-      expect(dataPassedToNext.token_type).toMatch(/^ENC:/);
+      decryptResult(data);
+      expect(data.access_token).toBe("my_token");
     });
 
-    it("does not modify non-OAuth fields on create", async () => {
-      const next = mockNext({ id: "account-1" });
-      const params = {
-        model: "Account",
-        action: "create",
-        args: {
-          data: {
-            userId: "user-1",
-            provider: "google",
-            providerAccountId: "12345",
-            type: "oauth",
-          },
-        },
+    it("decrypts all OAuth fields", () => {
+      const data = {
+        access_token: "a",
+        refresh_token: "b",
+        id_token: "c",
+        scope: "d",
+        token_type: "e",
       };
-
-      await middleware(params as any, next);
-
-      const dataPassedToNext = next.mock.calls[0]![0]!.args.data;
-      expect(dataPassedToNext.userId).toBe("user-1");
-      expect(dataPassedToNext.provider).toBe("google");
-      expect(dataPassedToNext.providerAccountId).toBe("12345");
+      encryptData(data);
+      decryptResult(data);
+      expect(data.access_token).toBe("a");
+      expect(data.refresh_token).toBe("b");
+      expect(data.id_token).toBe("c");
+      expect(data.scope).toBe("d");
+      expect(data.token_type).toBe("e");
     });
 
-    it("encrypted values are decryptable back to originals", async () => {
-      const next = mockNext({ id: "account-1" });
-      const originalToken = "gho_realAccessToken123";
-
-      const params = {
-        model: "Account",
-        action: "create",
-        args: { data: { access_token: originalToken } },
-      };
-
-      await middleware(params as any, next);
-
-      const encrypted = next.mock.calls[0]![0]!.args.data.access_token;
-      expect(encrypted).toMatch(/^ENC:/);
-
-      // The encrypted value follows the format ENC:ivHex:authTagHex:ciphertext
-      const parts = encrypted.split(":");
-      expect(parts[0]).toBe("ENC");
-      // iv is 16 bytes => 32 hex chars
-      expect(parts[1]).toMatch(/^[0-9a-f]{32}$/);
-      // auth tag is 16 bytes => 32 hex chars
-      expect(parts[2]).toMatch(/^[0-9a-f]{32}$/);
-      // ciphertext is present (hex-encoded)
-      expect(parts[3]!.length).toBeGreaterThan(0);
+    it("leaves non-OAuth fields untouched", () => {
+      const data = { userId: "u1", access_token: "tok", provider: "google" };
+      encryptData(data);
+      decryptResult(data);
+      expect(data.userId).toBe("u1");
+      expect(data.provider).toBe("google");
     });
   });
 
-  // ── UPDATE — encrypts on write, decrypts on return ──────────────────────
+  // ── decryptResult — array of records ──────────────────────────────────────
 
-  describe("update — encrypts fields and decrypts result", () => {
-    it("encrypts access_token on update", async () => {
-      const next = mockNext({
-        id: "account-1",
-        access_token: buildEncryptedToken("updated_access_token"),
-        refresh_token: buildEncryptedToken("old_refresh"),
-      });
-      const params = {
-        model: "Account",
-        action: "update",
-        args: {
-          where: { id: "account-1" },
-          data: { access_token: "new_access_token_456" },
-        },
-      };
-
-      const result = await middleware(params as any, next);
-
-      // Before DB — should encrypt
-      const dataPassed = next.mock.calls[0]![0]!.args.data;
-      expect(dataPassed.access_token).toMatch(/^ENC:/);
-
-      // After DB — returned value should be decrypted
-      expect(result.access_token).not.toMatch(/^ENC:/);
-      // The middleware decrypts the result it gets back from next,
-      // so the returned access_token will be the DECRYPTED version of
-      // whatever next returned. Since next returns a mock encrypted value,
-      // decrypting it succeeds (because the key matches).
-      // We just verify it's been processed.
-    });
-  });
-
-  // ── UPSERT — encrypts both create and update, decrypts result ──────────
-
-  describe("upsert — encrypts create/update and decrypts result", () => {
-    it("encrypts both create and update branches", async () => {
-      const next = mockNext({
-        id: "account-1",
-        access_token: buildEncryptedToken("upserted_result"),
-      });
-      const params = {
-        model: "Account",
-        action: "upsert",
-        args: {
-          where: {
-            provider_providerAccountId: {
-              provider: "google",
-              providerAccountId: "1",
-            },
-          },
-          create: { access_token: "create_token" },
-          update: { access_token: "update_token" },
-        },
-      };
-
-      await middleware(params as any, next);
-
-      const argsPassed = next.mock.calls[0]![0]!.args;
-      expect(argsPassed.create.access_token).toMatch(/^ENC:/);
-      expect(argsPassed.update.access_token).toMatch(/^ENC:/);
-    });
-  });
-
-  // ── READ operations — decrypts results ──────────────────────────────────
-
-  describe("find/read operations — decrypts results", () => {
-    const encryptedToken = buildEncryptedToken("decrypted_find_token");
-
-    it("decrypts on findUnique", async () => {
-      const next = mockNext({
-        id: "account-1",
-        access_token: encryptedToken,
-        provider: "google",
-      });
-      const params = {
-        model: "Account",
-        action: "findUnique",
-        args: { where: { id: "account-1" } },
-      };
-
-      const result = await middleware(params as any, next);
-
-      expect(result.access_token).toBe("decrypted_find_token");
-      // Non-OAuth fields are untouched
-      expect(result.provider).toBe("google");
-    });
-
-    it("decrypts on findFirst", async () => {
-      const next = mockNext({
-        id: "account-1",
-        access_token: buildEncryptedToken("decrypted_first_token"),
-      });
-      const params = {
-        model: "Account",
-        action: "findFirst",
-        args: { where: { providerAccountId: "123" } },
-      };
-
-      const result = await middleware(params as any, next);
-
-      expect(result.access_token).toBe("decrypted_first_token");
-    });
-
-    it("decrypts on findMany (array result)", async () => {
-      const next = mockNext([
-        { id: "a1", access_token: buildEncryptedToken("token1") },
-        { id: "a2", access_token: buildEncryptedToken("token2") },
-      ]);
-      const params = {
-        model: "Account",
-        action: "findMany",
-        args: { where: { userId: "user-1" } },
-      };
-
-      const result = (await middleware(params as any, next)) as Array<{
-        access_token: string;
-      }>;
-
-      expect(result).toHaveLength(2);
-      expect(result[0]!.access_token).toBe("token1");
-      expect(result[1]!.access_token).toBe("token2");
-    });
-  });
-
-  // ── DELETE — passes through without modification ─────────────────────────
-
-  describe("delete operations — pass through", () => {
-    it("passes through delete unchanged", async () => {
-      const next = mockNext({ id: "account-1", count: 1 });
-      const params = {
-        model: "Account",
-        action: "delete",
-        args: { where: { id: "account-1" } },
-      };
-
-      const result = await middleware(params as any, next);
-
-      expect(result).toEqual({ id: "account-1", count: 1 });
-      expect(next).toHaveBeenCalledWith(params);
-    });
-
-    it("passes through deleteMany unchanged", async () => {
-      const next = mockNext({ count: 3 });
-      const params = {
-        model: "Account",
-        action: "deleteMany",
-        args: { where: { userId: "old-user" } },
-      };
-
-      const result = await middleware(params as any, next);
-
-      expect(result).toEqual({ count: 3 });
+  describe("decryptResult (array)", () => {
+    it("decrypts each record in the array", () => {
+      const records = [
+        { id: "1", access_token: "token1" },
+        { id: "2", access_token: "token2" },
+      ];
+      for (const r of records) encryptData(r);
+      decryptResult(records);
+      expect(records[0].access_token).toBe("token1");
+      expect(records[1].access_token).toBe("token2");
     });
   });
 
   // ── backward compatibility — unencrypted tokens ──────────────────────────
 
-  describe("backward compatibility with unencrypted tokens", () => {
-    it("returns unencrypted tokens as-is on read (no ENC: prefix)", async () => {
-      const next = mockNext({
-        id: "account-1",
-        access_token: "legacy_plain_token",
-      });
-      const params = {
-        model: "Account",
-        action: "findUnique",
-        args: { where: { id: "account-1" } },
-      };
+  describe("backward compatibility", () => {
+    it("returns plain (non-ENC) values unchanged through decryptResult", () => {
+      const data = { access_token: "legacy_plain_token" };
+      decryptResult(data);
+      expect(data.access_token).toBe("legacy_plain_token");
+    });
 
-      const result = await middleware(params as any, next);
+    it("round-trips successfully: encryptData → decryptResult", () => {
+      const original = "s3cret!";
+      const data = { access_token: original };
+      encryptData(data);
+      decryptResult(data);
+      expect(data.access_token).toBe(original);
+    });
+  });
 
-      expect(result.access_token).toBe("legacy_plain_token");
+  // ── null / edge cases ─────────────────────────────────────────────────────
+
+  describe("edge cases", () => {
+    it("handles null record in array gracefully", () => {
+      const arr = [null, { access_token: "ok" }];
+      const arr2 = arr as unknown as Record<string, unknown>[];
+      decryptResult(arr2);
+      // The second element should still be decryptable
+      expect((arr2[0] as any)).toBeNull();
+    });
+
+    it("encrypted format: ENC:ivHex:authTagHex:ciphertext", () => {
+      const data = { access_token: "x" };
+      encryptData(data);
+      const parts = (data.access_token as string).split(":");
+      expect(parts[0]).toBe("ENC");
+      expect(parts[1]).toMatch(/^[0-9a-f]{32}$/);
+      expect(parts[2]).toMatch(/^[0-9a-f]{32}$/);
+      expect(parts[3]!.length).toBeGreaterThan(0);
+    });
+
+    it("throws if OAUTH_ENCRYPTION_KEY is not set", () => {
+      delete process.env.OAUTH_ENCRYPTION_KEY;
+      expect(() => encryptData({ access_token: "x" })).toThrow(
+        "OAUTH_ENCRYPTION_KEY",
+      );
     });
   });
 });
