@@ -136,7 +136,9 @@ describe('AI Service', () => {
 
       const { findInterlinkingOpportunities } = await import('../services/ai')
 
-      const existingArticles = [{ title: 'Related Article', url: 'https://example.com/related', excerpt: '' }]
+      const existingArticles = [
+        { title: 'Related Article', url: 'https://example.com/related', excerpt: '' },
+      ]
       const result = await findInterlinkingOpportunities('Content to analyze', existingArticles, 5)
 
       expect(result).toBeDefined()

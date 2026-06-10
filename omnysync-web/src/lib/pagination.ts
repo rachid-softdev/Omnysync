@@ -60,14 +60,12 @@ export const cursorPaginationSchema = z.object({
 /**
  * Pagination standard (page-based)
  */
-export async function paginate<T>(
-  query: {
-    skip: number
-    take: number
-    orderBy?: Record<string, 'asc' | 'desc'>
-    where?: Record<string, unknown>
-  },
-): Promise<PaginationResult<T>> {
+export async function paginate<T>(query: {
+  skip: number
+  take: number
+  orderBy?: Record<string, 'asc' | 'desc'>
+  where?: Record<string, unknown>
+}): Promise<PaginationResult<T>> {
   const { prisma } = await import('@/lib/prisma')
 
   const [data, total] = await Promise.all([

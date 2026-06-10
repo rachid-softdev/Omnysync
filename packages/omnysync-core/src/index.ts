@@ -8,7 +8,9 @@ export * from "./email";
 export { type CacheOptions } from "./cache";
 export * from "./entitlements";
 export * from "./errors";
-export * from "./hooks";
+// Hooks are NOT re-exported from the main barrel to avoid injecting
+// client-only code (useEffect) into server component chains.
+// Import hooks via @omnysync/core/hooks instead.
 export * from "./http";
 export * from "./i18n";
 export * from "./prisma";

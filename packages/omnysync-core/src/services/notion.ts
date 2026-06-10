@@ -116,8 +116,7 @@ export async function getNotionPageContent(
     created_time?: string;
     last_edited_time?: string;
   };
-  const title =
-    page.properties?.title?.title?.[0]?.plain_text || "Untitled";
+  const title = page.properties?.title?.title?.[0]?.plain_text || "Untitled";
 
   return {
     id: pageId,

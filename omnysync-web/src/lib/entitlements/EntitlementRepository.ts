@@ -244,14 +244,22 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
 
     if (!plan) return []
 
-    return plan.features.map((pf: { feature: { key: string; name: string }; enabled: boolean; limitValue: number | null; configJson: unknown; downgradeStrategy: string }) => ({
-      featureKey: pf.feature.key,
-      featureName: pf.feature.name,
-      enabled: pf.enabled,
-      limitValue: pf.limitValue,
-      configJson: pf.configJson as Record<string, unknown> | null,
-      downgradeStrategy: pf.downgradeStrategy as DowngradeStrategy,
-    }))
+    return plan.features.map(
+      (pf: {
+        feature: { key: string; name: string }
+        enabled: boolean
+        limitValue: number | null
+        configJson: unknown
+        downgradeStrategy: string
+      }) => ({
+        featureKey: pf.feature.key,
+        featureName: pf.feature.name,
+        enabled: pf.enabled,
+        limitValue: pf.limitValue,
+        configJson: pf.configJson as Record<string, unknown> | null,
+        downgradeStrategy: pf.downgradeStrategy as DowngradeStrategy,
+      })
+    )
   }
 
   async getEntitlementMap(orgId: string): Promise<EntitlementMap> {
@@ -526,14 +534,22 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
       priceYearly: plan.priceYearly ? Number(plan.priceYearly) : null,
       isActive: plan.isActive,
       sortOrder: plan.sortOrder,
-      features: plan.features.map((pf: { feature: { key: string; name: string }; enabled: boolean; limitValue: number | null; configJson: unknown; downgradeStrategy: string }) => ({
-        featureKey: pf.feature.key,
-        featureName: pf.feature.name,
-        enabled: pf.enabled,
-        limitValue: pf.limitValue,
-        configJson: pf.configJson as Record<string, unknown> | null,
-        downgradeStrategy: pf.downgradeStrategy as DowngradeStrategy,
-      })),
+      features: plan.features.map(
+        (pf: {
+          feature: { key: string; name: string }
+          enabled: boolean
+          limitValue: number | null
+          configJson: unknown
+          downgradeStrategy: string
+        }) => ({
+          featureKey: pf.feature.key,
+          featureName: pf.feature.name,
+          enabled: pf.enabled,
+          limitValue: pf.limitValue,
+          configJson: pf.configJson as Record<string, unknown> | null,
+          downgradeStrategy: pf.downgradeStrategy as DowngradeStrategy,
+        })
+      ),
     }
   }
 
@@ -557,14 +573,22 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
       priceYearly: plan.priceYearly ? Number(plan.priceYearly) : null,
       isActive: plan.isActive,
       sortOrder: plan.sortOrder,
-      features: plan.features.map((pf: { feature: { key: string; name: string }; enabled: boolean; limitValue: number | null; configJson: unknown; downgradeStrategy: string }) => ({
-        featureKey: pf.feature.key,
-        featureName: pf.feature.name,
-        enabled: pf.enabled,
-        limitValue: pf.limitValue,
-        configJson: pf.configJson as Record<string, unknown> | null,
-        downgradeStrategy: pf.downgradeStrategy as DowngradeStrategy,
-      })),
+      features: plan.features.map(
+        (pf: {
+          feature: { key: string; name: string }
+          enabled: boolean
+          limitValue: number | null
+          configJson: unknown
+          downgradeStrategy: string
+        }) => ({
+          featureKey: pf.feature.key,
+          featureName: pf.feature.name,
+          enabled: pf.enabled,
+          limitValue: pf.limitValue,
+          configJson: pf.configJson as Record<string, unknown> | null,
+          downgradeStrategy: pf.downgradeStrategy as DowngradeStrategy,
+        })
+      ),
     }))
   }
 
@@ -589,14 +613,21 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
       description: feature.description,
       type: feature.type as FeatureType,
       defaultConfig: feature.defaultConfig as Json,
-      plans: feature.plans.map((pp: { enabled: boolean; limitValue: number | null; configJson: unknown; downgradeStrategy: string }) => ({
-        featureKey: feature.key,
-        featureName: feature.name,
-        enabled: pp.enabled,
-        limitValue: pp.limitValue,
-        configJson: pp.configJson as Json,
-        downgradeStrategy: pp.downgradeStrategy as DowngradeStrategy,
-      })),
+      plans: feature.plans.map(
+        (pp: {
+          enabled: boolean
+          limitValue: number | null
+          configJson: unknown
+          downgradeStrategy: string
+        }) => ({
+          featureKey: feature.key,
+          featureName: feature.name,
+          enabled: pp.enabled,
+          limitValue: pp.limitValue,
+          configJson: pp.configJson as Json,
+          downgradeStrategy: pp.downgradeStrategy as DowngradeStrategy,
+        })
+      ),
     }
   }
 
@@ -619,14 +650,21 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
       description: f.description,
       type: f.type as FeatureType,
       defaultConfig: f.defaultConfig as Json,
-      plans: f.plans.map((pp: { enabled: boolean; limitValue: number | null; configJson: unknown; downgradeStrategy: string }) => ({
-        featureKey: f.key,
-        featureName: f.name,
-        enabled: pp.enabled,
-        limitValue: pp.limitValue,
-        configJson: pp.configJson as Json,
-        downgradeStrategy: pp.downgradeStrategy as DowngradeStrategy,
-      })),
+      plans: f.plans.map(
+        (pp: {
+          enabled: boolean
+          limitValue: number | null
+          configJson: unknown
+          downgradeStrategy: string
+        }) => ({
+          featureKey: f.key,
+          featureName: f.name,
+          enabled: pp.enabled,
+          limitValue: pp.limitValue,
+          configJson: pp.configJson as Json,
+          downgradeStrategy: pp.downgradeStrategy as DowngradeStrategy,
+        })
+      ),
     }))
   }
 

@@ -6,7 +6,7 @@
  * Designed for dependency injection and testability
  */
 
-import { prisma } from "../prisma";
+import { getPrisma } from "../prisma";
 import type {
   FeatureType,
   OverrideScope,
@@ -175,6 +175,7 @@ export interface FeatureUpdateInput {
 
 export class PrismaEntitlementRepository implements IEntitlementRepository {
   async getOrganizationStripeCustomerId(orgId: string): Promise<string | null> {
+    const prisma = getPrisma();
     const org = await prisma.organization.findUnique({
       where: { id: orgId },
       select: { stripeCustomerId: true },
@@ -183,6 +184,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   }
 
   async getActiveSubscription(orgId: string): Promise<SubscriptionData | null> {
+    const prisma = getPrisma();
     const subscription = await prisma.subscription.findUnique({
       where: { organizationId: orgId },
     });
@@ -220,6 +222,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   }
 
   async getFeature(featureKey: string): Promise<FeatureData | null> {
+    const prisma = getPrisma();
     const feature = await prisma.feature.findUnique({
       where: { key: featureKey },
     });
@@ -237,6 +240,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   }
 
   async getAllFeatures(): Promise<FeatureData[]> {
+    const prisma = getPrisma();
     const features = await prisma.feature.findMany({
       orderBy: { key: "asc" },
     });
@@ -252,6 +256,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   }
 
   async getPlanFeatures(planKey: string): Promise<PlanFeatureData[]> {
+    const prisma = getPrisma();
     const plan = await prisma.plan.findUnique({
       where: { key: planKey },
       include: {
@@ -320,6 +325,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     userId: string,
     featureKey: string,
   ): Promise<OverrideData | null> {
+    const prisma = getPrisma();
     const override = await prisma.entitlementOverride.findFirst({
       where: {
         scope: "USER",
@@ -352,6 +358,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     orgId: string,
     featureKey: string,
   ): Promise<OverrideData | null> {
+    const prisma = getPrisma();
     const override = await prisma.entitlementOverride.findFirst({
       where: {
         scope: "ORG",
@@ -381,6 +388,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   }
 
   async getAllOverridesForOrg(orgId: string): Promise<OverrideData[]> {
+    const prisma = getPrisma();
     const overrides = await prisma.entitlementOverride.findMany({
       where: {
         scope: "ORG",
@@ -408,6 +416,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   async createOverride(
     input: OverrideInput & { createdBy: string },
   ): Promise<OverrideData> {
+    const prisma = getPrisma();
     // For org-level overrides, we need the organizationId
     let organizationId: string | undefined = undefined;
 
@@ -446,6 +455,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   }
 
   async deleteOverride(id: string): Promise<void> {
+    const prisma = getPrisma();
     await prisma.entitlementOverride.delete({
       where: { id },
     });
@@ -455,6 +465,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     orgId: string,
     featureKey: string,
   ): Promise<UsageData | null> {
+    const prisma = getPrisma();
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(
@@ -498,6 +509,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     featureKey: string,
     amount: number,
   ): Promise<ConsumeResult> {
+    const prisma = getPrisma();
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(
@@ -559,6 +571,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   }
 
   async getPlanWithFeatures(planKey: string): Promise<PlanWithFeatures | null> {
+    const prisma = getPrisma();
     const plan = await prisma.plan.findUnique({
       where: { key: planKey },
       include: {
@@ -592,6 +605,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   }
 
   async getAllPlansWithFeatures(): Promise<PlanWithFeatures[]> {
+    const prisma = getPrisma();
     const plans = await prisma.plan.findMany({
       orderBy: [{ sortOrder: "asc" }, { key: "asc" }],
       include: {
@@ -625,6 +639,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   async getFeatureWithPlans(
     featureKey: string,
   ): Promise<FeatureWithPlans | null> {
+    const prisma = getPrisma();
     const feature = await prisma.feature.findUnique({
       where: { key: featureKey },
       include: {
@@ -657,6 +672,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   }
 
   async getAllFeaturesWithPlans(): Promise<FeatureWithPlans[]> {
+    const prisma = getPrisma();
     const features = await prisma.feature.findMany({
       orderBy: { key: "asc" },
       include: {
@@ -691,6 +707,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     featureKey: string,
     data: Partial<PlanFeatureUpdate>,
   ): Promise<PlanFeatureData> {
+    const prisma = getPrisma();
     const plan = await prisma.plan.findUnique({ where: { key: planKey } });
     const feature = await prisma.feature.findUnique({
       where: { key: featureKey },
@@ -729,6 +746,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   }
 
   async createFeature(data: FeatureCreateInput): Promise<FeatureData> {
+    const prisma = getPrisma();
     const feature = await prisma.feature.create({
       data: {
         key: data.key,
@@ -753,6 +771,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     featureKey: string,
     data: Partial<FeatureUpdateInput>,
   ): Promise<FeatureData> {
+    const prisma = getPrisma();
     const feature = await prisma.feature.update({
       where: { key: featureKey },
       data,
@@ -830,6 +849,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   }
 
   async isWebhookEventProcessed(eventId: string): Promise<boolean> {
+    const prisma = getPrisma();
     const event = await prisma.webhookEvent.findUnique({
       where: { eventId },
     });
@@ -840,6 +860,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     eventId: string,
     eventType: string,
   ): Promise<void> {
+    const prisma = getPrisma();
     await prisma.webhookEvent.create({
       data: {
         eventId,

@@ -53,7 +53,6 @@ export function getCurrentMonth(): string {
 }
 
 export async function getUserPlan(userId: string): Promise<Plan> {
-  // Find org for user, then get org-level subscription
   const orgMembership = await prisma.userOrganization.findFirst({
     where: { userId },
     include: {
@@ -78,9 +77,6 @@ export function getPlanLimits(plan: Plan): PlanLimits {
   return PLAN_LIMITS[plan]
 }
 
-/**
- * Récupère l'utilisation actuelle du quota pour un utilisateur
- */
 export async function getQuotaUsage(userId: string): Promise<{
   syncCount: number
   syncLimit: number
@@ -103,8 +99,6 @@ export async function getQuotaUsage(userId: string): Promise<{
   ])
 
   const syncCount = quotaUsage?.syncCount || 0
-
-  // Calcul du pourcentage d'utilisation (pour le plan gratuit)
   const percentUsed = plan === 'free' ? Math.round((syncCount / limits.syncsPerMonth) * 100) : 0
 
   return {
@@ -118,10 +112,6 @@ export async function getQuotaUsage(userId: string): Promise<{
   }
 }
 
-/**
- * Vérifie si l'utilisateur peut effectuer un sync
- * Lance une erreur si le quota est dépassé
- */
 export async function checkAndIncrementQuota(userId: string): Promise<{
   allowed: boolean
   remaining: number
@@ -131,20 +121,16 @@ export async function checkAndIncrementQuota(userId: string): Promise<{
   const limits = PLAN_LIMITS[plan]
   const month = getCurrentMonth()
 
-  // Plans illimités : toujours autorisé
   if (limits.syncsPerMonth === Infinity) {
     return { allowed: true, remaining: Infinity }
   }
 
-  // Atomic upsert + increment: ensure record exists, then conditionally increment
-  // First try to create the record if it doesn't exist
   await prisma.quotaUsage.upsert({
     where: { userId_month: { userId, month } },
     create: { userId, month, syncCount: 0 },
-    update: {}, // No-op if exists
+    update: {},
   })
 
-  // Atomically increment ONLY if under limit — eliminates race condition
   const result = await prisma.quotaUsage.updateMany({
     where: {
       userId,
@@ -155,7 +141,6 @@ export async function checkAndIncrementQuota(userId: string): Promise<{
   })
 
   if (result.count === 0) {
-    // Either record doesn't exist (impossible after upsert) or at limit
     return {
       allowed: false,
       remaining: 0,
@@ -163,7 +148,6 @@ export async function checkAndIncrementQuota(userId: string): Promise<{
     }
   }
 
-  // Get updated count for accurate remaining
   const updated = await prisma.quotaUsage.findUnique({
     where: { userId_month: { userId, month } },
   })
@@ -172,9 +156,6 @@ export async function checkAndIncrementQuota(userId: string): Promise<{
   return { allowed: true, remaining: Math.max(0, remaining) }
 }
 
-/**
- * Décrémente le quota en cas d'échec de sync (pour ne pas gaspiller le quota)
- */
 export async function decrementQuotaOnFailure(userId: string): Promise<void> {
   const month = getCurrentMonth()
 
@@ -188,9 +169,6 @@ export async function decrementQuotaOnFailure(userId: string): Promise<void> {
     })
 }
 
-/**
- * Vérifie la limite de connecteurs
- */
 export async function checkConnectorLimit(userId: string): Promise<{
   allowed: boolean
   current: number
@@ -214,9 +192,6 @@ export async function checkConnectorLimit(userId: string): Promise<{
   }
 }
 
-/**
- * Vérifie la limite de documents
- */
 export async function checkDocumentLimit(userId: string): Promise<{
   allowed: boolean
   current: number
@@ -240,14 +215,10 @@ export async function checkDocumentLimit(userId: string): Promise<{
   }
 }
 
-/**
- * Middleware pour vérifier les quotas sur les routes API
- */
 export async function withQuotaCheck(
   request: Request,
   handler: () => Promise<Response>
 ): Promise<Response> {
-  // Extraire le userId depuis la session (à adapter selon votre auth)
   const userId = request.headers.get('x-user-id')
 
   if (!userId) {
@@ -271,7 +242,6 @@ export async function withQuotaCheck(
   try {
     return await handler()
   } catch (error) {
-    // Decrement on failure to not waste quota
     await decrementQuotaOnFailure(userId)
     throw error
   }

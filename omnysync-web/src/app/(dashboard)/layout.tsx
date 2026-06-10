@@ -106,7 +106,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </aside>
       {/* Mobile navigation */}
       <MobileNav navItems={navItems} user={user} />
-      <main id="main-content" className="flex-1 bg-background md:pt-0 pt-14">{children}</main>
+      <main id="main-content" className="flex-1 bg-background md:pt-0 pt-14">
+        {children}
+      </main>
     </div>
   )
 }

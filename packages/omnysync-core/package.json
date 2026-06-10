@@ -20,6 +20,51 @@
       "require": "./dist/hooks.js",
       "default": "./dist/hooks.js"
     },
+    "./auth/subscription": {
+      "import": "./dist/auth/subscription.mjs",
+      "require": "./dist/auth/subscription.js",
+      "default": "./dist/auth/subscription.js"
+    },
+    "./entitlements/types": {
+      "import": "./dist/entitlements/types.mjs",
+      "require": "./dist/entitlements/types.js",
+      "default": "./dist/entitlements/types.js"
+    },
+    "./entitlements/constants": {
+      "import": "./dist/entitlements/constants.mjs",
+      "require": "./dist/entitlements/constants.js",
+      "default": "./dist/entitlements/constants.js"
+    },
+    "./entitlements/errors": {
+      "import": "./dist/entitlements/errors.mjs",
+      "require": "./dist/entitlements/errors.js",
+      "default": "./dist/entitlements/errors.js"
+    },
+    "./entitlements/CacheService": {
+      "import": "./dist/entitlements/CacheService.mjs",
+      "require": "./dist/entitlements/CacheService.js",
+      "default": "./dist/entitlements/CacheService.js"
+    },
+    "./entitlements/FeatureGateService": {
+      "import": "./dist/entitlements/FeatureGateService.mjs",
+      "require": "./dist/entitlements/FeatureGateService.js",
+      "default": "./dist/entitlements/FeatureGateService.js"
+    },
+    "./entitlements/EntitlementRepository": {
+      "import": "./dist/entitlements/EntitlementRepository.mjs",
+      "require": "./dist/entitlements/EntitlementRepository.js",
+      "default": "./dist/entitlements/EntitlementRepository.js"
+    },
+    "./entitlements": {
+      "import": "./dist/entitlements/index.mjs",
+      "require": "./dist/entitlements/index.js",
+      "default": "./dist/entitlements/index.js"
+    },
+    "./entitlements/ExperimentService": {
+      "import": "./dist/entitlements/ExperimentService.mjs",
+      "require": "./dist/entitlements/ExperimentService.js",
+      "default": "./dist/entitlements/ExperimentService.js"
+    },
     "./ui": {
       "import": "./dist/ui.mjs",
       "require": "./dist/ui.js",

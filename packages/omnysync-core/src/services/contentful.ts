@@ -115,7 +115,10 @@ export async function listContentfulEntries(
 
     return (data.items || []).map((entry) => ({
       id: entry.sys?.id || "",
-      title: (entry.fields?.title as string) || (entry.fields?.name as string) || "Untitled",
+      title:
+        (entry.fields?.title as string) ||
+        (entry.fields?.name as string) ||
+        "Untitled",
       content: JSON.stringify(entry.fields, null, 2),
       createdAt: entry.sys?.createdAt || "",
       updatedAt: entry.sys?.updatedAt || "",

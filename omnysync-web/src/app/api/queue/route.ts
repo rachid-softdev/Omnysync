@@ -4,7 +4,11 @@ import { performSync, detectAndSyncChanges } from '@omnysync/core/services/sync'
 import { generateAImage, generateSEO } from '@omnysync/core/services/ai'
 import { uploadAllImages } from '@omnysync/core/services/image-upload'
 import { prisma } from '@/lib/prisma'
-import { processJobWithRetry, isJobCompleted, markJobCompleted } from '@omnysync/core/services/queue'
+import {
+  processJobWithRetry,
+  isJobCompleted,
+  markJobCompleted,
+} from '@omnysync/core/services/queue'
 
 function timingSafeCompare(a: string, b: string): boolean {
   try {

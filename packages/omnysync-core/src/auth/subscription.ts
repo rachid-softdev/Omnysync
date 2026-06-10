@@ -1,4 +1,4 @@
-import { prisma } from "../prisma";
+import { getPrisma } from "../prisma";
 
 export type Plan = "free" | "pro" | "business";
 
@@ -52,6 +52,7 @@ export function getCurrentMonth(): string {
 }
 
 export async function getUserPlan(userId: string): Promise<Plan> {
+  const prisma = getPrisma();
   // Find org for user, then get org-level subscription
   const orgMembership = await prisma.userOrganization.findFirst({
     where: { userId },
@@ -89,6 +90,7 @@ export async function getQuotaUsage(userId: string): Promise<{
   documentLimit: number;
   percentUsed: number;
 }> {
+  const prisma = getPrisma();
   const plan = await getUserPlan(userId);
   const limits = PLAN_LIMITS[plan];
   const month = getCurrentMonth();
@@ -127,6 +129,7 @@ export async function checkAndIncrementQuota(userId: string): Promise<{
   remaining: number;
   upgradeUrl?: string;
 }> {
+  const prisma = getPrisma();
   const plan = await getUserPlan(userId);
   const limits = PLAN_LIMITS[plan];
   const month = getCurrentMonth();
@@ -176,6 +179,7 @@ export async function checkAndIncrementQuota(userId: string): Promise<{
  * Décrémente le quota en cas d'échec de sync (pour ne pas gaspiller le quota)
  */
 export async function decrementQuotaOnFailure(userId: string): Promise<void> {
+  const prisma = getPrisma();
   const month = getCurrentMonth();
 
   await prisma.quotaUsage
@@ -197,6 +201,7 @@ export async function checkConnectorLimit(userId: string): Promise<{
   limit: number;
   upgradeUrl?: string;
 }> {
+  const prisma = getPrisma();
   const plan = await getUserPlan(userId);
   const limits = PLAN_LIMITS[plan];
 
@@ -223,6 +228,7 @@ export async function checkDocumentLimit(userId: string): Promise<{
   limit: number;
   upgradeUrl?: string;
 }> {
+  const prisma = getPrisma();
   const plan = await getUserPlan(userId);
   const limits = PLAN_LIMITS[plan];
 
