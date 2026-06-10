@@ -1,4 +1,10 @@
 /**
+ * Framework-agnostic entitlements middleware helpers.
+ * These functions take explicit orgId parameters and throw plain Error.
+ *
+ * For Next.js-specific middleware factories (with auth(), FeatureGateError,
+ * JSON Response), see @/lib/entitlements/middleware-factories from the web package.
+ *
  * Feature Flags & Entitlements - Middleware
  * Omnysync - 2026
  *

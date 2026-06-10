@@ -163,7 +163,7 @@ class MockEntitlementRepository implements IEntitlementRepository {
     return null
   }
 
-  async consumeUsage(orgId: string, featureKey: string, amount: number) {
+  async consumeUsage(orgId: string, featureKey: string, amount: number, _limit: number | null) {
     const key = `${orgId}:${featureKey}`
     const existing = this.usage.get(key)
 

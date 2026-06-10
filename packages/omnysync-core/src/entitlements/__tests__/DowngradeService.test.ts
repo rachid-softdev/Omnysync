@@ -174,6 +174,7 @@ class MockEntitlementRepository implements IEntitlementRepository {
     orgId: string,
     featureKey: string,
     amount: number,
+    _limit: number | null,
   ): Promise<any> {
     const key = `${orgId}:${featureKey}`;
     const existing = this.usage.get(key);

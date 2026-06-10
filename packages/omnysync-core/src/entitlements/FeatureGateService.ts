@@ -153,24 +153,37 @@ export class FeatureGateService {
     // Check feature is enabled first
     await this.assertFeature(orgId, featureKey);
 
-    // Atomically consume (delegates boundary check to repo)
-    const result = await this.repo.consumeUsage(orgId, featureKey, amount);
+    // Get limit
+    const limit = await this.getLimit(orgId, featureKey);
+
+    // Atomically consume with limit check
+    const result = await this.repo.consumeUsage(
+      orgId,
+      featureKey,
+      amount,
+      limit,
+    );
+
+    if (!result.success) {
+      const usage = await this.getUsage(orgId, featureKey);
+      throw new LimitReachedError(
+        featureKey,
+        limit ?? 0,
+        usage.used,
+        usage.resetAt.toISOString(),
+      );
+    }
 
     // Invalidate cache after consumption
     await this.invalidateCache(orgId);
 
-    // Build response with accurate usage data
-    const limit = await this.getLimit(orgId, featureKey);
-    const usage = await this.repo.getUsageTracking(orgId, featureKey);
-    const used = usage?.usageCount ?? 0;
-    const remaining = limit !== null ? Math.max(0, limit - used) : null;
-
     return {
       success: true,
       feature: featureKey,
-      used,
+      used: result.newUsageCount,
       limit,
-      remaining,
+      remaining:
+        limit !== null ? Math.max(0, limit - result.newUsageCount) : null,
       resetAt: this.getNextResetDate(),
     };
   }
