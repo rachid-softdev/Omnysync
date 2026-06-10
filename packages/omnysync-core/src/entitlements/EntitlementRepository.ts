@@ -6,6 +6,7 @@
  * Designed for dependency injection and testability
  */
 
+import { Prisma } from "@prisma/client";
 import { getPrisma } from "../prisma";
 import type {
   FeatureType,
@@ -168,6 +169,28 @@ export interface FeatureUpdateInput {
   name?: string;
   description?: string;
   defaultConfig?: Record<string, unknown>;
+}
+
+// ============================================================================
+// SERIALIZATION HELPERS
+// ============================================================================
+
+function isSerializationError(error: unknown): boolean {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2034"
+  ) {
+    return true;
+  }
+  // Fallback pour éviter l'import si @prisma/client n'est pas accessible
+  if (
+    error instanceof Error &&
+    "code" in error &&
+    (error as any).code === "P2034"
+  ) {
+    return true;
+  }
+  return false;
 }
 
 // ============================================================================
@@ -512,44 +535,23 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     limit: number | null,
   ): Promise<ConsumeUsageResult> {
     const prisma = getPrisma();
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfMonth = new Date(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      1,
+    );
     const endOfMonth = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
+      new Date().getFullYear(),
+      new Date().getMonth() + 1,
       0,
       23,
       59,
       59,
     );
 
-    // Unlimited case — simple increment, no transaction needed
+    // Unlimited case — upsert atomique
     if (limit === null) {
-      const result = await prisma.usageTracking.updateMany({
-        where: {
-          organizationId: orgId,
-          featureKey,
-          periodEnd: { gte: now },
-        },
-        data: {
-          usageCount: { increment: amount },
-        },
-      });
-
-      if (result.count === 0) {
-        await prisma.usageTracking.create({
-          data: {
-            organizationId: orgId,
-            featureKey,
-            usageCount: amount,
-            periodStart: startOfMonth,
-            periodEnd: endOfMonth,
-          },
-        });
-        return { success: true, newUsageCount: amount, limitReached: false };
-      }
-
-      const usage = await prisma.usageTracking.findUnique({
+      const usage = await prisma.usageTracking.upsert({
         where: {
           organizationId_featureKey_periodStart: {
             organizationId: orgId,
@@ -557,69 +559,100 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
             periodStart: startOfMonth,
           },
         },
-      });
-      return {
-        success: true,
-        newUsageCount: usage?.usageCount ?? amount,
-        limitReached: false,
-      };
-    }
-
-    // Limited case — atomic transaction with limit check
-    return prisma.$transaction(async (tx) => {
-      const existing = await tx.usageTracking.findUnique({
-        where: {
-          organizationId_featureKey_periodStart: {
-            organizationId: orgId,
-            featureKey,
-            periodStart: startOfMonth,
-          },
-        },
-      });
-
-      const currentUsage = existing?.usageCount ?? 0;
-
-      if (currentUsage + amount > limit) {
-        return {
-          success: false,
-          newUsageCount: currentUsage,
-          limitReached: true,
-        };
-      }
-
-      if (existing) {
-        const updated = await tx.usageTracking.update({
-          where: {
-            organizationId_featureKey_periodStart: {
-              organizationId: orgId,
-              featureKey,
-              periodStart: startOfMonth,
-            },
-          },
-          data: { usageCount: { increment: amount } },
-        });
-        return {
-          success: true,
-          newUsageCount: updated.usageCount,
-          limitReached: false,
-        };
-      }
-
-      const created = await tx.usageTracking.create({
-        data: {
+        create: {
           organizationId: orgId,
           featureKey,
           usageCount: amount,
           periodStart: startOfMonth,
           periodEnd: endOfMonth,
         },
+        update: {
+          usageCount: { increment: amount },
+        },
       });
       return {
         success: true,
-        newUsageCount: created.usageCount,
+        newUsageCount: usage.usageCount,
         limitReached: false,
       };
-    });
+    }
+
+    // Limited case — SERIALIZABLE transaction avec retry
+    const MAX_RETRIES = 3;
+    const BASE_BACKOFF_MS = 50;
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        return await prisma.$transaction(
+          async (tx) => {
+            const usage = await tx.usageTracking.upsert({
+              where: {
+                organizationId_featureKey_periodStart: {
+                  organizationId: orgId,
+                  featureKey,
+                  periodStart: startOfMonth,
+                },
+              },
+              create: {
+                organizationId: orgId,
+                featureKey,
+                usageCount: amount,
+                periodStart: startOfMonth,
+                periodEnd: endOfMonth,
+              },
+              update: {
+                usageCount: { increment: amount },
+              },
+            });
+
+            if (usage.usageCount > limit) {
+              await tx.usageTracking.update({
+                where: {
+                  organizationId_featureKey_periodStart: {
+                    organizationId: orgId,
+                    featureKey,
+                    periodStart: startOfMonth,
+                  },
+                },
+                data: { usageCount: { decrement: amount } },
+              });
+              return {
+                success: false,
+                newUsageCount: usage.usageCount - amount,
+                limitReached: true,
+              };
+            }
+
+            return {
+              success: true,
+              newUsageCount: usage.usageCount,
+              limitReached: false,
+            };
+          },
+          {
+            isolationLevel: "Serializable",
+            maxWait: 5000,
+            timeout: 10000,
+          },
+        );
+      } catch (error) {
+        if (isSerializationError(error) && attempt < MAX_RETRIES) {
+          const jitter = Math.random() * BASE_BACKOFF_MS;
+          await new Promise((resolve) =>
+            setTimeout(
+              resolve,
+              BASE_BACKOFF_MS * Math.pow(2, attempt - 1) + jitter,
+            ),
+          );
+          continue;
+        }
+        lastError = error;
+        break;
+      }
+    }
+
+    throw lastError;
   }
 
   async getPlanWithFeatures(planKey: string): Promise<PlanWithFeatures | null> {
