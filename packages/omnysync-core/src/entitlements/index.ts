@@ -38,7 +38,7 @@ export {
   type PlanFeatureData,
   type OverrideData,
   type UsageData,
-  type ConsumeResult,
+  type ConsumeUsageResult,
   type PlanFeatureUpdate,
   type FeatureCreateInput,
   type FeatureUpdateInput,

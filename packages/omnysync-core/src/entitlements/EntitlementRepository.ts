@@ -63,7 +63,7 @@ export interface IEntitlementRepository {
     orgId: string,
     featureKey: string,
     amount: number,
-  ): Promise<ConsumeResult>;
+  ): Promise<ConsumeUsageResult>;
 
   // Plans & Features (Admin)
   getPlanWithFeatures(planKey: string): Promise<PlanWithFeatures | null>;
@@ -142,7 +142,7 @@ export interface UsageData {
   periodEnd: Date;
 }
 
-export interface ConsumeResult {
+export interface ConsumeUsageResult {
   success: boolean;
   newUsageCount: number;
   limitReached: boolean;
@@ -508,7 +508,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     orgId: string,
     featureKey: string,
     amount: number,
-  ): Promise<ConsumeResult> {
+  ): Promise<ConsumeUsageResult> {
     const prisma = getPrisma();
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
