@@ -63,6 +63,7 @@ export interface IEntitlementRepository {
     orgId: string,
     featureKey: string,
     amount: number,
+    limit: number | null,
   ): Promise<ConsumeUsageResult>;
 
   // Plans & Features (Admin)
@@ -508,6 +509,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     orgId: string,
     featureKey: string,
     amount: number,
+    limit: number | null,
   ): Promise<ConsumeUsageResult> {
     const prisma = getPrisma();
     const now = new Date();
@@ -521,21 +523,89 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
       59,
     );
 
-    // Try to update atomically
-    const result = await prisma.usageTracking.updateMany({
-      where: {
-        organizationId: orgId,
-        featureKey,
-        periodEnd: { gte: now }, // Only update if period hasn't ended
-      },
-      data: {
-        usageCount: { increment: amount },
-      },
-    });
+    // Unlimited case — simple increment, no transaction needed
+    if (limit === null) {
+      const result = await prisma.usageTracking.updateMany({
+        where: {
+          organizationId: orgId,
+          featureKey,
+          periodEnd: { gte: now },
+        },
+        data: {
+          usageCount: { increment: amount },
+        },
+      });
 
-    if (result.count === 0) {
-      // Either no record exists or period has ended - create new
-      await prisma.usageTracking.create({
+      if (result.count === 0) {
+        await prisma.usageTracking.create({
+          data: {
+            organizationId: orgId,
+            featureKey,
+            usageCount: amount,
+            periodStart: startOfMonth,
+            periodEnd: endOfMonth,
+          },
+        });
+        return { success: true, newUsageCount: amount, limitReached: false };
+      }
+
+      const usage = await prisma.usageTracking.findUnique({
+        where: {
+          organizationId_featureKey_periodStart: {
+            organizationId: orgId,
+            featureKey,
+            periodStart: startOfMonth,
+          },
+        },
+      });
+      return {
+        success: true,
+        newUsageCount: usage?.usageCount ?? amount,
+        limitReached: false,
+      };
+    }
+
+    // Limited case — atomic transaction with limit check
+    return prisma.$transaction(async (tx) => {
+      const existing = await tx.usageTracking.findUnique({
+        where: {
+          organizationId_featureKey_periodStart: {
+            organizationId: orgId,
+            featureKey,
+            periodStart: startOfMonth,
+          },
+        },
+      });
+
+      const currentUsage = existing?.usageCount ?? 0;
+
+      if (currentUsage + amount > limit) {
+        return {
+          success: false,
+          newUsageCount: currentUsage,
+          limitReached: true,
+        };
+      }
+
+      if (existing) {
+        const updated = await tx.usageTracking.update({
+          where: {
+            organizationId_featureKey_periodStart: {
+              organizationId: orgId,
+              featureKey,
+              periodStart: startOfMonth,
+            },
+          },
+          data: { usageCount: { increment: amount } },
+        });
+        return {
+          success: true,
+          newUsageCount: updated.usageCount,
+          limitReached: false,
+        };
+      }
+
+      const created = await tx.usageTracking.create({
         data: {
           organizationId: orgId,
           featureKey,
@@ -544,30 +614,12 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
           periodEnd: endOfMonth,
         },
       });
-
       return {
         success: true,
-        newUsageCount: amount,
+        newUsageCount: created.usageCount,
         limitReached: false,
       };
-    }
-
-    // Get updated count
-    const usage = await prisma.usageTracking.findUnique({
-      where: {
-        organizationId_featureKey_periodStart: {
-          organizationId: orgId,
-          featureKey,
-          periodStart: startOfMonth,
-        },
-      },
     });
-
-    return {
-      success: true,
-      newUsageCount: usage?.usageCount ?? amount,
-      limitReached: false, // Caller should check against limit
-    };
   }
 
   async getPlanWithFeatures(planKey: string): Promise<PlanWithFeatures | null> {

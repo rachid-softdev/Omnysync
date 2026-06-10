@@ -45,6 +45,7 @@ import {
   OverrideData,
   UsageData,
 } from "../EntitlementRepository";
+import { LimitReachedError } from "../errors";
 
 // ============================================================================
 // MOCK REPOSITORY
@@ -177,11 +178,21 @@ class MockEntitlementRepository implements IEntitlementRepository {
     return this.usage.get(key) ?? null;
   }
 
-  async consumeUsage(orgId: string, featureKey: string, amount: number) {
+  async consumeUsage(
+    orgId: string,
+    featureKey: string,
+    amount: number,
+    _limit: number | null,
+  ) {
     const key = `${orgId}:${featureKey}`;
     const existing = this.usage.get(key);
+    const current = existing?.usageCount ?? 0;
+    const newCount = current + amount;
 
-    const newCount = (existing?.usageCount ?? 0) + amount;
+    // Enforce limit in mock (same behavior as real PrismaEntitlementRepository)
+    if (_limit !== null && newCount > _limit) {
+      return { success: false, newUsageCount: current, limitReached: true };
+    }
 
     this.usage.set(key, {
       id: "1",
@@ -624,7 +635,7 @@ describe("FeatureGateService", () => {
       expect(result.used).toBeGreaterThan(0);
     });
 
-    it("should report remaining=0 when limit is reached", async () => {
+    it("should throw LimitReachedError when limit is reached", async () => {
       mockRepo._setSubscription("org-1", {
         id: "1",
         organizationId: "org-1",
@@ -646,10 +657,9 @@ describe("FeatureGateService", () => {
         periodEnd: new Date(),
       });
 
-      const result = await service.consume("org-1", "MAX_SYNCS", 1);
-      expect(result.success).toBe(true);
-      expect(result.used).toBeGreaterThanOrEqual(10);
-      expect(result.remaining).toBe(0);
+      await expect(service.consume("org-1", "MAX_SYNCS", 1)).rejects.toThrow(
+        LimitReachedError,
+      );
     });
   });
 
