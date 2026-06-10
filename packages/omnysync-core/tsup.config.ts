@@ -12,6 +12,11 @@ export default defineConfig({
     "entitlements/constants": "src/entitlements/constants.ts",
     "entitlements/errors": "src/entitlements/errors.ts",
     "entitlements/CacheService": "src/entitlements/CacheService.ts",
+    "entitlements/FeatureGateService": "src/entitlements/FeatureGateService.ts",
+    "entitlements/EntitlementRepository":
+      "src/entitlements/EntitlementRepository.ts",
+    "entitlements/ExperimentService": "src/entitlements/ExperimentService.ts",
+    entitlements: "src/entitlements/index.ts",
     "services/two-factor": "src/services/two-factor.ts",
     "services/password-reset": "src/services/password-reset.ts",
     "services/sync": "src/services/sync.ts",

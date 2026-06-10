@@ -45,6 +45,26 @@
       "require": "./dist/entitlements/CacheService.js",
       "default": "./dist/entitlements/CacheService.js"
     },
+    "./entitlements/FeatureGateService": {
+      "import": "./dist/entitlements/FeatureGateService.mjs",
+      "require": "./dist/entitlements/FeatureGateService.js",
+      "default": "./dist/entitlements/FeatureGateService.js"
+    },
+    "./entitlements/EntitlementRepository": {
+      "import": "./dist/entitlements/EntitlementRepository.mjs",
+      "require": "./dist/entitlements/EntitlementRepository.js",
+      "default": "./dist/entitlements/EntitlementRepository.js"
+    },
+    "./entitlements": {
+      "import": "./dist/entitlements/index.mjs",
+      "require": "./dist/entitlements/index.js",
+      "default": "./dist/entitlements/index.js"
+    },
+    "./entitlements/ExperimentService": {
+      "import": "./dist/entitlements/ExperimentService.mjs",
+      "require": "./dist/entitlements/ExperimentService.js",
+      "default": "./dist/entitlements/ExperimentService.js"
+    },
     "./ui": {
       "import": "./dist/ui.mjs",
       "require": "./dist/ui.js",

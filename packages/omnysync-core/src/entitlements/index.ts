@@ -66,6 +66,7 @@ export {
 
 // Feature Gate Service
 export {
+  FeatureGateService,
   getFeatureGateService,
   setFeatureGateService,
   resetFeatureGateService,

@@ -2,221 +2,391 @@
  * Feature Flags & Entitlements - Feature Gate Service
  * Omnysync - 2026
  *
- * Resolves feature access by checking: plan entitlements → org overrides → user overrides
- * Handles quota consumption with race-condition-safe increments.
+ * This is the CENTRAL SERVICE - the ONLY source of truth for entitlements.
+ * No endpoint should have any plan-checking logic (no if(plan === "PRO")).
+ * All access control goes through this service.
+ *
+ * Methods:
+ * - hasFeature(orgId, featureKey) → Promise<boolean>
+ * - getLimit(orgId, limitKey) → Promise<number | null>
+ * - assertFeature(orgId, featureKey) → Promise<void> // throws 403
+ * - canConsume(orgId, featureKey, n?) → Promise<boolean>
+ * - consume(orgId, featureKey, n?) → Promise<ConsumeResult>
+ * - getAllEntitlements(orgId) → Promise<EntitlementsResponse>
+ * - getDebugTrace(orgId, featureKey) → Promise<DebugTrace>
+ * - invalidateCache(orgId) → Promise<void>
  */
 
 import type {
   EntitlementMap,
+  EntitlementsResponse,
   DebugTrace,
   ConsumeResult,
-  EntitlementsResponse,
+  ResolveSource,
+  FeatureType,
+  UsageInfo,
+  Json,
 } from "./types";
-import type { IEntitlementRepository } from "./EntitlementRepository";
-import type { CacheService } from "./CacheService";
 import type { ExperimentService } from "./ExperimentService";
+import { getEntitlementRepository } from "./EntitlementRepository";
+import type {
+  IEntitlementRepository,
+  OverrideData,
+} from "./EntitlementRepository";
+import { getCacheService } from "./CacheService";
+import type { CacheService } from "./CacheService";
+import {
+  FeatureNotAvailableError,
+  LimitReachedError,
+  InvalidFeatureError,
+} from "./errors";
 
 // ============================================================================
-// TYPES
+// SERVICE CONFIG
 // ============================================================================
 
 export interface FeatureGateConfig {
-  repository: IEntitlementRepository;
-  cacheService: CacheService;
-  experimentService: ExperimentService;
+  repository?: IEntitlementRepository;
+  cacheService?: CacheService;
+  experimentService?: ExperimentService;
 }
 
-// ============================================================================
-// FEATURE GATE SERVICE
-// ============================================================================
-
 export class FeatureGateService {
-  private repository: IEntitlementRepository;
-  private cacheService: CacheService;
-  private experimentService: ExperimentService;
+  private repo: IEntitlementRepository;
+  private cache: CacheService;
 
-  constructor(config: FeatureGateConfig) {
-    this.repository = config.repository;
-    this.cacheService = config.cacheService;
-    this.experimentService = config.experimentService;
+  constructor(config: FeatureGateConfig = {}) {
+    this.repo = config.repository ?? getEntitlementRepository();
+    this.cache = config.cacheService ?? getCacheService();
   }
 
-  /**
-   * Check if an organization has a feature enabled
-   * Resolution order: user override → org override → plan → fallback
-   */
+  // ============================================================================
+  // hasFeature - Check if a feature is enabled for an org
+  // ============================================================================
+
   async hasFeature(orgId: string, featureKey: string): Promise<boolean> {
-    const entitlements = await this.getAllEntitlements(orgId);
-    return entitlements.features[featureKey] ?? false;
+    // Validate feature exists
+    const feature = await this.repo.getFeature(featureKey);
+    if (!feature) {
+      console.warn(`[FeatureGate] Feature not found: ${featureKey}`);
+      return false;
+    }
+
+    // Resolution order: user override → org override → plan → fallback
+    const resolved = await this.resolveFeatureValue(
+      orgId,
+      featureKey,
+      feature.type,
+    );
+
+    return resolved.value as boolean;
   }
 
-  /**
-   * Check if an organization can consume units of a limit feature
-   */
+  // ============================================================================
+  // getLimit - Get the numeric limit for a limit-type feature
+  // ============================================================================
+
+  async getLimit(orgId: string, limitKey: string): Promise<number | null> {
+    // Validate feature exists
+    const feature = await this.repo.getFeature(limitKey);
+    if (!feature || feature.type !== "LIMIT") {
+      // For features that don't exist in DB, check default plan config
+      // This is a fallback for migration
+      return null;
+    }
+
+    const resolved = await this.resolveFeatureValue(orgId, limitKey, "LIMIT");
+    return resolved.value as number | null;
+  }
+
+  // ============================================================================
+  // assertFeature - Throws 403 if feature is not available
+  // ============================================================================
+
+  async assertFeature(orgId: string, featureKey: string): Promise<void> {
+    const hasIt = await this.hasFeature(orgId, featureKey);
+
+    if (!hasIt) {
+      const planKey = await this.repo.getPlanKey(orgId);
+      const feature = await this.repo.getFeature(featureKey);
+
+      throw new FeatureNotAvailableError(
+        featureKey,
+        planKey,
+        feature?.type === "LIMIT" ? "Pro" : undefined,
+      );
+    }
+  }
+
+  // ============================================================================
+  // canConsume - Check if org can consume n units (default 1)
+  // ============================================================================
+
   async canConsume(
     orgId: string,
     featureKey: string,
-    amount: number,
+    amount: number = 1,
   ): Promise<boolean> {
-    const entitlements = await this.getAllEntitlements(orgId);
-    const limit = entitlements.limits[featureKey];
-    const used = entitlements.usage[featureKey] ?? 0;
+    // Get the limit for this feature
+    const limit = await this.getLimit(orgId, featureKey);
 
-    if (limit === null || limit === undefined) return true; // Unlimited
-    return used + amount <= limit;
+    // null = unlimited
+    if (limit === null) {
+      return true;
+    }
+
+    // Get current usage
+    const usage = await this.getUsage(orgId, featureKey);
+
+    return usage.remaining === null || usage.remaining >= amount;
   }
 
-  /**
-   * Atomically consume units of a limit feature
-   */
+  // ============================================================================
+  // consume - Atomically consume n units (default 1)
+  // ============================================================================
+
   async consume(
     orgId: string,
     featureKey: string,
-    amount: number,
+    amount: number = 1,
   ): Promise<ConsumeResult> {
-    const repo = this.repository;
-    const result = await repo.consumeUsage(orgId, featureKey, amount);
+    // Check feature is enabled first
+    await this.assertFeature(orgId, featureKey);
+
+    // Atomically consume (delegates boundary check to repo)
+    const result = await this.repo.consumeUsage(orgId, featureKey, amount);
 
     // Invalidate cache after consumption
     await this.invalidateCache(orgId);
 
-    const entitlements = await this.getAllEntitlements(orgId);
-    const limit = entitlements.limits[featureKey] ?? null;
+    // Build response with accurate usage data
+    const limit = await this.getLimit(orgId, featureKey);
+    const usage = await this.repo.getUsageTracking(orgId, featureKey);
+    const used = usage?.usageCount ?? 0;
+    const remaining = limit !== null ? Math.max(0, limit - used) : null;
 
     return {
-      success: result.success,
+      success: true,
       feature: featureKey,
-      used: result.newUsageCount,
+      used,
       limit,
-      remaining:
-        limit !== null ? Math.max(0, limit - result.newUsageCount) : null,
-      resetAt: new Date(),
+      remaining,
+      resetAt: this.getNextResetDate(),
     };
   }
 
-  /**
-   * Get all entitlements for an organization (cached)
-   */
+  // ============================================================================
+  // getAllEntitlements - Get full entitlement map (cached)
+  // ============================================================================
+
   async getAllEntitlements(orgId: string): Promise<EntitlementsResponse> {
     // Try cache first
-    const cached = await this.cacheService.get(orgId);
+    const cached = await this.cache.get(orgId);
+
     if (cached) {
       return this.toEntitlementsResponse(cached, {});
     }
 
-    // Fetch from repository
-    const planKey = await this.repository.getPlanKey(orgId);
-    const features = await this.repository.getAllFeatures();
-    const planFeatures = await this.repository.getPlanFeatures(planKey);
-    const orgOverride = await this.repository.getAllOverridesForOrg(orgId);
-    const subscription = await this.repository.getActiveSubscription(orgId);
+    // Fetch from DB via repository
+    const entitlements = await this.repo.getEntitlementMap(orgId);
 
-    // Build entitlement map
-    const entitlementMap: EntitlementMap = {
-      planKey,
-      features: {},
-      limits: {},
-      experiments: {},
-    };
-
-    for (const pf of planFeatures) {
-      entitlementMap.features[pf.featureKey] = pf.enabled;
-      if (pf.limitValue !== null) {
-        entitlementMap.limits[pf.featureKey] = pf.limitValue;
-      }
-    }
-
-    // Apply org overrides
-    for (const ov of orgOverride) {
-      if (ov.expiresAt && new Date(ov.expiresAt) < new Date()) continue;
-      if (ov.enabled === false && entitlementMap.features[ov.featureKey]) {
-        entitlementMap.features[ov.featureKey] = false;
-      }
-      if (ov.enabled === true) {
-        entitlementMap.features[ov.featureKey] = true;
-      }
-      if (ov.limitValue !== null && ov.limitValue !== undefined) {
-        entitlementMap.limits[ov.featureKey] = ov.limitValue;
-      }
-    }
-
-    // Handle subscription status
-    if (
-      subscription &&
-      (subscription.status === "CANCELED" ||
-        subscription.status === "INCOMPLETE")
-    ) {
-      if (
-        subscription.currentPeriodEnd &&
-        new Date(subscription.currentPeriodEnd) < new Date()
-      ) {
-        // Subscription expired - disable features
-        for (const key of Object.keys(entitlementMap.features)) {
-          entitlementMap.features[key] = false;
-        }
-      }
-    }
-
-    // Cache the result
-    await this.cacheService.set(orgId, entitlementMap);
-
+    // Fetch usage for limit features
     const usage: Record<string, number> = {};
-    for (const feature of features) {
-      const usageData = await this.repository.getUsageTracking(
-        orgId,
-        feature.key,
-      );
+    for (const featureKey of Object.keys(entitlements.features)) {
+      const usageData = await this.repo.getUsageTracking(orgId, featureKey);
       if (usageData) {
-        usage[feature.key] = usageData.usageCount;
+        usage[featureKey] = usageData.usageCount;
       }
     }
 
-    return this.toEntitlementsResponse(entitlementMap, usage);
+    // Cache & return
+    await this.cache.set(orgId, entitlements);
+
+    return this.toEntitlementsResponse(entitlements, usage);
   }
 
-  /**
-   * Invalidate cache for an organization
-   */
-  async invalidateCache(orgId: string): Promise<void> {
-    await this.cacheService.delete(orgId);
-  }
+  // ============================================================================
+  // getDebugTrace - Detailed trace of how a feature was resolved
+  // ============================================================================
 
-  /**
-   * Get debug trace for feature resolution
-   */
   async getDebugTrace(orgId: string, featureKey: string): Promise<DebugTrace> {
-    const planKey = await this.repository.getPlanKey(orgId);
-    const orgOverride = await this.repository.getOrgOverride(orgId, featureKey);
+    const feature = await this.repo.getFeature(featureKey);
 
-    const trace: DebugTrace = {
-      resolvedVia: "plan",
-      value: false,
+    if (!feature) {
+      throw new InvalidFeatureError(featureKey);
+    }
+
+    const resolved = await this.resolveFeatureValue(
+      orgId,
       featureKey,
-      featureType: "BOOLEAN",
-      planKey,
+      feature.type,
+    );
+
+    const subscription = await this.repo.getActiveSubscription(orgId);
+
+    return {
+      resolvedVia: resolved.source,
+      value: resolved.value,
+      featureKey,
+      featureType: feature.type,
+      overrideId: resolved.override?.id,
+      overrideScope: resolved.override?.scope,
+      overrideExpiresAt: resolved.override?.expiresAt ?? undefined,
+      planKey: resolved.planKey,
+      planLimit: resolved.limitValue ?? undefined,
+      defaultConfig: (feature.defaultConfig ?? undefined) as Json | undefined,
+      subscriptionStatus: subscription?.status,
       orgId,
     };
+  }
 
-    if (
-      orgOverride &&
-      (!orgOverride.expiresAt || new Date(orgOverride.expiresAt) > new Date())
-    ) {
-      trace.resolvedVia = "org_override";
-      trace.value = orgOverride.enabled;
-      trace.overrideId = orgOverride.id;
-      trace.overrideScope = orgOverride.scope || "ORG";
-      if (orgOverride.expiresAt)
-        trace.overrideExpiresAt = orgOverride.expiresAt;
-    } else {
-      const planFeatures = await this.repository.getPlanFeatures(planKey);
-      const pf = planFeatures.find((f) => f.featureKey === featureKey);
-      if (pf) {
-        trace.value = pf.enabled;
-        trace.planLimit = pf.limitValue;
-      }
+  // ============================================================================
+  // invalidateCache - Manually invalidate cache for an org
+  // ============================================================================
+
+  async invalidateCache(orgId: string): Promise<void> {
+    await this.cache.delete(orgId);
+    console.log(`[FeatureGate] Cache invalidated for org: ${orgId}`);
+  }
+
+  // ============================================================================
+  // PRIVATE: RESOLUTION LOGIC
+  // ============================================================================
+
+  private async resolveFeatureValue(
+    orgId: string,
+    featureKey: string,
+    featureType: FeatureType,
+  ): Promise<{
+    value: boolean | number | null;
+    source: ResolveSource;
+    override?: OverrideData;
+    planKey?: string;
+    limitValue?: number | null;
+  }> {
+    // 1. Check subscription is active
+    const subscription = await this.repo.getActiveSubscription(orgId);
+
+    if (!subscription) {
+      // No active subscription - use fallback
+      return {
+        value: featureType === "LIMIT" ? 0 : false,
+        source: "fallback",
+      };
     }
 
-    return trace;
+    const planKey = subscription.planKey;
+    const planFeatures = await this.repo.getPlanFeatures(planKey);
+    const featureConfig = planFeatures.find((f) => f.featureKey === featureKey);
+
+    // 2. Check if feature is enabled at plan level
+    const planEnabled = featureConfig?.enabled ?? false;
+    const planLimit = featureConfig?.limitValue;
+
+    // For experiments, return the config
+    if (featureType === "EXPERIMENT" && planEnabled) {
+      return {
+        value: true, // Experiment is "enabled" at plan level
+        source: "plan",
+        planKey,
+        limitValue: planLimit,
+      };
+    }
+
+    // For boolean features
+    if (featureType === "BOOLEAN") {
+      // Check user override
+      // Note: user override would need userId passed in - skipping for now
+      // In a full implementation, we'd pass userId through the call chain
+
+      // Check org override
+      const orgOverride = await this.repo.getOrgOverride(orgId, featureKey);
+
+      if (orgOverride) {
+        return {
+          value: orgOverride.enabled,
+          source: "org_override",
+          override: orgOverride,
+          planKey,
+          limitValue: planLimit,
+        };
+      }
+
+      // Fall back to plan
+      return {
+        value: planEnabled,
+        source: planEnabled ? "plan" : "fallback",
+        planKey,
+        limitValue: planLimit,
+      };
+    }
+
+    // For limit features
+    if (featureType === "LIMIT") {
+      // Check org override for limit
+      const orgOverride = await this.repo.getOrgOverride(orgId, featureKey);
+
+      if (orgOverride && orgOverride.limitValue !== null) {
+        return {
+          value: orgOverride.limitValue,
+          source: "org_override",
+          override: orgOverride,
+          planKey,
+          limitValue: orgOverride.limitValue,
+        };
+      }
+
+      // Fall back to plan limit
+      // -1 means unlimited (convert to null for external API)
+      const limitValue = planLimit === -1 ? null : planLimit;
+
+      return {
+        value: planEnabled ? (limitValue ?? 0) : 0,
+        source: planEnabled ? "plan" : "fallback",
+        planKey,
+        limitValue,
+      };
+    }
+
+    // Fallback (dead code: all FeatureType values are handled above)
+    return {
+      value: false,
+      source: "fallback",
+    };
+  }
+
+  // ============================================================================
+  // PRIVATE: USAGE HELPERS
+  // ============================================================================
+
+  private async getUsage(
+    orgId: string,
+    featureKey: string,
+  ): Promise<UsageInfo> {
+    const limit = await this.getLimit(orgId, featureKey);
+    const usage = await this.repo.getUsageTracking(orgId, featureKey);
+
+    const used = usage?.usageCount ?? 0;
+
+    let remaining: number | null;
+    if (limit === null) {
+      remaining = null; // Unlimited
+    } else {
+      remaining = Math.max(0, limit - used);
+    }
+
+    return {
+      used,
+      limit,
+      resetAt: this.getNextResetDate(),
+      remaining,
+    };
+  }
+
+  private getNextResetDate(): Date {
+    const now = new Date();
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return nextMonth;
   }
 
   private toEntitlementsResponse(
@@ -237,28 +407,32 @@ export class FeatureGateService {
 // SINGLETON
 // ============================================================================
 
-let featureGateServiceInstance: FeatureGateService | null = null;
+let featureGateInstance: FeatureGateService | null = null;
 
-export function getFeatureGateService(): FeatureGateService {
-  if (!featureGateServiceInstance) {
-    throw new Error(
-      "FeatureGateService not initialized. Call setFeatureGateService(config) first.",
-    );
+export function getFeatureGateService(
+  config?: FeatureGateConfig,
+): FeatureGateService {
+  if (!featureGateInstance) {
+    featureGateInstance = new FeatureGateService(config);
   }
-  return featureGateServiceInstance;
+  return featureGateInstance;
 }
 
 export function setFeatureGateService(service: FeatureGateService): void {
-  featureGateServiceInstance = service;
+  featureGateInstance = service;
 }
 
+// For testing
 export function resetFeatureGateService(): void {
-  featureGateServiceInstance = null;
+  featureGateInstance = null;
 }
 
-/**
- * Convenience function to check feature access
- */
-export function featureGate(): FeatureGateService {
-  return getFeatureGateService();
-}
+// Lazy Proxy for backward compatibility
+export const featureGate = new Proxy<FeatureGateService>(
+  {} as FeatureGateService,
+  {
+    get(_, prop) {
+      return getFeatureGateService()[prop as keyof FeatureGateService];
+    },
+  },
+);
