@@ -29,6 +29,7 @@
     "otpauth": "^9.5.1"
   },
   "devDependencies": {
+    "@playwright/cli": "^0.1.14",
     "@omnysync/config": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^25",
