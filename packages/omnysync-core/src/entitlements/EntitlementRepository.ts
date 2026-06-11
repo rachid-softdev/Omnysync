@@ -894,6 +894,8 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
 
       const willBeAffected =
         (current?.enabled === true && target?.enabled === false) ||
+        // Going from unlimited (null) to a specific limit
+        (current?.limitValue === null && target?.limitValue !== null) ||
         (current?.limitValue !== null &&
           target?.limitValue !== null &&
           target.limitValue < current.limitValue);
@@ -946,10 +948,15 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
     eventType: string,
   ): Promise<void> {
     const prisma = getPrisma();
-    await prisma.webhookEvent.create({
-      data: {
+    // Atomic upsert eliminates the check-then-create race condition
+    await prisma.webhookEvent.upsert({
+      where: { eventId },
+      create: {
         eventId,
         eventType,
+      },
+      update: {
+        eventType, // No-op — refresh the type if re-processed
       },
     });
   }

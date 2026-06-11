@@ -41,11 +41,10 @@ export default defineConfig({
     "services/contentful": "src/services/contentful.ts",
   },
   format: ["esm", "cjs"],
-  // DTS désactivé temporairement : le schéma Prisma a des erreurs (modèles en doublon,
-  // champs manquants) qui empêchent `prisma generate`, donc le type-check DTS échoue
-  // sur tous les fichiers qui dépendent de @prisma/client.
-  // Le type-check strict est fait via `tsconfig.strict.json` avec `tsc --noEmit`.
-  dts: false,
+  // DTS généré avec resolve:true pour que tsup resolve les types externes
+  // (notamment @prisma/client). Le type-check strict est maintenu via
+  // `tsconfig.strict.json` avec `tsc --noEmit`.
+  dts: { resolve: true },
   splitting: false,
   sourcemap: true,
   clean: true,
@@ -58,6 +57,5 @@ export default defineConfig({
     "@prisma/adapter-pg",
     "pg",
     "otpauth",
-    "@/lib/utils",
   ],
 });

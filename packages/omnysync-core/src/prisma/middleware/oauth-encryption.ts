@@ -8,13 +8,20 @@ import {
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16;
 
-function getOAuthKey(): Buffer {
+function deriveOAuthKey(): Buffer {
   const key = process.env.OAUTH_ENCRYPTION_KEY;
   if (!key) {
     throw new Error("OAUTH_ENCRYPTION_KEY environment variable is required");
   }
   // Dérive une clé de 32 bytes depuis la variable
   return scryptSync(key, "oauth-encryption-salt", 32);
+}
+
+// Cache the derived key at module level
+const oauthKey = deriveOAuthKey();
+
+function getOAuthKey(): Buffer {
+  return oauthKey;
 }
 
 // Champs à chiffrer dans le modèle Account

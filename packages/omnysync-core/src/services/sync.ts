@@ -122,9 +122,7 @@ async function enrichContentWithAI(
   try {
     const existingDocs = await prisma.document.findMany({
       where: {
-        organizationId: (
-          await prisma.document.findUnique({ where: { id: documentId } })
-        )?.organizationId,
+        organizationId, // Use the parameter directly instead of re-querying the document
         status: "PUBLISHED",
         id: { not: documentId },
       },

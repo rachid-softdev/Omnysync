@@ -150,11 +150,30 @@ export class FeatureGateService {
     featureKey: string,
     amount: number = 1,
   ): Promise<ConsumeResult> {
-    // Check feature is enabled first
-    await this.assertFeature(orgId, featureKey);
+    // Resolve the feature once and derive both the boolean gate and the limit
+    const feature = await this.repo.getFeature(featureKey);
+    if (!feature) {
+      throw new InvalidFeatureError(featureKey);
+    }
+    const resolved = await this.resolveFeatureValue(
+      orgId,
+      featureKey,
+      feature.type,
+    );
 
-    // Get limit
-    const limit = await this.getLimit(orgId, featureKey);
+    // Check feature is enabled
+    if (!(resolved.value as boolean)) {
+      const planKey = await this.repo.getPlanKey(orgId);
+      throw new FeatureNotAvailableError(
+        featureKey,
+        planKey,
+        feature.type === "LIMIT" ? "Pro" : undefined,
+      );
+    }
+
+    // Get limit from the already-resolved value
+    const limit =
+      feature.type === "LIMIT" ? (resolved.value as number | null) : null;
 
     // Atomically consume with limit check
     const result = await this.repo.consumeUsage(

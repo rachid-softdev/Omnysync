@@ -8,13 +8,7 @@
   "files": {
     "ignoreUnknown": false,
     "includes": ["**/*"],
-    "experimentalScannerIgnores": [
-      "omnysync-web/**",
-      "omnysync-mobile/**",
-      "omnysync-desktop/**",
-      "omnysync-extension/**",
-      "packages/**"
-    ]
+    "experimentalScannerIgnores": ["node_modules/**", "dist/**"]
   },
   "formatter": {
     "enabled": true,
@@ -23,7 +17,7 @@
     "lineWidth": 100
   },
   "linter": {
-    "enabled": false
+    "enabled": true
   },
   "assist": {
     "enabled": true,

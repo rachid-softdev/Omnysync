@@ -90,7 +90,7 @@ describe("Approval Service", () => {
 
     // Reset crypto mock to return deterministic values
     vi.mocked(randomBytes).mockReturnValue(
-      Buffer.from("abcdef1234567890abcdef1234567890", "hex"),
+      Buffer.from("abcdef1234567890abcdef1234567890", "hex") as never,
     );
   });
 

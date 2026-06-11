@@ -129,7 +129,7 @@ async function handleWordPressWebhook(
 
     if (webhook?.secret) {
       const isValid = verifyWebhookSignature(body, signature, webhook.secret)
-      if (isValid === false && process.env.NODE_ENV === 'production') {
+      if (!isValid) {
         return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
       }
     }
@@ -197,10 +197,10 @@ async function handleGhostWebhook(req: NextRequest, connectorId: string): Promis
 
     if (webhook?.secret && ghostSignature) {
       const isValid = verifyWebhookSignature(body, ghostSignature, webhook.secret)
-      if (!isValid && process.env.NODE_ENV === 'production') {
+      if (!isValid) {
         return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
       }
-    } else if (process.env.NODE_ENV === 'production' && !ghostSignature) {
+    } else if (webhook?.secret && !ghostSignature) {
       return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
     }
 
@@ -261,7 +261,7 @@ async function handleWebflowWebhook(req: NextRequest, connectorId: string): Prom
 
     if (webhook?.secret) {
       const isValid = verifyWebhookSignature(body, signature, webhook.secret)
-      if (!isValid && process.env.NODE_ENV === 'production') {
+      if (!isValid) {
         return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
       }
     }
@@ -324,13 +324,11 @@ async function handleShopifyWebhook(req: NextRequest, connectorId: string): Prom
       const expected = crypto.createHmac('sha256', webhook.secret).update(body).digest('base64')
       try {
         const isValid = crypto.timingSafeEqual(Buffer.from(hmacHeader), Buffer.from(expected))
-        if (!isValid && process.env.NODE_ENV === 'production') {
+        if (!isValid) {
           return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
         }
       } catch {
-        if (process.env.NODE_ENV === 'production') {
-          return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-        }
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
       }
     }
 

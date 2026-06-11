@@ -1,3 +1,6 @@
 packages:
   - "packages/*"
   - "omnysync-web"
+  - "omnysync-desktop"
+  - "omnysync-mobile"
+  - "omnysync-extension"

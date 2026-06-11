@@ -1,10 +1,20 @@
 import { prisma } from '@/lib/prisma'
 
 export async function getUserOrgId(userId: string): Promise<string> {
-  // Find the user's first organization
   const membership = await prisma.userOrganization.findFirst({
     where: { userId },
-    include: { organization: true },
+  })
+
+  if (!membership) {
+    throw new Error('User has no organization membership')
+  }
+
+  return membership.organizationId
+}
+
+export async function ensureUserOrg(userId: string): Promise<string> {
+  const membership = await prisma.userOrganization.findFirst({
+    where: { userId },
   })
 
   if (membership) {

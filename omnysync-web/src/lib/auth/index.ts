@@ -81,7 +81,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.role = dbUser.role ?? 'USER'
           token.passwordChangedAt = dbUser.passwordChangedAt?.getTime() ?? 0
           token.has2FA = !!dbUser.twoFactorAuth
-          token.twoFactorVerified = false
+          // If user has 2FA enabled, force re-verification on sign-in
+          token.twoFactorVerified = dbUser.twoFactorAuth ? false : true
         }
       }
 
@@ -101,7 +102,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       // Update session from 2FA verification
       if (trigger === 'update' && session) {
-        token.twoFactorVerified = session.twoFactorVerified
+        if (session.twoFactorVerified === true) {
+          token.twoFactorVerified = true
+        }
       }
 
       return token

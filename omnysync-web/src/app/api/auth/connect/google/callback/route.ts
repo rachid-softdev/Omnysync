@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { getUserOrgId } from '@/lib/auth/org'
+import { ensureUserOrg } from '@/lib/auth/org'
 import { encrypt } from '@/lib/crypto'
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
-  const state = req.nextUrl.searchParams.get('state') // userId
+  const returnedState = req.nextUrl.searchParams.get('state')
 
-  if (!code || !state) {
+  if (!code || !returnedState) {
     return NextResponse.redirect(new URL('/dashboard/connectors?error=missing_params', req.url))
+  }
+
+  // Identify the user via their session (the browser sends the session cookie)
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.redirect(new URL('/auth/signin', req.url))
   }
 
   // Exchange code for tokens
@@ -31,11 +38,11 @@ export async function GET(req: NextRequest) {
   }
 
   const tokens = await tokenResponse.json()
-  const orgId = await getUserOrgId(state)
+  const orgId = await ensureUserOrg(session.user.id)
 
   // Save or update connector
   const existing = await prisma.connector.findFirst({
-    where: { userId: state, type: 'GOOGLE_DOCS' },
+    where: { userId: session.user.id, type: 'GOOGLE_DOCS' },
   })
 
   if (existing) {
@@ -54,7 +61,7 @@ export async function GET(req: NextRequest) {
   } else {
     await prisma.connector.create({
       data: {
-        userId: state,
+        userId: session.user.id,
         organizationId: orgId,
         type: 'GOOGLE_DOCS',
         name: 'Google Docs',

@@ -6,7 +6,10 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./tests/setup.ts"],
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    include: [
+      "omnysync-web/src/**/*.{test,spec}.{ts,tsx}",
+      "packages/**/src/**/*.{test,spec}.{ts,tsx}",
+    ],
     coverage: {
       provider: "v8",
       include: ["src/**"],

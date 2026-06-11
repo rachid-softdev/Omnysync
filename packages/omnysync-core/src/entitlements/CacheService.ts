@@ -149,14 +149,29 @@ export class CacheService {
     }
   }
 
+  private cleanupIntervalId: ReturnType<typeof setInterval> | null = null;
+
   private startCleanupInterval(): void {
     // Clean up expired entries every 10 seconds
-    setInterval(() => {
+    this.cleanupIntervalId = setInterval(() => {
       const cleaned = this.memoryCache.cleanup();
       if (cleaned > 0) {
         // console.debug(`[CacheService] Cleaned ${cleaned} expired entries`)
       }
     }, 10000);
+  }
+
+  /**
+   * Destroy the service — clears cleanup interval and releases resources.
+   * Call this when replacing the singleton to prevent memory leaks.
+   */
+  destroy(): void {
+    if (this.cleanupIntervalId !== null) {
+      clearInterval(this.cleanupIntervalId);
+      this.cleanupIntervalId = null;
+    }
+    this.memoryCache.clear();
+    this.subscribed = false;
   }
 
   // Build cache key
@@ -314,11 +329,20 @@ export class CacheService {
 
     if (this.redis) {
       try {
-        // Get all keys with our prefix
-        const keys = await this.redis.keys(`${CACHE_CONFIG.KEY_PREFIX}*`);
-        if (keys.length > 0) {
-          await this.redis.del(...keys);
-        }
+        // Use SCAN instead of KEYS for production safety
+        let cursor = 0;
+        const pattern = `${CACHE_CONFIG.KEY_PREFIX}*`;
+        do {
+          const result = await this.redis.scan(cursor, {
+            match: pattern,
+            count: 100,
+          });
+          cursor = result[0];
+          const keys = result[1];
+          if (keys.length > 0) {
+            await this.redis.del(...keys);
+          }
+        } while (cursor !== 0);
       } catch (err) {
         console.warn("[CacheService] Failed to clear Redis:", err);
       }
@@ -340,6 +364,10 @@ export function getCacheService(): CacheService {
 }
 
 export function setCacheService(service: CacheService): void {
+  // Destroy the old instance to prevent memory leaks
+  if (cacheServiceInstance) {
+    cacheServiceInstance.destroy();
+  }
   cacheServiceInstance = service;
 }
 

@@ -5,6 +5,11 @@
 
 import { prisma } from "../prisma";
 import { auditBilling } from "../audit";
+import {
+  DEFAULT_PLAN_FEATURES,
+  FEATURE_KEYS,
+  type PlanKey,
+} from "../entitlements/constants";
 
 // ============================================================================
 // TYPES
@@ -35,90 +40,63 @@ export interface PlanFeatures {
 }
 
 // ============================================================================
-// PLAN DEFINITIONS
+// PLAN DEFINITIONS — derived from entitlements/constants.ts (single source of truth)
 // ============================================================================
 
-export const plans: Record<string, PlanFeatures> = {
-  free: {
-    name: "Free",
-    price: 0,
-    currency: "EUR",
-    interval: "month",
-    maxConnectors: 2,
-    maxDocuments: 100,
-    maxSyncsPerMonth: 10,
-    maxTeamMembers: 1,
-    aiSEO: false,
-    aiImages: false,
-    aiInterlinking: false,
-    twoWaySync: false,
-    approvalPortal: false,
-    customDomain: false,
-    apiAccess: false,
-    prioritySupport: false,
-    analyticsExport: false,
-  },
+function buildPlanFeatures(): Record<string, PlanFeatures> {
+  const planMeta: Record<
+    string,
+    {
+      name: string;
+      price: number;
+      currency: string;
+      interval: "month" | "year";
+    }
+  > = {
+    free: { name: "Free", price: 0, currency: "EUR", interval: "month" },
+    pro: { name: "Pro", price: 29, currency: "EUR", interval: "month" },
+    business: {
+      name: "Business",
+      price: 99,
+      currency: "EUR",
+      interval: "month",
+    },
+    enterprise: {
+      name: "Enterprise",
+      price: -1,
+      currency: "EUR",
+      interval: "month",
+    },
+  };
 
-  pro: {
-    name: "Pro",
-    price: 29,
-    currency: "EUR",
-    interval: "month",
-    maxConnectors: 10,
-    maxDocuments: -1, // Unlimited
-    maxSyncsPerMonth: 100,
-    maxTeamMembers: 5,
-    aiSEO: true,
-    aiImages: true,
-    aiInterlinking: true,
-    twoWaySync: false,
-    approvalPortal: false,
-    customDomain: false,
-    apiAccess: true,
-    prioritySupport: false,
-    analyticsExport: true,
-  },
+  const result: Record<string, PlanFeatures> = {};
 
-  business: {
-    name: "Business",
-    price: 99,
-    currency: "EUR",
-    interval: "month",
-    maxConnectors: -1,
-    maxDocuments: -1,
-    maxSyncsPerMonth: -1,
-    maxTeamMembers: -1,
-    aiSEO: true,
-    aiImages: true,
-    aiInterlinking: true,
-    twoWaySync: true,
-    approvalPortal: true,
-    customDomain: true,
-    apiAccess: true,
-    prioritySupport: true,
-    analyticsExport: true,
-  },
+  for (const [key, meta] of Object.entries(planMeta)) {
+    const config = DEFAULT_PLAN_FEATURES[key as PlanKey];
+    if (!config) continue;
 
-  enterprise: {
-    name: "Enterprise",
-    price: -1,
-    currency: "EUR",
-    interval: "month",
-    maxConnectors: -1,
-    maxDocuments: -1,
-    maxSyncsPerMonth: -1,
-    maxTeamMembers: -1,
-    aiSEO: true,
-    aiImages: true,
-    aiInterlinking: true,
-    twoWaySync: true,
-    approvalPortal: true,
-    customDomain: true,
-    apiAccess: true,
-    prioritySupport: true,
-    analyticsExport: true,
-  },
-};
+    result[key] = {
+      ...meta,
+      maxConnectors: config[FEATURE_KEYS.MAX_CONNECTORS] as number,
+      maxDocuments: config[FEATURE_KEYS.MAX_DOCUMENTS] as number,
+      maxSyncsPerMonth: config[FEATURE_KEYS.MAX_SYNCS_PER_MONTH] as number,
+      maxTeamMembers: config[FEATURE_KEYS.MAX_TEAM_MEMBERS] as number,
+      aiSEO: config[FEATURE_KEYS.AI_SEO] as boolean,
+      aiImages: config[FEATURE_KEYS.AI_IMAGES] as boolean,
+      aiInterlinking: config[FEATURE_KEYS.AI_INTERLINKING] as boolean,
+      twoWaySync: config[FEATURE_KEYS.TWO_WAY_SYNC] as boolean,
+      approvalPortal: config[FEATURE_KEYS.APPROVAL_PORTAL] as boolean,
+      customDomain: config[FEATURE_KEYS.CUSTOM_DOMAIN] as boolean,
+      apiAccess: config[FEATURE_KEYS.API_ACCESS] as boolean,
+      prioritySupport: config[FEATURE_KEYS.PRIORITY_SUPPORT] as boolean,
+      analyticsExport: config[FEATURE_KEYS.ANALYTICS_EXPORT] as boolean,
+    };
+  }
+
+  return result;
+}
+
+export const plans = buildPlanFeatures();
 
 // ============================================================================
 // QUOTA CHECKING

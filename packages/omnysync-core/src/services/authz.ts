@@ -22,7 +22,7 @@ export async function requireDocumentAccess(
   });
 
   if (!document) {
-    throw new UnauthorizedError("Document not found");
+    throw new UnauthorizedError("Access denied");
   }
 
   const membership = await prisma.userOrganization.findFirst({
@@ -33,6 +33,6 @@ export async function requireDocumentAccess(
   });
 
   if (!membership) {
-    throw new UnauthorizedError("You do not have access to this document");
+    throw new UnauthorizedError("Access denied");
   }
 }

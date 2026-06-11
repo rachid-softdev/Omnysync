@@ -12,23 +12,81 @@ export const checkRemoteSchema = z.object({
   documentId: z.string().uuid(),
 })
 
-// Connectors
-export const createConnectorSchema = z.object({
-  type: z.enum([
-    'GOOGLE_DOCS',
-    'NOTION',
-    'WORDPRESS',
-    'GHOST',
-    'WEBFLOW',
-    'SHOPIFY',
-    'AIRTABLE',
-    'CONTENTFUL',
-    'MEDIUM',
-  ]),
+// Connectors - per-type schemas with exact field shapes
+const wordpressConnectorSchema = z.object({
+  type: z.literal('WORDPRESS'),
   name: z.string().min(1).max(100),
-  credentials: z.record(z.string(), z.unknown()).optional(),
-  config: z.record(z.string(), z.unknown()).optional(),
+  config: z.object({ siteUrl: z.string().url() }),
+  credentials: z.object({ username: z.string().min(1), password: z.string().min(1) }),
 })
+
+const ghostConnectorSchema = z.object({
+  type: z.literal('GHOST'),
+  name: z.string().min(1).max(100),
+  config: z.object({ siteUrl: z.string().url() }),
+  credentials: z.object({ adminApiKey: z.string().min(1) }),
+})
+
+const webflowConnectorSchema = z.object({
+  type: z.literal('WEBFLOW'),
+  name: z.string().min(1).max(100),
+  config: z.object({ siteId: z.string().min(1) }),
+  credentials: z.object({ accessToken: z.string().min(1) }),
+})
+
+const shopifyConnectorSchema = z.object({
+  type: z.literal('SHOPIFY'),
+  name: z.string().min(1).max(100),
+  config: z.object({ shopDomain: z.string().min(1) }),
+  credentials: z.object({ accessToken: z.string().min(1) }),
+})
+
+const googleDocsConnectorSchema = z.object({
+  type: z.literal('GOOGLE_DOCS'),
+  name: z.string().min(1).max(100),
+  config: z.object({}).optional(),
+  credentials: z.object({ accessToken: z.string().min(1), refreshToken: z.string().optional() }),
+})
+
+const notionConnectorSchema = z.object({
+  type: z.literal('NOTION'),
+  name: z.string().min(1).max(100),
+  config: z.object({}).optional(),
+  credentials: z.object({ accessToken: z.string().min(1) }),
+})
+
+const mediumConnectorSchema = z.object({
+  type: z.literal('MEDIUM'),
+  name: z.string().min(1).max(100),
+  config: z.object({ publicationId: z.string().optional() }),
+  credentials: z.object({ accessToken: z.string().min(1) }),
+})
+
+const airtableConnectorSchema = z.object({
+  type: z.literal('AIRTABLE'),
+  name: z.string().min(1).max(100),
+  config: z.object({ baseId: z.string().min(1), tableId: z.string().min(1) }),
+  credentials: z.object({ apiKey: z.string().min(1) }),
+})
+
+const contentfulConnectorSchema = z.object({
+  type: z.literal('CONTENTFUL'),
+  name: z.string().min(1).max(100),
+  config: z.object({ spaceId: z.string().min(1), contentTypeId: z.string().min(1) }),
+  credentials: z.object({ accessToken: z.string().min(1) }),
+})
+
+export const createConnectorSchema = z.discriminatedUnion('type', [
+  wordpressConnectorSchema,
+  ghostConnectorSchema,
+  webflowConnectorSchema,
+  shopifyConnectorSchema,
+  googleDocsConnectorSchema,
+  notionConnectorSchema,
+  mediumConnectorSchema,
+  airtableConnectorSchema,
+  contentfulConnectorSchema,
+])
 
 // Queue jobs
 export const queueJobSchema = z.object({

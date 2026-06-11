@@ -1,7 +1,9 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export const baseConfig: Config = {
   darkMode: "class",
+  content: ["../../omnysync-web/src/**/*.{ts,tsx}"],
   theme: {
     container: {
       center: true,
@@ -47,5 +49,5 @@ export const baseConfig: Config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 };

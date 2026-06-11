@@ -13,8 +13,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { confirmText } = body
+    const confirmText = request.nextUrl.searchParams.get('confirmText')
 
     // Vérifier que l'utilisateur a tapé "SUPPRIMER" pour confirmer
     if (confirmText !== 'SUPPRIMER') {

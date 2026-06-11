@@ -4,7 +4,7 @@
  */
 import { prisma } from "../prisma";
 import { encrypt, decrypt } from "../crypto";
-import { randomBytes, createHash } from "crypto";
+import { randomBytes, createHash, timingSafeEqual } from "crypto";
 import * as OTPAuth from "otpauth";
 
 /**
@@ -38,9 +38,12 @@ export async function setupTwoFactor(
     randomBytes(4).toString("hex").toUpperCase(),
   );
 
-  // Hasher les backup codes pour stockage sécurisé
+  // Hasher les backup codes avec un salt utilisateur-spécifique
+  const userSpecificSalt = userId.substring(0, 16);
   const hashedBackupCodes = backupCodes.map((code) =>
-    createHash("sha256").update(code).digest("hex"),
+    createHash("sha256")
+      .update(code + userSpecificSalt)
+      .digest("hex"),
   );
 
   try {
@@ -97,18 +100,33 @@ export async function verifyTotpCode(
     return { valid: false, error: "2FA non activé" };
   }
 
-  // Vérifier d'abord les backup codes
+  // Vérifier d'abord les backup codes avec comparaison timing-safe
+  const userSpecificSalt = userId.substring(0, 16);
   const codeHash = createHash("sha256")
-    .update(code.toUpperCase())
+    .update(code.toUpperCase() + userSpecificSalt)
     .digest("hex");
-  if (twoFactor.backupCodes.includes(codeHash)) {
+
+  let matchedIndex = -1;
+  for (let i = 0; i < twoFactor.backupCodes.length; i++) {
+    const stored = Buffer.from(twoFactor.backupCodes[i], "hex");
+    const computed = Buffer.from(codeHash, "hex");
+    if (
+      stored.length === computed.length &&
+      timingSafeEqual(stored, computed)
+    ) {
+      matchedIndex = i;
+      break;
+    }
+  }
+
+  if (matchedIndex !== -1) {
     // Backup code utilisé - le supprimer
+    const updatedCodes = [...twoFactor.backupCodes];
+    updatedCodes.splice(matchedIndex, 1);
     await prisma.twoFactorAuth.update({
       where: { userId },
       data: {
-        backupCodes: twoFactor.backupCodes.filter(
-          (c: string) => c !== codeHash,
-        ),
+        backupCodes: updatedCodes,
       },
     });
     return { valid: true };

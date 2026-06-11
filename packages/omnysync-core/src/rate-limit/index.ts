@@ -46,6 +46,15 @@ export function stopRateLimitCleanup(): void {
   }
 }
 
+/**
+ * Full cleanup — stops the interval and clears all in-memory rate limit records.
+ * Call this during graceful shutdown (e.g., SIGTERM handler).
+ */
+export function shutdownRateLimit(): void {
+  stopRateLimitCleanup();
+  rateLimitMap.clear();
+}
+
 export function rateLimit(ip: string): {
   allowed: boolean;
   remainingTime?: number;
