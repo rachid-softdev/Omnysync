@@ -22,8 +22,7 @@
     "noUnusedParameters": true,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    "verbatimModuleSyntax": true,
-    "ignoreDeprecations": "6.0"
+    "verbatimModuleSyntax": true
   },
   "exclude": ["node_modules"]
 }

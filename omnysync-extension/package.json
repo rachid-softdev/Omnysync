@@ -1,8 +1,8 @@
 {
   "name": "omnysync-extension",
   "version": "1.0.0",
+  "private": true,
   "description": "Omnysync Browser Extension",
-  "main": "index.js",
   "scripts": {
     "dev": "echo 'Extension dev not configured'",
     "build": "echo 'Extension build not configured'"

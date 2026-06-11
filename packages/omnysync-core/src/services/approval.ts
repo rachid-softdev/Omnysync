@@ -151,8 +151,8 @@ export async function respondToApproval(
       return { success: false, error: "Approval request not found or expired" };
     }
 
-    // For anonymous approvals, use a placeholder
-    const userId = "anonymous";
+    // For anonymous approvals, use a random identifier for traceability
+    const userId = `anonymous-${randomBytes(8).toString("hex")}`;
 
     // Mettre à jour la demande
     const updatedApproval = await prisma.approvalRequest.update({
@@ -241,7 +241,7 @@ export async function cancelApprovalRequest(
 
     await prisma.approvalRequest.update({
       where: { id: approvalId },
-      data: { status: "REJECTED" }, // Reused status for cancelled
+      data: { status: "CANCELLED" },
     });
 
     return { success: true };
@@ -260,7 +260,7 @@ export async function cancelApprovalRequest(
 export async function getApprovalsList(
   organizationId: string,
   options: {
-    status?: "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
+    status?: "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED" | "CANCELLED";
     documentId?: string;
     limit?: number;
     offset?: number;

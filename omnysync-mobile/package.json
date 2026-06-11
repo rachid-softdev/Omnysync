@@ -1,8 +1,8 @@
 {
   "name": "omnysync-mobile",
   "version": "1.0.0",
+  "private": true,
   "description": "Omnysync Mobile Application",
-  "main": "index.js",
   "scripts": {
     "dev": "echo 'Mobile dev not configured'",
     "build": "echo 'Mobile build not configured'"

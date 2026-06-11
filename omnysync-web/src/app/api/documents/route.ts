@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { apiError } from '@/lib/api-error'
+import { paginationSchema } from '@/lib/validations'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
@@ -13,13 +14,17 @@ export async function GET(req: NextRequest) {
   const orgId = await getUserOrgId(session.user.id)
   const { searchParams } = new URL(req.url)
   const status = searchParams.get('status')
-  const page = parseInt(searchParams.get('page') || '1')
-  const limit = parseInt(searchParams.get('limit') || '20')
+
+  const pagination = paginationSchema.safeParse({
+    page: searchParams.get('page'),
+    limit: searchParams.get('limit'),
+  })
+  const { page, limit } = pagination.success ? pagination.data : { page: 1, limit: 20 }
 
   const documents = await prisma.document.findMany({
     where: {
       organizationId: orgId,
-      ...(status && { status: status as any }),
+      ...(status && { status }),
     },
     include: {
       sourceConnector: true,

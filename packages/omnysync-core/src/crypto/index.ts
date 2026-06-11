@@ -19,7 +19,7 @@ function getSalt(): string {
   return salt;
 }
 
-function getKey(): Buffer {
+function deriveKey(): Buffer {
   const encryptionKey = process.env.ENCRYPTION_KEY;
   if (!encryptionKey) {
     throw new Error(
@@ -28,6 +28,13 @@ function getKey(): Buffer {
   }
 
   return scryptSync(encryptionKey, getSalt(), 32);
+}
+
+// Cache the derived key at module level — avoids calling scryptSync on every encrypt/decrypt
+const derivedKey = deriveKey();
+
+function getKey(): Buffer {
+  return derivedKey;
 }
 
 export function encrypt(plaintext: string): string {
@@ -49,8 +56,9 @@ export function decrypt(encryptedText: string): string {
 
   const parts = encryptedText.split(":");
   if (parts.length !== 3) {
-    // Not encrypted — return as-is for backward compatibility
-    return encryptedText;
+    throw new Error(
+      "Invalid encrypted text format: expected iv:authTag:ciphertext",
+    );
   }
 
   const ivHex = parts[0]!;

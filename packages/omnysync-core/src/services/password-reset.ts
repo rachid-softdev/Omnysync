@@ -11,12 +11,40 @@ const MAX_RESET_ATTEMPTS = 3;
 const RATE_LIMIT_WINDOW_MINUTES = 15;
 const BCRYPT_ROUNDS = 12;
 
+// In-memory rate limit store for ALL requests (prevents email enumeration)
+const globalResetRateLimit = new Map<
+  string,
+  { count: number; windowStart: number }
+>();
+const GLOBAL_RATE_LIMIT_MAX = 5;
+const GLOBAL_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+
 /**
  * Génère un token de réinitialisation
  */
 export async function createPasswordResetToken(
   email: string,
 ): Promise<{ success: boolean; message: string }> {
+  // Apply rate limiting to ALL requests (prevents email enumeration).
+  // Using email as the key so attackers cannot distinguish existing vs non-existing accounts.
+  const now = Date.now();
+  const rateKey = email.toLowerCase();
+  let rateEntry = globalResetRateLimit.get(rateKey);
+
+  if (!rateEntry || now - rateEntry.windowStart > GLOBAL_RATE_LIMIT_WINDOW_MS) {
+    rateEntry = { count: 0, windowStart: now };
+    globalResetRateLimit.set(rateKey, rateEntry);
+  }
+
+  rateEntry.count++;
+
+  if (rateEntry.count > GLOBAL_RATE_LIMIT_MAX) {
+    return {
+      success: false,
+      message: "Trop de demandes. Réessayez dans 15 minutes",
+    };
+  }
+
   const user = await prisma.user.findUnique({
     where: { email },
   });
@@ -29,7 +57,7 @@ export async function createPasswordResetToken(
     };
   }
 
-  // Vérifier le rate limit
+  // Vérifier le rate limit par utilisateur
   const recentResets = await prisma.passwordReset.count({
     where: {
       userId: user.id,

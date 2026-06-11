@@ -38,11 +38,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     syncFrequency: document.syncFrequency,
     nextSyncAt: document.nextSyncAt,
     lastSyncError: document.lastSyncError,
-    logs: document.syncLogs.map((log: any) => ({
-      status: log.status,
-      message: log.message,
-      createdAt: log.createdAt,
-    })),
+    logs: document.syncLogs.map(
+      (log: { status: string; message: string | null; createdAt: Date }) => ({
+        status: log.status,
+        message: log.message,
+        createdAt: log.createdAt,
+      })
+    ),
   })
 }
 

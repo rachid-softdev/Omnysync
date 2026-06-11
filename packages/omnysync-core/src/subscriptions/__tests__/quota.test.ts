@@ -245,8 +245,10 @@ describe("checkQuota", () => {
     await checkQuota(orgId, "maxSyncsPerMonth");
 
     const countCall = vi.mocked(mockPrisma.syncLog.count).mock.calls[0][0];
-    // @ts-expect-error - access where from query
-    const where = countCall.where;
+    const where = (countCall as { where: unknown }).where as Record<
+      string,
+      unknown
+    >;
     expect(where.organizationId).toBe(orgId);
     expect(where.createdAt).toHaveProperty("gte");
     expect(where.status).toBe("SUCCESS");
@@ -417,7 +419,8 @@ describe("getUsageStats", () => {
 
     const stats = await getUsageStats(orgId);
 
-    expect(stats.syncCount).toBe(0);
+    expect(stats).not.toBeNull();
+    expect(stats!.syncCount).toBe(0);
   });
 });
 

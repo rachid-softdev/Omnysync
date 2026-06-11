@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update session (mark as verified)
-    // The session will automatically include the verified status due to our callback
+    await session.update({ twoFactorVerified: true })
 
     return NextResponse.json({
       success: true,

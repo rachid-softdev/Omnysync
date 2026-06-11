@@ -11,7 +11,7 @@ import { z } from 'zod'
 
 const createApiKeySchema = z.object({
   name: z.string().min(1, 'Nom requis').max(100),
-  expiresInDays: z.number().optional(),
+  expiresInDays: z.number().int().min(1).max(365).optional(),
 })
 
 export async function GET() {
@@ -77,10 +77,9 @@ export async function POST(request: NextRequest) {
     const keyHash = createHash('sha256').update(rawKey).digest('hex')
     const prefix = rawKey.substring(0, 8)
 
-    // Calculer la date d'expiration si spécifiée
-    const expiresAt = expiresInDays
-      ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
-      : null
+    // Calculer la date d'expiration (défaut 365 jours)
+    const days = expiresInDays ?? 365
+    const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
 
     const apiKey = await prisma.apiKey.create({
       data: {

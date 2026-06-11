@@ -125,22 +125,34 @@ export async function checkAndIncrementQuota(userId: string): Promise<{
     return { allowed: true, remaining: Infinity }
   }
 
-  await prisma.quotaUsage.upsert({
-    where: { userId_month: { userId, month } },
-    create: { userId, month, syncCount: 0 },
-    update: {},
-  })
+  // Atomic upsert + conditional increment using a raw SQL query to avoid TOCTOU race condition.
+  // Uses PostgreSQL CTE to ensure the check and increment happen in a single statement.
+  const result = await prisma.$queryRaw<Array<{ allowed: boolean; sync_count: number }>>`
+    WITH
+      upserted AS (
+        INSERT INTO "QuotaUsage" ("id", "userId", "month", "syncCount", "createdAt", "updatedAt")
+        VALUES (gen_random_uuid(), ${userId}, ${month}, 0, NOW(), NOW())
+        ON CONFLICT ("userId", "month") DO UPDATE SET "updatedAt" = NOW()
+        RETURNING "syncCount"
+      ),
+      limited AS (
+        SELECT "syncCount" FROM upserted
+        WHERE "syncCount" < ${limits.syncsPerMonth}
+      ),
+      updated AS (
+        UPDATE "QuotaUsage"
+        SET "syncCount" = "syncCount" + 1, "updatedAt" = NOW()
+        FROM limited
+        WHERE "QuotaUsage"."userId" = ${userId}
+          AND "QuotaUsage"."month" = ${month}
+        RETURNING "QuotaUsage"."syncCount" AS sync_count
+      )
+    SELECT
+      COALESCE((SELECT true FROM updated LIMIT 1), false) AS allowed,
+      COALESCE((SELECT sync_count FROM updated LIMIT 1), 0) AS sync_count
+  `
 
-  const result = await prisma.quotaUsage.updateMany({
-    where: {
-      userId,
-      month,
-      syncCount: { lt: limits.syncsPerMonth },
-    },
-    data: { syncCount: { increment: 1 } },
-  })
-
-  if (result.count === 0) {
+  if (!result[0]?.allowed) {
     return {
       allowed: false,
       remaining: 0,
@@ -148,10 +160,7 @@ export async function checkAndIncrementQuota(userId: string): Promise<{
     }
   }
 
-  const updated = await prisma.quotaUsage.findUnique({
-    where: { userId_month: { userId, month } },
-  })
-  const remaining = limits.syncsPerMonth - (updated?.syncCount ?? 0)
+  const remaining = limits.syncsPerMonth - result[0].sync_count
 
   return { allowed: true, remaining: Math.max(0, remaining) }
 }

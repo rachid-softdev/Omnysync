@@ -54,17 +54,7 @@ export async function POST(req: NextRequest) {
     return apiError(parsed.error.issues[0]?.message || 'Invalid connector data', 400)
   }
 
-  const {
-    type,
-    config: configVal,
-    credentials: credentialsVal,
-  } = parsed.data as {
-    type: (typeof parsed.data)['type']
-    config?: Record<string, string>
-    credentials?: Record<string, string>
-  }
-  const config = configVal!
-  const credentials = credentialsVal!
+  const { type, config, credentials } = parsed.data
 
   // Check connector limit based on plan
   const withinLimit = await checkConnectorLimit(session.user.id)
@@ -81,19 +71,19 @@ export async function POST(req: NextRequest) {
   switch (type) {
     case 'WORDPRESS':
       testResult = await testWordPressConnection(
-        config!.siteUrl!,
-        credentials!.username!,
-        credentials!.password!
+        config.siteUrl,
+        credentials.username,
+        credentials.password
       )
       break
     case 'GHOST':
-      testResult = await testGhostConnection(config!.siteUrl!, credentials!.adminApiKey!)
+      testResult = await testGhostConnection(config.siteUrl, credentials.adminApiKey)
       break
     case 'WEBFLOW':
-      testResult = await testWebflowConnection(credentials!.accessToken!, config!.siteId!)
+      testResult = await testWebflowConnection(credentials.accessToken, config.siteId)
       break
     case 'SHOPIFY':
-      testResult = await testShopifyConnection(config!.shopDomain!, credentials!.accessToken!)
+      testResult = await testShopifyConnection(config.shopDomain, credentials.accessToken)
       break
     case 'GOOGLE_DOCS':
       // Google Docs doesn't have a test connection unless we try listing docs
@@ -104,13 +94,13 @@ export async function POST(req: NextRequest) {
       testResult = { success: true, error: '' }
       break
     case 'MEDIUM':
-      testResult = await testMediumConnection(credentials!.accessToken!)
+      testResult = await testMediumConnection(credentials.accessToken)
       break
     case 'AIRTABLE':
-      testResult = await testAirtableConnection(credentials!.apiKey!)
+      testResult = await testAirtableConnection(credentials.apiKey)
       break
     case 'CONTENTFUL':
-      testResult = await testContentfulConnection(credentials!.accessToken!)
+      testResult = await testContentfulConnection(credentials.accessToken)
       break
   }
 
@@ -131,9 +121,9 @@ export async function POST(req: NextRequest) {
       connector = await saveWordPressConnector(
         session.user.id,
         orgId,
-        config!.siteUrl!,
-        credentials!.username!,
-        credentials!.password!
+        config.siteUrl,
+        credentials.username,
+        credentials.password
       )
       break
     }
@@ -142,8 +132,8 @@ export async function POST(req: NextRequest) {
       connector = await saveGhostConnector(
         session.user.id,
         orgId,
-        config!.siteUrl!,
-        credentials!.adminApiKey!
+        config.siteUrl,
+        credentials.adminApiKey
       )
       break
     }
@@ -152,8 +142,8 @@ export async function POST(req: NextRequest) {
       connector = await saveWebflowConnector(
         session.user.id,
         orgId,
-        config!.siteId!,
-        credentials!.accessToken!
+        config.siteId,
+        credentials.accessToken
       )
       break
     }
@@ -162,8 +152,8 @@ export async function POST(req: NextRequest) {
       connector = await saveShopifyConnector(
         session.user.id,
         orgId,
-        config!.shopDomain!,
-        credentials!.accessToken!
+        config.shopDomain,
+        credentials.accessToken
       )
       break
     }
@@ -172,14 +162,14 @@ export async function POST(req: NextRequest) {
       connector = await saveGoogleDocsConnector(
         session.user.id,
         orgId,
-        credentials!.accessToken!,
-        credentials!.refreshToken! || ''
+        credentials.accessToken,
+        credentials.refreshToken ?? ''
       )
       break
     }
     case 'NOTION': {
       const { saveNotionConnector } = await import('@omnysync/core/services/notion')
-      connector = await saveNotionConnector(session.user.id, orgId, credentials!.accessToken!)
+      connector = await saveNotionConnector(session.user.id, orgId, credentials.accessToken)
       break
     }
     case 'MEDIUM': {
@@ -187,24 +177,24 @@ export async function POST(req: NextRequest) {
       connector = await saveMediumConnector(
         session.user.id,
         orgId,
-        credentials!.accessToken!,
-        config!.publicationId! ? { publicationId: config!.publicationId! } : {}
+        credentials.accessToken,
+        config.publicationId ? { publicationId: config.publicationId } : {}
       )
       break
     }
     case 'AIRTABLE': {
       const { saveAirtableConnector } = await import('@omnysync/core/services/airtable')
-      connector = await saveAirtableConnector(session.user.id, orgId, credentials!.apiKey!, {
-        baseId: config!.baseId!,
-        tableId: config!.tableId!,
+      connector = await saveAirtableConnector(session.user.id, orgId, credentials.apiKey, {
+        baseId: config.baseId,
+        tableId: config.tableId,
       })
       break
     }
     case 'CONTENTFUL': {
       const { saveContentfulConnector } = await import('@omnysync/core/services/contentful')
-      connector = await saveContentfulConnector(session.user.id, orgId, credentials!.accessToken!, {
-        spaceId: config!.spaceId!,
-        contentTypeId: config!.contentTypeId!,
+      connector = await saveContentfulConnector(session.user.id, orgId, credentials.accessToken, {
+        spaceId: config.spaceId,
+        contentTypeId: config.contentTypeId,
       })
       break
     }

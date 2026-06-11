@@ -1,10 +1,10 @@
 import { Redis } from '@upstash/redis'
 
-// Initialiser le client Redis (utilise Upstash qui est déjà utilisé pour QStash)
-const redis = process.env.QSTASH_TOKEN
+// Initialiser le client Redis (utilise Upstash)
+const redis = process.env.UPSTASH_REDIS_REST_TOKEN
   ? new Redis({
-      url: process.env.QSTASH_URL || 'https://qstash.upstash.io',
-      token: process.env.QSTASH_TOKEN,
+      url: process.env.UPSTASH_REDIS_REST_URL || 'https://qstash.upstash.io',
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
     })
   : null
 

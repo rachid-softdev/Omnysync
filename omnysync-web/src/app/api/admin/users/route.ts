@@ -9,7 +9,6 @@ const createUserSchema = z.object({
   email: z.string().email(),
   name: z.string().optional(),
   role: z.enum(VALID_ROLES),
-  roles: z.array(z.enum(VALID_ROLES)).optional(),
 })
 
 export async function GET() {
@@ -21,7 +20,6 @@ export async function GET() {
         email: true,
         name: true,
         role: true,
-        userRoles: { select: { role: true } },
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -29,7 +27,7 @@ export async function GET() {
     return NextResponse.json({ users })
   } catch (e: unknown) {
     if (e instanceof Error && 'status' in e) {
-      return NextResponse.json({ error: e.message }, { status: (e as any).status })
+      return NextResponse.json({ error: e.message }, { status: (e as { status: number }).status })
     }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
@@ -43,31 +41,26 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
     }
-    const { email, name, role, roles } = parsed.data
-    const userRoles = roles ?? [role]
+    const { email, name, role } = parsed.data
     const user = await prisma.user.create({
       data: {
         email,
         name,
         role,
-        userRoles: {
-          create: userRoles.map((r) => ({ role: r })),
-        },
       },
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
-        userRoles: { select: { role: true } },
       },
     })
     return NextResponse.json({ user }, { status: 201 })
   } catch (e: unknown) {
     if (e instanceof Error && 'status' in e) {
-      return NextResponse.json({ error: e.message }, { status: (e as any).status })
+      return NextResponse.json({ error: e.message }, { status: (e as { status: number }).status })
     }
-    if ((e as any)?.code === 'P2002') {
+    if ((e as { code?: string })?.code === 'P2002') {
       return NextResponse.json({ error: 'Email already exists' }, { status: 409 })
     }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })

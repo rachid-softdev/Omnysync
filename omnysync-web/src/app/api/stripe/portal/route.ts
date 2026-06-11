@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getUserOrgId } from '@/lib/auth/org'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
 
@@ -12,8 +13,10 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const orgId = await getUserOrgId(session.user.id)
+
   const subscription = await prisma.subscription.findUnique({
-    where: { userId: session.user.id },
+    where: { organizationId: orgId },
   })
 
   if (!subscription?.stripeCustomerId) {

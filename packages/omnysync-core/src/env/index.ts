@@ -44,4 +44,16 @@ function validateEnv(): Env {
   return parsed.data;
 }
 
-export const env = validateEnv();
+let cachedEnv: Env | null = null;
+
+/**
+ * Returns the validated environment variables.
+ * Validation runs once on first access (lazy init) so imports don't fail
+ * when process.env is not yet populated (e.g., during testing or config loading).
+ */
+export function getEnv(): Env {
+  if (!cachedEnv) {
+    cachedEnv = validateEnv();
+  }
+  return cachedEnv;
+}

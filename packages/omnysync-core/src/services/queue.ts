@@ -1,10 +1,29 @@
 import { Client } from "@upstash/qstash";
+import { Redis } from "@upstash/redis";
 import crypto from "crypto";
 
 const qstash = new Client({
   baseUrl: process.env.QSTASH_URL!,
   token: process.env.QSTASH_TOKEN!,
 });
+
+// Redis-backed completed-jobs store (shared across instances)
+function getRedis(): Redis | null {
+  if (process.env.QSTASH_URL && process.env.QSTASH_TOKEN) {
+    try {
+      return new Redis({
+        url: process.env.QSTASH_URL,
+        token: process.env.QSTASH_TOKEN,
+      });
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+const PROCESSED_JOBS_TTL = 24 * 60 * 60; // 24 hours (seconds for Redis)
+const JOB_PREFIX = "queue:completed:";
 
 export type JobType =
   | "sync_document"
@@ -33,12 +52,12 @@ export interface DeadLetterJob {
   attempts: number;
 }
 
-// In-memory tracking for completed jobs (in production, use Redis or DB)
-const completedJobs = new Map<
+// Fallback in-memory tracking when Redis is unavailable
+const completedJobsMemory = new Map<
   string,
   { completedAt: Date; result?: unknown }
 >();
-const PROCESSED_JOBS_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const MEMORY_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
  * Generate idempotency key for job deduplication
@@ -56,15 +75,22 @@ export function generateIdempotencyKey(
 }
 
 /**
- * Check if job has been processed (idempotency check)
+ * Check if job has been processed (idempotency check).
+ * Uses Redis when available, falls back to in-memory Map.
  */
-export function isJobCompleted(idempotencyKey: string): boolean {
-  const record = completedJobs.get(idempotencyKey);
+export async function isJobCompleted(idempotencyKey: string): Promise<boolean> {
+  const redis = getRedis();
+  if (redis) {
+    const exists = await redis.exists(`${JOB_PREFIX}${idempotencyKey}`);
+    return exists === 1;
+  }
+
+  // Fallback to in-memory
+  const record = completedJobsMemory.get(idempotencyKey);
   if (!record) return false;
 
-  // Check if TTL expired
-  if (Date.now() - record.completedAt.getTime() > PROCESSED_JOBS_TTL) {
-    completedJobs.delete(idempotencyKey);
+  if (Date.now() - record.completedAt.getTime() > MEMORY_TTL_MS) {
+    completedJobsMemory.delete(idempotencyKey);
     return false;
   }
 
@@ -72,13 +98,25 @@ export function isJobCompleted(idempotencyKey: string): boolean {
 }
 
 /**
- * Mark job as completed
+ * Mark job as completed.
+ * Uses Redis when available, falls back to in-memory Map.
  */
-export function markJobCompleted(
+export async function markJobCompleted(
   idempotencyKey: string,
   result?: unknown,
-): void {
-  completedJobs.set(idempotencyKey, { completedAt: new Date(), result });
+): Promise<void> {
+  const redis = getRedis();
+  if (redis) {
+    await redis.set(
+      `${JOB_PREFIX}${idempotencyKey}`,
+      JSON.stringify({ completedAt: new Date().toISOString(), result }),
+      { ex: PROCESSED_JOBS_TTL },
+    );
+    return;
+  }
+
+  // Fallback to in-memory
+  completedJobsMemory.set(idempotencyKey, { completedAt: new Date(), result });
 }
 
 /**
@@ -145,7 +183,7 @@ export async function processJobWithRetry(
   );
 
   // Check if already completed (idempotency)
-  if (isJobCompleted(idempotencyKey)) {
+  if (await isJobCompleted(idempotencyKey)) {
     console.log(
       `Job ${job.id} already processed, skipping (idempotency key: ${idempotencyKey})`,
     );
@@ -156,7 +194,7 @@ export async function processJobWithRetry(
     try {
       const result = await processFn(job);
       // Mark as completed on success
-      markJobCompleted(idempotencyKey, result);
+      await markJobCompleted(idempotencyKey, result);
       return result;
     } catch (error) {
       lastError = error as Error;
@@ -197,6 +235,8 @@ export async function enqueueJob(
   idempotencyKey?: string,
 ) {
   const jobId = `${job.type}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  // Override the placeholder ID with the generated one
+  job.id = jobId;
 
   // Use provided idempotency key or generate one
   const key =

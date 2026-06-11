@@ -1,6 +1,8 @@
 import { getPrisma } from "../prisma";
+import { DEFAULT_PLAN_FEATURES, FEATURE_KEYS } from "../entitlements/constants";
+import type { PlanKey } from "../entitlements/constants";
 
-export type Plan = "free" | "pro" | "business";
+export type Plan = PlanKey;
 
 export interface PlanLimits {
   syncsPerMonth: number;
@@ -13,38 +15,34 @@ export interface PlanLimits {
   scheduledSync: boolean;
 }
 
-export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
-  free: {
-    syncsPerMonth: 5,
-    connectors: 2,
-    documents: 50,
-    aiFeatures: false,
-    bidirectionalSync: false,
-    multiUser: false,
-    apiAccess: false,
-    scheduledSync: false,
-  },
-  pro: {
-    syncsPerMonth: 100,
-    connectors: 10,
-    documents: 500,
-    aiFeatures: true,
-    bidirectionalSync: false,
-    multiUser: false,
-    apiAccess: false,
-    scheduledSync: true,
-  },
-  business: {
-    syncsPerMonth: Infinity,
-    connectors: Infinity,
-    documents: Infinity,
-    aiFeatures: true,
-    bidirectionalSync: true,
-    multiUser: true,
-    apiAccess: true,
-    scheduledSync: true,
-  },
-};
+/**
+ * Maps -1 (unlimited sentinel in constants) to Infinity for backward compat.
+ */
+function mapLimitValue(value: number): number {
+  return value === -1 ? Infinity : value;
+}
+
+function buildPlanLimits(): Record<Plan, PlanLimits> {
+  const plans: Record<string, PlanLimits> = {};
+  for (const key of Object.keys(DEFAULT_PLAN_FEATURES)) {
+    const config = DEFAULT_PLAN_FEATURES[key];
+    plans[key] = {
+      syncsPerMonth: mapLimitValue(
+        config[FEATURE_KEYS.MAX_SYNCS_PER_MONTH] as number,
+      ),
+      connectors: mapLimitValue(config[FEATURE_KEYS.MAX_CONNECTORS] as number),
+      documents: mapLimitValue(config[FEATURE_KEYS.MAX_DOCUMENTS] as number),
+      aiFeatures: config[FEATURE_KEYS.AI_SUMMARY] as boolean,
+      bidirectionalSync: config[FEATURE_KEYS.TWO_WAY_SYNC] as boolean,
+      multiUser: config[FEATURE_KEYS.TEAM_MEMBERS] as boolean,
+      apiAccess: config[FEATURE_KEYS.API_ACCESS] as boolean,
+      scheduledSync: config[FEATURE_KEYS.SCHEDULED_SYNC] as boolean,
+    };
+  }
+  return plans as Record<Plan, PlanLimits>;
+}
+
+export const PLAN_LIMITS = buildPlanLimits();
 
 export function getCurrentMonth(): string {
   const now = new Date();
