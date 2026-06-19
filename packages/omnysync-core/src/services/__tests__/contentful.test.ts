@@ -77,13 +77,21 @@ describe("Contentful Connector", () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({
         items: [
           {
-            sys: { id: "entry-1", createdAt: "2026-01-01", updatedAt: "2026-06-01" },
+            sys: {
+              id: "entry-1",
+              createdAt: "2026-01-01",
+              updatedAt: "2026-06-01",
+            },
             fields: { title: "Entry 1", body: "Content here" },
           },
         ],
       } as any);
 
-      const entries = await listContentfulEntries(accessToken, spaceId, contentTypeId);
+      const entries = await listContentfulEntries(
+        accessToken,
+        spaceId,
+        contentTypeId,
+      );
 
       expect(entries.length).toBe(1);
       expect(entries[0].title).toBe("Entry 1");
@@ -126,9 +134,14 @@ describe("Contentful Connector", () => {
         sys: { id: "entry-new" },
       } as any);
 
-      const result = await createContentfulEntry(accessToken, spaceId, contentTypeId, {
-        title: { "en-US": "Test" },
-      });
+      const result = await createContentfulEntry(
+        accessToken,
+        spaceId,
+        contentTypeId,
+        {
+          title: { "en-US": "Test" },
+        },
+      );
 
       expect(result.id).toBe("entry-new");
     });
@@ -140,9 +153,15 @@ describe("Contentful Connector", () => {
         sys: { id: "entry-1" },
       } as any);
 
-      const result = await updateContentfulEntry(accessToken, spaceId, "entry-1", {
-        title: { "en-US": "Updated" },
-      }, 1);
+      const result = await updateContentfulEntry(
+        accessToken,
+        spaceId,
+        "entry-1",
+        {
+          title: { "en-US": "Updated" },
+        },
+        1,
+      );
 
       expect(result.id).toBe("entry-1");
     });
@@ -151,7 +170,9 @@ describe("Contentful Connector", () => {
   describe("saveContentfulConnector", () => {
     it("should verify token then create connector", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({ items: [] } as any);
-      vi.mocked(prisma.connector.create).mockResolvedValue({ id: "conn-1" } as any);
+      vi.mocked(prisma.connector.create).mockResolvedValue({
+        id: "conn-1",
+      } as any);
 
       const result = await saveContentfulConnector(userId, orgId, accessToken, {
         spaceId,

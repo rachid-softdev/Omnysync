@@ -3,11 +3,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockCreate = vi.hoisted(() => vi.fn());
 const mockImagesGenerate = vi.hoisted(() => vi.fn());
-const MockOpenAI = vi.hoisted(() =>
-  class MockOpenAI {
-    chat = { completions: { create: mockCreate } };
-    images = { generate: mockImagesGenerate };
-  },
+const MockOpenAI = vi.hoisted(
+  () =>
+    class MockOpenAI {
+      chat = { completions: { create: mockCreate } };
+      images = { generate: mockImagesGenerate };
+    },
 );
 
 vi.mock("openai", () => ({ default: MockOpenAI }));
@@ -95,16 +96,18 @@ describe("AI Service", () => {
     it("should throw a user-friendly error on API failure", async () => {
       mockCreate.mockRejectedValue(new Error("API error"));
 
-      await expect(
-        generateSEO("content", "Title"),
-      ).rejects.toThrow("AI generation failed. Please try again.");
+      await expect(generateSEO("content", "Title")).rejects.toThrow(
+        "AI generation failed. Please try again.",
+      );
     });
   });
 
   describe("generateAImage", () => {
     it("should return image URL from response", async () => {
       mockImagesGenerate.mockResolvedValue({
-        data: [{ url: "https://oaidalleapiprodscus.blob.core.windows.net/img.png" }],
+        data: [
+          { url: "https://oaidalleapiprodscus.blob.core.windows.net/img.png" },
+        ],
       });
 
       const result = await generateAImage("A cat");
@@ -159,12 +162,9 @@ describe("AI Service", () => {
         usage: { total_tokens: 100 },
       });
 
-      const result = await findInterlinkingOpportunities(
-        "Content with links",
-        [
-          { title: "Page 1", url: "/page1", excerpt: "About page 1" },
-        ],
-      );
+      const result = await findInterlinkingOpportunities("Content with links", [
+        { title: "Page 1", url: "/page1", excerpt: "About page 1" },
+      ]);
 
       expect(result.links.length).toBe(1);
       expect(result.links[0].url).toBe("/page1");
@@ -225,9 +225,9 @@ describe("AI Service", () => {
     it("should return hasChanges=false on API failure", async () => {
       mockCreate.mockRejectedValue(new Error("API error"));
 
-      await expect(
-        detectContentChanges("Old", "New"),
-      ).rejects.toThrow("AI content change detection failed. Please try again.");
+      await expect(detectContentChanges("Old", "New")).rejects.toThrow(
+        "AI content change detection failed. Please try again.",
+      );
     });
   });
 });

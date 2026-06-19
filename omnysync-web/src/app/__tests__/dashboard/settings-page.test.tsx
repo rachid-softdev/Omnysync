@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import SettingsPage from '../../(dashboard)/dashboard/settings/page'
@@ -25,12 +25,7 @@ vi.mock('@/components/ui/tabs', () => {
       )
     },
     TabsList: ({ children, className, ...props }: any) => (
-      <div
-        role="tablist"
-        className={className}
-        aria-orientation="horizontal"
-        {...props}
-      >
+      <div role="tablist" className={className} aria-orientation="horizontal" {...props}>
         {children}
       </div>
     ),

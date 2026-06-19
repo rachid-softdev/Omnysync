@@ -125,7 +125,9 @@ describe('TeamSettingsPage', () => {
     })
 
     fireEvent.click(screen.getByText('Invite member'))
-    expect(screen.getByText('Send an email invitation to join your organization.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Send an email invitation to join your organization.')
+    ).toBeInTheDocument()
   })
 
   it('shows empty state when no members', async () => {

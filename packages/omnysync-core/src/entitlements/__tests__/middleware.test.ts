@@ -59,7 +59,9 @@ describe("Entitlements Middleware", () => {
     it("should resolve when feature is available", async () => {
       mockHasFeature.mockResolvedValue(true);
 
-      await expect(requireFeature("org-1", "EXPORT_PDF")).resolves.toBeUndefined();
+      await expect(
+        requireFeature("org-1", "EXPORT_PDF"),
+      ).resolves.toBeUndefined();
       expect(mockHasFeature).toHaveBeenCalledWith("org-1", "EXPORT_PDF");
     });
 
@@ -88,7 +90,9 @@ describe("Entitlements Middleware", () => {
     it("should resolve when consumption is within limit", async () => {
       mockCanConsume.mockResolvedValue(true);
 
-      await expect(requireLimit("org-1", "MAX_SYNCS", 1)).resolves.toBeUndefined();
+      await expect(
+        requireLimit("org-1", "MAX_SYNCS", 1),
+      ).resolves.toBeUndefined();
       expect(mockCanConsume).toHaveBeenCalledWith("org-1", "MAX_SYNCS", 1);
     });
 
@@ -134,7 +138,13 @@ describe("Entitlements Middleware", () => {
     });
 
     it("should use default amount of 1", async () => {
-      mockConsume.mockResolvedValue({ success: true, feature: "FEATURE", used: 1, limit: null, remaining: null });
+      mockConsume.mockResolvedValue({
+        success: true,
+        feature: "FEATURE",
+        used: 1,
+        limit: null,
+        remaining: null,
+      });
 
       await consumeFeature("org-1", "FEATURE");
       expect(mockConsume).toHaveBeenCalledWith("org-1", "FEATURE", 1);
@@ -166,7 +176,9 @@ describe("Entitlements Middleware", () => {
 
       await expect(
         wrapped(new Request("https://example.com/api/test"), "org-1"),
-      ).rejects.toThrow('Feature "EXPORT_PDF" is not available on your current plan');
+      ).rejects.toThrow(
+        'Feature "EXPORT_PDF" is not available on your current plan',
+      );
 
       expect(handler).not.toHaveBeenCalled();
     });
@@ -178,7 +190,13 @@ describe("Entitlements Middleware", () => {
 
   describe("withConsume", () => {
     it("should call handler when consumption succeeds", async () => {
-      mockConsume.mockResolvedValue({ success: true, feature: "FEATURE", used: 1, limit: null, remaining: null });
+      mockConsume.mockResolvedValue({
+        success: true,
+        feature: "FEATURE",
+        used: 1,
+        limit: null,
+        remaining: null,
+      });
       const handler = vi.fn().mockResolvedValue(new Response("ok"));
 
       const wrapped = withConsume("MAX_SYNCS", 1)(handler);
@@ -260,7 +278,9 @@ describe("Entitlements Middleware", () => {
   describe("toExpress", () => {
     it("should convert a middleware to Express-style (next path)", async () => {
       mockHasFeature.mockResolvedValue(true);
-      const handler = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+      const handler = vi
+        .fn()
+        .mockResolvedValue(new Response(null, { status: 200 }));
 
       const middleware = withFeature("EXPORT_PDF")(handler);
       const expressMw = toExpress(middleware);
@@ -293,7 +313,9 @@ describe("Entitlements Middleware", () => {
     });
 
     it("should handle errors by returning 403", async () => {
-      const handler = vi.fn().mockRejectedValue(new Error("Feature not available"));
+      const handler = vi
+        .fn()
+        .mockRejectedValue(new Error("Feature not available"));
       const middleware = () => handler(new Request(""), "org-1");
       const expressMw = toExpress(middleware);
 

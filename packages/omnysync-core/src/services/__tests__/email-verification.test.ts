@@ -2,14 +2,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockPrisma = vi.hoisted(() => ({
-  emailVerification: { create: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
+  emailVerification: {
+    create: vi.fn(),
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    update: vi.fn(),
+  },
   user: { findUnique: vi.fn(), update: vi.fn() },
   auditLog: { create: vi.fn() },
   userOrganization: { findFirst: vi.fn() },
 }));
 
 vi.mock("../../prisma", () => ({ prisma: mockPrisma }));
-vi.mock("../../email", () => ({ sendEmail: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("../../email", () => ({
+  sendEmail: vi.fn().mockResolvedValue(undefined),
+}));
 
 import { prisma } from "../../prisma";
 import { sendEmail } from "../../email";
@@ -33,7 +40,9 @@ describe("Email Verification Service", () => {
 
   describe("createEmailVerification", () => {
     it("should create a verification token and return it", async () => {
-      vi.mocked(prisma.emailVerification.create).mockResolvedValue({ token } as any);
+      vi.mocked(prisma.emailVerification.create).mockResolvedValue({
+        token,
+      } as any);
 
       const result = await createEmailVerification(userId, email);
 
@@ -41,7 +50,11 @@ describe("Email Verification Service", () => {
       expect(result.length).toBeGreaterThan(0);
       expect(prisma.emailVerification.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ userId, email, token: expect.any(String) }),
+          data: expect.objectContaining({
+            userId,
+            email,
+            token: expect.any(String),
+          }),
         }),
       );
     });
@@ -49,18 +62,25 @@ describe("Email Verification Service", () => {
 
   describe("sendVerificationEmail", () => {
     it("should create token and send email", async () => {
-      vi.mocked(prisma.emailVerification.create).mockResolvedValue({ token } as any);
+      vi.mocked(prisma.emailVerification.create).mockResolvedValue({
+        token,
+      } as any);
 
       const result = await sendVerificationEmail(userId, email, "Test User");
 
       expect(result.success).toBe(true);
       expect(sendEmail).toHaveBeenCalledWith(
-        expect.objectContaining({ to: email, subject: expect.stringContaining("Vérifiez") }),
+        expect.objectContaining({
+          to: email,
+          subject: expect.stringContaining("Vérifiez"),
+        }),
       );
     });
 
     it("should handle email send failure", async () => {
-      vi.mocked(prisma.emailVerification.create).mockResolvedValue({ token } as any);
+      vi.mocked(prisma.emailVerification.create).mockResolvedValue({
+        token,
+      } as any);
       vi.mocked(sendEmail).mockRejectedValue(new Error("SMTP error"));
 
       const result = await sendVerificationEmail(userId, email);
@@ -142,7 +162,9 @@ describe("Email Verification Service", () => {
         name: "Test",
       } as any);
       vi.mocked(prisma.emailVerification.findFirst).mockResolvedValue(null);
-      vi.mocked(prisma.emailVerification.create).mockResolvedValue({ token } as any);
+      vi.mocked(prisma.emailVerification.create).mockResolvedValue({
+        token,
+      } as any);
 
       const result = await resendVerificationEmail(userId);
 

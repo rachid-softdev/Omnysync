@@ -50,7 +50,12 @@ vi.mock('@/lib/prisma', () => ({
     },
     syncLog: {
       findMany: vi.fn().mockResolvedValue([
-        { id: 'log-1', status: 'SUCCESS', message: 'Document synced', createdAt: new Date('2026-06-01') },
+        {
+          id: 'log-1',
+          status: 'SUCCESS',
+          message: 'Document synced',
+          createdAt: new Date('2026-06-01'),
+        },
         { id: 'log-2', status: 'ERROR', message: 'Sync failed', createdAt: new Date('2026-06-01') },
       ]),
     },

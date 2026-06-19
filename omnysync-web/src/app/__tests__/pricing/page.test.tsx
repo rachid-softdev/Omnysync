@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import PricingPage from '../../pricing/page'
@@ -24,34 +23,32 @@ vi.mock('@/lib/i18n', () => ({
       cta_start_free: 'Get Started Free',
       cta_start_trial: 'Start Free Trial',
       cta_contact_sales: 'Contact Sales',
-      'plan_free_feature_1': 'Up to 5 documents',
-      'plan_free_feature_2': '1 connector',
-      'plan_free_feature_3': 'Basic support',
-      'plan_free_feature_4': 'Manual sync',
-      'plan_free_feature_5': 'Community access',
-      'plan_pro_feature_1': 'Unlimited documents',
-      'plan_pro_feature_2': 'All connectors',
-      'plan_pro_feature_3': 'Priority support',
-      'plan_pro_feature_4': 'Auto sync',
-      'plan_pro_feature_5': 'AI enrichment',
-      'plan_pro_feature_6': 'Analytics',
-      'plan_pro_feature_7': 'Team collaboration',
-      'plan_business_feature_1': 'Everything in Pro',
-      'plan_business_feature_2': 'Custom integrations',
-      'plan_business_feature_3': 'Dedicated support',
-      'plan_business_feature_4': 'SLA guarantee',
-      'plan_business_feature_5': 'Advanced security',
-      'plan_business_feature_6': 'API access',
-      'plan_business_feature_7': 'Custom reporting',
+      plan_free_feature_1: 'Up to 5 documents',
+      plan_free_feature_2: '1 connector',
+      plan_free_feature_3: 'Basic support',
+      plan_free_feature_4: 'Manual sync',
+      plan_free_feature_5: 'Community access',
+      plan_pro_feature_1: 'Unlimited documents',
+      plan_pro_feature_2: 'All connectors',
+      plan_pro_feature_3: 'Priority support',
+      plan_pro_feature_4: 'Auto sync',
+      plan_pro_feature_5: 'AI enrichment',
+      plan_pro_feature_6: 'Analytics',
+      plan_pro_feature_7: 'Team collaboration',
+      plan_business_feature_1: 'Everything in Pro',
+      plan_business_feature_2: 'Custom integrations',
+      plan_business_feature_3: 'Dedicated support',
+      plan_business_feature_4: 'SLA guarantee',
+      plan_business_feature_5: 'Advanced security',
+      plan_business_feature_6: 'API access',
+      plan_business_feature_7: 'Custom reporting',
     }
     return translations[key] || key
   },
 }))
 
 vi.mock('@/components/pro-checkout-button', () => ({
-  ProCheckoutButton: ({ label }: { label: string }) => (
-    <button>{label}</button>
-  ),
+  ProCheckoutButton: ({ label }: { label: string }) => <button>{label}</button>,
 }))
 
 describe('PricingPage', () => {

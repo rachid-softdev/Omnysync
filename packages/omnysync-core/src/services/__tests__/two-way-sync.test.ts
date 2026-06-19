@@ -20,7 +20,9 @@ const mockHttpResponse = vi.hoisted(() => ({
 }));
 
 vi.mock("../../prisma", () => ({ prisma: mockPrisma }));
-vi.mock("../../crypto", () => ({ decrypt: vi.fn((s) => s.replace("enc_", "")) }));
+vi.mock("../../crypto", () => ({
+  decrypt: vi.fn((s) => s.replace("enc_", "")),
+}));
 vi.mock("../../http", () => ({
   // Return valid Google Docs API response so the real getGoogleDocContent works
   fetchWithRetry: vi.fn().mockResolvedValue(mockHttpResponse),
@@ -33,8 +35,12 @@ vi.mock("../../audit", () => ({
     changesDetected: vi.fn(),
   },
 }));
-vi.mock("../authz", () => ({ requireDocumentAccess: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("../sanitize", () => ({ sanitizeErrorMessage: vi.fn((e) => String(e)) }));
+vi.mock("../authz", () => ({
+  requireDocumentAccess: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../sanitize", () => ({
+  sanitizeErrorMessage: vi.fn((e) => String(e)),
+}));
 // Mock connector modules statically imported by two-way-sync.ts
 vi.mock("../google-docs", () => ({
   getGoogleDocContent: vi.fn().mockResolvedValue({
@@ -57,7 +63,11 @@ vi.mock("../wordpress", () => ({
   createWordPressClient: vi.fn().mockReturnValue({
     createPost: vi.fn().mockResolvedValue({ id: 123 }),
     updatePost: vi.fn().mockResolvedValue({ id: 123 }),
-    getPost: vi.fn().mockResolvedValue({ id: 123, content: "Remote content", title: "Remote Post" }),
+    getPost: vi.fn().mockResolvedValue({
+      id: 123,
+      content: "Remote content",
+      title: "Remote Post",
+    }),
     getCategories: vi.fn(),
   }),
 }));
@@ -144,8 +154,18 @@ describe("Two-Way Sync Service", () => {
         organizationId: orgId,
         sourceConnectorId: "sc-1",
         destConnectorId: "dc-1",
-        sourceConnector: { id: "sc-1", type: "GOOGLE_DOCS", credentials: "enc_{}", config: {} },
-        destConnector: { id: "dc-1", type: "WORDPRESS", credentials: "enc_creds", config: { siteUrl: "https://example.com" } },
+        sourceConnector: {
+          id: "sc-1",
+          type: "GOOGLE_DOCS",
+          credentials: "enc_{}",
+          config: {},
+        },
+        destConnector: {
+          id: "dc-1",
+          type: "WORDPRESS",
+          credentials: "enc_creds",
+          config: { siteUrl: "https://example.com" },
+        },
         sourceId: "source-1",
       } as any);
       vi.mocked(prisma.document.update).mockResolvedValue({} as any);
@@ -177,7 +197,12 @@ describe("Two-Way Sync Service", () => {
         id: documentId,
         organizationId: orgId,
         sourceConnector: { id: "sc-1", type: "NOTION" },
-        destConnector: { id: "dc-1", type: "WORDPRESS", credentials: "enc_creds", config: { siteUrl: "https://example.com" } },
+        destConnector: {
+          id: "dc-1",
+          type: "WORDPRESS",
+          credentials: "enc_creds",
+          config: { siteUrl: "https://example.com" },
+        },
         sourceId: "source-1",
         slug: "123",
       } as any);

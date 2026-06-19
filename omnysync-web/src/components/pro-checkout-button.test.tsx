@@ -72,9 +72,7 @@ describe('ProCheckoutButton', () => {
   })
 
   it('disables button while loading', async () => {
-    ;(global.fetch as any).mockImplementationOnce(
-      () => new Promise(() => {})
-    )
+    ;(global.fetch as any).mockImplementationOnce(() => new Promise(() => {}))
 
     render(<ProCheckoutButton label="Upgrade" />)
     const button = screen.getByText('Upgrade')

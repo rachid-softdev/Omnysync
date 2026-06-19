@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createHash } from 'crypto'
@@ -273,7 +273,9 @@ describe('two-factor service', () => {
     it('should validate a backup code and remove it', async () => {
       const backupCode = 'ABCD1234'
       // The service hashes with salt = userId.substring(0, 16). For 'user-1' that's 'user-1'.
-      const codeHash = createHash('sha256').update(backupCode.toUpperCase() + 'user-1').digest('hex')
+      const codeHash = createHash('sha256')
+        .update(backupCode.toUpperCase() + 'user-1')
+        .digest('hex')
       const remainingCodes = ['OTHERHASH1', 'OTHERHASH2']
 
       vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
@@ -313,8 +315,12 @@ describe('two-factor service', () => {
       const backupCode1 = 'FIRST123'
       const backupCode2 = 'SECOND456'
       // The service hashes with salt = userId.substring(0, 16). For 'user-1' that's 'user-1'.
-      const hash1 = createHash('sha256').update(backupCode1.toUpperCase() + 'user-1').digest('hex')
-      const hash2 = createHash('sha256').update(backupCode2.toUpperCase() + 'user-1').digest('hex')
+      const hash1 = createHash('sha256')
+        .update(backupCode1.toUpperCase() + 'user-1')
+        .digest('hex')
+      const hash2 = createHash('sha256')
+        .update(backupCode2.toUpperCase() + 'user-1')
+        .digest('hex')
 
       // First call: both codes available
       vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({

@@ -75,7 +75,12 @@ describe("Airtable Connector", () => {
     it("should return records with filters", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({
         records: [
-          { id: "rec-1", fields: { Title: "Record 1", Body: "Content" }, createdTime: "2026-01-01", lastEditedTime: "2026-06-01" },
+          {
+            id: "rec-1",
+            fields: { Title: "Record 1", Body: "Content" },
+            createdTime: "2026-01-01",
+            lastEditedTime: "2026-06-01",
+          },
         ],
       } as any);
 
@@ -117,7 +122,9 @@ describe("Airtable Connector", () => {
   describe("saveAirtableConnector", () => {
     it("should verify key and create connector", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue([] as any);
-      vi.mocked(prisma.connector.create).mockResolvedValue({ id: "conn-1" } as any);
+      vi.mocked(prisma.connector.create).mockResolvedValue({
+        id: "conn-1",
+      } as any);
 
       const result = await saveAirtableConnector(userId, orgId, apiKey, {
         baseId,
@@ -170,9 +177,15 @@ describe("Airtable Connector", () => {
     it("should update a record", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({ id: "rec-1" } as any);
 
-      const result = await updateAirtableRecord(apiKey, baseId, tableId, "rec-1", {
-        Title: "Updated",
-      });
+      const result = await updateAirtableRecord(
+        apiKey,
+        baseId,
+        tableId,
+        "rec-1",
+        {
+          Title: "Updated",
+        },
+      );
 
       expect(result.id).toBe("rec-1");
     });
@@ -182,7 +195,12 @@ describe("Airtable Connector", () => {
     it("should delete a record", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue(undefined as any);
 
-      const result = await deleteAirtableRecord(apiKey, baseId, tableId, "rec-1");
+      const result = await deleteAirtableRecord(
+        apiKey,
+        baseId,
+        tableId,
+        "rec-1",
+      );
 
       expect(result.id).toBe("rec-1");
     });

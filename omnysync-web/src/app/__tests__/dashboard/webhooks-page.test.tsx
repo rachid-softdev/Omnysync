@@ -127,7 +127,9 @@ describe('WebhooksPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('New webhook')).toBeInTheDocument()
-      expect(screen.getByText('Configure an endpoint to receive notifications from your platforms.')).toBeInTheDocument()
+      expect(
+        screen.getByText('Configure an endpoint to receive notifications from your platforms.')
+      ).toBeInTheDocument()
     })
   })
 

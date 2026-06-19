@@ -32,7 +32,7 @@ beforeEach(() => {
 describe('AnalyticsPage', () => {
   it('shows loading initially', () => {
     ;(global.fetch as any).mockImplementationOnce(() => new Promise(() => {}))
-    
+
     render(<AnalyticsPage />)
     const spinner = document.querySelector('.animate-spin')
     expect(spinner).toBeInTheDocument()
@@ -57,7 +57,17 @@ describe('AnalyticsPage', () => {
   it('renders empty state when no data', async () => {
     ;(global.fetch as any).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ totalSyncs: 0, totalDocuments: 0, successRate: 0, avgDuration: 0, activeConnectors: 0, failedSyncs: 0, recentActivity: [], syncByDay: [], connectorsUsage: [] }),
+      json: async () => ({
+        totalSyncs: 0,
+        totalDocuments: 0,
+        successRate: 0,
+        avgDuration: 0,
+        activeConnectors: 0,
+        failedSyncs: 0,
+        recentActivity: [],
+        syncByDay: [],
+        connectorsUsage: [],
+      }),
     })
 
     render(<AnalyticsPage />)

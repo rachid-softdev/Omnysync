@@ -3,15 +3,26 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockPrisma = vi.hoisted(() => ({
   user: { findUnique: vi.fn(), update: vi.fn() },
-  passwordReset: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn(), deleteMany: vi.fn(), count: vi.fn() },
+  passwordReset: {
+    create: vi.fn(),
+    findUnique: vi.fn(),
+    update: vi.fn(),
+    deleteMany: vi.fn(),
+    count: vi.fn(),
+  },
   session: { deleteMany: vi.fn() },
   auditLog: { create: vi.fn() },
   userOrganization: { findFirst: vi.fn() },
 }));
 
 vi.mock("../../prisma", () => ({ prisma: mockPrisma }));
-vi.mock("../../email", () => ({ sendEmail: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("bcrypt", () => ({ hash: vi.fn().mockResolvedValue("$2b$12$newhash"), compare: vi.fn() }));
+vi.mock("../../email", () => ({
+  sendEmail: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("bcrypt", () => ({
+  hash: vi.fn().mockResolvedValue("$2b$12$newhash"),
+  compare: vi.fn(),
+}));
 
 import { prisma } from "../../prisma";
 import { sendEmail } from "../../email";
@@ -33,7 +44,10 @@ describe("Password Reset Service", () => {
 
   describe("createPasswordResetToken", () => {
     it("should create token and send email when user exists", async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: userId, email } as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: userId,
+        email,
+      } as any);
       vi.mocked(prisma.passwordReset.count).mockResolvedValue(0);
       vi.mocked(prisma.passwordReset.create).mockResolvedValue({} as any);
 
@@ -47,7 +61,10 @@ describe("Password Reset Service", () => {
         }),
       );
       expect(sendEmail).toHaveBeenCalledWith(
-        expect.objectContaining({ to: email, subject: expect.stringContaining("Réinitialisation") }),
+        expect.objectContaining({
+          to: email,
+          subject: expect.stringContaining("Réinitialisation"),
+        }),
       );
     });
 
@@ -64,7 +81,10 @@ describe("Password Reset Service", () => {
 
     it("should rate-limit excessive requests globally", async () => {
       // Create 6 requests (limit is 5)
-      vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: userId, email } as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: userId,
+        email,
+      } as any);
       vi.mocked(prisma.passwordReset.count).mockResolvedValue(0);
 
       for (let i = 0; i < 5; i++) {
@@ -73,7 +93,10 @@ describe("Password Reset Service", () => {
 
       // 6th request should be rate limited
       vi.clearAllMocks(); // Clear so we can detect the rate limit test
-      vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: userId, email } as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: userId,
+        email,
+      } as any);
       vi.mocked(prisma.passwordReset.count).mockResolvedValue(0);
 
       // The global rate limit won't trigger because it's per-map entry for the same email.
@@ -87,7 +110,10 @@ describe("Password Reset Service", () => {
     });
 
     it("should rate-limit per-user requests", async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: userId, email } as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: userId,
+        email,
+      } as any);
       vi.mocked(prisma.passwordReset.count).mockResolvedValue(3);
 
       const result = await createPasswordResetToken(email);
@@ -161,7 +187,9 @@ describe("Password Reset Service", () => {
         user: { id: userId },
       } as any);
       vi.mocked(prisma.user.update).mockResolvedValue({} as any);
-      vi.mocked(prisma.session.deleteMany).mockResolvedValue({ count: 2 } as any);
+      vi.mocked(prisma.session.deleteMany).mockResolvedValue({
+        count: 2,
+      } as any);
       vi.mocked(prisma.passwordReset.update).mockResolvedValue({} as any);
       vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue({
         organizationId: "org-1",
@@ -197,7 +225,9 @@ describe("Password Reset Service", () => {
 
   describe("cleanupExpiredTokens", () => {
     it("should delete expired tokens and return count", async () => {
-      vi.mocked(prisma.passwordReset.deleteMany).mockResolvedValue({ count: 5 } as any);
+      vi.mocked(prisma.passwordReset.deleteMany).mockResolvedValue({
+        count: 5,
+      } as any);
 
       const count = await cleanupExpiredTokens();
 

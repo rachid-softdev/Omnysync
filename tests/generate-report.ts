@@ -122,7 +122,9 @@ function tryParseCoverage(): CoverageSummary | null {
           coveredFunctions += funcs.filter((c) => c > 0).length;
         }
         if (fileCoverage?.b) {
-          for (const branchHits of Object.values(fileCoverage.b) as number[][]) {
+          for (const branchHits of Object.values(
+            fileCoverage.b,
+          ) as number[][]) {
             totalBranches += branchHits.length;
             coveredBranches += branchHits.filter((c) => c > 0).length;
           }
@@ -157,8 +159,14 @@ function tryParseCoverage(): CoverageSummary | null {
       const lhMatches = lcov.match(/^LH:(\d+)$/gm);
       const lfMatches = lcov.match(/^LF:(\d+)$/gm);
       if (lhMatches && lfMatches) {
-        const covered = lhMatches.reduce((sum: number, m: string) => sum + parseInt(m.split(":")[1], 10), 0);
-        const found = lfMatches.reduce((sum: number, m: string) => sum + parseInt(m.split(":")[1], 10), 0);
+        const covered = lhMatches.reduce(
+          (sum: number, m: string) => sum + parseInt(m.split(":")[1], 10),
+          0,
+        );
+        const found = lfMatches.reduce(
+          (sum: number, m: string) => sum + parseInt(m.split(":")[1], 10),
+          0,
+        );
         return {
           totalLines: found,
           coveredLines: covered,
@@ -203,7 +211,10 @@ function getRelativePath(filePath: string): string {
   return normalized.replace(root + "/", "");
 }
 
-function generateReport(data: VitestJsonOutput, includeCoverage: boolean): string {
+function generateReport(
+  data: VitestJsonOutput,
+  includeCoverage: boolean,
+): string {
   const lines: string[] = [];
   const now = new Date().toISOString().split("T")[0];
 
@@ -232,8 +243,10 @@ function generateReport(data: VitestJsonOutput, includeCoverage: boolean): strin
   if (pendingSuites > 0) lines.push(`| Pending | ${pendingSuites} |`);
   lines.push(`| **Total Tests** | ${data.numTotalTests} |`);
   lines.push(`| **Passed** | **${data.numPassedTests}** |`);
-  if (data.numFailedTests > 0) lines.push(`| **Failed** | **${data.numFailedTests}** |`);
-  if (data.numPendingTests > 0) lines.push(`| Pending | ${data.numPendingTests} |`);
+  if (data.numFailedTests > 0)
+    lines.push(`| **Failed** | **${data.numFailedTests}** |`);
+  if (data.numPendingTests > 0)
+    lines.push(`| Pending | ${data.numPendingTests} |`);
   if (data.numTodoTests > 0) lines.push(`| Todo | ${data.numTodoTests} |`);
 
   const passRate =
@@ -254,45 +267,74 @@ function generateReport(data: VitestJsonOutput, includeCoverage: boolean): strin
       lines.push("|--------|---------|-------|------|");
 
       if (coverage.totalLines > 0) {
-        const rate = ((coverage.coveredLines / coverage.totalLines) * 100).toFixed(1);
+        const rate = (
+          (coverage.coveredLines / coverage.totalLines) *
+          100
+        ).toFixed(1);
         lines.push(
-          `| Lines | ${coverage.coveredLines} | ${coverage.totalLines} | ${rate}% |`
+          `| Lines | ${coverage.coveredLines} | ${coverage.totalLines} | ${rate}% |`,
         );
       }
       if (coverage.totalStatements > 0) {
-        const rate = ((coverage.coveredStatements / coverage.totalStatements) * 100).toFixed(1);
+        const rate = (
+          (coverage.coveredStatements / coverage.totalStatements) *
+          100
+        ).toFixed(1);
         lines.push(
-          `| Statements | ${coverage.coveredStatements} | ${coverage.totalStatements} | ${rate}% |`
+          `| Statements | ${coverage.coveredStatements} | ${coverage.totalStatements} | ${rate}% |`,
         );
       }
       if (coverage.totalBranches > 0) {
-        const rate = ((coverage.coveredBranches / coverage.totalBranches) * 100).toFixed(1);
+        const rate = (
+          (coverage.coveredBranches / coverage.totalBranches) *
+          100
+        ).toFixed(1);
         lines.push(
-          `| Branches | ${coverage.coveredBranches} | ${coverage.totalBranches} | ${rate}% |`
+          `| Branches | ${coverage.coveredBranches} | ${coverage.totalBranches} | ${rate}% |`,
         );
       }
       if (coverage.totalFunctions > 0) {
-        const rate = ((coverage.coveredFunctions / coverage.totalFunctions) * 100).toFixed(1);
+        const rate = (
+          (coverage.coveredFunctions / coverage.totalFunctions) *
+          100
+        ).toFixed(1);
         lines.push(
-          `| Functions | ${coverage.coveredFunctions} | ${coverage.totalFunctions} | ${rate}% |`
+          `| Functions | ${coverage.coveredFunctions} | ${coverage.totalFunctions} | ${rate}% |`,
         );
       }
       lines.push("");
     } else {
       lines.push("## Coverage Summary");
       lines.push("");
-      lines.push("> ⚠️ Coverage data not found. Run with `--coverage` flag first.");
+      lines.push(
+        "> ⚠️ Coverage data not found. Run with `--coverage` flag first.",
+      );
       lines.push("");
     }
   }
 
   // ── Per-category breakdown ──────────────────────────────────────────────
-  const categories: Record<string, { files: string[]; passed: number; failed: number; pending: number; total: number }> = {};
+  const categories: Record<
+    string,
+    {
+      files: string[];
+      passed: number;
+      failed: number;
+      pending: number;
+      total: number;
+    }
+  > = {};
 
   for (const result of data.testResults) {
     const cat = categorizeTestFile(result.name);
     if (!categories[cat]) {
-      categories[cat] = { files: [], passed: 0, failed: 0, pending: 0, total: 0 };
+      categories[cat] = {
+        files: [],
+        passed: 0,
+        failed: 0,
+        pending: 0,
+        total: 0,
+      };
     }
     categories[cat].files.push(result.name);
     for (const assertion of result.assertionResults) {
@@ -305,14 +347,18 @@ function generateReport(data: VitestJsonOutput, includeCoverage: boolean): strin
 
   lines.push("## Category Breakdown");
   lines.push("");
-  lines.push("| Category | Files | Tests | Passed | Failed | Pending | Pass Rate |");
-  lines.push("|----------|-------|-------|--------|--------|---------|-----------|");
+  lines.push(
+    "| Category | Files | Tests | Passed | Failed | Pending | Pass Rate |",
+  );
+  lines.push(
+    "|----------|-------|-------|--------|--------|---------|-----------|",
+  );
 
   for (const [cat, stats] of Object.entries(categories).sort()) {
     const rate =
       stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(1) : "N/A";
     lines.push(
-      `| ${cat} | ${stats.files.length} | ${stats.total} | ${stats.passed} | ${stats.failed} | ${stats.pending} | ${rate}% |`
+      `| ${cat} | ${stats.files.length} | ${stats.total} | ${stats.passed} | ${stats.failed} | ${stats.pending} | ${rate}% |`,
     );
   }
   lines.push("");
@@ -320,11 +366,15 @@ function generateReport(data: VitestJsonOutput, includeCoverage: boolean): strin
   // ── Per-file results ─────────────────────────────────────────────────────
   lines.push("## Test File Results");
   lines.push("");
-  lines.push("| # | File | Status | Tests | Passed | Failed | Pending | Duration |");
-  lines.push("|---|------|--------|-------|--------|--------|---------|----------|");
+  lines.push(
+    "| # | File | Status | Tests | Passed | Failed | Pending | Duration |",
+  );
+  lines.push(
+    "|---|------|--------|-------|--------|--------|---------|----------|",
+  );
 
   const sortedResults = [...data.testResults].sort((a, b) =>
-    getRelativePath(a.name).localeCompare(getRelativePath(b.name))
+    getRelativePath(a.name).localeCompare(getRelativePath(b.name)),
   );
 
   let fileIndex = 0;
@@ -332,9 +382,15 @@ function generateReport(data: VitestJsonOutput, includeCoverage: boolean): strin
     fileIndex++;
     const relativePath = getRelativePath(result.name);
     const totalAssertions = result.assertionResults.length;
-    const passed = result.assertionResults.filter((a) => a.status === "passed").length;
-    const failed = result.assertionResults.filter((a) => a.status === "failed").length;
-    const pending = result.assertionResults.filter((a) => a.status === "pending").length;
+    const passed = result.assertionResults.filter(
+      (a) => a.status === "passed",
+    ).length;
+    const failed = result.assertionResults.filter(
+      (a) => a.status === "failed",
+    ).length;
+    const pending = result.assertionResults.filter(
+      (a) => a.status === "pending",
+    ).length;
     const duration = result.endTime - result.startTime;
 
     let statusIcon = "✅";
@@ -343,14 +399,15 @@ function generateReport(data: VitestJsonOutput, includeCoverage: boolean): strin
     else if (pending > 0) statusIcon = "⚠️";
 
     lines.push(
-      `| ${fileIndex} | \`${relativePath}\` | ${statusIcon} | ${totalAssertions} | ${passed} | ${failed} | ${pending} | ${formatDuration(duration)} |`
+      `| ${fileIndex} | \`${relativePath}\` | ${statusIcon} | ${totalAssertions} | ${passed} | ${failed} | ${pending} | ${formatDuration(duration)} |`,
     );
   }
   lines.push("");
 
   // ── Failed test details ───────────────────────────────────────────────────
-  const failedTests = data.testResults
-    .flatMap((r) => r.assertionResults.filter((a) => a.status === "failed"));
+  const failedTests = data.testResults.flatMap((r) =>
+    r.assertionResults.filter((a) => a.status === "failed"),
+  );
 
   if (failedTests.length > 0) {
     lines.push("## Failed Test Details");
@@ -386,7 +443,9 @@ function generateReport(data: VitestJsonOutput, includeCoverage: boolean): strin
 
   // ── Slowest tests ─────────────────────────────────────────────────────────
   const allAssertions = data.testResults.flatMap((r) => r.assertionResults);
-  const slowest = [...allAssertions].sort((a, b) => b.duration - a.duration).slice(0, 10);
+  const slowest = [...allAssertions]
+    .sort((a, b) => b.duration - a.duration)
+    .slice(0, 10);
 
   if (slowest.length > 0) {
     lines.push("## Slowest Tests (Top 10)");
@@ -394,7 +453,9 @@ function generateReport(data: VitestJsonOutput, includeCoverage: boolean): strin
     lines.push("| # | Test | Duration |");
     lines.push("|---|------|----------|");
     slowest.forEach((test, i) => {
-      lines.push(`| ${i + 1} | \`${test.fullName}\` | ${formatDuration(test.duration)} |`);
+      lines.push(
+        `| ${i + 1} | \`${test.fullName}\` | ${formatDuration(test.duration)} |`,
+      );
     });
     lines.push("");
   }
@@ -405,7 +466,9 @@ function generateReport(data: VitestJsonOutput, includeCoverage: boolean): strin
   lines.push(`- **Node.js:** ${process.version}`);
   lines.push(`- **Platform:** ${process.platform} ${process.arch}`);
   lines.push(`- **Date:** ${now}`);
-  lines.push(`- **Total Duration:** ${formatDuration(Date.now() - data.startTime)}`);
+  lines.push(
+    `- **Total Duration:** ${formatDuration(Date.now() - data.startTime)}`,
+  );
   lines.push("");
 
   return lines.join("\n");
@@ -429,11 +492,16 @@ function main() {
     const data = runVitest(includeCoverage);
     const report = generateReport(data, includeCoverage);
 
-    const reportPath = resolve(reportsDir, `test-report-${new Date().toISOString().split("T")[0]}.md`);
+    const reportPath = resolve(
+      reportsDir,
+      `test-report-${new Date().toISOString().split("T")[0]}.md`,
+    );
     writeFileSync(reportPath, report, "utf-8");
 
     console.log(`\n✅ Report generated: ${reportPath}`);
-    console.log(`   Tests: ${data.numPassedTests}/${data.numTotalTests} passed`);
+    console.log(
+      `   Tests: ${data.numPassedTests}/${data.numTotalTests} passed`,
+    );
     console.log(`   Skipped: ${data.numPendingTests}`);
     if (data.numFailedTests > 0) {
       console.log(`   ❌ Failed: ${data.numFailedTests}`);

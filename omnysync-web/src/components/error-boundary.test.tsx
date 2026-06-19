@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ErrorBoundary, useErrorHandler } from './error-boundary'
-import { act } from 'react'
 
 // Suppress console.error from React error boundary logging
 vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -81,8 +79,12 @@ describe('useErrorHandler', () => {
       return (
         <div>
           {error && <span data-testid="error">{error.message}</span>}
-          <button data-testid="set" onClick={() => setError(new Error('Oops'))}>Set</button>
-          <button data-testid="reset" onClick={resetError}>Reset</button>
+          <button data-testid="set" onClick={() => setError(new Error('Oops'))}>
+            Set
+          </button>
+          <button data-testid="reset" onClick={resetError}>
+            Reset
+          </button>
         </div>
       )
     }

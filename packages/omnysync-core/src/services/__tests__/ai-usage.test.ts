@@ -2,7 +2,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockPrisma = vi.hoisted(() => ({
-  aiUsageLog: { create: vi.fn(), aggregate: vi.fn(), findMany: vi.fn(), count: vi.fn() },
+  aiUsageLog: {
+    create: vi.fn(),
+    aggregate: vi.fn(),
+    findMany: vi.fn(),
+    count: vi.fn(),
+  },
 }));
 
 vi.mock("../../prisma", () => ({ prisma: mockPrisma }));

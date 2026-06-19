@@ -42,12 +42,12 @@ describe("authz / requireDocumentAccess", () => {
   it("should throw UnauthorizedError when document is not found", async () => {
     vi.mocked(prisma.document.findUnique).mockResolvedValue(null);
 
-    await expect(
-      requireDocumentAccess(documentId, userId),
-    ).rejects.toThrow(UnauthorizedError);
-    await expect(
-      requireDocumentAccess(documentId, userId),
-    ).rejects.toThrow("Access denied");
+    await expect(requireDocumentAccess(documentId, userId)).rejects.toThrow(
+      UnauthorizedError,
+    );
+    await expect(requireDocumentAccess(documentId, userId)).rejects.toThrow(
+      "Access denied",
+    );
   });
 
   it("should throw UnauthorizedError when user is not in the organization", async () => {
@@ -56,9 +56,9 @@ describe("authz / requireDocumentAccess", () => {
     } as any);
     vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null);
 
-    await expect(
-      requireDocumentAccess(documentId, userId),
-    ).rejects.toThrow(UnauthorizedError);
+    await expect(requireDocumentAccess(documentId, userId)).rejects.toThrow(
+      UnauthorizedError,
+    );
   });
 
   it("should throw on prisma error", async () => {
@@ -66,8 +66,8 @@ describe("authz / requireDocumentAccess", () => {
       new Error("DB error"),
     );
 
-    await expect(
-      requireDocumentAccess(documentId, userId),
-    ).rejects.toThrow("DB error");
+    await expect(requireDocumentAccess(documentId, userId)).rejects.toThrow(
+      "DB error",
+    );
   });
 });

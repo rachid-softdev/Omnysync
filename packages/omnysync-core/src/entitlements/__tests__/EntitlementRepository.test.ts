@@ -111,18 +111,20 @@ function resetAllMocks() {
   });
   // Special reset for $transaction
   mockPrisma.$transaction.mockReset();
-  mockPrisma.$transaction.mockImplementation(async (fn: any, _options?: any) => {
-    return fn({
-      usageTracking: {
-        findUnique: mockPrisma.usageTracking.findUnique,
-        upsert: mockPrisma.usageTracking.upsert,
-        update: mockPrisma.usageTracking.update,
-      },
-      entitlementOverride: {
-        delete: mockPrisma.entitlementOverride.delete,
-      },
-    });
-  });
+  mockPrisma.$transaction.mockImplementation(
+    async (fn: any, _options?: any) => {
+      return fn({
+        usageTracking: {
+          findUnique: mockPrisma.usageTracking.findUnique,
+          upsert: mockPrisma.usageTracking.upsert,
+          update: mockPrisma.usageTracking.update,
+        },
+        entitlementOverride: {
+          delete: mockPrisma.entitlementOverride.delete,
+        },
+      });
+    },
+  );
 }
 
 // ============================================================================
@@ -278,8 +280,22 @@ describe("PrismaEntitlementRepository", () => {
   describe("getAllFeatures", () => {
     it("should return all features ordered by key", async () => {
       mockPrisma.feature.findMany.mockResolvedValue([
-        { id: "1", key: "EXPORT_CSV", name: "Export CSV", description: null, type: "BOOLEAN", defaultConfig: null },
-        { id: "2", key: "EXPORT_PDF", name: "Export PDF", description: null, type: "BOOLEAN", defaultConfig: null },
+        {
+          id: "1",
+          key: "EXPORT_CSV",
+          name: "Export CSV",
+          description: null,
+          type: "BOOLEAN",
+          defaultConfig: null,
+        },
+        {
+          id: "2",
+          key: "EXPORT_PDF",
+          name: "Export PDF",
+          description: null,
+          type: "BOOLEAN",
+          defaultConfig: null,
+        },
       ]);
 
       const result = await repo.getAllFeatures();
@@ -527,7 +543,10 @@ describe("PrismaEntitlementRepository", () => {
         reason: "New override",
       };
 
-      const result = await repo.createOverride({ ...input, createdBy: "admin" });
+      const result = await repo.createOverride({
+        ...input,
+        createdBy: "admin",
+      });
       expect(result.id).toBe("ov-new");
       expect(result.scope).toBe("ORG");
     });
@@ -677,13 +696,23 @@ describe("PrismaEntitlementRepository", () => {
     it("should return all plans with features", async () => {
       mockPrisma.plan.findMany.mockResolvedValue([
         {
-          id: "plan-1", key: "free", name: "Free",
-          priceMonthly: 0, priceYearly: 0, isActive: true, sortOrder: 1,
+          id: "plan-1",
+          key: "free",
+          name: "Free",
+          priceMonthly: 0,
+          priceYearly: 0,
+          isActive: true,
+          sortOrder: 1,
           features: [],
         },
         {
-          id: "plan-2", key: "pro", name: "Pro",
-          priceMonthly: 29, priceYearly: 290, isActive: true, sortOrder: 2,
+          id: "plan-2",
+          key: "pro",
+          name: "Pro",
+          priceMonthly: 29,
+          priceYearly: 290,
+          isActive: true,
+          sortOrder: 2,
           features: [],
         },
       ]);
@@ -729,10 +758,19 @@ describe("PrismaEntitlementRepository", () => {
     it("should return all features with plans", async () => {
       mockPrisma.feature.findMany.mockResolvedValue([
         {
-          id: "feat-1", key: "EXPORT_PDF", name: "Export PDF",
-          description: null, type: "BOOLEAN", defaultConfig: null,
+          id: "feat-1",
+          key: "EXPORT_PDF",
+          name: "Export PDF",
+          description: null,
+          type: "BOOLEAN",
+          defaultConfig: null,
           plans: [
-            { enabled: true, limitValue: null, configJson: null, downgradeStrategy: "GRACEFUL" },
+            {
+              enabled: true,
+              limitValue: null,
+              configJson: null,
+              downgradeStrategy: "GRACEFUL",
+            },
           ],
         },
       ]);
@@ -754,7 +792,9 @@ describe("PrismaEntitlementRepository", () => {
         feature: { key: "MAX_SYNCS", name: "Max Syncs" },
       });
 
-      const result = await repo.updatePlanFeature("pro", "MAX_SYNCS", { limitValue: 200 });
+      const result = await repo.updatePlanFeature("pro", "MAX_SYNCS", {
+        limitValue: 200,
+      });
       expect(result.featureKey).toBe("MAX_SYNCS");
       expect(result.limitValue).toBe(200);
     });
@@ -763,7 +803,7 @@ describe("PrismaEntitlementRepository", () => {
       mockPrisma.plan.findUnique.mockResolvedValue(null);
 
       await expect(
-        repo.updatePlanFeature("nonexistent", "EXPORT_PDF", { enabled: true })
+        repo.updatePlanFeature("nonexistent", "EXPORT_PDF", { enabled: true }),
       ).rejects.toThrow("Plan or Feature not found");
     });
   });
@@ -801,7 +841,9 @@ describe("PrismaEntitlementRepository", () => {
         defaultConfig: null,
       });
 
-      const result = await repo.updateFeature("EXPORT_PDF", { name: "Export PDF Updated" });
+      const result = await repo.updateFeature("EXPORT_PDF", {
+        name: "Export PDF Updated",
+      });
       expect(result.name).toBe("Export PDF Updated");
     });
   });
@@ -948,7 +990,10 @@ describe("PrismaEntitlementRepository", () => {
     it("markWebhookEventProcessed should upsert event", async () => {
       mockPrisma.webhookEvent.upsert.mockResolvedValue({} as any);
 
-      await repo.markWebhookEventProcessed("evt-1", "checkout.session.completed");
+      await repo.markWebhookEventProcessed(
+        "evt-1",
+        "checkout.session.completed",
+      );
       expect(mockPrisma.webhookEvent.upsert).toHaveBeenCalledWith({
         where: { eventId: "evt-1" },
         create: { eventId: "evt-1", eventType: "checkout.session.completed" },

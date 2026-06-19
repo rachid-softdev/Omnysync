@@ -61,17 +61,11 @@ beforeEach(() => {
   global.fetch = vi.fn()
 })
 
-afterEach(() => {
-})
+afterEach(() => {})
 
 const mockConnectors = [
   { id: 'src-1', type: 'GOOGLE_DOCS', name: 'Google Drive', status: 'ACTIVE' },
   { id: 'dst-1', type: 'WORDPRESS', name: 'WordPress Blog', status: 'ACTIVE' },
-]
-
-const mockDocuments = [
-  { id: 'doc-1', title: 'My Article' },
-  { id: 'doc-2', title: 'Second Post' },
 ]
 
 describe('NewSyncPage', () => {

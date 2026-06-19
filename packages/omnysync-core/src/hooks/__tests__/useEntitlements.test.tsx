@@ -42,10 +42,18 @@ const mockRemoveEventListener = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 vi.stubGlobal("localStorage", {
   getItem: vi.fn((key: string) => mockLocalStorage[key] ?? null),
-  setItem: vi.fn((key: string, value: string) => { mockLocalStorage[key] = value; }),
-  removeItem: vi.fn((key: string) => { delete mockLocalStorage[key]; }),
-  clear: vi.fn(() => { Object.keys(mockLocalStorage).forEach(k => delete mockLocalStorage[k]); }),
-  get length() { return Object.keys(mockLocalStorage).length; },
+  setItem: vi.fn((key: string, value: string) => {
+    mockLocalStorage[key] = value;
+  }),
+  removeItem: vi.fn((key: string) => {
+    delete mockLocalStorage[key];
+  }),
+  clear: vi.fn(() => {
+    Object.keys(mockLocalStorage).forEach((k) => delete mockLocalStorage[k]);
+  }),
+  get length() {
+    return Object.keys(mockLocalStorage).length;
+  },
   key: vi.fn((index: number) => Object.keys(mockLocalStorage)[index] ?? null),
 });
 vi.stubGlobal("window", {
@@ -89,9 +97,9 @@ function setupUseStateMocks(...returns: any[][]) {
 
 function setupDefaultMocks(data: EntitlementsResponse | null = null) {
   setupUseStateMocks(
-    [data, vi.fn()],     // data state
-    [false, vi.fn()],     // isLoading state
-    [null, vi.fn()],      // error state
+    [data, vi.fn()], // data state
+    [false, vi.fn()], // isLoading state
+    [null, vi.fn()], // error state
   );
   mockReact.useEffect.mockReset().mockImplementation((cb: any) => {});
   mockReact.useCallback.mockReset().mockImplementation((fn: any) => fn);
@@ -101,9 +109,9 @@ function setupDefaultMocks(data: EntitlementsResponse | null = null) {
 function setupForNCalls(data: EntitlementsResponse | null, n: number) {
   mockReact.useState.mockReset();
   for (let i = 0; i < n; i++) {
-    mockReact.useState.mockReturnValueOnce([data, vi.fn()]);    // data
-    mockReact.useState.mockReturnValueOnce([false, vi.fn()]);   // isLoading
-    mockReact.useState.mockReturnValueOnce([null, vi.fn()]);    // error
+    mockReact.useState.mockReturnValueOnce([data, vi.fn()]); // data
+    mockReact.useState.mockReturnValueOnce([false, vi.fn()]); // isLoading
+    mockReact.useState.mockReturnValueOnce([null, vi.fn()]); // error
   }
   // After the specific once-mocks are consumed, fall through to a default
   mockReact.useState.mockReturnValue([null, vi.fn()]);
@@ -147,7 +155,13 @@ describe("useEntitlements", () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ plan: "pro", features: {}, limits: {}, usage: {}, resetAt: {} }),
+        json: async () => ({
+          plan: "pro",
+          features: {},
+          limits: {},
+          usage: {},
+          resetAt: {},
+        }),
       });
 
       const { refetch } = useEntitlements();
@@ -177,7 +191,9 @@ describe("useEntitlements", () => {
       const { refetch } = useEntitlements();
       await refetch();
 
-      expect(mockLocalStorage["user-entitlements"]).toBe(JSON.stringify(responseData));
+      expect(mockLocalStorage["user-entitlements"]).toBe(
+        JSON.stringify(responseData),
+      );
     });
 
     it("should try localStorage fallback on fetch error", async () => {

@@ -1,13 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ThemeToggle } from './theme-toggle'
 
 const mockSetTheme = vi.hoisted(() => vi.fn())
-const mockUseTheme = vi.hoisted(() => vi.fn(() => ({
-  theme: 'light',
-  setTheme: mockSetTheme,
-})))
+const mockUseTheme = vi.hoisted(() =>
+  vi.fn(() => ({
+    theme: 'light',
+    setTheme: mockSetTheme,
+  }))
+)
 
 vi.mock('next-themes', () => ({
   useTheme: mockUseTheme,

@@ -153,9 +153,7 @@ describe('DashboardLayout', () => {
     const mockAuth = vi.mocked((await import('@/lib/auth')).auth)
     mockAuth.mockResolvedValueOnce({ user: null } as any)
 
-    await expect(DashboardLayout({ children: <div>Content</div> })).rejects.toThrow(
-      'NEXT_REDIRECT'
-    )
+    await expect(DashboardLayout({ children: <div>Content</div> })).rejects.toThrow('NEXT_REDIRECT')
     expect(mockRedirect).toHaveBeenCalledWith('/auth/signin')
   })
 })

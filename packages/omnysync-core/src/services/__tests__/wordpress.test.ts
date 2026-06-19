@@ -44,7 +44,9 @@ describe("WordPress Connector", () => {
 
   describe("saveWordPressConnector", () => {
     it("should create a WordPress connector", async () => {
-      vi.mocked(prisma.connector.create).mockResolvedValue({ id: "conn-1" } as any);
+      vi.mocked(prisma.connector.create).mockResolvedValue({
+        id: "conn-1",
+      } as any);
 
       const result = await saveWordPressConnector(
         userId,
@@ -70,7 +72,9 @@ describe("WordPress Connector", () => {
 
   describe("testWordPressConnection", () => {
     it("should return success when connection works", async () => {
-      vi.mocked(fetchWithRetry).mockResolvedValue([{ id: 1, name: "Uncategorized" }] as any);
+      vi.mocked(fetchWithRetry).mockResolvedValue([
+        { id: 1, name: "Uncategorized" },
+      ] as any);
 
       const result = await testWordPressConnection(siteUrl, username, password);
 

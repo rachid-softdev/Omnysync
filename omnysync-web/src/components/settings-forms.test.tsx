@@ -25,8 +25,12 @@ describe('SettingsForms', () => {
 
   it('shows validation error when passwords do not match', () => {
     render(<SettingsForms />)
-    fireEvent.change(screen.getByLabelText('Nouveau mot de passe'), { target: { value: 'newpass123' } })
-    fireEvent.change(screen.getByLabelText('Confirmer le mot de passe'), { target: { value: 'different' } })
+    fireEvent.change(screen.getByLabelText('Nouveau mot de passe'), {
+      target: { value: 'newpass123' },
+    })
+    fireEvent.change(screen.getByLabelText('Confirmer le mot de passe'), {
+      target: { value: 'different' },
+    })
     fireEvent.click(screen.getByText('Mettre à jour le mot de passe'))
     expect(screen.getByText('Les mots de passe ne correspondent pas')).toBeInTheDocument()
   })
@@ -34,14 +38,25 @@ describe('SettingsForms', () => {
   it('shows validation error when password is too short', () => {
     render(<SettingsForms />)
     fireEvent.change(screen.getByLabelText('Nouveau mot de passe'), { target: { value: 'short' } })
-    fireEvent.change(screen.getByLabelText('Confirmer le mot de passe'), { target: { value: 'short' } })
+    fireEvent.change(screen.getByLabelText('Confirmer le mot de passe'), {
+      target: { value: 'short' },
+    })
     fireEvent.click(screen.getByText('Mettre à jour le mot de passe'))
-    expect(screen.getByText('Le mot de passe doit contenir au moins 8 caractères')).toBeInTheDocument()
+    expect(
+      screen.getByText('Le mot de passe doit contenir au moins 8 caractères')
+    ).toBeInTheDocument()
   })
 
   it('renders API keys section', () => {
     const mockKeys = [
-      { id: '1', name: 'Prod Key', prefix: 'omni_abc', createdAt: '2024-01-01', lastUsedAt: null, expiresAt: null },
+      {
+        id: '1',
+        name: 'Prod Key',
+        prefix: 'omni_abc',
+        createdAt: '2024-01-01',
+        lastUsedAt: null,
+        expiresAt: null,
+      },
     ]
     render(<SettingsForms initialApiKeys={mockKeys} />)
     expect(screen.getByText('Clés API')).toBeInTheDocument()
@@ -69,8 +84,12 @@ describe('SettingsForms', () => {
 
     render(<SettingsForms />)
     fireEvent.change(screen.getByLabelText('Mot de passe actuel'), { target: { value: 'oldpass' } })
-    fireEvent.change(screen.getByLabelText('Nouveau mot de passe'), { target: { value: 'newpass123' } })
-    fireEvent.change(screen.getByLabelText('Confirmer le mot de passe'), { target: { value: 'newpass123' } })
+    fireEvent.change(screen.getByLabelText('Nouveau mot de passe'), {
+      target: { value: 'newpass123' },
+    })
+    fireEvent.change(screen.getByLabelText('Confirmer le mot de passe'), {
+      target: { value: 'newpass123' },
+    })
     fireEvent.click(screen.getByText('Mettre à jour le mot de passe'))
 
     await waitFor(() => {

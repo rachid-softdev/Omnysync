@@ -48,7 +48,8 @@ describe("Scheduler Service", () => {
       const result = calculateNextSync("WEEKLY");
       expect(result.getHours()).toBe(9);
       // Monday = 1 in getDay()
-      const dayDiff = (result.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+      const dayDiff =
+        (result.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
       expect(dayDiff).toBeGreaterThanOrEqual(0);
       expect(dayDiff).toBeLessThanOrEqual(8);
     });
@@ -107,7 +108,9 @@ describe("Scheduler Service", () => {
     });
 
     it("should return false on error", async () => {
-      vi.mocked(prisma.document.update).mockRejectedValue(new Error("DB error"));
+      vi.mocked(prisma.document.update).mockRejectedValue(
+        new Error("DB error"),
+      );
 
       const result = await disableScheduledSync(documentId);
 

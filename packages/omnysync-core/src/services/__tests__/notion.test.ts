@@ -88,10 +88,25 @@ describe("Notion Connector", () => {
       vi.mocked(fetchWithRetry)
         .mockResolvedValueOnce({
           results: [
-            { type: "heading_1", heading_1: { rich_text: [{ plain_text: "Title" }] } },
-            { type: "paragraph", paragraph: { rich_text: [{ plain_text: "Some text" }] } },
-            { type: "bulleted_list_item", bulleted_list_item: { rich_text: [{ plain_text: "Item 1" }] } },
-            { type: "code", code: { language: "ts", rich_text: [{ plain_text: "const x = 1;" }] } },
+            {
+              type: "heading_1",
+              heading_1: { rich_text: [{ plain_text: "Title" }] },
+            },
+            {
+              type: "paragraph",
+              paragraph: { rich_text: [{ plain_text: "Some text" }] },
+            },
+            {
+              type: "bulleted_list_item",
+              bulleted_list_item: { rich_text: [{ plain_text: "Item 1" }] },
+            },
+            {
+              type: "code",
+              code: {
+                language: "ts",
+                rich_text: [{ plain_text: "const x = 1;" }],
+              },
+            },
             { type: "quote", quote: { rich_text: [{ plain_text: "Quote" }] } },
           ],
         } as any)
@@ -118,7 +133,9 @@ describe("Notion Connector", () => {
 
   describe("saveNotionConnector", () => {
     it("should create a Notion connector", async () => {
-      vi.mocked(prisma.connector.create).mockResolvedValue({ id: "conn-1" } as any);
+      vi.mocked(prisma.connector.create).mockResolvedValue({
+        id: "conn-1",
+      } as any);
 
       const result = await saveNotionConnector(userId, orgId, accessToken);
 

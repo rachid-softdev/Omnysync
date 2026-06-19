@@ -36,7 +36,13 @@ describe("Medium Connector", () => {
   describe("getMediumUser", () => {
     it("should return user profile", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({
-        data: { id: "user-1", username: "testuser", name: "Test", url: "https://medium.com/@testuser", imageUrl: "" },
+        data: {
+          id: "user-1",
+          username: "testuser",
+          name: "Test",
+          url: "https://medium.com/@testuser",
+          imageUrl: "",
+        },
       } as any);
 
       const user = await getMediumUser(accessToken);
@@ -57,7 +63,15 @@ describe("Medium Connector", () => {
   describe("listMediumPublications", () => {
     it("should return publications list", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({
-        data: [{ id: "pub-1", name: "My Pub", description: "", url: "", imageUrl: "" }],
+        data: [
+          {
+            id: "pub-1",
+            name: "My Pub",
+            description: "",
+            url: "",
+            imageUrl: "",
+          },
+        ],
       } as any);
 
       const pubs = await listMediumPublications(accessToken, "user-1");
@@ -70,7 +84,18 @@ describe("Medium Connector", () => {
   describe("createMediumPost", () => {
     it("should create a post and return it", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({
-        data: { id: "post-1", title: "My Post", authorId: "user-1", tags: [], url: "https://medium.com/p/post-1", canonicalUrl: "", publishStatus: "public", publishedAt: "2026-06-01", content: "html", contentFormat: "html" },
+        data: {
+          id: "post-1",
+          title: "My Post",
+          authorId: "user-1",
+          tags: [],
+          url: "https://medium.com/p/post-1",
+          canonicalUrl: "",
+          publishStatus: "public",
+          publishedAt: "2026-06-01",
+          content: "html",
+          contentFormat: "html",
+        },
       } as any);
 
       const post = await createMediumPost(accessToken, "user-1", {
@@ -86,7 +111,13 @@ describe("Medium Connector", () => {
   describe("testMediumConnection", () => {
     it("should return success when connection works", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({
-        data: { id: "user-1", username: "test", name: "", url: "", imageUrl: "" },
+        data: {
+          id: "user-1",
+          username: "test",
+          name: "",
+          url: "",
+          imageUrl: "",
+        },
       } as any);
 
       const result = await testMediumConnection(accessToken);
@@ -106,9 +137,17 @@ describe("Medium Connector", () => {
   describe("saveMediumConnector", () => {
     it("should fetch user and create connector", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({
-        data: { id: "user-1", username: "testuser", name: "Test", url: "", imageUrl: "" },
+        data: {
+          id: "user-1",
+          username: "testuser",
+          name: "Test",
+          url: "",
+          imageUrl: "",
+        },
       } as any);
-      vi.mocked(prisma.connector.create).mockResolvedValue({ id: "conn-1" } as any);
+      vi.mocked(prisma.connector.create).mockResolvedValue({
+        id: "conn-1",
+      } as any);
 
       const result = await saveMediumConnector(userId, orgId, accessToken);
 
@@ -140,10 +179,23 @@ describe("Medium Connector", () => {
         content: "Hello",
         tags: ["tag1"],
       };
-      vi.mocked(prisma.connector.findUnique).mockResolvedValue(connector as any);
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue(
+        connector as any,
+      );
       vi.mocked(prisma.document.findUnique).mockResolvedValue(document as any);
       vi.mocked(fetchWithRetry).mockResolvedValue({
-        data: { id: "post-1", title: "Test Doc", authorId: "user-1", tags: [], url: "https://medium.com/p/post-1", canonicalUrl: "", publishStatus: "public", publishedAt: "2026-06-01", content: "<p>Hello</p>", contentFormat: "html" },
+        data: {
+          id: "post-1",
+          title: "Test Doc",
+          authorId: "user-1",
+          tags: [],
+          url: "https://medium.com/p/post-1",
+          canonicalUrl: "",
+          publishStatus: "public",
+          publishedAt: "2026-06-01",
+          content: "<p>Hello</p>",
+          contentFormat: "html",
+        },
       } as any);
       vi.mocked(prisma.document.update).mockResolvedValue({} as any);
 

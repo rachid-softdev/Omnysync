@@ -41,7 +41,9 @@ describe("Webflow Connector", () => {
 
   describe("saveWebflowConnector", () => {
     it("should create a Webflow connector", async () => {
-      vi.mocked(prisma.connector.create).mockResolvedValue({ id: "conn-1" } as any);
+      vi.mocked(prisma.connector.create).mockResolvedValue({
+        id: "conn-1",
+      } as any);
 
       const result = await saveWebflowConnector(
         userId,
@@ -74,9 +76,7 @@ describe("Webflow Connector", () => {
     });
 
     it("should return error on failure", async () => {
-      vi.mocked(fetchWithRetry).mockRejectedValue(
-        new Error("Invalid API key"),
-      );
+      vi.mocked(fetchWithRetry).mockRejectedValue(new Error("Invalid API key"));
 
       const result = await testWebflowConnection(accessToken, siteId);
 

@@ -2,31 +2,59 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockPrisma = vi.hoisted(() => ({
-  document: { findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+  document: {
+    findUnique: vi.fn(),
+    findMany: vi.fn(),
+    update: vi.fn(),
+    updateMany: vi.fn(),
+  },
   syncLog: { create: vi.fn() },
   user: { findUnique: vi.fn() },
-  userOrganization: { findFirst: vi.fn().mockResolvedValue({ id: "membership-1" }) },
+  userOrganization: {
+    findFirst: vi.fn().mockResolvedValue({ id: "membership-1" }),
+  },
 }));
 
 vi.mock("../../prisma", () => ({ prisma: mockPrisma }));
-vi.mock("../../crypto", () => ({ decrypt: vi.fn((s) => s.replace("enc_", "")) }));
-vi.mock("../../email", () => ({ sendSyncCompleteEmail: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("../../crypto", () => ({
+  decrypt: vi.fn((s) => s.replace("enc_", "")),
+}));
+vi.mock("../../email", () => ({
+  sendSyncCompleteEmail: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("../../http", () => ({
   fetchWithRetry: vi.fn().mockResolvedValue({
     // Google Docs API response shape expected by getGoogleDocContent
-    body: { content: [{ paragraph: { elements: [{ textRun: { content: "Hello World", textStyle: {} } }], paragraphStyle: { namedStyleType: "NORMAL_TEXT" } } }] },
+    body: {
+      content: [
+        {
+          paragraph: {
+            elements: [{ textRun: { content: "Hello World", textStyle: {} } }],
+            paragraphStyle: { namedStyleType: "NORMAL_TEXT" },
+          },
+        },
+      ],
+    },
   }),
   fetchWithTimeout: vi.fn(),
 }));
-vi.mock("../authz", () => ({ requireDocumentAccess: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("../sanitize", () => ({ sanitizeErrorMessage: vi.fn((e) => String(e)) }));
+vi.mock("../authz", () => ({
+  requireDocumentAccess: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../sanitize", () => ({
+  sanitizeErrorMessage: vi.fn((e) => String(e)),
+}));
 
 // Mock connector modules
 vi.mock("../wordpress", () => ({
   createWordPressClient: vi.fn().mockReturnValue({
     createPost: vi.fn().mockResolvedValue({ id: 123 }),
     updatePost: vi.fn().mockResolvedValue({ id: 123 }),
-    getPost: vi.fn().mockResolvedValue({ id: 123, content: "Remote content", title: "Remote Post" }),
+    getPost: vi.fn().mockResolvedValue({
+      id: 123,
+      content: "Remote content",
+      title: "Remote Post",
+    }),
     getCategories: vi.fn(),
   }),
 }));
@@ -77,17 +105,25 @@ vi.mock("../notion", () => ({
 
 // Mock AI services (used inside enrichContentWithAI/generateAIImages via dynamic import)
 vi.mock("../ai", () => ({
-  generateSEO: vi.fn().mockResolvedValue({ title: "SEO Title", description: "SEO Desc", keywords: ["kw"] }),
+  generateSEO: vi.fn().mockResolvedValue({
+    title: "SEO Title",
+    description: "SEO Desc",
+    keywords: ["kw"],
+  }),
   generateExcerpt: vi.fn().mockResolvedValue("AI Excerpt"),
   findInterlinkingOpportunities: vi.fn().mockResolvedValue({ links: [] }),
   generateAImage: vi.fn().mockResolvedValue("https://image.url/img.png"),
-  detectContentChanges: vi.fn().mockResolvedValue({ hasChanges: true, summary: "Content changed" }),
+  detectContentChanges: vi
+    .fn()
+    .mockResolvedValue({ hasChanges: true, summary: "Content changed" }),
 }));
 
 // Mock html-parser (used via dynamic import)
 vi.mock("../html-parser", () => ({
   parseMarkdownToHtml: vi.fn((md) => `<p>${md}</p>`),
-  parseGoogleDocToHtml: vi.fn().mockReturnValue({ html: "<p>Parsed HTML</p>", title: "Doc Title" }),
+  parseGoogleDocToHtml: vi
+    .fn()
+    .mockReturnValue({ html: "<p>Parsed HTML</p>", title: "Doc Title" }),
 }));
 
 import { prisma } from "../../prisma";
@@ -137,30 +173,55 @@ describe("Sync Service", () => {
     it("should return error when document not found", async () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue(null);
 
-      const result = await performSync(documentId, sourceConnectorId, destConnectorId, userId);
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
 
       expect(result.success).toBe(false);
       expect(result.documentId).toBe(documentId);
     });
 
     it("should return error when document is already syncing", async () => {
-      vi.mocked(prisma.document.findUnique).mockResolvedValue(baseDocument as any);
-      vi.mocked(prisma.document.updateMany).mockResolvedValue({ count: 0 } as any);
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        baseDocument as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 0,
+      } as any);
 
-      const result = await performSync(documentId, sourceConnectorId, destConnectorId, userId);
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("currently being synced");
     });
 
     it("should perform full sync for Google Docs source to WordPress destination", async () => {
-      vi.mocked(prisma.document.findUnique).mockResolvedValue(baseDocument as any);
-      vi.mocked(prisma.document.updateMany).mockResolvedValue({ count: 1 } as any);
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        baseDocument as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
       vi.mocked(prisma.document.update).mockResolvedValue({} as any);
       vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
-      vi.mocked(prisma.user.findUnique).mockResolvedValue({ email: "user@test.com" } as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
 
-      const result = await performSync(documentId, sourceConnectorId, destConnectorId, userId);
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
 
       expect(result.success).toBe(true);
       expect(prisma.document.updateMany).toHaveBeenCalledWith(
@@ -172,15 +233,24 @@ describe("Sync Service", () => {
     });
 
     it("should handle sync failure and update status to FAILED", async () => {
-      vi.mocked(prisma.document.findUnique).mockResolvedValue(baseDocument as any);
-      vi.mocked(prisma.document.updateMany).mockResolvedValue({ count: 1 } as any);
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        baseDocument as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
       // First update call (saving content + AI enrichment) throws, simulating a failure.
       // Second update call (inside catch block, setting syncStatus to FAILED) must succeed.
       vi.mocked(prisma.document.update)
         .mockRejectedValueOnce(new Error("Update failed"))
         .mockResolvedValue({} as any);
 
-      const result = await performSync(documentId, sourceConnectorId, destConnectorId, userId);
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
 
       expect(result.success).toBe(false);
     });
@@ -215,10 +285,14 @@ describe("Sync Service", () => {
         sourceConnector: baseDocument.sourceConnector,
         destConnector: baseDocument.destConnector,
       } as any);
-      vi.mocked(prisma.document.updateMany).mockResolvedValue({ count: 1 } as any);
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
       vi.mocked(prisma.document.update).mockResolvedValue({} as any);
       vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
-      vi.mocked(prisma.user.findUnique).mockResolvedValue({ email: "user@test.com" } as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
 
       const result = await detectAndSyncChanges(documentId, userId);
 

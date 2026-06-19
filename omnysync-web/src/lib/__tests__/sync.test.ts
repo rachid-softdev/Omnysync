@@ -18,7 +18,9 @@ const mockPrisma = vi.hoisted(() => ({
   },
   syncLog: { create: vi.fn().mockResolvedValue({}) },
   user: { findUnique: vi.fn() },
-  userOrganization: { findFirst: vi.fn().mockResolvedValue({ userId: 'user-1', organizationId: 'org-1' }) },
+  userOrganization: {
+    findFirst: vi.fn().mockResolvedValue({ userId: 'user-1', organizationId: 'org-1' }),
+  },
 }))
 
 vi.hoisted(() => {
@@ -64,13 +66,15 @@ vi.mock('@omnysync/core/email', () => ({
 // Mock core package services that sync.ts imports via relative paths
 vi.mock('@omnysync/core/services/google-docs', () => ({
   getGoogleDocContent: vi.fn().mockResolvedValue({
-    title: 'Test Document', content: 'Test content',
+    title: 'Test Document',
+    content: 'Test content',
   }),
 }))
 
 vi.mock('@omnysync/core/services/notion', () => ({
   getNotionPageContent: vi.fn().mockResolvedValue({
-    id: 'notion-page-123', title: 'Test Notion Page',
+    id: 'notion-page-123',
+    title: 'Test Notion Page',
     content: 'Test notion content',
     createdTime: new Date().toISOString(),
     lastEditedTime: new Date().toISOString(),
@@ -112,9 +116,13 @@ vi.mock('@omnysync/core/services/shopify', () => ({
 }))
 
 vi.mock('@omnysync/core/services/ai', () => ({
-  detectContentChanges: vi.fn().mockResolvedValue({ hasChanges: true, summary: 'Changes detected' }),
+  detectContentChanges: vi
+    .fn()
+    .mockResolvedValue({ hasChanges: true, summary: 'Changes detected' }),
   generateSEO: vi.fn().mockResolvedValue({
-    title: 'SEO Title', description: 'SEO Description', keywords: ['keyword1', 'keyword2'],
+    title: 'SEO Title',
+    description: 'SEO Description',
+    keywords: ['keyword1', 'keyword2'],
   }),
   generateExcerpt: vi.fn().mockResolvedValue('Generated excerpt'),
   findInterlinkingOpportunities: vi.fn().mockResolvedValue({ links: [] }),

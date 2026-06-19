@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from "vitest";
-import { parseGoogleDocToHtml, parseMarkdownToHtml, cleanHtml } from "../html-parser";
+import {
+  parseGoogleDocToHtml,
+  parseMarkdownToHtml,
+  cleanHtml,
+} from "../html-parser";
 
 describe("html-parser", () => {
   describe("parseGoogleDocToHtml", () => {
@@ -11,7 +15,9 @@ describe("html-parser", () => {
           content: [
             {
               paragraph: {
-                elements: [{ textRun: { content: "Heading 1", textStyle: {} } }],
+                elements: [
+                  { textRun: { content: "Heading 1", textStyle: {} } },
+                ],
                 paragraphStyle: { namedStyleType: "HEADING_1" },
               },
             },

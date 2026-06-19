@@ -42,7 +42,9 @@ describe("Shopify Connector", () => {
 
   describe("saveShopifyConnector", () => {
     it("should create a Shopify connector", async () => {
-      vi.mocked(prisma.connector.create).mockResolvedValue({ id: "conn-1" } as any);
+      vi.mocked(prisma.connector.create).mockResolvedValue({
+        id: "conn-1",
+      } as any);
 
       const result = await saveShopifyConnector(
         userId,
@@ -68,7 +70,9 @@ describe("Shopify Connector", () => {
 
   describe("testShopifyConnection", () => {
     it("should return success when connection works", async () => {
-      vi.mocked(fetchWithRetry).mockResolvedValue({ blogs: [{ id: "1", title: "Blog" }] } as any);
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        blogs: [{ id: "1", title: "Blog" }],
+      } as any);
 
       const result = await testShopifyConnection(shopDomain, accessToken);
 

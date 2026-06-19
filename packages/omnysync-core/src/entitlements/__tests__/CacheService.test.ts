@@ -12,7 +12,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { CacheService, resetCacheService, getCacheService, setCacheService } from "../CacheService";
+import {
+  CacheService,
+  resetCacheService,
+  getCacheService,
+  setCacheService,
+} from "../CacheService";
 import { CACHE_CONFIG } from "../constants";
 import type { EntitlementMap } from "../types";
 
@@ -20,7 +25,9 @@ import type { EntitlementMap } from "../types";
 // HELPERS
 // ============================================================================
 
-function makeEntitlementMap(overrides?: Partial<EntitlementMap>): EntitlementMap {
+function makeEntitlementMap(
+  overrides?: Partial<EntitlementMap>,
+): EntitlementMap {
   return {
     planKey: "free",
     features: {

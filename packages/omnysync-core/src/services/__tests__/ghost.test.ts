@@ -42,7 +42,9 @@ describe("Ghost Connector", () => {
 
   describe("saveGhostConnector", () => {
     it("should create a Ghost connector", async () => {
-      vi.mocked(prisma.connector.create).mockResolvedValue({ id: "conn-1" } as any);
+      vi.mocked(prisma.connector.create).mockResolvedValue({
+        id: "conn-1",
+      } as any);
 
       const result = await saveGhostConnector(
         userId,
@@ -75,9 +77,7 @@ describe("Ghost Connector", () => {
     });
 
     it("should return error on failure", async () => {
-      vi.mocked(fetchWithRetry).mockRejectedValue(
-        new Error("Invalid API key"),
-      );
+      vi.mocked(fetchWithRetry).mockRejectedValue(new Error("Invalid API key"));
 
       const result = await testGhostConnection(siteUrl, adminApiKey);
 

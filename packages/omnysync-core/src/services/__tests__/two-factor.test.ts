@@ -2,15 +2,26 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockPrisma = vi.hoisted(() => ({
-  twoFactorAuth: { findUnique: vi.fn(), upsert: vi.fn(), update: vi.fn(), delete: vi.fn() },
+  twoFactorAuth: {
+    findUnique: vi.fn(),
+    upsert: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
   user: { findUnique: vi.fn() },
   userOrganization: { findFirst: vi.fn() },
   auditLog: { create: vi.fn() },
 }));
 
 vi.mock("../../prisma", () => ({ prisma: mockPrisma }));
-vi.mock("../../crypto", () => ({ encrypt: vi.fn((s) => `enc_${s}`), decrypt: vi.fn((s) => s.replace("enc_", "")) }));
-vi.mock("bcrypt", () => ({ hash: vi.fn().mockResolvedValue("$2b$12$hash"), compare: vi.fn() }));
+vi.mock("../../crypto", () => ({
+  encrypt: vi.fn((s) => `enc_${s}`),
+  decrypt: vi.fn((s) => s.replace("enc_", "")),
+}));
+vi.mock("bcrypt", () => ({
+  hash: vi.fn().mockResolvedValue("$2b$12$hash"),
+  compare: vi.fn(),
+}));
 
 import { prisma } from "../../prisma";
 import {

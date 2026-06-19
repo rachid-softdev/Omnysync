@@ -36,8 +36,18 @@ describe("Google Docs Connector", () => {
     it("should return list of Google Docs", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({
         files: [
-          { id: "doc-1", name: "Doc 1", createdTime: "2026-01-01", modifiedTime: "2026-06-01" },
-          { id: "doc-2", name: "Doc 2", createdTime: "2026-02-01", modifiedTime: "2026-06-15" },
+          {
+            id: "doc-1",
+            name: "Doc 1",
+            createdTime: "2026-01-01",
+            modifiedTime: "2026-06-01",
+          },
+          {
+            id: "doc-2",
+            name: "Doc 2",
+            createdTime: "2026-02-01",
+            modifiedTime: "2026-06-15",
+          },
         ],
       } as any);
 
@@ -49,7 +59,9 @@ describe("Google Docs Connector", () => {
       expect(fetchWithRetry).toHaveBeenCalledWith(
         expect.stringContaining("www.googleapis.com/drive"),
         expect.objectContaining({
-          headers: expect.objectContaining({ Authorization: `Bearer ${accessToken}` }),
+          headers: expect.objectContaining({
+            Authorization: `Bearer ${accessToken}`,
+          }),
         }),
       );
     });
@@ -133,7 +145,9 @@ describe("Google Docs Connector", () => {
 
   describe("saveGoogleDocsConnector", () => {
     it("should create a Google Docs connector", async () => {
-      vi.mocked(prisma.connector.create).mockResolvedValue({ id: "conn-1" } as any);
+      vi.mocked(prisma.connector.create).mockResolvedValue({
+        id: "conn-1",
+      } as any);
 
       const result = await saveGoogleDocsConnector(
         userId,
@@ -156,9 +170,15 @@ describe("Google Docs Connector", () => {
 
   describe("updateConnectorCredentials", () => {
     it("should update connector credentials", async () => {
-      vi.mocked(prisma.connector.update).mockResolvedValue({ id: "conn-1" } as any);
+      vi.mocked(prisma.connector.update).mockResolvedValue({
+        id: "conn-1",
+      } as any);
 
-      const result = await updateConnectorCredentials("conn-1", accessToken, refreshToken);
+      const result = await updateConnectorCredentials(
+        "conn-1",
+        accessToken,
+        refreshToken,
+      );
 
       expect(result.id).toBe("conn-1");
       expect(prisma.connector.update).toHaveBeenCalledWith({

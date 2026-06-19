@@ -296,7 +296,8 @@ describe('POST /api/auth/reset-password (mocked)', () => {
   })
 
   it('should reset password with a valid token', async () => {
-    const { validateResetToken, resetPassword } = await import('@omnysync/core/services/password-reset')
+    const { validateResetToken, resetPassword } =
+      await import('@omnysync/core/services/password-reset')
     vi.mocked(validateResetToken).mockResolvedValue({
       valid: true,
       userId: 'user-1',
