@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   PLAN_LIMITS,
@@ -323,6 +321,215 @@ describe('Subscription Service', () => {
 
       expect(result.allowed).toBe(false)
       expect(result.upgradeUrl).toBe('/pricing')
+    })
+  })
+
+  describe('checkAndIncrementQuota — edge cases', () => {
+    it('should allow sync for pro plan when syncCount=99 (under limit 100)', async () => {
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
+        mockUserOrgLookup('pro', 'ACTIVE') as any
+      )
+      vi.mocked(prisma.quotaUsage.upsert).mockResolvedValue({} as any)
+      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 1 } as any)
+      vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue({
+        id: 'quota-1',
+        userId: 'user-123',
+        month: '2024-01',
+        syncCount: 100, // 99 + 1 after increment
+      } as any)
+
+      const result = await checkAndIncrementQuota('user-123')
+
+      expect(result.allowed).toBe(true)
+      expect(result.remaining).toBe(0) // 100 - 100 = 0, limite atteinte après incrément
+      expect(prisma.quotaUsage.upsert).toHaveBeenCalled()
+      expect(prisma.quotaUsage.updateMany).toHaveBeenCalled()
+    })
+
+    it('should deny sync for pro plan when syncCount=100 (limit reached)', async () => {
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
+        mockUserOrgLookup('pro', 'ACTIVE') as any
+      )
+      vi.mocked(prisma.quotaUsage.upsert).mockResolvedValue({} as any)
+      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 0 } as any) // lt: 100 matches nothing
+
+      const result = await checkAndIncrementQuota('user-123')
+
+      expect(result.allowed).toBe(false)
+      expect(result.remaining).toBe(0)
+      expect(result.upgradeUrl).toBe('/pricing')
+    })
+
+    it('should allow sync for pro plan when syncCount=0', async () => {
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
+        mockUserOrgLookup('pro', 'ACTIVE') as any
+      )
+      vi.mocked(prisma.quotaUsage.upsert).mockResolvedValue({} as any)
+      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 1 } as any)
+      vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue({
+        id: 'quota-1',
+        userId: 'user-123',
+        month: '2024-01',
+        syncCount: 1, // 0 + 1 after increment
+      } as any)
+
+      const result = await checkAndIncrementQuota('user-123')
+
+      expect(result.allowed).toBe(true)
+      expect(result.remaining).toBe(99) // 100 - 1 = 99
+    })
+
+    it('should handle race condition: updateMany returns count=0 (already at limit)', async () => {
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
+        mockUserOrgLookup('free', null) as any
+      )
+      vi.mocked(prisma.quotaUsage.upsert).mockResolvedValue({} as any)
+      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 0 } as any)
+
+      const result = await checkAndIncrementQuota('user-123')
+
+      expect(result.allowed).toBe(false)
+      expect(result.remaining).toBe(0)
+      // Vérifie que l'upsert n'a pas été fait en double ou que la logique
+      // gère correctement le cas où deux requêtes arrivent simultanément
+      expect(prisma.quotaUsage.upsert).toHaveBeenCalledTimes(1)
+      expect(prisma.quotaUsage.updateMany).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('getQuotaUsage — edge cases', () => {
+    it('should return syncCount=0 and percent=0 for free plan when quotaUsage is null', async () => {
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null) // free
+      vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue(null) // no quota record
+      vi.mocked(prisma.connector.count).mockResolvedValue(0)
+      vi.mocked(prisma.document.count).mockResolvedValue(0)
+
+      const result = await getQuotaUsage('user-123')
+
+      expect(result.syncCount).toBe(0)
+      expect(result.syncLimit).toBe(5)
+      expect(result.percentUsed).toBe(0) // Math.round(0/5*100) = 0
+    })
+
+    it('should return percent=100 for free plan at limit (syncCount=5, limit=5)', async () => {
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null) // free
+      vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue({
+        userId: 'user-123',
+        month: '2024-01',
+        syncCount: 5,
+      } as any)
+      vi.mocked(prisma.connector.count).mockResolvedValue(0)
+      vi.mocked(prisma.document.count).mockResolvedValue(0)
+
+      const result = await getQuotaUsage('user-123')
+
+      expect(result.syncCount).toBe(5)
+      expect(result.percentUsed).toBe(100) // Math.round(5/5*100) = 100
+    })
+
+    it('should return percent=0 for business plan regardless of sync count', async () => {
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
+        mockUserOrgLookup('business', 'ACTIVE') as any
+      )
+      vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue({
+        userId: 'user-123',
+        month: '2024-01',
+        syncCount: 999,
+      } as any)
+      vi.mocked(prisma.connector.count).mockResolvedValue(10)
+      vi.mocked(prisma.document.count).mockResolvedValue(100)
+
+      const result = await getQuotaUsage('user-123')
+
+      expect(result.syncCount).toBe(999)
+      expect(result.percentUsed).toBe(0) // plan !== 'free' → always 0
+      expect(result.syncLimit).toBe(Infinity)
+    })
+
+    it('should return free plan when user has no subscription', async () => {
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue({
+        organization: { subscriptions: [] },
+      } as any)
+      vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue(null)
+      vi.mocked(prisma.connector.count).mockResolvedValue(0)
+      vi.mocked(prisma.document.count).mockResolvedValue(0)
+
+      const result = await getQuotaUsage('user-123')
+
+      expect(result.syncLimit).toBe(5) // limits du plan free
+      expect(result.connectorLimit).toBe(2)
+      expect(result.documentLimit).toBe(50)
+    })
+  })
+
+  describe('decrementQuotaOnFailure — edge cases', () => {
+    it('should call updateMany when quotaUsage exists', async () => {
+      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 1 } as any)
+
+      await decrementQuotaOnFailure('user-123')
+
+      expect(prisma.quotaUsage.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'user-123', month: expect.any(String) },
+        data: { syncCount: { decrement: 1 } },
+      })
+    })
+
+    it('should not throw when no quotaUsage exists (updateMany returns count=0)', async () => {
+      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 0 } as any)
+
+      await expect(decrementQuotaOnFailure('user-123')).resolves.not.toThrow()
+    })
+  })
+
+  describe('checkConnectorLimit / checkDocumentLimit — edge cases', () => {
+    it('should deny connector for free plan when connectorCount=2 (at limit)', async () => {
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null) // free
+      vi.mocked(prisma.connector.count).mockResolvedValue(2)
+
+      const result = await checkConnectorLimit('user-123')
+
+      expect(result.allowed).toBe(false)
+      expect(result.current).toBe(2)
+      expect(result.limit).toBe(2)
+      expect(result.upgradeUrl).toBe('/pricing')
+    })
+
+    it('should allow connector for business plan even with connectorCount=999', async () => {
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
+        mockUserOrgLookup('business', 'ACTIVE') as any
+      )
+      vi.mocked(prisma.connector.count).mockResolvedValue(999)
+
+      const result = await checkConnectorLimit('user-123')
+
+      expect(result.allowed).toBe(true)
+      expect(result.current).toBe(999)
+      expect(result.limit).toBe(Infinity)
+      expect(result.upgradeUrl).toBeUndefined()
+    })
+
+    it('should allow document for business plan even with documentCount=999', async () => {
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
+        mockUserOrgLookup('business', 'ACTIVE') as any
+      )
+      vi.mocked(prisma.document.count).mockResolvedValue(999)
+
+      const result = await checkDocumentLimit('user-123')
+
+      expect(result.allowed).toBe(true)
+      expect(result.current).toBe(999)
+      expect(result.limit).toBe(Infinity)
+      expect(result.upgradeUrl).toBeUndefined()
+    })
+
+    it('should throw for unknown plan (PLAN_LIMITS[unknown] is undefined)', async () => {
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
+        mockUserOrgLookup('unknown_plan' as any, 'ACTIVE') as any
+      )
+      vi.mocked(prisma.connector.count).mockResolvedValue(1)
+
+      // plan 'unknown_plan' n'existe pas dans PLAN_LIMITS → crash à l'accès
+      await expect(checkConnectorLimit('user-123')).rejects.toThrow()
     })
   })
 

@@ -253,6 +253,114 @@ describe('AI Service', () => {
     })
   })
 
+  describe('generateSEO — error handling', () => {
+    it('should throw when OpenAI returns empty choices array', async () => {
+      mockCreate.mockResolvedValue({
+        choices: [],
+        usage: null,
+      })
+
+      const { generateSEO } = await import('../services/ai')
+
+      await expect(generateSEO('test content', 'Test')).rejects.toThrow('AI generation failed')
+    })
+
+    it('should throw after retries when OpenAI returns 429 Too Many Requests', async () => {
+      mockCreate.mockRejectedValue(new Error('429 Too Many Requests'))
+
+      const { generateSEO } = await import('../services/ai')
+
+      await expect(generateSEO('test content', 'Test')).rejects.toThrow('AI generation failed')
+      // withRetry tente 3 fois avant d'abandonner
+      expect(mockCreate).toHaveBeenCalledTimes(3)
+    })
+
+    it('should use fallback when OpenAI returns content=null', async () => {
+      mockCreate.mockResolvedValue({
+        choices: [{ message: { content: null } }],
+        usage: { total_tokens: 100 },
+      })
+
+      const { generateSEO } = await import('../services/ai')
+
+      // content=null → "{}" dans safeParseJSON → échec schema → fallback
+      const result = await generateSEO('test content', 'Test Title')
+
+      expect(result.title).toBe('Test Title') // fallback = titre original
+      expect(result.description).toBe('')
+      expect(result.keywords).toEqual([])
+    })
+  })
+
+  describe('improveContent — edge cases', () => {
+    it('should handle empty content string', async () => {
+      mockCreate.mockResolvedValue({
+        choices: [{ message: { content: 'Improved content' } }],
+        usage: { total_tokens: 50 },
+      })
+
+      const { improveContent } = await import('../services/ai')
+
+      const result = await improveContent('', 'Make it better')
+
+      expect(result).toBeDefined()
+      expect(typeof result).toBe('string')
+      expect(mockCreate).toHaveBeenCalled()
+    })
+
+    it('should work with minimal instructions', async () => {
+      mockCreate.mockResolvedValue({
+        choices: [{ message: { content: 'Better content' } }],
+        usage: { total_tokens: 50 },
+      })
+
+      const { improveContent } = await import('../services/ai')
+
+      const result = await improveContent('Some content', 'Improve it')
+
+      expect(result).toBeDefined()
+      expect(typeof result).toBe('string')
+    })
+  })
+
+  describe('detectContentChanges — edge cases', () => {
+    it('should call API even when oldContent equals newContent', async () => {
+      mockCreate.mockResolvedValue({
+        choices: [
+          { message: { content: '{"hasChanges": false, "summary": "No changes detected"}' } },
+        ],
+        usage: { total_tokens: 50 },
+      })
+
+      const { detectContentChanges } = await import('../services/ai')
+
+      const identicalText = 'Exactly the same content'
+      const result = await detectContentChanges(identicalText, identicalText)
+
+      expect(result.hasChanges).toBe(false)
+      expect(result.summary).toBe('No changes detected')
+      // L'API est appelée même si les contenus sont identiques
+      expect(mockCreate).toHaveBeenCalled()
+    })
+
+    it('should handle very long content without crashing', async () => {
+      mockCreate.mockResolvedValue({
+        choices: [{ message: { content: '{"hasChanges": true, "summary": "Major differences"}' } }],
+        usage: { total_tokens: 100 },
+      })
+
+      const { detectContentChanges } = await import('../services/ai')
+
+      const longContent = 'A'.repeat(10000)
+      const shortContent = 'Short version'
+
+      const result = await detectContentChanges(longContent, shortContent)
+
+      expect(result).toBeDefined()
+      expect(result.hasChanges).toBe(true)
+    })
+  })
+
   describe('Schema validation', () => {
     it('should return correct shape for SEO data', async () => {
       const { generateSEO } = await import('../services/ai')
