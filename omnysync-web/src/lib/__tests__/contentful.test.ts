@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
 
 // Mock prisma before imports
@@ -7,8 +8,8 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-// Mock fetchWithRetry
-vi.mock('@/lib/http-client', () => ({
+// Mock fetchWithRetry — contentful service is in @omnysync/core, imports from @omnysync/core/http
+vi.mock('@omnysync/core/http', () => ({
   fetchWithRetry: vi.fn(),
 }))
 
@@ -21,7 +22,7 @@ import {
 describe('contentful service', () => {
   describe('testContentfulConnection', () => {
     it('returns success when API call succeeds', async () => {
-      const { fetchWithRetry } = await import('@/lib/http-client')
+      const { fetchWithRetry } = await import('@omnysync/core/http')
       vi.mocked(fetchWithRetry).mockResolvedValueOnce({
         items: [{ id: 'space1', name: 'My Space' }],
       })
@@ -31,7 +32,7 @@ describe('contentful service', () => {
     })
 
     it('returns failure when API call fails', async () => {
-      const { fetchWithRetry } = await import('@/lib/http-client')
+      const { fetchWithRetry } = await import('@omnysync/core/http')
       vi.mocked(fetchWithRetry).mockRejectedValueOnce(new Error('Unauthorized'))
 
       const result = await testContentfulConnection('invalid-token')
@@ -42,7 +43,7 @@ describe('contentful service', () => {
 
   describe('listContentfulSpaces', () => {
     it('returns spaces on success', async () => {
-      const { fetchWithRetry } = await import('@/lib/http-client')
+      const { fetchWithRetry } = await import('@omnysync/core/http')
       vi.mocked(fetchWithRetry).mockResolvedValueOnce({
         items: [
           { id: 'space1', name: 'Space 1' },

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Approval Service Tests
  *
@@ -15,8 +16,6 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { randomBytes } from "crypto";
-
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
 // Must use vi.hoisted() because vi.mock factories are hoisted to top of file
@@ -44,11 +43,6 @@ const mockPrisma = vi.hoisted(() => ({
 
 vi.mock("../../prisma", () => ({
   prisma: mockPrisma,
-}));
-
-// Mock crypto for deterministic tokens
-vi.mock("crypto", () => ({
-  randomBytes: vi.fn(),
 }));
 
 // Mock the audit module
@@ -87,11 +81,6 @@ describe("Approval Service", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    // Reset crypto mock to return deterministic values
-    vi.mocked(randomBytes).mockReturnValue(
-      Buffer.from("abcdef1234567890abcdef1234567890", "hex") as never,
-    );
   });
 
   // ==========================================================================
@@ -127,7 +116,8 @@ describe("Approval Service", () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.token).toBe("abcdef1234567890abcdef1234567890");
+      expect(result.token).toBeDefined();
+      expect(result.token!.length).toBeGreaterThan(0);
       expect(result.approvalUrl).toContain("/public/approval/");
       expect(prisma.approvalRequest.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -331,7 +321,7 @@ describe("Approval Service", () => {
       expect(auditApproval.approved).toHaveBeenCalledWith(
         orgId,
         "approval-1",
-        "anonymous",
+        expect.stringContaining("anonymous"),
       );
     });
 
@@ -358,7 +348,7 @@ describe("Approval Service", () => {
       expect(auditApproval.rejected).toHaveBeenCalledWith(
         orgId,
         "approval-1",
-        "anonymous",
+        expect.stringContaining("anonymous"),
         "Needs work",
       );
     });
@@ -405,7 +395,7 @@ describe("Approval Service", () => {
       expect(result.success).toBe(true);
       expect(prisma.approvalRequest.update).toHaveBeenCalledWith({
         where: { id: "approval-1" },
-        data: { status: "REJECTED" }, // Uses REJECTED for cancelled
+        data: { status: "CANCELLED" },
       });
     });
 

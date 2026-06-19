@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { logAIUsage, getAIUsageStats } from '../services/ai-usage'
 
@@ -82,7 +83,7 @@ describe('AI Usage Service', () => {
       const startDate = new Date('2024-01-01')
       const endDate = new Date('2024-12-31')
 
-      const result = await getAIUsageStats(startDate, endDate)
+      const result = await getAIUsageStats('user-123', startDate, endDate)
 
       expect(result.period.start).toEqual(startDate)
       expect(result.period.end).toEqual(endDate)

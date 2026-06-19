@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 import {
   createSyncSchema,
@@ -105,7 +106,6 @@ describe('createConnectorSchema', () => {
       type: 'GOOGLE_DOCS' as const,
       name: 'My Google Drive',
       credentials: { accessToken: 'token123' },
-      config: { folderId: 'abc123' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -117,7 +117,8 @@ describe('createConnectorSchema', () => {
     const validInput = {
       type: 'NOTION' as const,
       name: 'My Notion Workspace',
-      credentials: { integrationToken: 'token456' },
+      credentials: { accessToken: 'token456' },
+      config: {},
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -129,7 +130,7 @@ describe('createConnectorSchema', () => {
     const validInput = {
       type: 'WORDPRESS' as const,
       name: 'My WordPress Site',
-      credentials: { apiKey: 'key789' },
+      credentials: { username: 'admin', password: 'secret' },
       config: { siteUrl: 'https://example.com' },
     }
 
@@ -143,6 +144,7 @@ describe('createConnectorSchema', () => {
       type: 'GHOST' as const,
       name: 'My Ghost Blog',
       credentials: { adminApiKey: 'ghost-key' },
+      config: { siteUrl: 'https://ghost.example.com' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -155,6 +157,7 @@ describe('createConnectorSchema', () => {
       type: 'WEBFLOW' as const,
       name: 'My Webflow Site',
       credentials: { accessToken: 'webflow-token' },
+      config: { siteId: 'site-123' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -166,7 +169,8 @@ describe('createConnectorSchema', () => {
     const validInput = {
       type: 'SHOPIFY' as const,
       name: 'My Shopify Store',
-      credentials: { shopifyAccessToken: 'shopify-token' },
+      credentials: { accessToken: 'shopify-token' },
+      config: { shopDomain: 'my-store.myshopify.com' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -189,6 +193,7 @@ describe('createConnectorSchema', () => {
     const invalidInput = {
       type: 'GOOGLE_DOCS' as const,
       name: '',
+      credentials: { accessToken: 'token' },
     }
 
     const result = createConnectorSchema.safeParse(invalidInput)
@@ -200,6 +205,7 @@ describe('createConnectorSchema', () => {
     const invalidInput = {
       type: 'GOOGLE_DOCS' as const,
       name: 'a'.repeat(101),
+      credentials: { accessToken: 'token' },
     }
 
     const result = createConnectorSchema.safeParse(invalidInput)
@@ -211,6 +217,7 @@ describe('createConnectorSchema', () => {
     const validInput = {
       type: 'GOOGLE_DOCS' as const,
       name: 'a'.repeat(100),
+      credentials: { accessToken: 'token' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -218,7 +225,7 @@ describe('createConnectorSchema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('allows optional credentials and config', () => {
+  it('rejects missing required credentials', () => {
     const validInput = {
       type: 'GOOGLE_DOCS' as const,
       name: 'Test',
@@ -226,7 +233,7 @@ describe('createConnectorSchema', () => {
 
     const result = createConnectorSchema.safeParse(validInput)
 
-    expect(result.success).toBe(true)
+    expect(result.success).toBe(false)
   })
 
   it('validates correct input with type AIRTABLE', () => {
@@ -234,6 +241,7 @@ describe('createConnectorSchema', () => {
       type: 'AIRTABLE' as const,
       name: 'My Airtable Base',
       credentials: { apiKey: 'airtable-key' },
+      config: { baseId: 'base-123', tableId: 'table-456' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -246,6 +254,7 @@ describe('createConnectorSchema', () => {
       type: 'CONTENTFUL' as const,
       name: 'My Contentful Space',
       credentials: { accessToken: 'cma-token' },
+      config: { spaceId: 'space-123', contentTypeId: 'blogPost' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -257,7 +266,8 @@ describe('createConnectorSchema', () => {
     const validInput = {
       type: 'MEDIUM' as const,
       name: 'My Medium Publication',
-      credentials: { integrationToken: 'medium-token' },
+      credentials: { accessToken: 'medium-token' },
+      config: {},
     }
 
     const result = createConnectorSchema.safeParse(validInput)

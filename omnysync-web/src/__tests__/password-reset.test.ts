@@ -1,34 +1,49 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── Mocks (hoisted before module imports) ──────────────────────────────────
 
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
-    user: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
-    },
-    passwordReset: {
-      create: vi.fn(),
-      findUnique: vi.fn(),
-      update: vi.fn(),
-      count: vi.fn(),
-      deleteMany: vi.fn(),
-    },
-    session: {
-      deleteMany: vi.fn(),
-    },
-    auditLog: {
-      create: vi.fn(),
-    },
-    userOrganization: {
-      findFirst: vi.fn(),
-    },
+const mockPrisma = vi.hoisted(() => ({
+  user: {
+    findUnique: vi.fn(),
+    update: vi.fn(),
+  },
+  passwordReset: {
+    create: vi.fn(),
+    findUnique: vi.fn(),
+    update: vi.fn(),
+    count: vi.fn(),
+    deleteMany: vi.fn(),
+  },
+  session: {
+    deleteMany: vi.fn(),
+  },
+  auditLog: {
+    create: vi.fn(),
+  },
+  userOrganization: {
+    findFirst: vi.fn(),
   },
 }))
 
+const mockSendEmail = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+
+vi.mock('@/lib/prisma', () => ({
+  prisma: mockPrisma,
+}))
+
+vi.mock('@omnysync/core/prisma', () => ({
+  prisma: mockPrisma,
+}))
+
+// The core service imports sendEmail from ../email (~ @omnysync/core/email)
+// Both mocks must share the same function so the test can assert on it
+vi.mock('@omnysync/core/email', () => ({
+  sendEmail: mockSendEmail,
+}))
+
 vi.mock('@/lib/email', () => ({
-  sendEmail: vi.fn().mockResolvedValue(undefined),
+  sendEmail: mockSendEmail,
 }))
 
 vi.mock('bcrypt', () => ({
@@ -48,7 +63,7 @@ import { sendEmail } from '@/lib/email'
 
 // ── Suite ───────────────────────────────────────────────────────────────────
 
-describe.skipIf(!process.env.TEST_DATABASE_URL)('password-reset service', () => {
+describe('password-reset service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -125,10 +140,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('password-reset service', () => 
 
       await createPasswordResetToken(email)
 
+      // The service generates its own random token, so we check the URL pattern
       expect(sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({
-          html: expect.stringContaining(
-            'https://app.omnysync.com/auth/reset-password?token=abc123token'
+          html: expect.stringMatching(
+            /https:\/\/app\.omnysync\.com\/auth\/reset-password\?token=[a-f0-9-]+/
           ),
         })
       )

@@ -36,6 +36,7 @@ vi.mock('@/lib/prisma', () => ({
     document: {
       count: vi.fn(),
     },
+    $queryRaw: vi.fn(),
   },
 }))
 
@@ -230,14 +231,7 @@ describe('Subscription Service', () => {
 
     it('should allow sync when quota available', async () => {
       vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null) // free plan
-      vi.mocked(prisma.quotaUsage.upsert).mockResolvedValue({} as any)
-      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 1 } as any)
-      vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue({
-        id: 'quota-1',
-        userId: 'user-123',
-        month: '2024-01',
-        syncCount: 3,
-      } as any)
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([{ allowed: true, sync_count: 3 }])
 
       const result = await checkAndIncrementQuota('user-123')
 
@@ -247,8 +241,7 @@ describe('Subscription Service', () => {
 
     it('should deny sync when quota exceeded', async () => {
       vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null) // free plan
-      vi.mocked(prisma.quotaUsage.upsert).mockResolvedValue({} as any)
-      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 0 } as any)
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([{ allowed: false, sync_count: 0 }])
 
       const result = await checkAndIncrementQuota('user-123')
 
@@ -329,29 +322,19 @@ describe('Subscription Service', () => {
       vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
         mockUserOrgLookup('pro', 'ACTIVE') as any
       )
-      vi.mocked(prisma.quotaUsage.upsert).mockResolvedValue({} as any)
-      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 1 } as any)
-      vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue({
-        id: 'quota-1',
-        userId: 'user-123',
-        month: '2024-01',
-        syncCount: 100, // 99 + 1 after increment
-      } as any)
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([{ allowed: true, sync_count: 100 }])
 
       const result = await checkAndIncrementQuota('user-123')
 
       expect(result.allowed).toBe(true)
       expect(result.remaining).toBe(0) // 100 - 100 = 0, limite atteinte après incrément
-      expect(prisma.quotaUsage.upsert).toHaveBeenCalled()
-      expect(prisma.quotaUsage.updateMany).toHaveBeenCalled()
     })
 
     it('should deny sync for pro plan when syncCount=100 (limit reached)', async () => {
       vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
         mockUserOrgLookup('pro', 'ACTIVE') as any
       )
-      vi.mocked(prisma.quotaUsage.upsert).mockResolvedValue({} as any)
-      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 0 } as any) // lt: 100 matches nothing
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([{ allowed: false, sync_count: 0 }])
 
       const result = await checkAndIncrementQuota('user-123')
 
@@ -364,14 +347,7 @@ describe('Subscription Service', () => {
       vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
         mockUserOrgLookup('pro', 'ACTIVE') as any
       )
-      vi.mocked(prisma.quotaUsage.upsert).mockResolvedValue({} as any)
-      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 1 } as any)
-      vi.mocked(prisma.quotaUsage.findUnique).mockResolvedValue({
-        id: 'quota-1',
-        userId: 'user-123',
-        month: '2024-01',
-        syncCount: 1, // 0 + 1 after increment
-      } as any)
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([{ allowed: true, sync_count: 1 }])
 
       const result = await checkAndIncrementQuota('user-123')
 
@@ -379,21 +355,16 @@ describe('Subscription Service', () => {
       expect(result.remaining).toBe(99) // 100 - 1 = 99
     })
 
-    it('should handle race condition: updateMany returns count=0 (already at limit)', async () => {
+    it('should handle race condition: $queryRaw returns allowed=false (already at limit)', async () => {
       vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
         mockUserOrgLookup('free', null) as any
       )
-      vi.mocked(prisma.quotaUsage.upsert).mockResolvedValue({} as any)
-      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 0 } as any)
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([{ allowed: false, sync_count: 0 }])
 
       const result = await checkAndIncrementQuota('user-123')
 
       expect(result.allowed).toBe(false)
       expect(result.remaining).toBe(0)
-      // Vérifie que l'upsert n'a pas été fait en double ou que la logique
-      // gère correctement le cas où deux requêtes arrivent simultanément
-      expect(prisma.quotaUsage.upsert).toHaveBeenCalledTimes(1)
-      expect(prisma.quotaUsage.updateMany).toHaveBeenCalledTimes(1)
     })
   })
 

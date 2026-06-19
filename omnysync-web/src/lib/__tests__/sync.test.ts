@@ -1,23 +1,45 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { performSync, detectAndSyncChanges } from '../services/sync'
 import { ERR_DOC_NOT_FOUND, ERR_DOC_NOT_PUBLISHED } from '@/lib/errors'
 
-// Mock dependencies BEFORE any imports
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
-    document: {
-      findUnique: vi.fn(),
-      findMany: vi.fn().mockResolvedValue([]),
-      update: vi.fn().mockResolvedValue({}),
-      create: vi.fn().mockResolvedValue({}),
-    },
-    syncLog: {
-      create: vi.fn().mockResolvedValue({}),
-    },
-    user: {
-      findUnique: vi.fn(),
-    },
+// Create a shared mock DB that works for BOTH @/lib/prisma AND the bundled
+// @omnysync/core/services/sync (which uses its own inline prisma via PrismaClient).
+// The bundled code checks globalThis.prismaGlobal to reuse an existing client.
+// Shared mock prisma object. Defined inside vi.hoisted so it's available in
+// both vi.hoisted callbacks and vi.mock factories (both are hoisted to the top).
+const mockPrisma = vi.hoisted(() => ({
+  document: {
+    findUnique: vi.fn(),
+    findMany: vi.fn().mockResolvedValue([]),
+    update: vi.fn().mockResolvedValue({}),
+    updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+    create: vi.fn().mockResolvedValue({}),
   },
+  syncLog: { create: vi.fn().mockResolvedValue({}) },
+  user: { findUnique: vi.fn() },
+  userOrganization: { findFirst: vi.fn().mockResolvedValue({ userId: 'user-1', organizationId: 'org-1' }) },
+}))
+
+vi.hoisted(() => {
+  globalThis.prismaGlobal = mockPrisma as any
+})
+
+// Mock @prisma/client so any inline PrismaClient() returns mockPrisma
+vi.mock('@prisma/client', () => {
+  const MockClient = vi.fn(() => mockPrisma)
+  return { PrismaClient: MockClient }
+})
+
+// Mock @/lib/prisma (used by the test to import prisma for setup)
+vi.mock('@/lib/prisma', () => ({ prisma: mockPrisma }))
+// Override setup-core-mock: core's sync.ts imports from "../prisma"
+// which resolves to @omnysync/core/prisma. Needs our mock, not setup's null proxy.
+vi.mock('@omnysync/core/prisma', () => ({
+  prisma: mockPrisma,
+  getPrisma: vi.fn(() => mockPrisma),
+  encryptData: vi.fn(),
+  decryptResult: vi.fn(),
 }))
 
 vi.mock('@/lib/crypto', () => ({
@@ -29,54 +51,59 @@ vi.mock('@/lib/email', () => ({
   sendEmail: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../services/google-docs', () => ({
+// Sync source imports crypto and email directly from @omnysync/core
+vi.mock('@omnysync/core/crypto', () => ({
+  decrypt: vi.fn((val: string) => val),
+  encrypt: vi.fn((val: string) => val),
+}))
+
+vi.mock('@omnysync/core/email', () => ({
+  sendSyncCompleteEmail: vi.fn().mockResolvedValue(undefined),
+}))
+
+// Mock core package services that sync.ts imports via relative paths
+vi.mock('@omnysync/core/services/google-docs', () => ({
   getGoogleDocContent: vi.fn().mockResolvedValue({
-    title: 'Test Document',
-    content: 'Test content',
+    title: 'Test Document', content: 'Test content',
   }),
 }))
 
-vi.mock('../services/notion', () => ({
+vi.mock('@omnysync/core/services/notion', () => ({
   getNotionPageContent: vi.fn().mockResolvedValue({
-    id: 'notion-page-123',
-    title: 'Test Notion Page',
+    id: 'notion-page-123', title: 'Test Notion Page',
     content: 'Test notion content',
     createdTime: new Date().toISOString(),
     lastEditedTime: new Date().toISOString(),
   }),
 }))
 
-vi.mock('../lib/http-client', () => ({
-  fetchWithRetry: vi.fn().mockResolvedValue({}),
-}))
-
-vi.mock('../services/html-parser', () => ({
+vi.mock('@omnysync/core/services/html-parser', () => ({
   parseMarkdownToHtml: vi.fn((content: string) => `<p>${content}</p>`),
   parseGoogleDocToHtml: vi.fn(() => ({ html: '<p>Test content</p>' })),
 }))
 
-vi.mock('../services/wordpress', () => ({
+vi.mock('@omnysync/core/services/wordpress', () => ({
   createWordPressClient: vi.fn(() => ({
     createPost: vi.fn().mockResolvedValue({ id: 123 }),
     updatePost: vi.fn().mockResolvedValue({ id: 123 }),
   })),
 }))
 
-vi.mock('../services/ghost', () => ({
+vi.mock('@omnysync/core/services/ghost', () => ({
   createGhostClient: vi.fn(() => ({
     createPost: vi.fn().mockResolvedValue({ posts: [{ id: 'abc' }] }),
     updatePost: vi.fn().mockResolvedValue({ id: 'abc' }),
   })),
 }))
 
-vi.mock('../services/webflow', () => ({
+vi.mock('@omnysync/core/services/webflow', () => ({
   createWebflowClient: vi.fn(() => ({
     createItem: vi.fn().mockResolvedValue({ items: [{ id: 'wf123' }] }),
     updateItem: vi.fn().mockResolvedValue({}),
   })),
 }))
 
-vi.mock('../services/shopify', () => ({
+vi.mock('@omnysync/core/services/shopify', () => ({
   createShopifyClient: vi.fn(() => ({
     getBlogs: vi.fn().mockResolvedValue({ blogs: [{ id: 1 }] }),
     createArticle: vi.fn().mockResolvedValue({ article: { id: 'shp123' } }),
@@ -84,22 +111,28 @@ vi.mock('../services/shopify', () => ({
   })),
 }))
 
-vi.mock('../services/ai', () => ({
-  detectContentChanges: vi
-    .fn()
-    .mockResolvedValue({ hasChanges: true, summary: 'Changes detected' }),
+vi.mock('@omnysync/core/services/ai', () => ({
+  detectContentChanges: vi.fn().mockResolvedValue({ hasChanges: true, summary: 'Changes detected' }),
   generateSEO: vi.fn().mockResolvedValue({
-    title: 'SEO Title',
-    description: 'SEO Description',
-    keywords: ['keyword1', 'keyword2'],
+    title: 'SEO Title', description: 'SEO Description', keywords: ['keyword1', 'keyword2'],
   }),
   generateExcerpt: vi.fn().mockResolvedValue('Generated excerpt'),
   findInterlinkingOpportunities: vi.fn().mockResolvedValue({ links: [] }),
   generateAImage: vi.fn().mockResolvedValue('https://example.com/image.png'),
 }))
 
-vi.mock('../services/ai-usage', () => ({
+vi.mock('@omnysync/core/services/ai-usage', () => ({
   logAIUsage: vi.fn(),
+}))
+
+vi.mock('@omnysync/core/services/authz', () => ({
+  requireDocumentAccess: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@omnysync/core/services/sanitize', () => ({
+  sanitizeErrorMessage: vi.fn((err: unknown) =>
+    err instanceof Error ? err.message : 'Unknown error'
+  ),
 }))
 
 const { prisma } = await import('@/lib/prisma')

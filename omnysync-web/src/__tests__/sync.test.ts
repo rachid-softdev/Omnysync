@@ -1,25 +1,32 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── Mocks (hoisted before module imports) ──────────────────────────────────
 
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
-    document: {
-      findUnique: vi.fn(),
-      findMany: vi.fn().mockResolvedValue([]),
-      update: vi.fn(),
-      updateMany: vi.fn(),
-    },
-    syncLog: {
-      create: vi.fn().mockResolvedValue({}),
-    },
-    user: {
-      findUnique: vi.fn(),
-    },
-    userOrganization: {
-      findFirst: vi.fn(),
-    },
+const mockPrisma = vi.hoisted(() => ({
+  document: {
+    findUnique: vi.fn(),
+    findMany: vi.fn().mockResolvedValue([]),
+    update: vi.fn(),
+    updateMany: vi.fn(),
   },
+  syncLog: {
+    create: vi.fn().mockResolvedValue({}),
+  },
+  user: {
+    findUnique: vi.fn(),
+  },
+  userOrganization: {
+    findFirst: vi.fn(),
+  },
+}))
+
+vi.mock('@/lib/prisma', () => ({
+  prisma: mockPrisma,
+}))
+
+vi.mock('@omnysync/core/prisma', () => ({
+  prisma: mockPrisma,
 }))
 
 vi.mock('@/lib/crypto', () => ({
@@ -115,7 +122,7 @@ import { ERR_DOC_NOT_FOUND, ERR_DOC_NOT_PUBLISHED } from '@/lib/errors'
 
 // ── Suite ───────────────────────────────────────────────────────────────────
 
-describe.skipIf(!process.env.TEST_DATABASE_URL)('sync service', () => {
+describe('sync service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })

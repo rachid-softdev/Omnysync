@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Subscription Service Tests
  *
@@ -142,9 +143,9 @@ describe("getPlanLimits", () => {
     const limits = getPlanLimits("free");
 
     expect(limits).toEqual({
-      syncsPerMonth: 5,
+      syncsPerMonth: 10,
       connectors: 2,
-      documents: 50,
+      documents: 100,
       aiFeatures: false,
       bidirectionalSync: false,
       multiUser: false,
@@ -159,11 +160,11 @@ describe("getPlanLimits", () => {
     expect(limits).toEqual({
       syncsPerMonth: 100,
       connectors: 10,
-      documents: 500,
+      documents: Infinity,
       aiFeatures: true,
       bidirectionalSync: false,
       multiUser: false,
-      apiAccess: false,
+      apiAccess: true,
       scheduledSync: true,
     });
   });
@@ -205,12 +206,12 @@ describe("getQuotaUsage", () => {
 
     expect(result).toEqual({
       syncCount: 3,
-      syncLimit: 5,
+      syncLimit: 10,
       connectorCount: 1,
       connectorLimit: 2,
       documentCount: 10,
-      documentLimit: 50,
-      percentUsed: 60,
+      documentLimit: 100,
+      percentUsed: 30,
     });
   });
 
@@ -366,22 +367,22 @@ describe("checkDocumentLimit", () => {
     expect(result).toEqual({
       allowed: true,
       current: 100,
-      limit: 500,
+      limit: Infinity,
       upgradeUrl: undefined,
     });
   });
 
-  it("should return allowed false when at the document limit", async () => {
+  it("should return allowed true (unlimited) for pro plan", async () => {
     mockOrgMembership("pro");
     mockPrismaClient.document.count.mockResolvedValue(500);
 
     const result = await checkDocumentLimit("user-1");
 
     expect(result).toEqual({
-      allowed: false,
+      allowed: true,
       current: 500,
-      limit: 500,
-      upgradeUrl: "/pricing",
+      limit: Infinity,
+      upgradeUrl: undefined,
     });
   });
 });

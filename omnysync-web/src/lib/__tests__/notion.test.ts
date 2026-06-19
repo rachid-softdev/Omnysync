@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { listNotionPages, getNotionPageContent, saveNotionConnector } from '../services/notion'
 
-// Mock dependencies
-vi.mock('@/lib/prisma', () => ({
+// Mock dependencies — notion service is in @omnysync/core, imports internally
+vi.mock('@omnysync/core/prisma', () => ({
   prisma: {
     connector: {
       create: vi.fn(),
@@ -10,20 +11,20 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-vi.mock('@/lib/crypto', () => ({
+vi.mock('@omnysync/core/crypto', () => ({
   encrypt: vi.fn((text) => `encrypted_${text}`),
 }))
 
-vi.mock('@/lib/http-client', () => ({
+vi.mock('@omnysync/core/http', () => ({
   fetchWithRetry: vi.fn(),
 }))
 
-vi.mock('@/lib/errors', () => ({
+vi.mock('@omnysync/core/errors', () => ({
   ERR_FETCH_CONTENT: 'ERR_FETCH_CONTENT',
 }))
 
-import { prisma } from '@/lib/prisma'
-import { fetchWithRetry } from '@/lib/http-client'
+import { prisma } from '@omnysync/core/prisma'
+import { fetchWithRetry } from '@omnysync/core/http'
 
 describe('Notion Service', () => {
   beforeEach(() => {
