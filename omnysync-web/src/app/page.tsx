@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { ArrowRight, Zap, Globe, BarChart3, ArrowUpDown, Shield } from 'lucide-react'
-import { ThemeToggle } from '@/components/theme-toggle'
 import { t } from '@/lib/i18n'
 
 export default function Home() {
@@ -8,44 +7,6 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="pt-32 pb-32 bg-background">
-        {/* Navigation */}
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <Link href="/" className="text-xl font-bold">
-              Omnysync
-            </Link>
-            <div className="hidden md:flex items-center gap-8">
-              <Link
-                href="#features"
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                {t('nav_features')}
-              </Link>
-              <Link
-                href="#how-it-works"
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                {t('nav_how_it_works')}
-              </Link>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/auth/signin"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground"
-              >
-                {t('nav_sign_in')}
-              </Link>
-              <ThemeToggle />
-              <Link
-                href="/auth/signin"
-                className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                {t('hero_cta_primary')}
-              </Link>
-            </div>
-          </div>
-        </nav>
-
         {/* Hero Content */}
         <main className="max-w-4xl mx-auto px-6 text-center mt-16">
           {/* Badge */}
@@ -58,7 +19,7 @@ export default function Home() {
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6">
             {t('hero_headline')}
             <br />
-            <span className="text-muted-foreground">Perfectly in sync.</span>
+            <span className="text-muted-foreground">{t('hero_tagline')}</span>
           </h1>
 
           {/* Subtitle */}
@@ -88,9 +49,7 @@ export default function Home() {
 
         {/* Platform Logos */}
         <div className="mt-16 pt-8 border-t border-border">
-          <p className="text-center text-sm text-muted-foreground mb-6">
-            Connect with your favorite platforms
-          </p>
+          <p className="text-center text-sm text-muted-foreground mb-6">{t('hero_platforms')}</p>
           <div className="flex items-center justify-center gap-8 flex-wrap opacity-50">
             <div className="flex items-center gap-2">
               <Globe className="w-6 h-6" />

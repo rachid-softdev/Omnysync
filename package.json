@@ -17,6 +17,8 @@
     "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck",
     "test": "turbo run test",
     "test:watch": "turbo run test --parallel -- --watch",
+    "test:coverage": "vitest run --coverage",
+    "test:report": "npx tsx tests/generate-report.ts",
     "prepare": "husky",
     "web:dev": "pnpm --filter @omnysync/web dev",
     "web:build": "pnpm --filter @omnysync/web build",

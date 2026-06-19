@@ -17,10 +17,13 @@ function deriveOAuthKey(): Buffer {
   return scryptSync(key, "oauth-encryption-salt", 32);
 }
 
-// Cache the derived key at module level
-const oauthKey = deriveOAuthKey();
+/** @description Lazily-derived cached key — avoids scryptSync on every call */
+let oauthKey: Buffer | undefined;
 
 function getOAuthKey(): Buffer {
+  if (!oauthKey) {
+    oauthKey = deriveOAuthKey();
+  }
   return oauthKey;
 }
 

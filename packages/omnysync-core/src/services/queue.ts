@@ -66,7 +66,7 @@ export function generateIdempotencyKey(
   type: string,
   documentId?: string,
 ): string {
-  const parts = [type, documentId || "", Date.now().toString()];
+  const parts = [type, documentId || ""];
   return crypto
     .createHash("sha256")
     .update(parts.join(":"))

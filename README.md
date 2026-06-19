@@ -1,5 +1,7 @@
 # Omnysync
 
+[![CI](https://github.com/rachid-softdev/Omnysync/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rachid-softdev/Omnysync/actions/workflows/ci.yml)
+
 > Solution de synchronisation et d'automatisation multiplateforme.
 
 Monorepo pnpm contenant les applications Omnysync — une plateforme de synchronisation et d'automatisation.

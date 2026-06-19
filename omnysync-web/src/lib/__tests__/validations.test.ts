@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest'
 import {
   createSyncSchema,
@@ -82,6 +83,21 @@ describe('createSyncSchema', () => {
 
     expect(result.success).toBe(false)
   })
+
+  it('accepts title exceeding 255 characters (no max limit defined in schema)', () => {
+    const validInput = {
+      sourceConnectorId: '123e4567-e89b-12d3-a456-426614174000',
+      destConnectorId: '123e4567-e89b-12d3-a456-426614174001',
+      sourceDocumentId: 'doc-123',
+      title: 'A'.repeat(300),
+    }
+
+    const result = createSyncSchema.safeParse(validInput)
+
+    // Le schéma n'impose pas de limite max sur title, donc 300 caractères est accepté.
+    // La DB peut tronquer silencieusement selon la configuration de la colonne.
+    expect(result.success).toBe(true)
+  })
 })
 
 describe('createConnectorSchema', () => {
@@ -90,7 +106,6 @@ describe('createConnectorSchema', () => {
       type: 'GOOGLE_DOCS' as const,
       name: 'My Google Drive',
       credentials: { accessToken: 'token123' },
-      config: { folderId: 'abc123' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -102,7 +117,8 @@ describe('createConnectorSchema', () => {
     const validInput = {
       type: 'NOTION' as const,
       name: 'My Notion Workspace',
-      credentials: { integrationToken: 'token456' },
+      credentials: { accessToken: 'token456' },
+      config: {},
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -114,7 +130,7 @@ describe('createConnectorSchema', () => {
     const validInput = {
       type: 'WORDPRESS' as const,
       name: 'My WordPress Site',
-      credentials: { apiKey: 'key789' },
+      credentials: { username: 'admin', password: 'secret' },
       config: { siteUrl: 'https://example.com' },
     }
 
@@ -128,6 +144,7 @@ describe('createConnectorSchema', () => {
       type: 'GHOST' as const,
       name: 'My Ghost Blog',
       credentials: { adminApiKey: 'ghost-key' },
+      config: { siteUrl: 'https://ghost.example.com' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -140,6 +157,7 @@ describe('createConnectorSchema', () => {
       type: 'WEBFLOW' as const,
       name: 'My Webflow Site',
       credentials: { accessToken: 'webflow-token' },
+      config: { siteId: 'site-123' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -151,7 +169,8 @@ describe('createConnectorSchema', () => {
     const validInput = {
       type: 'SHOPIFY' as const,
       name: 'My Shopify Store',
-      credentials: { shopifyAccessToken: 'shopify-token' },
+      credentials: { accessToken: 'shopify-token' },
+      config: { shopDomain: 'my-store.myshopify.com' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -174,6 +193,7 @@ describe('createConnectorSchema', () => {
     const invalidInput = {
       type: 'GOOGLE_DOCS' as const,
       name: '',
+      credentials: { accessToken: 'token' },
     }
 
     const result = createConnectorSchema.safeParse(invalidInput)
@@ -185,6 +205,7 @@ describe('createConnectorSchema', () => {
     const invalidInput = {
       type: 'GOOGLE_DOCS' as const,
       name: 'a'.repeat(101),
+      credentials: { accessToken: 'token' },
     }
 
     const result = createConnectorSchema.safeParse(invalidInput)
@@ -196,6 +217,7 @@ describe('createConnectorSchema', () => {
     const validInput = {
       type: 'GOOGLE_DOCS' as const,
       name: 'a'.repeat(100),
+      credentials: { accessToken: 'token' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -203,10 +225,49 @@ describe('createConnectorSchema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('allows optional credentials and config', () => {
+  it('rejects missing required credentials', () => {
     const validInput = {
       type: 'GOOGLE_DOCS' as const,
       name: 'Test',
+    }
+
+    const result = createConnectorSchema.safeParse(validInput)
+
+    expect(result.success).toBe(false)
+  })
+
+  it('validates correct input with type AIRTABLE', () => {
+    const validInput = {
+      type: 'AIRTABLE' as const,
+      name: 'My Airtable Base',
+      credentials: { apiKey: 'airtable-key' },
+      config: { baseId: 'base-123', tableId: 'table-456' },
+    }
+
+    const result = createConnectorSchema.safeParse(validInput)
+
+    expect(result.success).toBe(true)
+  })
+
+  it('validates correct input with type CONTENTFUL', () => {
+    const validInput = {
+      type: 'CONTENTFUL' as const,
+      name: 'My Contentful Space',
+      credentials: { accessToken: 'cma-token' },
+      config: { spaceId: 'space-123', contentTypeId: 'blogPost' },
+    }
+
+    const result = createConnectorSchema.safeParse(validInput)
+
+    expect(result.success).toBe(true)
+  })
+
+  it('validates correct input with type MEDIUM', () => {
+    const validInput = {
+      type: 'MEDIUM' as const,
+      name: 'My Medium Publication',
+      credentials: { accessToken: 'medium-token' },
+      config: {},
     }
 
     const result = createConnectorSchema.safeParse(validInput)
@@ -276,6 +337,26 @@ describe('paginationSchema', () => {
 
   it('rejects non-integer page', () => {
     const result = paginationSchema.safeParse({ page: 1.5 })
+
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects string that cannot be coerced to number for page', () => {
+    const result = paginationSchema.safeParse({ page: 'abc' })
+
+    // 'abc' → NaN, then .int().positive() fails
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects limit of 0 (must be positive)', () => {
+    const result = paginationSchema.safeParse({ limit: 0 })
+
+    // .positive() exige > 0
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects limit of 1000 (exceeds max 100)', () => {
+    const result = paginationSchema.safeParse({ limit: 1000 })
 
     expect(result.success).toBe(false)
   })
@@ -362,6 +443,19 @@ describe('checkoutSchema', () => {
     const result = checkoutSchema.safeParse(invalidInput)
 
     expect(result.success).toBe(false)
+  })
+
+  it('accepts priceId containing only spaces (min(1) accepts non-empty strings)', () => {
+    const validInput = {
+      priceId: '   ', // 3 spaces — longueur 3, donc min(1) passe
+    }
+
+    const result = checkoutSchema.safeParse(validInput)
+
+    // NOTE: z.string().min(1) valide la longueur de la chaîne, pas son contenu.
+    // "   " a une longueur de 3, donc le test passe. À prendre en compte
+    // si on veut du trimming en amont.
+    expect(result.success).toBe(true)
   })
 })
 

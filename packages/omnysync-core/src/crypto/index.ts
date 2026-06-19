@@ -30,10 +30,13 @@ function deriveKey(): Buffer {
   return scryptSync(encryptionKey, getSalt(), 32);
 }
 
-// Cache the derived key at module level — avoids calling scryptSync on every encrypt/decrypt
-const derivedKey = deriveKey();
+/** @description Lazily-derived cached key — avoids scryptSync on every call but allows env vars to be set before first use */
+let derivedKey: Buffer | undefined;
 
 function getKey(): Buffer {
+  if (!derivedKey) {
+    derivedKey = deriveKey();
+  }
   return derivedKey;
 }
 
@@ -52,14 +55,14 @@ export function encrypt(plaintext: string): string {
 }
 
 export function decrypt(encryptedText: string): string {
-  const key = getKey();
-
   const parts = encryptedText.split(":");
+  // Backward compat: if the string is not in iv:authTag:ciphertext format,
+  // return it as-is (legacy unencrypted data).
   if (parts.length !== 3) {
-    throw new Error(
-      "Invalid encrypted text format: expected iv:authTag:ciphertext",
-    );
+    return encryptedText;
   }
+
+  const key = getKey();
 
   const ivHex = parts[0]!;
   const authTagHex = parts[1]!;

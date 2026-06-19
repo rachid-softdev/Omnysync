@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest'
 
 // Mock prisma before imports
@@ -7,8 +8,8 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-// Mock fetchWithRetry
-vi.mock('@/lib/http-client', () => ({
+// Mock fetchWithRetry — airtable service is in @omnysync/core, imports from @omnysync/core/http
+vi.mock('@omnysync/core/http', () => ({
   fetchWithRetry: vi.fn(),
 }))
 
@@ -21,7 +22,7 @@ import {
 describe('airtable service', () => {
   describe('testAirtableConnection', () => {
     it('returns success when API call succeeds', async () => {
-      const { fetchWithRetry } = await import('@/lib/http-client')
+      const { fetchWithRetry } = await import('@omnysync/core/http')
       vi.mocked(fetchWithRetry).mockResolvedValueOnce([{ id: 'base1', name: 'My Base' }])
 
       const result = await testAirtableConnection('valid-key')
@@ -29,7 +30,7 @@ describe('airtable service', () => {
     })
 
     it('returns failure when API call fails', async () => {
-      const { fetchWithRetry } = await import('@/lib/http-client')
+      const { fetchWithRetry } = await import('@omnysync/core/http')
       vi.mocked(fetchWithRetry).mockRejectedValueOnce(new Error('Unauthorized'))
 
       const result = await testAirtableConnection('invalid-key')
@@ -40,7 +41,7 @@ describe('airtable service', () => {
 
   describe('listAirtableBases', () => {
     it('returns bases on success', async () => {
-      const { fetchWithRetry } = await import('@/lib/http-client')
+      const { fetchWithRetry } = await import('@omnysync/core/http')
       const mockBases = [
         { id: 'base1', name: 'Base 1' },
         { id: 'base2', name: 'Base 2' },

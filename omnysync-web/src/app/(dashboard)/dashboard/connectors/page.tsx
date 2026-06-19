@@ -37,15 +37,15 @@ const connectorNames: Record<string, string> = {
 }
 
 const connectorDescriptions: Record<string, string> = {
-  GOOGLE_DOCS: 'Récupérez le contenu depuis Google Docs',
-  NOTION: 'Importez vos pages Notion',
-  WORDPRESS: 'Publiez sur WordPress via REST API',
-  GHOST: 'Export vers Ghost via Admin API',
-  WEBFLOW: 'Sync vers Webflow CMS',
-  SHOPIFY: 'Créez des articles Shopify',
-  AIRTABLE: 'Synchronisez vos bases Airtable',
-  CONTENTFUL: 'Publiez vers Contentful',
-  MEDIUM: 'Publiez sur Medium',
+  GOOGLE_DOCS: 'Retrieve content from Google Docs',
+  NOTION: 'Import your Notion pages',
+  WORDPRESS: 'Publish to WordPress via REST API',
+  GHOST: 'Export to Ghost via Admin API',
+  WEBFLOW: 'Sync to Webflow CMS',
+  SHOPIFY: 'Create Shopify articles',
+  AIRTABLE: 'Sync your Airtable bases',
+  CONTENTFUL: 'Publish to Contentful',
+  MEDIUM: 'Publish to Medium',
 }
 
 export default function ConnectorsPage() {
@@ -77,15 +77,15 @@ export default function ConnectorsPage() {
     // Check for callback params
     const params = new URLSearchParams(window.location.search)
     if (params.get('connected') === 'google_docs') {
-      setStatusMsg('Google Docs connecté avec succès !')
+      setStatusMsg(t('UI_CONNECTED_GOOGLE_DOCS'))
       setTimeout(() => setStatusMsg(''), 5000)
       window.history.replaceState({}, '', '/dashboard/connectors')
     } else if (params.get('connected') === 'notion') {
-      setStatusMsg('Notion connecté avec succès !')
+      setStatusMsg(t('UI_CONNECTED_NOTION'))
       setTimeout(() => setStatusMsg(''), 5000)
       window.history.replaceState({}, '', '/dashboard/connectors')
     } else if (params.get('error')) {
-      setStatusMsg('Erreur de connexion. Réessayez.')
+      setStatusMsg(t('UI_CONNECTION_ERROR'))
       setTimeout(() => setStatusMsg(''), 5000)
       window.history.replaceState({}, '', '/dashboard/connectors')
     }
@@ -122,7 +122,7 @@ export default function ConnectorsPage() {
         </div>
         <Button variant="outline" size="sm" onClick={() => fetchConnectors()}>
           <RefreshCw className="w-4 h-4 mr-2" />
-          Actualiser
+          {t('UI_REFRESH')}
         </Button>
       </div>
 
@@ -134,9 +134,7 @@ export default function ConnectorsPage() {
 
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">{t('UI_SOURCES')}</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Connectez vos sources de contenu pour importer des documents
-        </p>
+        <p className="text-sm text-muted-foreground mb-4">{t('UI_SOURCES_DESC')}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...sourceTypes].map((type) => {
             const isConnected = connectedTypesSet.has(type)
@@ -154,11 +152,11 @@ export default function ConnectorsPage() {
                     onClick={() => handleConnect(type)}
                     className="w-full"
                   >
-                    {isConnected ? 'Connecté' : 'Connecter'}
+                    {isConnected ? t('UI_CONNECTED') : t('UI_CONNECT')}
                   </Button>
                   {isConnected && (
                     <Badge variant="secondary" className="mt-2">
-                      Actif
+                      {t('UI_ACTIVE')}
                     </Badge>
                   )}
                 </CardContent>
@@ -170,9 +168,7 @@ export default function ConnectorsPage() {
 
       <div>
         <h2 className="text-xl font-semibold mb-4">{t('UI_DESTINATIONS')}</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Configurez vos destinations pour publier vos contenus synchronisés
-        </p>
+        <p className="text-sm text-muted-foreground mb-4">{t('UI_DESTINATIONS_DESC')}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {[...destTypes].map((type) => {
             const isConnected = connectedTypesSet.has(type)
@@ -190,11 +186,11 @@ export default function ConnectorsPage() {
                     onClick={() => handleConnect(type)}
                     className="w-full"
                   >
-                    {isConnected ? 'Configuré' : 'Configurer'}
+                    {isConnected ? t('UI_CONFIGURED') : t('UI_CONFIGURE')}
                   </Button>
                   {isConnected && (
                     <Badge variant="secondary" className="mt-2">
-                      Actif
+                      {t('UI_ACTIVE')}
                     </Badge>
                   )}
                 </CardContent>
@@ -204,10 +200,10 @@ export default function ConnectorsPage() {
         </div>
       </div>
 
-      {/* Connecteurs déjà configurés */}
+      {/* Already configured connectors */}
       {connectors.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">Mes connecteurs</h2>
+          <h2 className="text-xl font-semibold mb-4">{t('UI_MY_CONNECTORS')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {connectors.map((connector) => (
               <Card key={connector.id}>

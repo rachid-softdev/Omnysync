@@ -62,11 +62,11 @@ export default function SettingsPage() {
         <TabsList className="mb-6">
           <TabsTrigger value="profile">
             <User className="w-4 h-4 mr-2" />
-            Profil
+            Profile
           </TabsTrigger>
           <TabsTrigger value="security">
             <Shield className="w-4 h-4 mr-2" />
-            Sécurité
+            Security
           </TabsTrigger>
           <TabsTrigger value="notifications">
             <Bell className="w-4 h-4 mr-2" />
@@ -74,7 +74,7 @@ export default function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="billing">
             <CreditCard className="w-4 h-4 mr-2" />
-            Abonnement
+            Billing
           </TabsTrigger>
           <TabsTrigger value="api">
             <Key className="w-4 h-4 mr-2" />
@@ -87,8 +87,8 @@ export default function SettingsPage() {
           <div className="space-y-6 max-w-2xl">
             <Card>
               <CardHeader>
-                <CardTitle>Informations du profil</CardTitle>
-                <CardDescription>Gérez vos informations personnelles</CardDescription>
+                <CardTitle>Profile Information</CardTitle>
+                <CardDescription>Manage your personal information</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-6 mb-6">
@@ -98,20 +98,20 @@ export default function SettingsPage() {
                   </Avatar>
                   <div>
                     <Button variant="outline" size="sm">
-                      Changer la photo
+                      Change photo
                     </Button>
-                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG ou GIF. Max 2MB.</p>
+                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG, or GIF. Max 2MB.</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Nom complet</Label>
+                    <Label htmlFor="name">Full name</Label>
                     <Input
                       id="name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Votre nom"
+                      placeholder="Your name"
                     />
                   </div>
                   <div className="space-y-2">
@@ -127,12 +127,12 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Organisation actuelle</Label>
+                  <Label>Current organization</Label>
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
                     <Building className="w-5 h-5 text-muted-foreground" />
                     <div>
-                      <p className="font-medium">Mon Organisation</p>
-                      <p className="text-xs text-muted-foreground">Plan Pro</p>
+                      <p className="font-medium">My Organization</p>
+                      <p className="text-xs text-muted-foreground">Pro Plan</p>
                     </div>
                   </div>
                 </div>
@@ -141,7 +141,7 @@ export default function SettingsPage() {
                   <Button onClick={handleSave} disabled={loading}>
                     {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     {saved && <CheckCircle className="w-4 h-4 mr-2" />}
-                    {saved ? 'Sauvegardé!' : 'Enregistrer'}
+                    {saved ? 'Saved!' : 'Save'}
                   </Button>
                 </div>
               </CardContent>
@@ -149,20 +149,20 @@ export default function SettingsPage() {
 
             <Card className="border-destructive">
               <CardHeader>
-                <CardTitle className="text-destructive">Zone dangereuse</CardTitle>
-                <CardDescription>Actions irréversibles</CardDescription>
+                <CardTitle className="text-destructive">Danger Zone</CardTitle>
+                <CardDescription>Irreversible actions</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Supprimer mon compte</p>
+                    <p className="font-medium">Delete my account</p>
                     <p className="text-sm text-muted-foreground">
-                      Cette action est irréversible. Toutes vos données seront perdues.
+                      This action is irreversible. All your data will be lost.
                     </p>
                   </div>
                   <Button variant="destructive" size="sm">
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Supprimer
+                    Delete
                   </Button>
                 </div>
               </CardContent>
@@ -175,30 +175,30 @@ export default function SettingsPage() {
           <div className="space-y-6 max-w-2xl">
             <Card>
               <CardHeader>
-                <CardTitle>Mot de passe</CardTitle>
-                <CardDescription>Modifiez votre mot de passe</CardDescription>
+                <CardTitle>Password</CardTitle>
+                <CardDescription>Change your password</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="current-password">Mot de passe actuel</Label>
+                  <Label htmlFor="current-password">Current password</Label>
                   <Input id="current-password" type="password" placeholder="••••••••" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="new-password">Nouveau mot de passe</Label>
+                  <Label htmlFor="new-password">New password</Label>
                   <Input id="new-password" type="password" placeholder="••••••••" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirmer le mot de passe</Label>
+                  <Label htmlFor="confirm-password">Confirm password</Label>
                   <Input id="confirm-password" type="password" placeholder="••••••••" />
                 </div>
-                <Button>Mettre à jour le mot de passe</Button>
+                <Button>Update password</Button>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Authentification à deux facteurs</CardTitle>
-                <CardDescription>Ajoutez une couche de sécurité supplémentaire</CardDescription>
+                <CardTitle>Two-factor authentication</CardTitle>
+                <CardDescription>Add an extra layer of security</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
@@ -207,21 +207,21 @@ export default function SettingsPage() {
                       <Shield className="w-5 h-5 text-yellow-500" />
                     </div>
                     <div>
-                      <p className="font-medium">2FA désactivé</p>
+                      <p className="font-medium">2FA disabled</p>
                       <p className="text-sm text-muted-foreground">
-                        Protégez votre compte avec l'authentification
+                        Protect your account with authentication
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline">Activer</Button>
+                  <Button variant="outline">Enable</Button>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Sessions actives</CardTitle>
-                <CardDescription>Gérez vos sessions de connexion</CardDescription>
+                <CardTitle>Active sessions</CardTitle>
+                <CardDescription>Manage your login sessions</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -231,29 +231,27 @@ export default function SettingsPage() {
                       <div>
                         <p className="font-medium">Chrome - Windows</p>
                         <p className="text-xs text-muted-foreground">
-                          Dernière activité: Il y a 5 minutes
+                          Last activity: 5 minutes ago
                         </p>
                       </div>
                     </div>
-                    <Badge variant="outline">Actuelle</Badge>
+                    <Badge variant="outline">Current</Badge>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-lg border">
                     <div className="flex items-center gap-3">
                       <Globe className="w-5 h-5 text-muted-foreground" />
                       <div>
                         <p className="font-medium">Safari - macOS</p>
-                        <p className="text-xs text-muted-foreground">
-                          Dernière activité: Il y a 3 jours
-                        </p>
+                        <p className="text-xs text-muted-foreground">Last activity: 3 days ago</p>
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" className="text-destructive">
-                      Révoquer
+                      Revoke
                     </Button>
                   </div>
                 </div>
                 <Button variant="outline" className="mt-4 w-full">
-                  Déconnecter toutes les autres sessions
+                  Sign out all other sessions
                 </Button>
               </CardContent>
             </Card>
@@ -265,15 +263,15 @@ export default function SettingsPage() {
           <div className="space-y-6 max-w-2xl">
             <Card>
               <CardHeader>
-                <CardTitle>Notifications par email</CardTitle>
-                <CardDescription>Choisissez ce que vous souhaitez recevoir</CardDescription>
+                <CardTitle>Email notifications</CardTitle>
+                <CardDescription>Choose what you want to receive</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Synchronisation réussie</p>
+                    <p className="font-medium">Sync successful</p>
                     <p className="text-sm text-muted-foreground">
-                      Recevoir un email quand un document est synchronisé
+                      Receive an email when a document is synced
                     </p>
                   </div>
                   <Switch
@@ -286,9 +284,9 @@ export default function SettingsPage() {
                 <Separator />
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Échec de synchronisation</p>
+                    <p className="font-medium">Sync failure</p>
                     <p className="text-sm text-muted-foreground">
-                      Être notifié immédiatement en cas d'erreur
+                      Be notified immediately in case of error
                     </p>
                   </div>
                   <Switch
@@ -301,9 +299,9 @@ export default function SettingsPage() {
                 <Separator />
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Résumé hebdomadaire</p>
+                    <p className="font-medium">Weekly digest</p>
                     <p className="text-sm text-muted-foreground">
-                      Recevoir un résumé de l'activité de la semaine
+                      Receive a weekly activity summary
                     </p>
                   </div>
                   <Switch
@@ -316,9 +314,9 @@ export default function SettingsPage() {
                 <Separator />
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Invitations d'équipe</p>
+                    <p className="font-medium">Team invites</p>
                     <p className="text-sm text-muted-foreground">
-                      Notifications quand quelqu'un rejoint votre organisation
+                      Notifications when someone joins your organization
                     </p>
                   </div>
                   <Switch
@@ -330,7 +328,7 @@ export default function SettingsPage() {
                 </div>
                 <Button className="mt-4" onClick={handleSave} disabled={loading}>
                   {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Enregistrer les préférences
+                  Save preferences
                 </Button>
               </CardContent>
             </Card>
@@ -342,23 +340,21 @@ export default function SettingsPage() {
           <div className="space-y-6 max-w-2xl">
             <Card>
               <CardHeader>
-                <CardTitle>Abonnement actuel</CardTitle>
-                <CardDescription>Gérez votre plan</CardDescription>
+                <CardTitle>Current plan</CardTitle>
+                <CardDescription>Manage your plan</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-xl font-bold">Plan Pro</p>
-                      <Badge>Actif</Badge>
+                      <p className="text-xl font-bold">Pro Plan</p>
+                      <Badge>Active</Badge>
                     </div>
-                    <p className="text-muted-foreground mt-1">
-                      29€/mois - renovación le 15 juin 2026
-                    </p>
+                    <p className="text-muted-foreground mt-1">$29/month - renews June 15, 2026</p>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm">
-                      Changer de plan
+                      Change plan
                     </Button>
                   </div>
                 </div>
@@ -367,8 +363,8 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Utilisation</CardTitle>
-                <CardDescription>Votre consommation ce mois-ci</CardDescription>
+                <CardTitle>Usage</CardTitle>
+                <CardDescription>Your consumption this month</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -382,7 +378,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Synchronisations</span>
+                    <span>Syncs</span>
                     <span className="text-muted-foreground">67 / 100</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -391,7 +387,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Connecteurs</span>
+                    <span>Connectors</span>
                     <span className="text-muted-foreground">6 / 10</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -403,15 +399,15 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Historique des factures</CardTitle>
-                <CardDescription>Téléchargez vos factures</CardDescription>
+                <CardTitle>Invoice history</CardTitle>
+                <CardDescription>Download your invoices</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   {[
-                    { date: '15 mai 2026', amount: '29,00€', status: 'Paid' },
-                    { date: '15 avril 2026', amount: '29,00€', status: 'Paid' },
-                    { date: '15 mars 2026', amount: '29,00€', status: 'Paid' },
+                    { date: 'May 15, 2026', amount: '$29.00', status: 'Paid' },
+                    { date: 'April 15, 2026', amount: '$29.00', status: 'Paid' },
+                    { date: 'March 15, 2026', amount: '$29.00', status: 'Paid' },
                   ].map((invoice, i) => (
                     <div
                       key={i}
@@ -442,17 +438,17 @@ export default function SettingsPage() {
           <div className="space-y-6 max-w-2xl">
             <Card>
               <CardHeader>
-                <CardTitle>Clés API</CardTitle>
-                <CardDescription>Gérez les clés pour l'intégration externe</CardDescription>
+                <CardTitle>API Keys</CardTitle>
+                <CardDescription>Manage keys for external integration</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-muted-foreground">
-                    Utilisez les clés API pour intégrer Omnysync avec vos propres applications.
+                    Use API keys to integrate Omnysync with your own applications.
                   </p>
                   <Button>
                     <Key className="w-4 h-4 mr-2" />
-                    Générer une clé
+                    Generate a key
                   </Button>
                 </div>
 
@@ -466,12 +462,12 @@ export default function SettingsPage() {
                     <div>
                       <p className="font-medium">{key.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        Créée le {key.createdAt} - Dernière utilisation: {key.lastUsed}
+                        Created on {key.createdAt} - Last used: {key.lastUsed}
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm">
-                        Copier
+                        Copy
                       </Button>
                       <Button variant="ghost" size="sm" className="text-destructive">
                         <Trash2 className="w-4 h-4" />
@@ -484,16 +480,16 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Documentation API</CardTitle>
-                <CardDescription>Référence complète des endpoints</CardDescription>
+                <CardTitle>API Documentation</CardTitle>
+                <CardDescription>Complete endpoint reference</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground mb-4">
-                  La documentation complète de l'API est disponible sur notre site développeur.
+                  Full API documentation is available on our developer site.
                 </p>
                 <Button variant="outline">
                   <ExternalLink className="w-4 h-4 mr-2" />
-                  Voir la documentation
+                  View documentation
                 </Button>
               </CardContent>
             </Card>

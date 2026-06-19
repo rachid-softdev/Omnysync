@@ -108,13 +108,13 @@ export default function TeamSettingsPage() {
 
       if (res.ok) {
         fetchTeam()
-        toast.success('Membre supprimé')
+        toast.success('Member removed')
       } else {
-        toast.error('Erreur lors de la suppression')
+        toast.error('Error removing member')
       }
     } catch (e) {
       console.error(e)
-      toast.error('Erreur lors de la suppression')
+      toast.error('Error removing member')
     } finally {
       setDeleteTarget(null)
     }
@@ -150,11 +150,11 @@ export default function TeamSettingsPage() {
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'OWNER':
-        return 'Propriétaire'
+        return 'Owner'
       case 'ADMIN':
-        return 'Administrateur'
+        return 'Admin'
       case 'MEMBER':
-        return 'Membre'
+        return 'Member'
       default:
         return role
     }
@@ -172,23 +172,23 @@ export default function TeamSettingsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">{t('TEAM_TITLE') || 'Équipe'}</h1>
+          <h1 className="text-3xl font-bold">{t('TEAM_TITLE') || 'Team'}</h1>
           <p className="text-muted-foreground mt-1">
-            {t('TEAM_SUBTITLE') || 'Gérez les membres de votre organisation'}
+            {t('TEAM_SUBTITLE') || 'Manage your organization members'}
           </p>
         </div>
         <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <UserPlus className="w-4 h-4 mr-2" />
-              Inviter un membre
+              Invite member
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Inviter un membre</DialogTitle>
+              <DialogTitle>Invite member</DialogTitle>
               <DialogDescription>
-                Envoyez une invitation par email pour rejoindre votre organisation.
+                Send an email invitation to join your organization.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -197,31 +197,31 @@ export default function TeamSettingsPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="email@exemple.com"
+                  placeholder="email@example.com"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role">Rôle</Label>
+                <Label htmlFor="role">Role</Label>
                 <Select value={inviteRole} onValueChange={setInviteRole}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MEMBER">Membre</SelectItem>
-                    <SelectItem value="ADMIN">Administrateur</SelectItem>
+                    <SelectItem value="MEMBER">Member</SelectItem>
+                    <SelectItem value="ADMIN">Admin</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
-                Annuler
+                Cancel
               </Button>
               <Button onClick={handleInvite} disabled={inviting || !inviteEmail}>
                 {inviting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                Envoyer l'invitation
+                Send invitation
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -232,17 +232,17 @@ export default function TeamSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
-            Membres de l'organisation
+            Organization members
           </CardTitle>
           <CardDescription>
-            {members.length} membre{members.length !== 1 ? 's' : ''}
+            {members.length} member{members.length !== 1 ? 's' : ''}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {members.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Aucun membre trouvé</p>
+              <p>No members found</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -259,7 +259,7 @@ export default function TeamSettingsPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{member.name || 'Sans nom'}</p>
+                      <p className="font-medium">{member.name || 'No name'}</p>
                       <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <Mail className="w-3 h-3" />
                         {member.email}
@@ -283,7 +283,7 @@ export default function TeamSettingsPage() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="MEMBER">Membre</SelectItem>
+                            <SelectItem value="MEMBER">Member</SelectItem>
                             <SelectItem value="ADMIN">Admin</SelectItem>
                           </SelectContent>
                         </Select>
@@ -298,7 +298,7 @@ export default function TeamSettingsPage() {
                               variant="ghost"
                               size="icon"
                               className="text-destructive"
-                              aria-label="Supprimer le membre"
+                              aria-label="Remove member"
                               onClick={() => setDeleteTarget(member.id)}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -306,18 +306,18 @@ export default function TeamSettingsPage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Supprimer le membre</AlertDialogTitle>
+                              <AlertDialogTitle>Remove member</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Êtes-vous sûr de vouloir supprimer ce membre ? Cette action est
-                                irréversible.
+                                Are you sure you want to remove this member? This action is
+                                irreversible.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
-                                Annuler
+                                Cancel
                               </AlertDialogCancel>
                               <AlertDialogAction onClick={confirmRemoveMember}>
-                                Supprimer
+                                Remove
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>

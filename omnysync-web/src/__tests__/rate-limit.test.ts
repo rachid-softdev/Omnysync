@@ -191,6 +191,42 @@ describe('rateLimitRedis (global middleware)', () => {
     })
   })
 
+  describe('quand la configuration Redis est partielle (URL sans token)', () => {
+    beforeEach(() => {
+      vi.stubEnv('UPSTASH_REDIS_REST_URL', 'https://test.upstash.io')
+      // Ne PAS stuber UPSTASH_REDIS_REST_TOKEN — il reste undefined
+      vi.resetModules()
+    })
+
+    afterEach(() => {
+      vi.unstubAllEnvs()
+    })
+
+    it('initialise Redis quand URL est défini même sans token (comportement actuel)', async () => {
+      mockRedisIncr.mockResolvedValue(1)
+      const { rateLimitRedis } = await importRateLimitModule()
+
+      const result = await rateLimitRedis(createMockRequest())
+
+      // Le code ne vérifie que UPSTASH_REDIS_REST_URL, pas le token
+      // Donc Redis est initialisé et utilisé malgré l'absence de token
+      expect(result.allowed).toBe(true)
+      expect(mockRedisIncr).toHaveBeenCalled()
+      expect(mockInMemRateLimit).not.toHaveBeenCalled()
+    })
+
+    it('tombe en fallback in-memory si Redis lève une erreur (token manquant)', async () => {
+      mockRedisIncr.mockRejectedValue(new Error('Unauthorized — token manquant'))
+      mockInMemRateLimit.mockReturnValue({ allowed: true })
+      const { rateLimitRedis } = await importRateLimitModule()
+
+      const result = await rateLimitRedis(createMockRequest())
+
+      expect(result.allowed).toBe(true)
+      expect(mockInMemRateLimit).toHaveBeenCalled()
+    })
+  })
+
   describe('quand Redis est désactivé (env vars absentes)', () => {
     beforeEach(() => {
       // Ne pas définir UPSTASH_REDIS_REST_URL
@@ -419,6 +455,20 @@ describe('rateLimitRedisWithConfig (per-endpoint)', () => {
       })
 
       expect(result.allowed).toBe(true)
+    })
+
+    it('bloque dès la première requête quand max=0', async () => {
+      mockRedisIncr.mockResolvedValue(1) // 1 > 0 → bloqué immédiatement
+      mockRedisTtl.mockResolvedValue(3600)
+      const { rateLimitRedisWithConfig } = await importRateLimitModule()
+
+      const result = await rateLimitRedisWithConfig('test:edge:1.2.3.4', {
+        max: 0,
+        windowMs: 60 * 60 * 1000,
+      })
+
+      expect(result.allowed).toBe(false)
+      expect(result.remainingTime).toBeDefined()
     })
 
     it('utilise la clé Redis avec le bon préfixe ratelimit:', async () => {

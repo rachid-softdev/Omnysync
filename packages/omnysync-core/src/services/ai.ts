@@ -2,9 +2,16 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { logAIUsage } from "./ai-usage";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+/** @description Lazy singleton to avoid crashing at module load time when OPENAI_API_KEY is unset */
+function getOpenAI(): OpenAI {
+  const { OPENAI_API_KEY } = process.env;
+  if (!OPENAI_API_KEY) {
+    throw new Error(
+      "OPENAI_API_KEY is required to use AI features. Set it in your environment.",
+    );
+  }
+  return new OpenAI({ apiKey: OPENAI_API_KEY });
+}
 
 const AI_CONFIG = {
   model: "gpt-4o",
@@ -122,7 +129,7 @@ export async function generateSEO(
     const sanitizedContent = sanitizePrompt(content);
 
     const response = await withRetry(() =>
-      openai.chat.completions.create({
+      getOpenAI().chat.completions.create({
         model: AI_CONFIG.model,
         messages: [
           {
@@ -193,7 +200,7 @@ export async function generateAImage(prompt: string): Promise<string> {
     const sanitizedPrompt = sanitizePrompt(prompt);
 
     const response = await withRetry(() =>
-      openai.images.generate({
+      getOpenAI().images.generate({
         model: AI_CONFIG.imageModel,
         prompt: sanitizedPrompt,
         size: "1024x1024",
@@ -226,7 +233,7 @@ export async function improveContent(
     const sanitizedInstructions = sanitizePrompt(instructions);
 
     const response = await withRetry(() =>
-      openai.chat.completions.create({
+      getOpenAI().chat.completions.create({
         model: AI_CONFIG.model,
         messages: [
           {
@@ -274,7 +281,7 @@ export async function findInterlinkingOpportunities(
       .join("\n");
 
     const response = await withRetry(() =>
-      openai.chat.completions.create({
+      getOpenAI().chat.completions.create({
         model: AI_CONFIG.model,
         messages: [
           {
@@ -355,7 +362,7 @@ export async function generateExcerpt(
     }
 
     const response = await withRetry(() =>
-      openai.chat.completions.create({
+      getOpenAI().chat.completions.create({
         model: AI_CONFIG.model,
         messages: [
           {
@@ -400,7 +407,7 @@ export async function detectContentChanges(
     const sanitizedNewContent = sanitizePrompt(newContent);
 
     const response = await withRetry(() =>
-      openai.chat.completions.create({
+      getOpenAI().chat.completions.create({
         model: AI_CONFIG.model,
         messages: [
           {

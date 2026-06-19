@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createHash } from 'crypto'
@@ -32,12 +32,20 @@ vi.mock('@/lib/prisma', () => ({
 }))
 
 // The two-factor service imports prisma via "../prisma" (relative to the source file).
-// From the test file, the resolved path is ../../../packages/omnysync-core/src/prisma.
-vi.mock('../../../packages/omnysync-core/src/prisma', () => ({
+// The @omnysync/core/prisma alias resolves to the same file — both mocks must point
+// to the SAME mock functions so test assertions via import { prisma } from '@/lib/prisma' stay in sync.
+vi.mock('@omnysync/core/prisma', () => ({
   prisma: sharedMockPrisma,
 }))
 
 vi.mock('@/lib/crypto', () => ({
+  encrypt: vi.fn((val: string) => `encrypted:${val}`),
+  decrypt: vi.fn((val: string) => val.replace('encrypted:', '')),
+}))
+
+// The two-factor service imports encrypt/decrypt from '../crypto' (relative to the service file),
+// which resolves to @omnysync/core/crypto — same as @/lib/crypto in the web app context.
+vi.mock('@omnysync/core/crypto', () => ({
   encrypt: vi.fn((val: string) => `encrypted:${val}`),
   decrypt: vi.fn((val: string) => val.replace('encrypted:', '')),
 }))
@@ -54,17 +62,23 @@ const mockTotpContainer = vi.hoisted(() => ({
   /** vi.fn() so tests can call .mockReturnValue() to control TOTP validation */
   validate: vi.fn(),
 }))
-vi.mock('otpauth', () => ({
-  Secret: function Secret() {
-    return { base32: 'JBSWY3DPEHPK3PXP' }
-  },
-  TOTP: function TOTP() {
-    return {
-      validate: mockTotpContainer.validate,
-      toString: () => 'otpauth://totp/Omnysync:test?secret=TEST',
-    }
-  },
-}))
+vi.mock('otpauth', () => {
+  const fromBase32 = vi.fn((base32: string) => ({ base32 }))
+  return {
+    Secret: Object.assign(
+      function Secret() {
+        return { base32: 'JBSWY3DPEHPK3PXP' }
+      },
+      { fromBase32 }
+    ),
+    TOTP: function TOTP() {
+      return {
+        validate: mockTotpContainer.validate,
+        toString: () => 'otpauth://totp/Omnysync:test?secret=TEST',
+      }
+    },
+  }
+})
 
 // ── Imports ─────────────────────────────────────────────────────────────────
 
@@ -82,7 +96,7 @@ const getMockTotpValidate = () => mockTotpContainer.validate
 
 // ── Suite ───────────────────────────────────────────────────────────────────
 
-describe.skipIf(!process.env.TEST_DATABASE_URL)('two-factor service', () => {
+describe('two-factor service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -258,7 +272,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('two-factor service', () => {
 
     it('should validate a backup code and remove it', async () => {
       const backupCode = 'ABCD1234'
-      const codeHash = createHash('sha256').update(backupCode).digest('hex')
+      // The service hashes with salt = userId.substring(0, 16). For 'user-1' that's 'user-1'.
+      const codeHash = createHash('sha256')
+        .update(backupCode.toUpperCase() + 'user-1')
+        .digest('hex')
       const remainingCodes = ['OTHERHASH1', 'OTHERHASH2']
 
       vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
@@ -297,8 +314,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('two-factor service', () => {
     it('should consume backup codes one at a time (decrementing count)', async () => {
       const backupCode1 = 'FIRST123'
       const backupCode2 = 'SECOND456'
-      const hash1 = createHash('sha256').update(backupCode1).digest('hex')
-      const hash2 = createHash('sha256').update(backupCode2).digest('hex')
+      // The service hashes with salt = userId.substring(0, 16). For 'user-1' that's 'user-1'.
+      const hash1 = createHash('sha256')
+        .update(backupCode1.toUpperCase() + 'user-1')
+        .digest('hex')
+      const hash2 = createHash('sha256')
+        .update(backupCode2.toUpperCase() + 'user-1')
+        .digest('hex')
 
       // First call: both codes available
       vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
@@ -321,7 +343,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('two-factor service', () => {
 
     it('should accept backup code case-insensitively', async () => {
       const backupCode = 'AbCd1234'
-      const codeHash = createHash('sha256').update('ABCD1234').digest('hex') // Uppercased by service
+      // The service uppercases and adds salt: sha256(code.toUpperCase() + userId.substring(0,16))
+      const codeHash = createHash('sha256').update('ABCD1234user-1').digest('hex')
 
       vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
         userId,
@@ -440,8 +463,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('two-factor service', () => {
       await verifyTotpCode(userId, '123456')
 
       // Verify decrypt was called (the mock strips 'encrypted:' prefix)
-      const decrypt = vi.mocked(require('@/lib/crypto')).decrypt
-      expect(decrypt).toHaveBeenCalledWith(encryptedSecret)
+      // The service imports decrypt from '../crypto' which is @omnysync/core/crypto
+      const { decrypt } = await import('@omnysync/core/crypto')
+      expect(vi.mocked(decrypt)).toHaveBeenCalledWith(encryptedSecret)
     })
 
     it('should handle TOTP validation throwing an error gracefully', async () => {
@@ -451,9 +475,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('two-factor service', () => {
         backupCodes: ['SOMEHASH'],
       } as unknown as Record<string, unknown>)
 
-      // Make TOTP constructor throw
-      const otpauth = require('otpauth')
-      otpauth.TOTP.mockImplementationOnce(() => {
+      // Make the mock validate function throw to test error handling in verifyTotp
+      getMockTotpValidate().mockImplementation(() => {
         throw new Error('Invalid secret')
       })
 

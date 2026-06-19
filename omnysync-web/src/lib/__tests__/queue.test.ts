@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   generateIdempotencyKey,
@@ -43,56 +44,56 @@ describe('generateIdempotencyKey', () => {
 })
 
 describe('isJobCompleted', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.restoreAllMocks()
   })
 
-  it('returns false for new job key', () => {
+  it('returns false for new job key', async () => {
     const key = generateIdempotencyKey('sync_document', `new-doc-${Date.now()}`)
-    const result = isJobCompleted(key)
+    const result = await isJobCompleted(key)
 
     expect(result).toBe(false)
   })
 
-  it('returns true for completed job', () => {
+  it('returns true for completed job', async () => {
     const key = generateIdempotencyKey('sync_document', `completed-doc-${Date.now()}`)
-    markJobCompleted(key, { result: 'success' })
+    await markJobCompleted(key, { result: 'success' })
 
-    const result = isJobCompleted(key)
+    const result = await isJobCompleted(key)
 
     expect(result).toBe(true)
   })
 })
 
 describe('markJobCompleted', () => {
-  it('marks job as completed without result', () => {
+  it('marks job as completed without result', async () => {
     const key = generateIdempotencyKey('sync_document', `mark-doc-${Date.now()}`)
-    markJobCompleted(key)
+    await markJobCompleted(key)
 
-    const result = isJobCompleted(key)
+    const result = await isJobCompleted(key)
 
     expect(result).toBe(true)
   })
 
-  it('marks job as completed with result', () => {
+  it('marks job as completed with result', async () => {
     const key = generateIdempotencyKey('sync_document', `mark-doc-${Date.now()}`)
     const testResult = { status: 'synced' }
-    markJobCompleted(key, testResult)
+    await markJobCompleted(key, testResult)
 
-    const result = isJobCompleted(key)
+    const result = await isJobCompleted(key)
 
     expect(result).toBe(true)
   })
 
-  it('overwrites existing completion', () => {
+  it('overwrites existing completion', async () => {
     const key = generateIdempotencyKey('sync_document', `overwrite-${Date.now()}`)
-    markJobCompleted(key, { first: true })
+    await markJobCompleted(key, { first: true })
 
     // Mark again with different result
-    markJobCompleted(key, { second: true })
+    await markJobCompleted(key, { second: true })
 
     // Should still be marked as completed
-    const result = isJobCompleted(key)
+    const result = await isJobCompleted(key)
     expect(result).toBe(true)
   })
 })
@@ -166,7 +167,7 @@ describe('processJobWithRetry', () => {
 
   it('skips already processed jobs (idempotency)', async () => {
     const key = generateIdempotencyKey('sync_document', 'doc-3')
-    markJobCompleted(key, { skipped: true, reason: 'already_processed' })
+    await markJobCompleted(key, { skipped: true, reason: 'already_processed' })
 
     const job = {
       id: 'job-3',
@@ -195,6 +196,6 @@ describe('processJobWithRetry', () => {
     await processJobWithRetry(job, processFn)
 
     const idempotencyKey = generateIdempotencyKey('sync_document', docId)
-    expect(isJobCompleted(idempotencyKey)).toBe(true)
+    await expect(isJobCompleted(idempotencyKey)).resolves.toBe(true)
   })
 })

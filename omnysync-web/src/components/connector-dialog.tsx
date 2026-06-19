@@ -18,17 +18,17 @@ const PLATFORM_FIELDS: Record<
   { label: string; key: string; type: string; placeholder: string }[]
 > = {
   WORDPRESS: [
-    { label: 'URL du site', key: 'siteUrl', type: 'text', placeholder: 'https://monsite.com' },
-    { label: "Nom d'utilisateur", key: 'username', type: 'text', placeholder: 'admin' },
+    { label: 'Site URL', key: 'siteUrl', type: 'text', placeholder: 'https://example.com' },
+    { label: 'Username', key: 'username', type: 'text', placeholder: 'admin' },
     {
-      label: "Mot de passe d'application",
+      label: 'Application Password',
       key: 'password',
       type: 'password',
       placeholder: 'XXXX XXXX XXXX XXXX',
     },
   ],
   GHOST: [
-    { label: 'URL du site', key: 'siteUrl', type: 'text', placeholder: 'https://monsite.com' },
+    { label: 'Site URL', key: 'siteUrl', type: 'text', placeholder: 'https://example.com' },
     { label: 'Admin API Key', key: 'adminApiKey', type: 'password', placeholder: 'id:secret' },
   ],
   WEBFLOW: [
@@ -36,21 +36,26 @@ const PLATFORM_FIELDS: Record<
     { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'token...' },
   ],
   SHOPIFY: [
-    { label: 'Domaine', key: 'shopDomain', type: 'text', placeholder: 'ma-boutique.myshopify.com' },
+    {
+      label: 'Shop Domain',
+      key: 'shopDomain',
+      type: 'text',
+      placeholder: 'my-store.myshopify.com',
+    },
     { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'shpat_...' },
   ],
   AIRTABLE: [
     { label: 'API Key', key: 'apiKey', type: 'password', placeholder: 'key...' },
-    { label: 'Base ID (optionnel)', key: 'baseId', type: 'text', placeholder: 'app...' },
+    { label: 'Base ID (optional)', key: 'baseId', type: 'text', placeholder: 'app...' },
   ],
   CONTENTFUL: [
     { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'token...' },
-    { label: 'Space ID (optionnel)', key: 'spaceId', type: 'text', placeholder: 'space ID' },
+    { label: 'Space ID (optional)', key: 'spaceId', type: 'text', placeholder: 'space ID' },
   ],
   MEDIUM: [
     { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'token...' },
     {
-      label: 'Publication ID (optionnel)',
+      label: 'Publication ID (optional)',
       key: 'publicationId',
       type: 'text',
       placeholder: 'publication ID',
@@ -85,7 +90,7 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
     const config: Record<string, string> = {}
     const credentials: Record<string, string> = {}
 
-    // Séparer config vs credentials selon le type
+    // Separate config vs credentials by type
     switch (type) {
       case 'WORDPRESS':
         config.siteUrl = fields.siteUrl || ''
@@ -153,13 +158,13 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
   }
 
   const connectorDescriptions: Record<string, string> = {
-    WORDPRESS: 'Connectez votre site WordPress via REST API',
-    GHOST: "Connectez votre blog Ghost via l'API Admin",
-    WEBFLOW: 'Connectez votre CMS Webflow',
-    SHOPIFY: 'Connectez votre boutique Shopify',
-    AIRTABLE: 'Syncronisez vos bases Airtable',
-    CONTENTFUL: 'Connectez votre espace Contentful',
-    MEDIUM: 'Publiez vos articles sur Medium',
+    WORDPRESS: 'Connect your WordPress site via REST API',
+    GHOST: 'Connect your Ghost blog via Admin API',
+    WEBFLOW: 'Connect your Webflow CMS',
+    SHOPIFY: 'Connect your Shopify store',
+    AIRTABLE: 'Synchronize your Airtable bases',
+    CONTENTFUL: 'Connect your Contentful space',
+    MEDIUM: 'Publish your articles to Medium',
   }
 
   return (
@@ -171,14 +176,14 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Connecter {connectorName[type] || type}</DialogTitle>
+          <DialogTitle>Connect {connectorName[type] || type}</DialogTitle>
           <DialogDescription>{connectorDescriptions[type]}</DialogDescription>
         </DialogHeader>
 
         {success ? (
           <div className="flex flex-col items-center gap-3 py-8">
             <CheckCircle className="w-10 h-10 text-green-500" aria-hidden="true" />
-            <p className="text-sm text-muted-foreground">Connecté avec succès !</p>
+            <p className="text-sm text-muted-foreground">Connected successfully!</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -207,11 +212,11 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
 
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={onClose}>
-                Annuler
+                Cancel
               </Button>
               <Button className="flex-1" onClick={handleConnect} disabled={loading}>
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />}
-                Connecter
+                Connect
               </Button>
             </div>
           </div>

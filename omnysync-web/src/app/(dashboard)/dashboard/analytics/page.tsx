@@ -47,10 +47,10 @@ export default function AnalyticsPage() {
         const data = await res.json()
         setData(data)
       } else {
-        setError('Erreur lors du chargement des données analytiques')
+        setError('Error loading analytics data')
       }
     } catch (e) {
-      setError('Impossible de charger les données analytiques')
+      setError('Unable to load analytics data')
       console.error(e)
     } finally {
       setLoading(false)
@@ -75,9 +75,9 @@ export default function AnalyticsPage() {
     return (
       <div className="p-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Analytique</h1>
+          <h1 className="text-3xl font-bold">Analytics</h1>
           <Button onClick={fetchAnalytics} variant="outline">
-            Réessayer
+            Retry
           </Button>
         </div>
         <Card>
@@ -85,7 +85,7 @@ export default function AnalyticsPage() {
             <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
             <p className="text-lg font-medium">{error}</p>
             <p className="text-sm text-muted-foreground mt-2">
-              Les données analytiques ne sont pas disponibles pour le moment.
+              Analytics data is not available at this time.
             </p>
           </CardContent>
         </Card>
@@ -98,23 +98,23 @@ export default function AnalyticsPage() {
     return (
       <div className="p-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Analytique</h1>
+          <h1 className="text-3xl font-bold">Analytics</h1>
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
             className="px-3 py-2 border rounded-md"
           >
-            <option value="7">7 derniers jours</option>
-            <option value="30">30 derniers jours</option>
-            <option value="90">90 derniers jours</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
           </select>
         </div>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium">Aucune donnée disponible</p>
+            <p className="text-lg font-medium">No data available</p>
             <p className="text-sm text-muted-foreground mt-2">
-              Commencez à synchroniser des documents pour voir vos statistiques.
+              Start syncing documents to see your stats.
             </p>
           </CardContent>
         </Card>
@@ -128,19 +128,17 @@ export default function AnalyticsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Analytiques</h1>
-          <p className="text-muted-foreground mt-1">
-            Suivez les performances de vos synchronisations
-          </p>
+          <h1 className="text-3xl font-bold">Analytics</h1>
+          <p className="text-muted-foreground mt-1">Track your synchronization performance</p>
         </div>
         <select
           className="px-3 py-2 rounded-md border bg-background"
           value={period}
           onChange={(e) => setPeriod(e.target.value)}
         >
-          <option value="7">7 derniers jours</option>
-          <option value="30">30 derniers jours</option>
-          <option value="90">90 derniers jours</option>
+          <option value="7">Last 7 days</option>
+          <option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option>
         </select>
       </div>
 
@@ -150,7 +148,7 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total synchronisations</p>
+                <p className="text-sm text-muted-foreground">Total syncs</p>
                 <p className="text-3xl font-bold">{displayData.totalSyncs}</p>
               </div>
               <div className="p-3 rounded-lg bg-primary/10">
@@ -164,7 +162,7 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Taux de réussite</p>
+                <p className="text-sm text-muted-foreground">Success rate</p>
                 <p className="text-3xl font-bold">{displayData.successRate}%</p>
               </div>
               <div
@@ -184,7 +182,7 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Temps moyen (sec)</p>
+                <p className="text-sm text-muted-foreground">Avg duration (sec)</p>
                 <p className="text-3xl font-bold">{displayData.avgDuration}s</p>
               </div>
               <div className="p-3 rounded-lg bg-secondary">
@@ -198,7 +196,7 @@ export default function AnalyticsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Documents actifs</p>
+                <p className="text-sm text-muted-foreground">Active documents</p>
                 <p className="text-3xl font-bold">{displayData.totalDocuments}</p>
               </div>
               <div className="p-3 rounded-lg bg-secondary">
@@ -211,16 +209,16 @@ export default function AnalyticsPage() {
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="overview">Aperçu</TabsTrigger>
-          <TabsTrigger value="connectors">Connecteurs</TabsTrigger>
-          <TabsTrigger value="activity">Activité récente</TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="connectors">Connectors</TabsTrigger>
+          <TabsTrigger value="activity">Recent activity</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
           <Card>
             <CardHeader>
-              <CardTitle>Synchronisations par jour</CardTitle>
-              <CardDescription>Nombre de synchronisations sur la période</CardDescription>
+              <CardTitle>Syncs per day</CardTitle>
+              <CardDescription>Number of syncs in the period</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-64 flex items-end justify-between gap-2">
@@ -235,7 +233,7 @@ export default function AnalyticsPage() {
                         style={{ height: `${height}%`, minHeight: '4px' }}
                       />
                       <span className="text-xs text-muted-foreground">
-                        {new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'short' })}
+                        {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
                       </span>
                     </div>
                   )
@@ -248,8 +246,8 @@ export default function AnalyticsPage() {
         <TabsContent value="connectors">
           <Card>
             <CardHeader>
-              <CardTitle>Utilisation des connecteurs</CardTitle>
-              <CardDescription>Nombre de sync par connecteur</CardDescription>
+              <CardTitle>Connector usage</CardTitle>
+              <CardDescription>Syncs per connector</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -277,8 +275,8 @@ export default function AnalyticsPage() {
         <TabsContent value="activity">
           <Card>
             <CardHeader>
-              <CardTitle>Activité récente</CardTitle>
-              <CardDescription>Dernières opérations</CardDescription>
+              <CardTitle>Recent activity</CardTitle>
+              <CardDescription>Recent operations</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -298,7 +296,7 @@ export default function AnalyticsPage() {
                       <span className="text-sm">{activity.action}</span>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(activity.createdAt).toLocaleString('fr-FR')}
+                      {new Date(activity.createdAt).toLocaleString('en-US')}
                     </span>
                   </div>
                 ))}
