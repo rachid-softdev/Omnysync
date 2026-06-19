@@ -26,10 +26,10 @@ export default async function DocumentsPage() {
   })
 
   const statusLabels: Record<string, string> = {
-    NOT_SYNCED: 'Non sync',
-    SYNCING: 'En cours',
-    SYNCED: 'Sync',
-    FAILED: 'Échec',
+    NOT_SYNCED: 'Not synced',
+    SYNCING: 'Syncing',
+    SYNCED: 'Synced',
+    FAILED: 'Failed',
   }
 
   const statusVariants: Record<string, 'secondary' | 'default' | 'destructive' | 'outline'> = {

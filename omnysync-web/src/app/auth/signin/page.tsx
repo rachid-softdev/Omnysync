@@ -30,7 +30,7 @@ export default function SignInPage() {
         })
 
         if (result?.error) {
-          setError('Email ou mot de passe incorrect')
+          setError('Invalid email or password')
         } else {
           // Check if 2FA verification is needed
           router.push('/dashboard')
@@ -46,7 +46,7 @@ export default function SignInPage() {
         const data = await res.json()
 
         if (!res.ok) {
-          setError(data.error || "Erreur lors de l'inscription")
+          setError(data.error || 'Registration error')
         } else {
           // Auto login after registration
           const result = await signIn('credentials', {
@@ -61,7 +61,7 @@ export default function SignInPage() {
         }
       }
     } catch {
-      setError('Une erreur est survenue')
+      setError('An error occurred')
     } finally {
       setLoading(false)
     }

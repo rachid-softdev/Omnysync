@@ -20,11 +20,11 @@ export default function PricingPage() {
       periodKey: 'plan_free_period',
       descriptionKey: 'plan_free_description',
       features: [
-        '5 synchronisations par mois',
-        '2 connecteurs',
-        'Google Docs & Notion',
-        'WordPress & Ghost',
-        'Support par email',
+        'plan_free_feature_1',
+        'plan_free_feature_2',
+        'plan_free_feature_3',
+        'plan_free_feature_4',
+        'plan_free_feature_5',
       ],
       ctaKey: 'cta_start_free',
       href: '/auth/signin',
@@ -36,13 +36,13 @@ export default function PricingPage() {
       periodKey: 'plan_pro_period',
       descriptionKey: 'plan_pro_description',
       features: [
-        '100 synchronisations par mois',
-        '10 connecteurs',
-        'Toutes les plateformes',
-        'Enrichissement IA (SEO, images)',
-        'Maillage interne automatique',
-        'Détection de changements',
-        'Support prioritaire',
+        'plan_pro_feature_1',
+        'plan_pro_feature_2',
+        'plan_pro_feature_3',
+        'plan_pro_feature_4',
+        'plan_pro_feature_5',
+        'plan_pro_feature_6',
+        'plan_pro_feature_7',
       ],
       ctaKey: 'cta_start_trial',
       href: '/api/stripe/checkout',
@@ -54,13 +54,13 @@ export default function PricingPage() {
       periodKey: 'plan_business_period',
       descriptionKey: 'plan_business_description',
       features: [
-        'Synchronisations illimitées',
-        'Connecteurs illimités',
-        'Toutes les fonctionnalités Pro',
-        'Sync bidirectionnelle',
-        'Multi-utilisateurs',
-        'API access',
-        'Support dédié',
+        'plan_business_feature_1',
+        'plan_business_feature_2',
+        'plan_business_feature_3',
+        'plan_business_feature_4',
+        'plan_business_feature_5',
+        'plan_business_feature_6',
+        'plan_business_feature_7',
       ],
       ctaKey: 'cta_contact_sales',
       href: 'mailto:sales@omnysync.com',
@@ -100,7 +100,7 @@ export default function PricingPage() {
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-2">
                       <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
-                      <span className="text-sm">{feature}</span>
+                      <span className="text-sm">{t(feature)}</span>
                     </li>
                   ))}
                 </ul>
@@ -108,7 +108,7 @@ export default function PricingPage() {
                   <ProCheckoutButton label={t(plan.ctaKey)} />
                 ) : (
                   <Link href={plan.href}>
-                    <Button className="w-full" variant={plan.highlighted ? 'default' : 'outline'}>
+                    <Button className="w-full rounded-full" variant={plan.highlighted ? 'default' : 'outline'}>
                       {plan.nameKey === 'plan_business_name' && <Zap className="w-4 h-4 mr-2" />}
                       {t(plan.ctaKey)}
                     </Button>

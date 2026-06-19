@@ -34,10 +34,10 @@ export default function TwoFactorVerifyPage() {
         // Redirect to continue URL or dashboard
         router.push(continueTo)
       } else {
-        setError(data.error || 'Code invalide')
+        setError(data.error || 'Invalid code')
       }
     } catch {
-      setError('Erreur de connexion')
+      setError('Connection error')
     } finally {
       setLoading(false)
     }
@@ -50,16 +50,16 @@ export default function TwoFactorVerifyPage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Shield className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Vérification 2FA</CardTitle>
+          <CardTitle className="text-2xl">Two-Factor Authentication</CardTitle>
           <CardDescription>
-            Entrez le code à 6 chiffres de votre application d&apos;authentification
+            Enter the 6-digit code from your authenticator app
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleVerify} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="2fa-code" className="sr-only">
-                Code à 6 chiffres
+                6-digit code
               </label>
               <Input
                 id="2fa-code"
@@ -76,12 +76,12 @@ export default function TwoFactorVerifyPage() {
             {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
             <Button type="submit" className="w-full" disabled={loading || code.length !== 6}>
-              {loading ? 'Vérification...' : 'Vérifier'}
+              {loading ? 'Verifying...' : 'Verify'}
             </Button>
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Utilisez Google Authenticator, Authy, ou autre application TOTP</p>
+            <p>Use Google Authenticator, Authy, or any TOTP app</p>
           </div>
         </CardContent>
       </Card>

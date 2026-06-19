@@ -66,7 +66,7 @@ export default function UsagePage() {
     }
   }
 
-  // Données de demo
+  // Demo data fallback
   const demoUsage: UsageData = {
     currentPlan: 'Pro',
     billingCycle: {
@@ -117,9 +117,9 @@ export default function UsagePage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">{t('USAGE_TITLE') || 'Utilisation'}</h1>
+        <h1 className="text-3xl font-bold">{t('USAGE_TITLE')}</h1>
         <p className="text-muted-foreground mt-1">
-          {t('USAGE_SUBTITLE') || 'Suivez votre consommation et vos limites'}
+          {t('USAGE_SUBTITLE')}
         </p>
       </div>
 
@@ -130,24 +130,24 @@ export default function UsagePage() {
             <div>
               <div className="flex items-center gap-3">
                 <h2 className="text-2xl font-bold">Plan {displayUsage.currentPlan}</h2>
-                <Badge variant="default">Actif</Badge>
+                <Badge variant="default">Active</Badge>
               </div>
               <p className="text-muted-foreground mt-1">
-                Cycle de facturation:{' '}
-                {new Date(displayUsage.billingCycle.start).toLocaleDateString('fr-FR')} -{' '}
-                {new Date(displayUsage.billingCycle.end).toLocaleDateString('fr-FR')}
+                Billing cycle:{' '}
+                {new Date(displayUsage.billingCycle.start).toLocaleDateString('en-US')} -{' '}
+                {new Date(displayUsage.billingCycle.end).toLocaleDateString('en-US')}
               </p>
             </div>
-            <Button variant="outline">Changer de plan</Button>
+            <Button variant="outline">Change plan</Button>
           </div>
         </CardContent>
       </Card>
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="mb-6">
-          <TabsTrigger value="overview">Aperçu</TabsTrigger>
-          <TabsTrigger value="ai">IA</TabsTrigger>
-          <TabsTrigger value="history">Historique</TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="ai">AI</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -157,7 +157,7 @@ export default function UsagePage() {
               <CardHeader className="pb-3">
                 <CardDescription className="flex items-center gap-2">
                   <Zap className="w-4 h-4" />
-                  Synchronisations
+                  Syncs
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -172,7 +172,7 @@ export default function UsagePage() {
                 <p
                   className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.syncUsed, displayUsage.syncLimit))}`}
                 >
-                  {displayUsage.syncLimit - displayUsage.syncUsed} restantes ce mois
+                  {displayUsage.syncLimit - displayUsage.syncUsed} remaining this month
                 </p>
               </CardContent>
             </Card>
@@ -204,7 +204,7 @@ export default function UsagePage() {
                     <p
                       className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.documentsUsed, displayUsage.documentsLimit))}`}
                     >
-                      {displayUsage.documentsLimit - displayUsage.documentsUsed} restantes
+                      {displayUsage.documentsLimit - displayUsage.documentsUsed} remaining
                     </p>
                   </>
                 )}
@@ -216,7 +216,7 @@ export default function UsagePage() {
               <CardHeader className="pb-3">
                 <CardDescription className="flex items-center gap-2">
                   <Link2 className="w-4 h-4" />
-                  Connecteurs
+                  Connectors
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -236,7 +236,7 @@ export default function UsagePage() {
                 <p
                   className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.connectorsUsed, displayUsage.connectorsLimit))}`}
                 >
-                  {displayUsage.connectorsLimit - displayUsage.connectorsUsed} disponibles
+                  {displayUsage.connectorsLimit - displayUsage.connectorsUsed} available
                 </p>
               </CardContent>
             </Card>
@@ -246,7 +246,7 @@ export default function UsagePage() {
               <CardHeader className="pb-3">
                 <CardDescription className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
-                  Équipe
+                  Team
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -261,7 +261,7 @@ export default function UsagePage() {
                 <p
                   className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.teamUsed, displayUsage.teamLimit))}`}
                 >
-                  {displayUsage.teamLimit - displayUsage.teamUsed} places restantes
+                  {displayUsage.teamLimit - displayUsage.teamUsed} seats remaining
                 </p>
               </CardContent>
             </Card>
@@ -271,8 +271,8 @@ export default function UsagePage() {
         <TabsContent value="ai">
           <Card>
             <CardHeader>
-              <CardTitle>Utilisation IA</CardTitle>
-              <CardDescription>Nombre d'appels aux fonctionnalités IA ce mois-ci</CardDescription>
+              <CardTitle>AI Usage</CardTitle>
+              <CardDescription>Number of AI feature calls this month</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-6">
@@ -283,7 +283,7 @@ export default function UsagePage() {
                   </div>
                   <p className="text-4xl font-bold">{displayUsage.aiSEO}</p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Générations de métadonnées SEO
+                    SEO metadata generations
                   </p>
                 </div>
 
@@ -293,17 +293,17 @@ export default function UsagePage() {
                     <h3 className="font-semibold">Images</h3>
                   </div>
                   <p className="text-4xl font-bold">{displayUsage.aiImages}</p>
-                  <p className="text-sm text-muted-foreground mt-2">Images générées avec DALL-E</p>
+                  <p className="text-sm text-muted-foreground mt-2">Images generated with DALL-E</p>
                 </div>
 
                 <div className="p-6 rounded-lg border bg-muted/50">
                   <div className="flex items-center gap-3 mb-4">
                     <Link2 className="w-5 h-5 text-primary" />
-                    <h3 className="font-semibold">Maillage</h3>
+                    <h3 className="font-semibold">Interlinking</h3>
                   </div>
                   <p className="text-4xl font-bold">{displayUsage.aiInterlinking}</p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Suggestions de liens internes
+                    Internal link suggestions
                   </p>
                 </div>
               </div>
@@ -311,13 +311,13 @@ export default function UsagePage() {
               <div className="mt-8 p-4 rounded-lg bg-muted">
                 <h4 className="font-semibold mb-2">
                   {' '}
-                  Fonctionnalités IA (Plan {displayUsage.currentPlan})
+                  AI Features ({displayUsage.currentPlan} Plan)
                 </h4>
                 <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>✓ SEO automatique</li>
-                  <li>✓ Génération d'images</li>
-                  {displayUsage.currentPlan === 'Pro' && <li>✓ Maillage interne</li>}
-                  {displayUsage.currentPlan !== 'Free' && <li>✓ Amélioration de contenu</li>}
+                  <li>✓ Auto SEO</li>
+                  <li>✓ Image generation</li>
+                  {displayUsage.currentPlan === 'Pro' && <li>✓ Internal interlinking</li>}
+                  {displayUsage.currentPlan !== 'Free' && <li>✓ Content enhancement</li>}
                 </ul>
               </div>
             </CardContent>
@@ -327,18 +327,18 @@ export default function UsagePage() {
         <TabsContent value="history">
           <Card>
             <CardHeader>
-              <CardTitle>Historique d'utilisation</CardTitle>
-              <CardDescription>Vos statistiques mensuelles</CardDescription>
+              <CardTitle>Usage History</CardTitle>
+              <CardDescription>Your monthly statistics</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium">Mois</th>
+                      <th className="text-left py-3 px-4 font-medium">Month</th>
                       <th className="text-right py-3 px-4 font-medium">Syncs</th>
                       <th className="text-right py-3 px-4 font-medium">Documents</th>
-                      <th className="text-right py-3 px-4 font-medium">Appels IA</th>
+                      <th className="text-right py-3 px-4 font-medium">AI Calls</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -347,7 +347,7 @@ export default function UsagePage() {
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-muted-foreground" />
-                            {new Date(month.month + '-01').toLocaleDateString('fr-FR', {
+                            {new Date(month.month + '-01').toLocaleDateString('en-US', {
                               month: 'long',
                               year: 'numeric',
                             })}

@@ -37,15 +37,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
     {
       href: '/dashboard/analytics',
       icon: BarChart3,
-      label: trans('UI_ANALYTICS') || 'Analytiques',
+      label: trans('UI_ANALYTICS'),
     },
-    { href: '/dashboard/webhooks', icon: Webhook, label: trans('UI_WEBHOOKS') || 'Webhooks' },
+    { href: '/dashboard/webhooks', icon: Webhook, label: trans('UI_WEBHOOKS') },
     {
       href: '/dashboard/approvals',
       icon: FileCheck,
-      label: trans('UI_APPROVALS') || 'Approbations',
+      label: trans('UI_APPROVALS'),
     },
-    { href: '/dashboard/usage', icon: Zap, label: trans('UI_USAGE') || 'Utilisation' },
+    { href: '/dashboard/usage', icon: Zap, label: trans('UI_USAGE') },
     { href: '/dashboard/settings', icon: Settings, label: trans('UI_SETTINGS') },
   ]
 
@@ -55,7 +55,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-background focus:text-foreground focus:ring-2 focus:ring-ring focus:rounded-lg"
       >
-        Aller au contenu
+        {t('UI_SKIP_TO_CONTENT')}
       </a>
       {/* Desktop sidebar - hidden on mobile */}
       <aside className="hidden md:flex w-64 bg-card border-r border-border flex-col">

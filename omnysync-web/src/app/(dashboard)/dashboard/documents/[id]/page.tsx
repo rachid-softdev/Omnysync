@@ -62,17 +62,17 @@ export default async function DocumentDetailPage({ params }: PageProps) {
   }
 
   const statusLabels: Record<string, string> = {
-    DRAFT: 'Brouillon',
-    READY: 'Prêt',
-    PUBLISHED: 'Publié',
-    ARCHIVED: 'Archivé',
+    DRAFT: 'Draft',
+    READY: 'Ready',
+    PUBLISHED: 'Published',
+    ARCHIVED: 'Archived',
   }
 
   const syncStatusLabels: Record<string, string> = {
-    NOT_SYNCED: 'Non synchronisé',
-    SYNCING: 'En cours',
-    SYNCED: 'Synchronisé',
-    FAILED: 'Échec',
+    NOT_SYNCED: 'Not synced',
+    SYNCING: 'Syncing',
+    SYNCED: 'Synced',
+    FAILED: 'Failed',
   }
 
   const connectorNames: Record<string, string> = {
@@ -96,7 +96,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
           <Link href="/dashboard/documents">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Retour
+              Back
             </Button>
           </Link>
           <div>
@@ -108,22 +108,22 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 {connectorNames[document.destConnector?.type || 'UNKNOWN'] || 'Destination'}
               </span>
               <span>·</span>
-              <span>Créé le {document.createdAt.toLocaleDateString('fr-FR')}</span>
+              <span>Created on {document.createdAt.toLocaleDateString('en-US')}</span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Edit className="w-4 h-4 mr-2" />
-            Modifier
+            Edit
           </Button>
           <Button variant="outline" size="sm">
             <RefreshCw className="w-4 h-4 mr-2" />
-            Synchroniser
+            Sync
           </Button>
           <Button variant="ghost" size="sm" className="text-destructive">
             <Trash2 className="w-4 h-4 mr-2" />
-            Supprimer
+            Delete
           </Button>
         </div>
       </div>
@@ -144,7 +144,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
               )}
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Statut</p>
+              <p className="text-sm text-muted-foreground">Status</p>
               <p className="font-medium">{statusLabels[document.status] || document.status}</p>
             </div>
           </CardContent>
@@ -184,11 +184,11 @@ export default async function DocumentDetailPage({ params }: PageProps) {
               <Calendar className="w-5 h-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Dernière sync</p>
+              <p className="text-sm text-muted-foreground">Last sync</p>
               <p className="font-medium">
                 {document.lastSyncedAt
-                  ? document.lastSyncedAt.toLocaleDateString('fr-FR')
-                  : 'Jamais'}
+                  ? document.lastSyncedAt.toLocaleDateString('en-US')
+                  : 'Never'}
               </p>
             </div>
           </CardContent>
@@ -211,7 +211,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
       <Card className="mb-8">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Progression de synchronisation</span>
+            <span className="text-sm font-medium">Sync progress</span>
             <span className="text-sm text-muted-foreground">{syncProgress}%</span>
           </div>
           <Progress value={syncProgress} className="h-2" />
@@ -221,10 +221,10 @@ export default async function DocumentDetailPage({ params }: PageProps) {
       {/* Tabs */}
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="overview">Aperçu</TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
-          <TabsTrigger value="logs">Historique</TabsTrigger>
-          <TabsTrigger value="settings">Paramètres</TabsTrigger>
+          <TabsTrigger value="logs">History</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -232,8 +232,8 @@ export default async function DocumentDetailPage({ params }: PageProps) {
             {/* Content Preview */}
             <Card>
               <CardHeader>
-                <CardTitle>Contenu</CardTitle>
-                <CardDescription>Aperçu du contenu synchronisé</CardDescription>
+                <CardTitle>Content</CardTitle>
+                <CardDescription>Synced content preview</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="prose prose-sm max-w-none dark:prose-invert">
@@ -245,7 +245,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                       }}
                     />
                   ) : (
-                    <p className="text-muted-foreground">Aucun contenu disponible</p>
+                    <p className="text-muted-foreground">No content available</p>
                   )}
                 </div>
               </CardContent>
@@ -254,8 +254,8 @@ export default async function DocumentDetailPage({ params }: PageProps) {
             {/* Metadata */}
             <Card>
               <CardHeader>
-                <CardTitle>Métadonnées</CardTitle>
-                <CardDescription>Informations du document</CardDescription>
+                <CardTitle>Metadata</CardTitle>
+                <CardDescription>Document information</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -272,12 +272,12 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Catégories</p>
-                    <p className="font-medium">{document.categories?.join(', ') || 'Aucune'}</p>
+                    <p className="text-sm text-muted-foreground">Categories</p>
+                    <p className="font-medium">{document.categories?.join(', ') || 'None'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Tags</p>
-                    <p className="font-medium">{document.tags?.join(', ') || 'Aucun'}</p>
+                    <p className="font-medium">{document.tags?.join(', ') || 'None'}</p>
                   </div>
                 </div>
 
@@ -295,20 +295,20 @@ export default async function DocumentDetailPage({ params }: PageProps) {
         <TabsContent value="seo">
           <Card>
             <CardHeader>
-              <CardTitle>Optimisation SEO</CardTitle>
-              <CardDescription>Métadonnées pour les moteurs de recherche</CardDescription>
+              <CardTitle>SEO Optimization</CardTitle>
+              <CardDescription>Metadata for search engines</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Titre SEO</p>
+                <p className="text-sm text-muted-foreground mb-1">SEO Title</p>
                 <p className="font-medium">{document.seoTitle || document.title}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Description SEO</p>
-                <p className="text-sm">{document.seoDescription || 'Aucune description'}</p>
+                <p className="text-sm text-muted-foreground mb-1">SEO Description</p>
+                <p className="text-sm">{document.seoDescription || 'No description'}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Mots-clés</p>
+                <p className="text-sm text-muted-foreground mb-1">Keywords</p>
                 <div className="flex flex-wrap gap-2">
                   {document.seoKeywords && document.seoKeywords.length > 0 ? (
                     document.seoKeywords.map((keyword: string, index: number) => (
@@ -317,7 +317,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                       </Badge>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground">Aucun mot-clé</p>
+                    <p className="text-sm text-muted-foreground">No keywords</p>
                   )}
                 </div>
               </div>
@@ -328,13 +328,13 @@ export default async function DocumentDetailPage({ params }: PageProps) {
         <TabsContent value="logs">
           <Card>
             <CardHeader>
-              <CardTitle>Historique des synchronisations</CardTitle>
-              <CardDescription>Journal des opérations récentes</CardDescription>
+              <CardTitle>Sync history</CardTitle>
+              <CardDescription>Recent operations log</CardDescription>
             </CardHeader>
             <CardContent>
               {document.syncLogs.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  Aucun historique disponible
+                  No history available
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -357,7 +357,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                         </div>
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {log.createdAt.toLocaleDateString('fr-FR', {
+                        {log.createdAt.toLocaleDateString('en-US', {
                           day: 'numeric',
                           month: 'short',
                           hour: '2-digit',
@@ -377,15 +377,15 @@ export default async function DocumentDetailPage({ params }: PageProps) {
             {/* Sync Settings */}
             <Card>
               <CardHeader>
-                <CardTitle>Synchronisation automatique</CardTitle>
-                <CardDescription>Configurez la fréquence de synchronisation</CardDescription>
+                <CardTitle>Auto sync</CardTitle>
+                <CardDescription>Configure sync frequency</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Sync automatique</p>
+                    <p className="font-medium">Auto sync</p>
                     <p className="text-sm text-muted-foreground">
-                      Détecter automatiquement les changements
+                      Automatically detect changes
                     </p>
                   </div>
                   <input
@@ -397,23 +397,23 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 </div>
                 {document.autoSyncEnabled && document.syncFrequency && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Fréquence</p>
+                    <p className="text-sm text-muted-foreground">Frequency</p>
                     <p className="font-medium">
                       {document.syncFrequency === 'DAILY'
-                        ? 'Quotidien'
+                        ? 'Daily'
                         : document.syncFrequency === 'WEEKLY'
-                          ? 'Hebdomadaire'
+                          ? 'Weekly'
                           : document.syncFrequency === 'MONTHLY'
-                            ? 'Mensuel'
-                            : 'Manuel'}
+                            ? 'Monthly'
+                            : 'Manual'}
                     </p>
                   </div>
                 )}
                 {document.nextSyncAt && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Prochaine synchronisation</p>
+                    <p className="text-sm text-muted-foreground">Next sync</p>
                     <p className="font-medium">
-                      {document.nextSyncAt.toLocaleDateString('fr-FR', {
+                      {document.nextSyncAt.toLocaleDateString('en-US', {
                         day: 'numeric',
                         month: 'long',
                         hour: '2-digit',
@@ -428,15 +428,15 @@ export default async function DocumentDetailPage({ params }: PageProps) {
             {/* Auto-publish Settings */}
             <Card>
               <CardHeader>
-                <CardTitle>Publication</CardTitle>
-                <CardDescription>Options de publication automatique</CardDescription>
+                <CardTitle>Publishing</CardTitle>
+                <CardDescription>Auto-publish options</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Publication automatique</p>
+                    <p className="font-medium">Auto-publish</p>
                     <p className="text-sm text-muted-foreground">
-                      Publier immédiatement après sync
+                      Publish immediately after sync
                     </p>
                   </div>
                   <input type="checkbox" className="h-4 w-4" defaultChecked />

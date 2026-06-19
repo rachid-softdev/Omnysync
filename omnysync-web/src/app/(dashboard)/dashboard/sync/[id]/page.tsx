@@ -60,13 +60,13 @@ export default async function SyncDetailPage({ params }: PageProps) {
 
   // Define sync steps
   const syncSteps = [
-    { id: 1, name: 'Récupération du contenu', icon: Database, status: 'completed' as const },
-    { id: 2, name: 'Parsing HTML', icon: FileText, status: 'completed' as const },
-    { id: 3, name: 'Enrichissement IA', icon: Wand2, status: 'completed' as const },
-    { id: 4, name: 'Upload images', icon: Upload, status: 'completed' as const },
+    { id: 1, name: 'Content Retrieval', icon: Database, status: 'completed' as const },
+    { id: 2, name: 'HTML Parsing', icon: FileText, status: 'completed' as const },
+    { id: 3, name: 'AI Enrichment', icon: Wand2, status: 'completed' as const },
+    { id: 4, name: 'Image Upload', icon: Upload, status: 'completed' as const },
     {
       id: 5,
-      name: 'Publication',
+      name: 'Publishing',
       icon: Send,
       status:
         document.syncStatus === 'SYNCED'
@@ -84,10 +84,10 @@ export default async function SyncDetailPage({ params }: PageProps) {
   const progress = Math.round((completedSteps / syncSteps.length) * 100)
 
   const statusLabels: Record<string, string> = {
-    NOT_SYNCED: 'Non synchronisé',
-    SYNCING: 'En cours',
-    SYNCED: 'Synchronisé',
-    FAILED: 'Échec',
+    NOT_SYNCED: 'Not synced',
+    SYNCING: 'Syncing',
+    SYNCED: 'Synced',
+    FAILED: 'Failed',
   }
 
   const connectorNames: Record<string, string> = {
@@ -107,11 +107,11 @@ export default async function SyncDetailPage({ params }: PageProps) {
           <Link href="/dashboard/sync">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Retour
+              Back
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">Détail de la synchronisation</h1>
+            <h1 className="text-2xl font-bold">Sync Details</h1>
             <p className="text-sm text-muted-foreground mt-1">{document.title}</p>
           </div>
         </div>
@@ -119,7 +119,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
           <Link href={`/dashboard/documents/${document.id}`}>
             <Button variant="outline" size="sm">
               <FileText className="w-4 h-4 mr-2" />
-              Voir document
+              View document
             </Button>
           </Link>
           <form
@@ -137,7 +137,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
           >
             <Button type="submit" size="sm">
               <RefreshCw className="w-4 h-4 mr-2" />
-              Relancer
+              Restart
             </Button>
           </form>
         </div>
@@ -171,14 +171,14 @@ export default async function SyncDetailPage({ params }: PageProps) {
                 </h2>
                 {document.lastSyncedAt && (
                   <p className="text-sm text-muted-foreground">
-                    Dernière exécution: {document.lastSyncedAt.toLocaleString('fr-FR')}
+                    Last execution: {document.lastSyncedAt.toLocaleString('en-US')}
                   </p>
                 )}
               </div>
             </div>
             <div className="text-right">
               <p className="text-3xl font-bold">{progress}%</p>
-              <p className="text-sm text-muted-foreground">Progression</p>
+              <p className="text-sm text-muted-foreground">Progress</p>
             </div>
           </div>
           <Progress value={progress} className="h-3" />
@@ -188,8 +188,8 @@ export default async function SyncDetailPage({ params }: PageProps) {
       {/* Sync Steps */}
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Étapes de synchronisation</CardTitle>
-          <CardDescription>Flux de traitement du document</CardDescription>
+          <CardTitle>Sync Steps</CardTitle>
+          <CardDescription>Document processing flow</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -219,10 +219,10 @@ export default async function SyncDetailPage({ params }: PageProps) {
                 <div className="flex-1">
                   <p className="font-medium">{step.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {step.status === 'completed' && 'Terminé'}
-                    {step.status === 'in_progress' && 'En cours...'}
-                    {step.status === 'error' && 'Erreur survenue'}
-                    {step.status === 'pending' && 'En attente'}
+                    {step.status === 'completed' && 'Completed'}
+                    {step.status === 'in_progress' && 'In progress...'}
+                    {step.status === 'error' && 'Error occurred'}
+                    {step.status === 'pending' && 'Pending'}
                   </p>
                 </div>
                 {index < syncSteps.length - 1 && <div className="w-px h-8 bg-border" />}
@@ -246,7 +246,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
                   {connectorNames[document.sourceConnector?.type || ''] || 'Source'}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {document.sourceConnector?.name || 'Non connecté'}
+                  {document.sourceConnector?.name || 'Not connected'}
                 </p>
               </div>
             </div>
@@ -265,7 +265,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
                   {connectorNames[document.destConnector?.type || ''] || 'Destination'}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {document.destConnector?.name || 'Non connecté'}
+                  {document.destConnector?.name || 'Not connected'}
                 </p>
               </div>
             </div>
@@ -277,7 +277,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
       {document.syncStatus === 'FAILED' && document.lastSyncError && (
         <Card className="mb-8 border-red-200 dark:border-red-900">
           <CardHeader className="bg-red-50 dark:bg-red-900/20">
-            <CardTitle className="text-red-600">Erreur de synchronisation</CardTitle>
+            <CardTitle className="text-red-600">Sync Error</CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <pre className="text-sm text-red-600 dark:text-red-400 whitespace-pre-wrap font-mono">
@@ -290,13 +290,13 @@ export default async function SyncDetailPage({ params }: PageProps) {
       {/* Logs Console */}
       <Card>
         <CardHeader>
-          <CardTitle>Console de logs</CardTitle>
-          <CardDescription>Journal d'exécution en temps réel</CardDescription>
+          <CardTitle>Log Console</CardTitle>
+          <CardDescription>Real-time execution log</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="bg-secondary rounded-lg p-4 max-h-96 overflow-y-auto font-mono text-sm">
             {syncLogs.length === 0 ? (
-              <p className="text-muted-foreground">Aucun log disponible</p>
+              <p className="text-muted-foreground">No logs available</p>
             ) : (
               syncLogs.map((log) => (
                 <div
@@ -310,7 +310,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
                   }`}
                 >
                   <span className="text-xs opacity-50">
-                    [{log.createdAt.toLocaleTimeString('fr-FR')}]
+                    [{log.createdAt.toLocaleTimeString('en-US')}]
                   </span>{' '}
                   {log.status === 'SUCCESS' && '✓ '}
                   {log.status === 'ERROR' && '✗ '}

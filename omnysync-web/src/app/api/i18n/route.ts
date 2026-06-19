@@ -3,9 +3,9 @@ import en from '@/lib/i18n/en.json'
 import fr from '@/lib/i18n/fr.json'
 
 /**
- * Route API: Traductions
- * NOTE: Cette route est publique car les traductions ne contiennent pas de données sensibles.
- * Si des données sensibles doivent être traduites, ajouter une vérification d'authentification.
+ * Route API: Translations
+ * NOTE: This route is public because translations don't contain sensitive data.
+ * If sensitive data needs translation, add authentication verification.
  */
 const translations: Record<string, Record<string, string>> = {
   en,

@@ -174,7 +174,7 @@ export default function NewSyncPage() {
 
   const handleSync = async () => {
     if (!source || !sourceDocId || !destination) {
-      setError('Tous les champs sont requis')
+      setError('All fields are required')
       return
     }
 
@@ -205,7 +205,7 @@ export default function NewSyncPage() {
 
       const document = await res.json()
 
-      addLog('Sync lancée, suivi en cours...', 'info')
+      addLog('Sync started, tracking progress...', 'info')
 
       // Poll for completion
       pollIntervalRef.current = setInterval(async () => {
@@ -230,11 +230,11 @@ export default function NewSyncPage() {
 
           if (status.syncStatus === 'SYNCED') {
             clearInterval(pollIntervalRef.current!)
-            addLog('Synchronisation terminée avec succès !', 'success')
+            addLog('Sync completed successfully!', 'success')
             setIsSyncing(false)
           } else if (status.syncStatus === 'FAILED') {
             clearInterval(pollIntervalRef.current!)
-            addLog('La synchronisation a échoué', 'error')
+            addLog('Sync failed', 'error')
             setIsSyncing(false)
           }
         } catch {
@@ -250,7 +250,7 @@ export default function NewSyncPage() {
         // Use a callback to access latest isSyncing state
         setIsSyncing((prev) => {
           if (prev) {
-            addLog('Timeout — la synchronisation prend plus de temps que prévu', 'warning')
+            addLog('Timeout - synchronization is taking longer than expected', 'warning')
             return false
           }
           return prev
@@ -335,7 +335,7 @@ export default function NewSyncPage() {
                     <SelectContent>
                       {sourceConnectors.length === 0 && (
                         <div className="p-3 text-sm text-muted-foreground text-center">
-                          Aucun connecteur source. Ajoutez-en un dans la page Connecteurs.
+                          No source connector found. Add one in the Connectors page.
                         </div>
                       )}
                       {sourceConnectors.map((c) => (
@@ -381,7 +381,7 @@ export default function NewSyncPage() {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setCurrentStep(0)} className="flex-1">
-                    Retour
+                    Back
                   </Button>
                   {sourceDocId && (
                     <Button onClick={handleDocSelect} className="flex-1">
@@ -411,7 +411,7 @@ export default function NewSyncPage() {
                     <SelectContent>
                       {destConnectors.length === 0 && (
                         <div className="p-3 text-sm text-muted-foreground text-center">
-                          Aucun connecteur destination. Ajoutez-en un dans la page Connecteurs.
+                          No destination connector found. Add one in the Connectors page.
                         </div>
                       )}
                       {destConnectors.map((c) => (
@@ -424,7 +424,7 @@ export default function NewSyncPage() {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setCurrentStep(1)} className="flex-1">
-                    Retour
+                    Back
                   </Button>
                   {destination && (
                     <Button onClick={handleDestinationSelect} className="flex-1">
@@ -446,22 +446,22 @@ export default function NewSyncPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3 p-4 bg-muted rounded-lg">
-                  <p className="text-sm font-medium">Résumé</p>
+                  <p className="text-sm font-medium">Summary</p>
                   <div className="text-sm text-muted-foreground space-y-1">
                     <div className="flex justify-between">
-                      <span>Source :</span>
+                      <span>Source:</span>
                       <Badge variant="outline">
                         {selectedSource ? connectorNames[selectedSource.type] : '—'}
                       </Badge>
                     </div>
                     <div className="flex justify-between">
-                      <span>Document :</span>
+                      <span>Document:</span>
                       <span className="truncate max-w-[150px]">
                         {sourceDocuments.find((d) => d.id === sourceDocId)?.title || '—'}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Destination :</span>
+                      <span>Destination:</span>
                       <Badge variant="outline">
                         {selectedDest ? connectorNames[selectedDest.type] : '—'}
                       </Badge>
@@ -482,7 +482,7 @@ export default function NewSyncPage() {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setCurrentStep(2)} className="flex-1">
-                    Retour
+                    Back
                   </Button>
                   <Button onClick={handleSync} className="flex-1" disabled={isSyncing}>
                     <Zap className="w-4 h-4 mr-2" />
@@ -505,18 +505,18 @@ export default function NewSyncPage() {
                   <>
                     <Loader2 className="w-12 h-12 animate-spin text-primary" />
                     <p className="text-sm text-muted-foreground">
-                      Synchronisation en cours via QStash...
+                      Syncing via QStash...
                     </p>
                   </>
                 ) : (
                   <>
                     <Check className="w-12 h-12 text-green-500" />
-                    <p className="text-sm text-muted-foreground">Synchronisation terminée !</p>
+                    <p className="text-sm text-muted-foreground">Sync complete!</p>
                     <Button
                       variant="outline"
                       onClick={() => (window.location.href = '/dashboard/sync')}
                     >
-                      Voir l&apos;historique
+                      View history
                     </Button>
                   </>
                 )}

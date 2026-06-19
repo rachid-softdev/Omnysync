@@ -106,28 +106,28 @@ export default function ApprovalsPage() {
         return (
           <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500">
             <Clock className="w-3 h-3 mr-1" />
-            En attente
+            Pending
           </Badge>
         )
       case 'APPROVED':
         return (
           <Badge variant="default" className="bg-green-500/10 text-green-500">
             <CheckCircle className="w-3 h-3 mr-1" />
-            Approuvé
+            Approved
           </Badge>
         )
       case 'REJECTED':
         return (
           <Badge variant="destructive">
             <XCircle className="w-3 h-3 mr-1" />
-            Rejeté
+            Rejected
           </Badge>
         )
       case 'EXPIRED':
         return (
           <Badge variant="outline" className="text-muted-foreground">
             <AlertCircle className="w-3 h-3 mr-1" />
-            Expiré
+            Expired
           </Badge>
         )
       default:
@@ -149,24 +149,24 @@ export default function ApprovalsPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">{t('APPROVALS_TITLE') || 'Approbations'}</h1>
+        <h1 className="text-3xl font-bold">{t('APPROVALS_TITLE')}</h1>
         <p className="text-muted-foreground mt-1">
-          {t('APPROVALS_SUBTITLE') || "Gérez les demandes d'approbation avant publication"}
+          {t('APPROVALS_SUBTITLE')}
         </p>
       </div>
 
-      {/* En attente */}
+      {/* Pending */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Clock className="w-5 h-5" />
-          {t('APPROVALS_PENDING') || 'En attente'} ({pendingApprovals.length})
+          {t('APPROVALS_PENDING')} ({pendingApprovals.length})
         </h2>
 
         {pendingApprovals.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <FileCheck className="w-10 h-10 text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">Aucune demande d'approbation en attente</p>
+              <p className="text-muted-foreground">No pending approval requests</p>
             </CardContent>
           </Card>
         ) : (
@@ -181,11 +181,11 @@ export default function ApprovalsPage() {
                         {getStatusBadge(approval.status)}
                       </div>
                       <p className="text-sm text-muted-foreground mb-2">
-                        Demandé par {approval.requestedBy} •{' '}
-                        {new Date(approval.requestedAt).toLocaleString('fr-FR')}
+                        Requested by {approval.requestedBy} •{' '}
+                        {new Date(approval.requestedAt).toLocaleString('en-US')}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Expire le {new Date(approval.expiresAt).toLocaleString('fr-FR')}
+                        Expires on {new Date(approval.expiresAt).toLocaleString('en-US')}
                       </p>
                     </div>
 
@@ -196,7 +196,7 @@ export default function ApprovalsPage() {
                         onClick={() => setSelectedApproval(approval)}
                       >
                         <Eye className="w-4 h-4 mr-1" />
-                        Voir
+                        View
                       </Button>
                       <Button
                         variant="default"
@@ -209,7 +209,7 @@ export default function ApprovalsPage() {
                         ) : (
                           <CheckCircle className="w-4 h-4 mr-1" />
                         )}
-                        Approuver
+                        Approve
                       </Button>
                       <Button
                         variant="destructive"
@@ -221,7 +221,7 @@ export default function ApprovalsPage() {
                         disabled={actionLoading === approval.id}
                       >
                         <XCircle className="w-4 h-4 mr-1" />
-                        Rejeter
+                        Reject
                       </Button>
                     </div>
                   </div>
@@ -232,17 +232,17 @@ export default function ApprovalsPage() {
         )}
       </div>
 
-      {/* Historique */}
+      {/* History */}
       <div>
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <FileCheck className="w-5 h-5" />
-          {t('APPROVALS_HISTORY') || 'Historique'}
+          {t('APPROVALS_HISTORY')}
         </h2>
 
         {historyApprovals.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <p className="text-muted-foreground">Aucun historique d'approbation</p>
+              <p className="text-muted-foreground">No approval history</p>
             </CardContent>
           </Card>
         ) : (
@@ -258,10 +258,10 @@ export default function ApprovalsPage() {
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {approval.status === 'APPROVED'
-                          ? `Approuvé par ${approval.approvedBy} le ${approval.approvedAt ? new Date(approval.approvedAt).toLocaleString('fr-FR') : ''}`
+                          ? `Approved by ${approval.approvedBy} on ${approval.approvedAt ? new Date(approval.approvedAt).toLocaleString('en-US') : ''}`
                           : approval.status === 'REJECTED'
-                            ? `Rejeté${approval.comments ? `: ${approval.comments}` : ''}`
-                            : `Expiré le ${new Date(approval.expiresAt).toLocaleString('fr-FR')}`}
+                            ? `Rejected${approval.comments ? `: ${approval.comments}` : ''}`
+                            : `Expired on ${new Date(approval.expiresAt).toLocaleString('en-US')}`}
                       </p>
                     </div>
                   </div>
@@ -276,18 +276,18 @@ export default function ApprovalsPage() {
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rejeter la demande</DialogTitle>
-            <DialogDescription>Veuillez fournir une raison pour le rejet.</DialogDescription>
+            <DialogTitle>Reject request</DialogTitle>
+            <DialogDescription>Please provide a reason for rejection.</DialogDescription>
           </DialogHeader>
           <Textarea
-            placeholder="Raison du rejet (optionnel)"
+            placeholder="Reason for rejection (optional)"
             value={rejectComment}
             onChange={(e) => setRejectComment(e.target.value)}
             className="min-h-[100px]"
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setRejectOpen(false)}>
-              Annuler
+              Cancel
             </Button>
             {selectedApproval && (
               <Button
@@ -298,7 +298,7 @@ export default function ApprovalsPage() {
                 {actionLoading === selectedApproval.id && (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 )}
-                Rejeter
+                Reject
               </Button>
             )}
           </DialogFooter>

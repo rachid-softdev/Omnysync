@@ -108,13 +108,13 @@ export default function WebhooksPage() {
       const res = await fetch(`/api/webhook-endpoints/${deleteTarget}`, { method: 'DELETE' })
       if (res.ok) {
         setWebhooks(webhooks.filter((w) => w.id !== deleteTarget))
-        toast.success('Webhook supprimé')
+        toast.success('Webhook deleted')
       } else {
-        toast.error('Erreur lors de la suppression')
+        toast.error('Error deleting webhook')
       }
     } catch (e) {
       console.error(e)
-      toast.error('Erreur lors de la suppression')
+      toast.error('Error deleting webhook')
     } finally {
       setDeleteTarget(null)
     }
@@ -143,12 +143,12 @@ export default function WebhooksPage() {
       const data = await res.json()
 
       if (res.ok && data.success) {
-        toast.success('Test envoyé avec succès!')
+        toast.success('Test sent successfully!')
       } else {
-        toast.error(`Erreur: ${data.error}`)
+        toast.error(`Error: ${data.error}`)
       }
     } catch {
-      toast.error('Erreur lors du test')
+      toast.error('Error during test')
     } finally {
       setTestingId(null)
     }
@@ -156,7 +156,7 @@ export default function WebhooksPage() {
 
   const copySecret = (secret: string) => {
     navigator.clipboard.writeText(secret)
-    toast.success('Secret copié dans le presse-papiers')
+    toast.success('Secret copied to clipboard')
   }
 
   if (loading) {
@@ -171,10 +171,9 @@ export default function WebhooksPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">{t('WEBHOOKS_TITLE') || 'Webhooks'}</h1>
+          <h1 className="text-3xl font-bold">{t('WEBHOOKS_TITLE')}</h1>
           <p className="text-muted-foreground mt-1">
-            {t('WEBHOOKS_SUBTITLE') ||
-              'Gérez les webhooks pour la synchronisation bidirectionnelle'}
+            {t('WEBHOOKS_SUBTITLE')}
           </p>
         </div>
 
@@ -182,26 +181,26 @@ export default function WebhooksPage() {
           <DialogTrigger asChild>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
-              {t('WEBHOOKS_CREATE') || 'Créer un webhook'}
+              {t('WEBHOOKS_CREATE')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{t('WEBHOOKS_CREATE_TITLE') || 'Nouveau Webhook'}</DialogTitle>
+              <DialogTitle>{t('WEBHOOKS_CREATE_TITLE')}</DialogTitle>
               <DialogDescription>
-                Configurez un endpoint pour recevoir les notifications de vos plateformes.
+                Configure an endpoint to receive notifications from your platforms.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>Connecteur</Label>
+                <Label>Connector</Label>
                 <Select
                   value={newWebhook.connectorId}
                   onValueChange={(v) => setNewWebhook({ ...newWebhook, connectorId: v })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un connecteur" />
+                    <SelectValue placeholder="Select a connector" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="connector-1">WordPress - mon-site.com</SelectItem>
@@ -230,9 +229,9 @@ export default function WebhooksPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>URL du endpoint</Label>
+                <Label>Endpoint URL</Label>
                 <Input
-                  placeholder="https://votre-site.com/webhook"
+                  placeholder="https://your-site.com/webhook"
                   value={newWebhook.url}
                   onChange={(e) => setNewWebhook({ ...newWebhook, url: e.target.value })}
                 />
@@ -241,9 +240,9 @@ export default function WebhooksPage() {
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Annuler
+                Cancel
               </Button>
-              <Button onClick={createWebhook}>Créer</Button>
+              <Button onClick={createWebhook}>Create</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -253,13 +252,13 @@ export default function WebhooksPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Webhook className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Aucun webhook configuré</h3>
+            <h3 className="text-lg font-semibold mb-2">No webhooks configured</h3>
             <p className="text-muted-foreground text-center mb-4">
-              Créez votre premier webhook pour recevoir les notifications en temps réel.
+              Create your first webhook to receive real-time notifications.
             </p>
             <Button onClick={() => setIsCreateOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
-              Créer un webhook
+              Create webhook
             </Button>
           </CardContent>
         </Card>
@@ -281,14 +280,14 @@ export default function WebhooksPage() {
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{webhook.type}</p>
                         <Badge variant={webhook.isActive ? 'default' : 'secondary'}>
-                          {webhook.isActive ? 'Actif' : 'Inactif'}
+                          {webhook.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">{webhook.url}</p>
                       {webhook.lastTriggeredAt && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Dernier déclenchement:{' '}
-                          {new Date(webhook.lastTriggeredAt).toLocaleString('fr-FR')}
+                          Last triggered:{' '}
+                          {new Date(webhook.lastTriggeredAt).toLocaleString('en-US')}
                         </p>
                       )}
                     </div>
@@ -334,18 +333,18 @@ export default function WebhooksPage() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Supprimer le webhook</AlertDialogTitle>
+                          <AlertDialogTitle>Delete webhook</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Êtes-vous sûr de vouloir supprimer ce webhook ? Cette action est
-                            irréversible.
+                            Are you sure you want to delete this webhook? This action is
+                            irreversible.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
-                            Annuler
+                            Cancel
                           </AlertDialogCancel>
                           <AlertDialogAction onClick={confirmDeleteWebhook}>
-                            Supprimer
+                            Delete
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
