@@ -49,9 +49,7 @@ export default function Home() {
 
         {/* Platform Logos */}
         <div className="mt-16 pt-8 border-t border-border">
-          <p className="text-center text-sm text-muted-foreground mb-6">
-            {t('hero_platforms')}
-          </p>
+          <p className="text-center text-sm text-muted-foreground mb-6">{t('hero_platforms')}</p>
           <div className="flex items-center justify-center gap-8 flex-wrap opacity-50">
             <div className="flex items-center gap-2">
               <Globe className="w-6 h-6" />

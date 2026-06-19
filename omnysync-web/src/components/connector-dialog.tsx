@@ -36,7 +36,12 @@ const PLATFORM_FIELDS: Record<
     { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'token...' },
   ],
   SHOPIFY: [
-    { label: 'Shop Domain', key: 'shopDomain', type: 'text', placeholder: 'my-store.myshopify.com' },
+    {
+      label: 'Shop Domain',
+      key: 'shopDomain',
+      type: 'text',
+      placeholder: 'my-store.myshopify.com',
+    },
     { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'shpat_...' },
   ],
   AIRTABLE: [

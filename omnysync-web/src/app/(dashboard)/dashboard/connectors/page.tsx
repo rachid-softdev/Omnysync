@@ -134,9 +134,7 @@ export default function ConnectorsPage() {
 
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">{t('UI_SOURCES')}</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-           {t('UI_SOURCES_DESC')}
-        </p>
+        <p className="text-sm text-muted-foreground mb-4">{t('UI_SOURCES_DESC')}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...sourceTypes].map((type) => {
             const isConnected = connectedTypesSet.has(type)
@@ -170,9 +168,7 @@ export default function ConnectorsPage() {
 
       <div>
         <h2 className="text-xl font-semibold mb-4">{t('UI_DESTINATIONS')}</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-           {t('UI_DESTINATIONS_DESC')}
-        </p>
+        <p className="text-sm text-muted-foreground mb-4">{t('UI_DESTINATIONS_DESC')}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {[...destTypes].map((type) => {
             const isConnected = connectedTypesSet.has(type)

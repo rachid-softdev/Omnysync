@@ -108,7 +108,10 @@ export default function PricingPage() {
                   <ProCheckoutButton label={t(plan.ctaKey)} />
                 ) : (
                   <Link href={plan.href}>
-                    <Button className="w-full rounded-full" variant={plan.highlighted ? 'default' : 'outline'}>
+                    <Button
+                      className="w-full rounded-full"
+                      variant={plan.highlighted ? 'default' : 'outline'}
+                    >
                       {plan.nameKey === 'plan_business_name' && <Zap className="w-4 h-4 mr-2" />}
                       {t(plan.ctaKey)}
                     </Button>

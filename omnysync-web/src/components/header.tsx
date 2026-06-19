@@ -21,10 +21,7 @@ export function Header() {
       </Link>
       {isHome && (
         <div className="hidden md:flex items-center gap-8">
-          <Link
-            href="#features"
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
+          <Link href="#features" className="text-sm text-muted-foreground hover:text-foreground">
             {t('nav_features')}
           </Link>
           <Link

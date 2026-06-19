@@ -152,7 +152,7 @@ describe("S1-3: OAuth encryption utilities", () => {
       const arr2 = arr as unknown as Record<string, unknown>[];
       decryptResult(arr2);
       // The second element should still be decryptable
-      expect((arr2[0] as any)).toBeNull();
+      expect(arr2[0] as any).toBeNull();
     });
 
     it("encrypted format: ENC:ivHex:authTagHex:ciphertext", () => {

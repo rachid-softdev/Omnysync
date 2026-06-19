@@ -118,9 +118,7 @@ export default function UsagePage() {
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">{t('USAGE_TITLE')}</h1>
-        <p className="text-muted-foreground mt-1">
-          {t('USAGE_SUBTITLE')}
-        </p>
+        <p className="text-muted-foreground mt-1">{t('USAGE_SUBTITLE')}</p>
       </div>
 
       {/* Plan Info */}
@@ -282,9 +280,7 @@ export default function UsagePage() {
                     <h3 className="font-semibold">SEO</h3>
                   </div>
                   <p className="text-4xl font-bold">{displayUsage.aiSEO}</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    SEO metadata generations
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">SEO metadata generations</p>
                 </div>
 
                 <div className="p-6 rounded-lg border bg-muted/50">
@@ -302,9 +298,7 @@ export default function UsagePage() {
                     <h3 className="font-semibold">Interlinking</h3>
                   </div>
                   <p className="text-4xl font-bold">{displayUsage.aiInterlinking}</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Internal link suggestions
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">Internal link suggestions</p>
                 </div>
               </div>
 

@@ -333,9 +333,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
             </CardHeader>
             <CardContent>
               {document.syncLogs.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
-                  No history available
-                </p>
+                <p className="text-muted-foreground text-center py-8">No history available</p>
               ) : (
                 <div className="space-y-3">
                   {document.syncLogs.map((log: any) => (
@@ -384,9 +382,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">Auto sync</p>
-                    <p className="text-sm text-muted-foreground">
-                      Automatically detect changes
-                    </p>
+                    <p className="text-sm text-muted-foreground">Automatically detect changes</p>
                   </div>
                   <input
                     type="checkbox"
@@ -435,9 +431,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">Auto-publish</p>
-                    <p className="text-sm text-muted-foreground">
-                      Publish immediately after sync
-                    </p>
+                    <p className="text-sm text-muted-foreground">Publish immediately after sync</p>
                   </div>
                   <input type="checkbox" className="h-4 w-4" defaultChecked />
                 </div>

@@ -51,9 +51,7 @@ export default function TwoFactorVerifyPage() {
             <Shield className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-2xl">Two-Factor Authentication</CardTitle>
-          <CardDescription>
-            Enter the 6-digit code from your authenticator app
-          </CardDescription>
+          <CardDescription>Enter the 6-digit code from your authenticator app</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleVerify} className="space-y-4">

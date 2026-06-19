@@ -172,9 +172,7 @@ export default function WebhooksPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">{t('WEBHOOKS_TITLE')}</h1>
-          <p className="text-muted-foreground mt-1">
-            {t('WEBHOOKS_SUBTITLE')}
-          </p>
+          <p className="text-muted-foreground mt-1">{t('WEBHOOKS_SUBTITLE')}</p>
         </div>
 
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

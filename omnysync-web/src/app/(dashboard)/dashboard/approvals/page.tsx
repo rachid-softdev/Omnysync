@@ -150,9 +150,7 @@ export default function ApprovalsPage() {
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">{t('APPROVALS_TITLE')}</h1>
-        <p className="text-muted-foreground mt-1">
-          {t('APPROVALS_SUBTITLE')}
-        </p>
+        <p className="text-muted-foreground mt-1">{t('APPROVALS_SUBTITLE')}</p>
       </div>
 
       {/* Pending */}

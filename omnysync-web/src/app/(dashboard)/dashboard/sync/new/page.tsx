@@ -504,9 +504,7 @@ export default function NewSyncPage() {
                 {isSyncing ? (
                   <>
                     <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                    <p className="text-sm text-muted-foreground">
-                      Syncing via QStash...
-                    </p>
+                    <p className="text-sm text-muted-foreground">Syncing via QStash...</p>
                   </>
                 ) : (
                   <>
