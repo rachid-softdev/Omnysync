@@ -1014,6 +1014,198 @@ describe("Sync Service", () => {
       expect(contentfulModule.createContentfulEntry).not.toHaveBeenCalled();
     });
 
+    it("should handle Google Docs source with null sourceId (skip GOOGLE_DOCS parsing branch)", async () => {
+      const googleDocNoSourceId = {
+        ...baseDocument,
+        sourceId: null,
+      };
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        googleDocNoSourceId as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(true);
+      // Should not call parseGoogleDocToHtml when sourceId is null
+      const htmlParserModule = await import("../html-parser");
+      expect(htmlParserModule.parseGoogleDocToHtml).not.toHaveBeenCalled();
+    });
+
+    it("should update existing Ghost post when slug exists", async () => {
+      const ghostUpdateDoc = {
+        ...baseDocument,
+        slug: "existing-slug",
+        destConnector: {
+          id: destConnectorId,
+          type: "GHOST",
+          credentials: "enc_creds",
+          config: { siteUrl: "https://ghost.example.com" },
+        },
+      };
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        ghostUpdateDoc as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(true);
+      const ghostClient = vi.mocked(createGhostClient).mock.results[0].value;
+      expect(ghostClient.updatePost).toHaveBeenCalledWith(
+        "existing-slug",
+        expect.objectContaining({ status: "published" }),
+      );
+      expect(ghostClient.createPost).not.toHaveBeenCalled();
+    });
+
+    it("should update existing Webflow item when slug exists", async () => {
+      const webflowUpdateDoc = {
+        ...baseDocument,
+        slug: "existing-slug",
+        destConnector: {
+          id: destConnectorId,
+          type: "WEBFLOW",
+          credentials: "enc_creds",
+          config: { siteId: "site-1", collectionId: "coll-1" },
+        },
+      };
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        webflowUpdateDoc as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(true);
+      const webflowClient =
+        vi.mocked(createWebflowClient).mock.results[0].value;
+      expect(webflowClient.updateItem).toHaveBeenCalledWith(
+        "coll-1",
+        "existing-slug",
+        expect.objectContaining({ name: "Test Doc" }),
+      );
+      expect(webflowClient.createItem).not.toHaveBeenCalled();
+    });
+
+    it("should update existing Shopify article when slug exists", async () => {
+      // Reset Shopify mock explicitly (previous tests may have overridden it)
+      const shopifyModule = await import("../shopify");
+      vi.mocked(shopifyModule.createShopifyClient).mockReturnValue({
+        createArticle: vi.fn().mockResolvedValue({ article: { id: 456 } }),
+        updateArticle: vi.fn().mockResolvedValue({}),
+        getBlogs: vi.fn().mockResolvedValue({
+          blogs: [{ id: "blog-1" }],
+        }),
+      } as any);
+
+      const shopifyUpdateDoc = {
+        ...baseDocument,
+        slug: "article-456",
+        destConnector: {
+          id: destConnectorId,
+          type: "SHOPIFY",
+          credentials: "enc_creds",
+          config: { shopDomain: "test.myshopify.com" },
+        },
+      };
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        shopifyUpdateDoc as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(true);
+      const shopifyClient =
+        vi.mocked(createShopifyClient).mock.results[0].value;
+      expect(shopifyClient.updateArticle).toHaveBeenCalledWith(
+        "blog-1",
+        "article-456",
+        expect.objectContaining({ title: "Test Doc" }),
+      );
+      expect(shopifyClient.createArticle).not.toHaveBeenCalled();
+    });
+
+    it("should handle null sourceConnector (optional chaining fallback at line 364)", async () => {
+      const nullSourceDoc = {
+        ...baseDocument,
+        sourceConnector: null,
+      };
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        nullSourceDoc as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(true);
+      // Source fetch step should be skipped (no source connector)
+      // Parsing step should skip GOOGLE_DOCS branch (sourceConnector is null)
+      const htmlParserModule = await import("../html-parser");
+      expect(htmlParserModule.parseGoogleDocToHtml).not.toHaveBeenCalled();
+    });
+
     it("should handle Contentful update when existing entry is not found (getContentfulEntry returns null)", async () => {
       const contentfulModule = await import("../contentful");
       vi.mocked(contentfulModule.getContentfulEntry).mockResolvedValue(null);
@@ -1048,6 +1240,198 @@ describe("Sync Service", () => {
       // Sync succeeds but updateContentfulEntry is not called (entry not found)
       expect(result.success).toBe(true);
       expect(contentfulModule.updateContentfulEntry).not.toHaveBeenCalled();
+    });
+
+    it("should sync Google Docs source to Ghost destination with null credentials", async () => {
+      const ghostNullCredsDoc = {
+        ...baseDocument,
+        destConnector: {
+          id: destConnectorId,
+          type: "GHOST",
+          credentials: null,
+          config: null,
+        },
+      };
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        ghostNullCredsDoc as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(true);
+      // With null config, config.siteUrl is undefined, but mock handles it
+      const ghostClient = vi.mocked(createGhostClient).mock.results[0].value;
+      expect(ghostClient.createPost).toHaveBeenCalled();
+    });
+
+    it("should sync Google Docs source to Webflow destination with null credentials", async () => {
+      const webflowNullCredsDoc = {
+        ...baseDocument,
+        slug: "wf-slug",
+        destConnector: {
+          id: destConnectorId,
+          type: "WEBFLOW",
+          credentials: null,
+          config: null,
+        },
+      };
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        webflowNullCredsDoc as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(true);
+      const webflowClient =
+        vi.mocked(createWebflowClient).mock.results[0].value;
+      expect(webflowClient.updateItem).toHaveBeenCalled();
+    });
+
+    it("should sync Google Docs source to Shopify destination with null credentials", async () => {
+      const shopifyNullCredsDoc = {
+        ...baseDocument,
+        slug: "shopify-slug",
+        destConnector: {
+          id: destConnectorId,
+          type: "SHOPIFY",
+          credentials: null,
+          config: null,
+        },
+      };
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        shopifyNullCredsDoc as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(true);
+      const shopifyClient =
+        vi.mocked(createShopifyClient).mock.results[0].value;
+      expect(shopifyClient.updateArticle).toHaveBeenCalled();
+    });
+
+    it("should sync Google Docs source to WordPress destination with null slug in publishToDestination (update path with slug)", async () => {
+      const wpWithSlugDoc = {
+        ...baseDocument,
+        slug: "123",
+        destConnector: {
+          id: destConnectorId,
+          type: "WORDPRESS",
+          credentials: "enc_creds",
+          config: { siteUrl: "https://example.com" },
+        },
+      };
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        wpWithSlugDoc as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(true);
+      const wpClient = vi.mocked(createWordPressClient).mock.results[0].value;
+      expect(wpClient.updatePost).toHaveBeenCalledWith(
+        123,
+        expect.objectContaining({ title: "Test Doc" }),
+      );
+      expect(wpClient.createPost).not.toHaveBeenCalled();
+    });
+
+    it("should sync Google Docs source to Shopify destination with no blogs (blogId falsy, skips article)", async () => {
+      // Reset Shopify mock to return empty blogs
+      const shopifyModule = await import("../shopify");
+      vi.mocked(shopifyModule.createShopifyClient).mockReturnValue({
+        createArticle: vi.fn().mockResolvedValue({ article: { id: 456 } }),
+        updateArticle: vi.fn().mockResolvedValue({}),
+        getBlogs: vi.fn().mockResolvedValue({ blogs: [] }),
+      } as any);
+
+      const shopifyNoBlogDoc = {
+        ...baseDocument,
+        slug: "shopify-slug",
+        destConnector: {
+          id: destConnectorId,
+          type: "SHOPIFY",
+          credentials: "enc_creds",
+          config: { shopDomain: "test.myshopify.com" },
+        },
+      };
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        shopifyNoBlogDoc as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(true);
+      const shopifyClient =
+        vi.mocked(createShopifyClient).mock.results[0].value;
+      expect(shopifyClient.getBlogs).toHaveBeenCalled();
+      expect(shopifyClient.updateArticle).not.toHaveBeenCalled();
+      expect(shopifyClient.createArticle).not.toHaveBeenCalled();
     });
   });
 

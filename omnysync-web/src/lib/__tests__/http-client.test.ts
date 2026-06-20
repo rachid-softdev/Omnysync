@@ -409,4 +409,44 @@ describe('fetchWithRetry', () => {
     await expect(fetchWithRetry('http://example.com/api', {}, 1)).rejects.toThrow('Network error')
     expect(global.fetch).toHaveBeenCalledTimes(1)
   })
+
+  it('retries on AbortError (not 4xx, so retryable)', async () => {
+    const mockData = { success: true }
+    const mockResponse = {
+      ok: true,
+      json: vi.fn().mockResolvedValue(mockData),
+    }
+
+    const abortError = new Error('The operation was aborted')
+    abortError.name = 'AbortError'
+
+    global.fetch = vi.fn().mockRejectedValueOnce(abortError).mockResolvedValue(mockResponse)
+
+    const result = await fetchWithRetry('http://example.com/api', {}, 3)
+    expect(result).toEqual(mockData)
+    expect(global.fetch).toHaveBeenCalledTimes(2)
+  }, 10000)
+
+  it('retries on 503 Service Unavailable', async () => {
+    const mockData = { success: true }
+    const mockResponse = {
+      ok: true,
+      json: vi.fn().mockResolvedValue(mockData),
+    }
+
+    const serverErrorResponse = {
+      ok: false,
+      status: 503,
+      text: vi.fn().mockResolvedValue('Service Unavailable'),
+    }
+
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce(serverErrorResponse)
+      .mockResolvedValue(mockResponse)
+
+    const result = await fetchWithRetry('http://example.com/api', {}, 3)
+    expect(result).toEqual(mockData)
+    expect(global.fetch).toHaveBeenCalledTimes(2)
+  }, 10000)
 })

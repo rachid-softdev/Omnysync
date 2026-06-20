@@ -276,6 +276,51 @@ describe("checkQuota", () => {
     expect(result.current).toBe(1);
     expect(result.limit).toBe(1);
   });
+
+  it("should return invalid plan error for unknown plan key (line 135)", async () => {
+    mockPrisma.organization.findUnique.mockResolvedValue({
+      id: orgId,
+      name: "Test Org",
+      subscriptions: [
+        { id: "sub-1", planKey: "unknown-plan", status: "active" },
+      ],
+    });
+
+    const result = await checkQuota(orgId, "maxConnectors");
+
+    expect(result.allowed).toBe(false);
+    expect(result.message).toBe("Invalid plan");
+  });
+
+  it("should return allowed=true for unknown numeric feature (default switch case, line 212)", async () => {
+    // Pass a non-existent feature name as `keyof PlanFeatures` to reach the default case.
+    // At runtime, plan["nonExistentFeature"] is undefined → not boolean, not -1,
+    // not in the switch → hits default: return { allowed: true }
+    const result = await checkQuota(
+      orgId,
+      "nonExistentFeature" as keyof import("../features").PlanFeatures,
+    );
+
+    expect(result.allowed).toBe(true);
+  });
+
+  it("should handle org with no subscription (free plan fallback)", async () => {
+    mockPrisma.organization.findUnique.mockResolvedValue({
+      id: orgId,
+      name: "Test Org",
+      subscriptions: [],
+    });
+
+    // vi.clearAllMocks() was called in beforeEach, so connector.count
+    // returns undefined by default. Set it explicitly to 0 so count < limit passes.
+    mockPrisma.connector.count.mockResolvedValue(0);
+
+    // Should fall back to free plan (limit 2)
+    const result = await checkQuota(orgId, "maxConnectors");
+
+    expect(result.allowed).toBe(true); // 0 connectors used, 2 allowed → allowed
+    expect(result.limit).toBe(2);
+  });
 });
 
 // ============================================================================

@@ -421,6 +421,34 @@ describe("Approval Service", () => {
       expect(result.success).toBe(false);
       expect(result.error).toBe("Approval request is not pending");
     });
+
+    it("should catch and return prisma error when findFirst fails", async () => {
+      vi.mocked(prisma.approvalRequest.findFirst).mockRejectedValue(
+        new Error("DB connection lost"),
+      );
+
+      const result = await cancelApprovalRequest(orgId, "approval-1");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("DB connection lost");
+    });
+
+    it("should catch and return prisma error when update fails", async () => {
+      vi.mocked(prisma.approvalRequest.findFirst).mockResolvedValue({
+        id: "approval-1",
+        documentId,
+        status: "PENDING",
+        document: { organizationId: orgId },
+      } as any);
+      vi.mocked(prisma.approvalRequest.update).mockRejectedValue(
+        new Error("Update failed"),
+      );
+
+      const result = await cancelApprovalRequest(orgId, "approval-1");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Update failed");
+    });
   });
 
   // ==========================================================================

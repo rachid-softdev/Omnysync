@@ -416,6 +416,101 @@ describe("FeatureGateService", () => {
       const result = await service.hasFeature("org-1", "NON_EXISTENT");
       expect(result).toBe(false);
     });
+
+    it("should return false when no active subscription exists", async () => {
+      // No subscription set for this org
+      const result = await service.hasFeature("nonexistent", "EXPORT_PDF");
+      expect(result).toBe(false);
+    });
+  });
+
+  // ============================================================================
+  // GET LIMIT
+  // ============================================================================
+
+  describe("getLimit", () => {
+    it("should return null for non-existent feature", async () => {
+      const result = await service.getLimit("org-1", "NON_EXISTENT");
+      expect(result).toBeNull();
+    });
+
+    it("should return null for BOOLEAN feature (not LIMIT type)", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      const result = await service.getLimit("org-1", "EXPORT_PDF");
+      expect(result).toBeNull();
+    });
+
+    it("should return numeric limit for LIMIT feature", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      const result = await service.getLimit("org-1", "MAX_SYNCS");
+      expect(result).toBe(100); // From pro plan
+    });
+  });
+
+  // ============================================================================
+  // ASSERT FEATURE
+  // ============================================================================
+
+  describe("assertFeature", () => {
+    it("should not throw when feature is available", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      await expect(
+        service.assertFeature("org-1", "EXPORT_PDF"),
+      ).resolves.toBeUndefined();
+    });
+
+    it("should throw FeatureNotAvailableError when feature is not enabled", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "free",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      await expect(
+        service.assertFeature("org-1", "EXPORT_PDF"),
+      ).rejects.toThrow(
+        "Feature 'EXPORT_PDF' is not available on your current plan",
+      );
+    });
   });
 
   // ============================================================================
@@ -582,7 +677,40 @@ describe("FeatureGateService", () => {
       mockRepo._setSubscription("org-1", {
         id: "1",
         organizationId: "org-1",
-        planKey: "pro",
+        planKey: "free",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      // Used 10 out of 10 (free plan limit is 10)
+      mockRepo._setUsage("org-1", "MAX_SYNCS", {
+        id: "1",
+        organizationId: "org-1",
+        featureKey: "MAX_SYNCS",
+        usageCount: 10,
+        periodStart: new Date(),
+        periodEnd: new Date(),
+      });
+
+      const result = await service.canConsume("org-1", "MAX_SYNCS", 1);
+      expect(result).toBe(false);
+    });
+
+    it("should return true when limit is null (unlimited)", async () => {
+      // EXPORT_PDF has no limit (unlimited)
+      const result = await service.canConsume("org-1", "EXPORT_PDF", 1);
+      expect(result).toBe(true);
+    });
+
+    it("should return false when amount exceeds remaining", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "free",
         status: "ACTIVE",
         currentPeriodStart: new Date(),
         currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -601,17 +729,36 @@ describe("FeatureGateService", () => {
         periodEnd: new Date(),
       });
 
-      // This test checks if canConsume returns false when at limit
-      // Note: Current implementation may handle this differently
       const result = await service.canConsume("org-1", "MAX_SYNCS", 1);
-      // Adjust expectation based on actual implementation behavior
-      expect(typeof result).toBe("boolean");
+      expect(result).toBe(false);
     });
 
-    it("should return true when limit is null (unlimited)", async () => {
-      // EXPORT_PDF has no limit (unlimited)
-      const result = await service.canConsume("org-1", "EXPORT_PDF", 1);
-      expect(result).toBe(true);
+    it("should return false when amount exceeds remaining by large margin", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "free",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      // Used 9 out of 10
+      mockRepo._setUsage("org-1", "MAX_SYNCS", {
+        id: "1",
+        organizationId: "org-1",
+        featureKey: "MAX_SYNCS",
+        usageCount: 9,
+        periodStart: new Date(),
+        periodEnd: new Date(),
+      });
+
+      // Request 5 units but only 1 remaining
+      const result = await service.canConsume("org-1", "MAX_SYNCS", 5);
+      expect(result).toBe(false);
     });
   });
 
@@ -665,6 +812,131 @@ describe("FeatureGateService", () => {
       await expect(service.consume("org-1", "MAX_SYNCS", 1)).rejects.toThrow(
         LimitReachedError,
       );
+    });
+
+    it("should throw InvalidFeatureError for non-existent feature", async () => {
+      await expect(service.consume("org-1", "NON_EXISTENT", 1)).rejects.toThrow(
+        "Feature 'NON_EXISTENT' is not defined in the system",
+      );
+    });
+
+    it("should throw FeatureNotAvailableError when consuming a disabled feature", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "free", // EXPORT_PDF is disabled in free
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      await expect(service.consume("org-1", "EXPORT_PDF", 1)).rejects.toThrow(
+        "not available",
+      );
+    });
+
+    it("should return remaining as null for unlimited features", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      const result = await service.consume("org-1", "EXPORT_PDF", 1);
+      expect(result.success).toBe(true);
+      expect(result.limit).toBeNull();
+      expect(result.remaining).toBeNull();
+    });
+
+    it("should consume multiple units at once", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      const result = await service.consume("org-1", "MAX_SYNCS", 5);
+      expect(result.success).toBe(true);
+      expect(result.used).toBe(5);
+    });
+
+    it("should consume with default amount of 1", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      const result = await service.consume("org-1", "MAX_SYNCS");
+      expect(result.success).toBe(true);
+      expect(result.used).toBe(1);
+    });
+
+    it("should return correct remaining after consumption", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      // Start with 95 usage, limit is 100 (from pro plan)
+      mockRepo._setUsage("org-1", "MAX_SYNCS", {
+        id: "1",
+        organizationId: "org-1",
+        featureKey: "MAX_SYNCS",
+        usageCount: 95,
+        periodStart: new Date(),
+        periodEnd: new Date(),
+      });
+
+      const result = await service.consume("org-1", "MAX_SYNCS", 3);
+      expect(result.success).toBe(true);
+      expect(result.remaining).toBe(2); // 100 - 95 - 3 = 2
+    });
+
+    it("should return resetAt in the future", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      const result = await service.consume("org-1", "MAX_SYNCS", 1);
+      expect(result.resetAt).toBeInstanceOf(Date);
+      expect(result.resetAt.getTime()).toBeGreaterThan(Date.now());
     });
   });
 
@@ -749,6 +1021,61 @@ describe("FeatureGateService", () => {
   // DEBUG TRACE TESTS
   // ============================================================================
 
+  describe("getAllEntitlements", () => {
+    it("should return entitlements from cache on second call", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      const first = await service.getAllEntitlements("org-1");
+      expect(first.plan).toBe("pro");
+      expect(first.features["EXPORT_PDF"]).toBe(true);
+
+      // Change plan behind the scenes
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "free",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      // Second call returns cached (still "pro")
+      const second = await service.getAllEntitlements("org-1");
+      expect(second.plan).toBe("pro");
+    });
+
+    it("should fetch from DB on cache miss", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "free",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      const result = await service.getAllEntitlements("org-1");
+      expect(result.plan).toBe("free");
+      expect(result.features["EXPORT_PDF"]).toBe(false);
+    });
+  });
+
   describe("getDebugTrace", () => {
     it("should return detailed trace of resolution", async () => {
       mockRepo._setSubscription("org-1", {
@@ -769,6 +1096,82 @@ describe("FeatureGateService", () => {
       expect(trace.resolvedVia).toBe("plan");
       expect(trace.value).toBe(true);
       expect(trace.planKey).toBe("pro");
+    });
+
+    it("should throw InvalidFeatureError for unknown feature", async () => {
+      await expect(
+        service.getDebugTrace("org-1", "NON_EXISTENT"),
+      ).rejects.toThrow("not defined");
+    });
+
+    it("should return trace with org_override source when override exists", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "free",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      mockRepo._setOrgOverride("org-1", {
+        id: "ov-1",
+        scope: "ORG",
+        scopeId: "org-1",
+        featureKey: "EXPORT_PDF",
+        enabled: true,
+        limitValue: null,
+        expiresAt: null,
+        reason: "Override for trace test",
+      });
+
+      const trace = await service.getDebugTrace("org-1", "EXPORT_PDF");
+
+      expect(trace.resolvedVia).toBe("org_override");
+      expect(trace.value).toBe(true);
+      expect(trace.overrideId).toBe("ov-1");
+      expect(trace.overrideScope).toBe("ORG");
+    });
+
+    it("should return trace with limit value for LIMIT feature", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      const trace = await service.getDebugTrace("org-1", "MAX_SYNCS");
+
+      expect(trace.featureKey).toBe("MAX_SYNCS");
+      expect(trace.featureType).toBe("LIMIT");
+      expect(trace.value).toBe(100);
+    });
+
+    it("should return subscriptionStatus in trace", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "1",
+        organizationId: "org-1",
+        planKey: "free",
+        status: "CANCELED",
+        currentPeriodStart: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+        currentPeriodEnd: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: true,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      // hasFeature should return false with canceled subscription
+      const result = await service.hasFeature("org-1", "EXPORT_PDF");
+      expect(result).toBe(false);
     });
   });
 });

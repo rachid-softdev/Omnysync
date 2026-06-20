@@ -443,6 +443,100 @@ describe("Scheduler Service", () => {
       expect(result.message).toBe("API error");
     });
 
+    it("should not skip when last sync was more than 1 hour ago", async () => {
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        userId: "user-1",
+        autoSyncEnabled: true,
+        sourceConnectorId: "sc-1",
+        destConnectorId: "dc-1",
+        syncFrequency: "DAILY",
+        lastSyncedAt: twoHoursAgo,
+        sourceConnector: { id: "sc-1" },
+        destConnector: { id: "dc-1" },
+      } as any);
+      vi.mocked(performSync).mockResolvedValue({ success: true } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+
+      const result = await handleScheduledSyncRun(documentId);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe("Sync completed");
+      expect(performSync).toHaveBeenCalled();
+    });
+
+    it("should fall back to 'Sync failed' when performSync returns { success: false } without error field", async () => {
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        userId: "user-1",
+        autoSyncEnabled: true,
+        sourceConnectorId: "sc-1",
+        destConnectorId: "dc-1",
+        syncFrequency: "DAILY",
+        lastSyncedAt: null,
+        sourceConnector: { id: "sc-1" },
+        destConnector: { id: "dc-1" },
+      } as any);
+      vi.mocked(performSync).mockResolvedValue({
+        success: false,
+        // No error field → should fall back to "Sync failed"
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+
+      const result = await handleScheduledSyncRun(documentId);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe("Sync failed");
+    });
+
+    it("should skip when lastSync is exactly now (hoursSinceLastSync is 0, < 1 is true)", async () => {
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        userId: "user-1",
+        autoSyncEnabled: true,
+        sourceConnectorId: "sc-1",
+        destConnectorId: "dc-1",
+        syncFrequency: "DAILY",
+        lastSyncedAt: new Date(), // exactly now → 0 hours
+        sourceConnector: { id: "sc-1" },
+        destConnector: { id: "dc-1" },
+      } as any);
+
+      const result = await handleScheduledSyncRun(documentId);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe("Skipped - sync too recent");
+      expect(result.hoursSinceLastSync).toBeDefined();
+      expect(result.hoursSinceLastSync).toBeLessThan(1);
+      expect(performSync).not.toHaveBeenCalled();
+    });
+
+    it("should handle result.error being empty string (falsy fallback to 'Sync failed')", async () => {
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        userId: "user-1",
+        autoSyncEnabled: true,
+        sourceConnectorId: "sc-1",
+        destConnectorId: "dc-1",
+        syncFrequency: "DAILY",
+        lastSyncedAt: null,
+        sourceConnector: { id: "sc-1" },
+        destConnector: { id: "dc-1" },
+      } as any);
+      vi.mocked(performSync).mockResolvedValue({
+        success: false,
+        error: "", // empty string is falsy → fall back to "Sync failed"
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+
+      const result = await handleScheduledSyncRun(documentId);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe("Sync failed");
+    });
+
     it("should update lastSyncError when performSync throws", async () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue({
         id: documentId,

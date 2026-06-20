@@ -3,10 +3,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 // Mock resend so the dynamic import('resend') in email.ts resolves at transform time
 const mockResend = vi.hoisted(() => ({
   emails: { send: vi.fn() },
+  shouldThrow: false,
 }))
 vi.mock('resend', () => ({
   Resend: class {
     emails = mockResend.emails
+    constructor() {
+      if (mockResend.shouldThrow) {
+        throw new Error('Resend client construction failed')
+      }
+    }
   },
 }))
 
@@ -18,6 +24,8 @@ describe('Email Service', () => {
     // Reset environment
     vi.stubEnv('RESEND_API_KEY', undefined)
     vi.stubEnv('RESEND_FROM_EMAIL', 'test@example.com')
+    // Reset mock flags
+    mockResend.shouldThrow = false
   })
 
   afterEach(() => {
@@ -90,6 +98,27 @@ describe('Email Service', () => {
         subject: 'Real Subject',
         html: '<p>Real content</p>',
       })
+    })
+
+    it('should log "Resend not available" when API key is set but Resend construction fails', async () => {
+      vi.stubEnv('RESEND_API_KEY', 're_abc123')
+      mockResend.shouldThrow = true
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      await sendEmail({
+        to: 'user@example.com',
+        subject: 'Test Subject',
+        html: '<p>Test content</p>',
+      })
+
+      // Should log that Resend is unavailable, not throw
+      expect(consoleLogSpy).toHaveBeenCalled()
+      const logCall = consoleLogSpy.mock.calls[0]![0] as string
+      expect(logCall).toContain('Resend not available')
+      expect(logCall).toContain('user@example.com')
+      expect(logCall).toContain('Test Subject')
+
+      consoleLogSpy.mockRestore()
     })
   })
 

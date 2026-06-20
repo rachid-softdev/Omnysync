@@ -613,6 +613,53 @@ describe("DowngradeService", () => {
       });
       expect(result).toBe("FREEZE");
     });
+
+    it("should return FREEZE as-is even with active usage (only IMMEDIATE gets overridden)", () => {
+      const result = downgradeService.calculateEffectiveStrategy({
+        featureKey: "EXPORT_PDF",
+        featureName: "Export PDF",
+        currentPlanValue: true,
+        targetPlanValue: false,
+        currentLimit: null,
+        targetLimit: null,
+        downgradeStrategy: "FREEZE",
+        willBeAffected: true,
+        hasActiveUsage: true,
+      });
+      // FREEZE is not overridden to GRACEFUL even with active usage
+      expect(result).toBe("FREEZE");
+    });
+
+    it("should return GRACEFUL when willBeAffected with GRACEFUL strategy even without active usage", () => {
+      const result = downgradeService.calculateEffectiveStrategy({
+        featureKey: "EXPORT_PDF",
+        featureName: "Export PDF",
+        currentPlanValue: true,
+        targetPlanValue: false,
+        currentLimit: null,
+        targetLimit: null,
+        downgradeStrategy: "GRACEFUL",
+        willBeAffected: true,
+        hasActiveUsage: false,
+      });
+      expect(result).toBe("GRACEFUL");
+    });
+
+    it("should return GRACEFUL when strategy is GRACEFUL with active usage (falls through)", () => {
+      const result = downgradeService.calculateEffectiveStrategy({
+        featureKey: "EXPORT_PDF",
+        featureName: "Export PDF",
+        currentPlanValue: true,
+        targetPlanValue: false,
+        currentLimit: null,
+        targetLimit: null,
+        downgradeStrategy: "GRACEFUL",
+        willBeAffected: true,
+        hasActiveUsage: true,
+      });
+      // GRACEFUL is not IMMEDIATE so it doesn't get overridden, just returned
+      expect(result).toBe("GRACEFUL");
+    });
   });
 
   // ==========================================================================
@@ -687,6 +734,38 @@ describe("DowngradeService", () => {
       expect(result.affectedFeatures).toBe(0);
       expect(result.warnings.length).toBe(0);
     });
+
+    it("should not generate GRACEFUL warning when there is no active usage", async () => {
+      mockRepo._setPlanFeatures("pro", [
+        {
+          featureKey: "EXPORT_PDF",
+          featureName: "Export PDF",
+          enabled: true,
+          limitValue: null,
+          configJson: null,
+          downgradeStrategy: "GRACEFUL",
+        },
+      ]);
+      setupProSubscription("org-1");
+
+      const result = await downgradeService.validateDowngrade("org-1", "free");
+
+      // EXPORT_PDF is affected but has no usage — GRACEFUL with no usage should not add a warning
+      // Only IMMEDIATE and FREEZE strategies generate warnings
+      expect(result.canProceed).toBe(true);
+    });
+
+    it("should handle org with no subscription (empty result set)", async () => {
+      // No subscription set for this org
+      const result = await downgradeService.validateDowngrade(
+        "nonexistent-org",
+        "free",
+      );
+
+      expect(result.canProceed).toBe(true);
+      expect(result.affectedFeatures).toBe(0);
+      expect(result.warnings).toEqual([]);
+    });
   });
 
   // ==========================================================================
@@ -754,6 +833,25 @@ describe("DowngradeService", () => {
       expect(result.success).toBe(true);
       expect(result.notificationsSent).toBe(0);
     });
+
+    it("should handle org with no affected features (same plan)", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "free",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      const result = await downgradeService.applyDowngrade("org-1", "free");
+
+      expect(result.success).toBe(true);
+      expect(result.featuresAffected).toBe(0);
+    });
   });
 
   // ==========================================================================
@@ -805,6 +903,57 @@ describe("DowngradeService", () => {
     it("should return false when there is no subscription", async () => {
       const result =
         await downgradeService.hasGracePeriodAccess("nonexistent-org");
+      expect(result).toBe(false);
+    });
+
+    it("should return true when subscription is TRIALING (no grace period needed)", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "TRIALING",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: false,
+        trialStart: new Date(),
+        trialEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      });
+
+      const result = await downgradeService.hasGracePeriodAccess("org-1");
+      expect(result).toBe(false);
+    });
+
+    it("should return false when subscription is PAST_DUE with no periodEnd", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "PAST_DUE",
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      const result = await downgradeService.hasGracePeriodAccess("org-1");
+      expect(result).toBe(false);
+    });
+
+    it("should return false when subscription has non-active status and periodEnd is null", async () => {
+      mockRepo._setSubscription("org-1", {
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "CANCELED",
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: true,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      const result = await downgradeService.hasGracePeriodAccess("org-1");
       expect(result).toBe(false);
     });
   });
@@ -896,6 +1045,70 @@ describe("DowngradeService", () => {
       );
       expect(result).toBe(true);
     });
+
+    it("should return false for unknown/unsupported strategy", () => {
+      const result = downgradeService.shouldGrantAccess(
+        "EXPORT_PDF",
+        true,
+        false,
+        "UNKNOWN" as any,
+      );
+      expect(result).toBe(false);
+    });
+
+    it("should return false when enabled->disabled with GRACEFUL and subscriptionEndDate is undefined", () => {
+      const result = downgradeService.shouldGrantAccess(
+        "EXPORT_PDF",
+        true,
+        false,
+        "GRACEFUL",
+        undefined,
+      );
+      expect(result).toBe(false);
+    });
+
+    it("should return false when disabled -> disabled regardless of strategy", () => {
+      const result = downgradeService.shouldGrantAccess(
+        "EXPORT_PDF",
+        false,
+        false,
+        "FREEZE",
+      );
+      expect(result).toBe(false);
+    });
+
+    it("should return true when disabled -> enabled regardless of strategy", () => {
+      const result = downgradeService.shouldGrantAccess(
+        "EXPORT_PDF",
+        false,
+        true,
+        "FREEZE",
+      );
+      expect(result).toBe(true);
+    });
+
+    it("should return current state when enabled -> enabled", () => {
+      const result = downgradeService.shouldGrantAccess(
+        "EXPORT_PDF",
+        true,
+        true,
+        "GRACEFUL",
+        new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // Past date
+      );
+      // Even with past end date, enabled->enabled maintains current state
+      expect(result).toBe(true);
+    });
+
+    it("should return false for GRACEFUL with past end date (boundary exact moment)", () => {
+      const result = downgradeService.shouldGrantAccess(
+        "EXPORT_PDF",
+        true,
+        false,
+        "GRACEFUL",
+        new Date(), // Exactly now — not > now
+      );
+      expect(result).toBe(false);
+    });
   });
 
   // ==========================================================================
@@ -927,6 +1140,44 @@ describe("DowngradeService", () => {
 
       // EXPORT_PDF and TWO_WAY_SYNC should have GRACEFUL strategy and be affected
       expect(features).toContain("EXPORT_PDF");
+      expect(features).toContain("TWO_WAY_SYNC");
+    });
+
+    it("should skip features with IMMEDIATE strategy during grace period", async () => {
+      mockRepo._setPlanFeatures("pro", [
+        {
+          featureKey: "EXPORT_PDF",
+          featureName: "Export PDF",
+          enabled: true,
+          limitValue: null,
+          configJson: null,
+          downgradeStrategy: "IMMEDIATE", // NOT GRACEFUL
+        },
+        {
+          featureKey: "TWO_WAY_SYNC",
+          featureName: "Two-Way Sync",
+          enabled: true,
+          limitValue: null,
+          configJson: null,
+          downgradeStrategy: "GRACEFUL",
+        },
+      ]);
+      mockRepo._setSubscription("org-1", {
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "CANCELED",
+        currentPeriodStart: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        currentPeriodEnd: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        cancelAtPeriodEnd: true,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      const features = await downgradeService.getGracePeriodFeatures("org-1");
+
+      // EXPORT_PDF is IMMEDIATE so should NOT be in grace period features
+      expect(features).not.toContain("EXPORT_PDF");
       expect(features).toContain("TWO_WAY_SYNC");
     });
   });

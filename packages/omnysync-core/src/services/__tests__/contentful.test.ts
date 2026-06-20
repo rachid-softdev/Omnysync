@@ -303,6 +303,121 @@ describe("Contentful Connector", () => {
 
       expect(result.content).toBe("Text content");
     });
+
+    it("should JSON.stringify body field when it is an object (Rich Text)", () => {
+      const result = contentfulEntryToDocument({
+        id: "entry-1",
+        title: "Rich Entry",
+        content: "",
+        createdAt: "",
+        updatedAt: "",
+        fields: {
+          title: "Rich Entry",
+          body: {
+            nodeType: "document",
+            content: [
+              {
+                nodeType: "paragraph",
+                content: [{ nodeType: "text", value: "Hello" }],
+              },
+            ],
+          },
+        },
+      });
+
+      expect(result.content).toContain("nodeType");
+      expect(result.content).toContain("document");
+      expect(result.content).toContain("paragraph");
+      expect(result.content).toContain("Hello");
+    });
+
+    it("should JSON.stringify content field when it is an object (line 153)", () => {
+      // This exercises the else-if branch where contentFields is an object
+      const result = contentfulEntryToDocument({
+        id: "entry-2",
+        title: "Object Content",
+        content: "",
+        createdAt: "",
+        updatedAt: "",
+        fields: {
+          title: "Object Content",
+          content: { richText: true, nodes: [] },
+        },
+      });
+
+      expect(result.content).toContain("richText");
+      expect(result.content).toContain("nodes");
+    });
+
+    it("should JSON.stringify description field when it is an object", () => {
+      const result = contentfulEntryToDocument({
+        id: "entry-3",
+        title: "Object Description",
+        content: "",
+        createdAt: "",
+        updatedAt: "",
+        fields: {
+          title: "Object Description",
+          description: { type: "doc", schema: "v1" },
+        },
+      });
+
+      expect(result.content).toContain("doc");
+      expect(result.content).toContain("v1");
+    });
+
+    it("should JSON.stringify text field when it is an object", () => {
+      const result = contentfulEntryToDocument({
+        id: "entry-4",
+        title: "Object Text",
+        content: "",
+        createdAt: "",
+        updatedAt: "",
+        fields: {
+          title: "Object Text",
+          text: { format: "markdown", version: 2 },
+        },
+      });
+
+      expect(result.content).toContain("markdown");
+      expect(result.content).toContain("version");
+    });
+
+    it("should fallback to fields JSON when contentFields is neither string nor object (e.g. number)", () => {
+      // When contentFields is a number (typeof "number"), it's not "string" and not "object",
+      // so it goes to the else branch and JSON.stringify(entry.fields)
+      const result = contentfulEntryToDocument({
+        id: "entry-5",
+        title: "Number Body",
+        content: "",
+        createdAt: "",
+        updatedAt: "",
+        fields: {
+          title: "Number Body",
+          body: 42,
+        },
+      });
+
+      expect(result.content).toContain("42");
+      expect(result.content).toContain("Number Body");
+    });
+
+    it("should fallback to fields JSON when contentFields is a boolean", () => {
+      // Boolean value also falls through to the else branch
+      const result = contentfulEntryToDocument({
+        id: "entry-6",
+        title: "Bool Body",
+        content: "",
+        createdAt: "",
+        updatedAt: "",
+        fields: {
+          title: "Bool Body",
+          body: true,
+        },
+      });
+
+      expect(result.content).toContain("true");
+    });
   });
 
   describe("createContentfulEntry", () => {

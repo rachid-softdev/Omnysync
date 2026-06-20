@@ -1056,6 +1056,122 @@ describe("Two-Way Sync Service", () => {
       expect(result.hasConflict).toBe(false);
     });
 
+    it("should handle Webflow with null htmlContent and null lastSyncedAt (fallback branches)", async () => {
+      // Override Google Docs mock to return old modifiedTime so source hasn't changed
+      const googleDocsModule = await import("../google-docs");
+      vi.mocked(googleDocsModule.getGoogleDocContent).mockResolvedValueOnce({
+        id: "doc-1",
+        title: "Google Doc",
+        content: "",
+        modifiedTime: "2024-01-01T00:00:00Z",
+      } as any);
+
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        organizationId: orgId,
+        htmlContent: null,
+        content: null,
+        sourceUpdatedAt: new Date("2025-01-01"),
+        lastSyncedAt: null,
+        sourceConnectorId: "sc-1",
+        destConnectorId: "dc-1",
+        sourceId: "source-1",
+        sourceConnector: {
+          id: "sc-1",
+          type: "GOOGLE_DOCS",
+          credentials: "enc_{}",
+          config: {},
+        },
+        destConnector: {
+          id: "dc-1",
+          type: "WEBFLOW",
+          credentials: "enc_creds",
+          config: { siteUrl: "https://webflow.example.com" },
+        },
+      } as any);
+
+      const result = await detectConflicts(documentId);
+
+      // Webflow returns content: "" (null || ""), updatedAt: new Date(0)
+      // normalizedStored = "" (null || ""), normalizedDest = "" → no dest change
+      // sourceContent.updatedAt = 2024-01-01 which is NOT > sourceUpdatedAt 2025-01-01 → no source change
+      expect(result).toBeDefined();
+      expect(result.hasConflict).toBe(false);
+    });
+
+    it("should return null for Shopify when blogs array is empty (no blogId)", async () => {
+      const { createShopifyClient } = await import("../shopify");
+      vi.mocked(createShopifyClient("", "").getBlogs).mockResolvedValue({
+        blogs: [],
+      });
+
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        organizationId: orgId,
+        htmlContent: "Test",
+        content: "Test",
+        sourceUpdatedAt: new Date("2026-07-01"),
+        lastSyncedAt: new Date("2026-06-01"),
+        sourceConnectorId: "sc-1",
+        destConnectorId: "dc-1",
+        sourceId: "source-1",
+        slug: "shopify-slug",
+        sourceConnector: {
+          id: "sc-1",
+          type: "GOOGLE_DOCS",
+          credentials: "enc_{}",
+          config: {},
+        },
+        destConnector: {
+          id: "dc-1",
+          type: "SHOPIFY",
+          credentials: "enc_creds",
+          config: { shopDomain: "myshop.myshopify.com" },
+        },
+      } as any);
+
+      const result = await detectConflicts(documentId);
+
+      // fetchRemoteContent returns null for Shopify when blogId is falsy
+      // This means !destContent → hasConflict: false
+      expect(result.hasConflict).toBe(false);
+    });
+
+    it("should handle Shopify with null htmlContent and null lastSyncedAt (fallback branches)", async () => {
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        organizationId: orgId,
+        htmlContent: null,
+        content: null,
+        sourceUpdatedAt: new Date("2025-01-01"),
+        lastSyncedAt: null,
+        sourceConnectorId: "sc-1",
+        destConnectorId: "dc-1",
+        sourceId: "source-1",
+        slug: "shopify-slug",
+        sourceConnector: {
+          id: "sc-1",
+          type: "GOOGLE_DOCS",
+          credentials: "enc_{}",
+          config: {},
+        },
+        destConnector: {
+          id: "dc-1",
+          type: "SHOPIFY",
+          credentials: "enc_creds",
+          config: { shopDomain: "myshop.myshopify.com" },
+        },
+      } as any);
+
+      const result = await detectConflicts(documentId);
+
+      // Shopify returns content: "" (null || ""), updatedAt: new Date(0)
+      // normalizedStored = "" (null || "") → no dest change
+      // sourceUpdatedAt 2025 > sourceContent.updatedAt (now) → no source change
+      expect(result).toBeDefined();
+      expect(result.hasConflict).toBe(false);
+    });
+
     it("should detect conflict with Shopify destination when content differs", async () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue({
         id: documentId,
@@ -1397,6 +1513,94 @@ describe("Two-Way Sync Service", () => {
       await detectConflicts(documentId, userId);
 
       expect(requireDocumentAccess).toHaveBeenCalledWith(documentId, userId);
+    });
+  });
+
+  describe("fetchRemoteContent — Webflow truthy fallback branches (lines 102-104)", () => {
+    it("should use existing htmlContent and lastSyncedAt for Webflow when they are non-null", async () => {
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        organizationId: orgId,
+        htmlContent: "Existing HTML",
+        content: "Existing text",
+        title: "Existing Title",
+        sourceUpdatedAt: new Date("2025-01-01"),
+        lastSyncedAt: new Date("2026-06-01T12:00:00Z"),
+        sourceConnectorId: "sc-1",
+        destConnectorId: "dc-1",
+        sourceId: "source-1",
+        sourceConnector: {
+          id: "sc-1",
+          type: "GOOGLE_DOCS",
+          credentials: "enc_{}",
+          config: {},
+        },
+        destConnector: {
+          id: "dc-1",
+          type: "WEBFLOW",
+          credentials: "enc_creds",
+          config: { siteUrl: "https://webflow.example.com" },
+        },
+      } as any);
+
+      const result = await detectConflicts(documentId);
+
+      // Webflow: content = "Existing HTML" (truthy || ""), title = "Existing Title", updatedAt = existing Date
+      // normalizedDest = "Existing HTML" matches normalizedStored = "Existing HTML" -> no dest change
+      // sourceUpdatedAt 2025-01-01 < sourceContent.updatedAt 2026-06-01 -> source changed
+      // hasSourceChanged = true
+      expect(result.hasConflict).toBe(true);
+      expect(result.conflictType).toBe("source-changed");
+    });
+  });
+
+  describe("fetchRemoteContent — Shopify blogId truthy path (line 113-118)", () => {
+    it("should fetch Shopify remote content when blogId exists", async () => {
+      // Override Google Docs mock to return old modifiedTime so source hasn't changed
+      // This isolates the test to Shopify's fetchRemoteContent behavior
+      const googleDocsModule = await import("../google-docs");
+      vi.mocked(googleDocsModule.getGoogleDocContent).mockResolvedValueOnce({
+        id: "doc-1",
+        title: "Google Doc",
+        content: "Stored content",
+        modifiedTime: "2024-01-01T00:00:00Z",
+      } as any);
+
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        organizationId: orgId,
+        htmlContent: "Existing HTML",
+        content: "Existing text",
+        title: "Existing Title",
+        sourceUpdatedAt: new Date("2025-01-01"),
+        lastSyncedAt: new Date("2026-06-01T12:00:00Z"),
+        sourceConnectorId: "sc-1",
+        destConnectorId: "dc-1",
+        sourceId: "source-1",
+        slug: "shopify-slug",
+        sourceConnector: {
+          id: "sc-1",
+          type: "GOOGLE_DOCS",
+          credentials: "enc_{}",
+          config: {},
+        },
+        destConnector: {
+          id: "dc-1",
+          type: "SHOPIFY",
+          credentials: "enc_creds",
+          config: { shopDomain: "myshop.myshopify.com" },
+        },
+      } as any);
+
+      const result = await detectConflicts(documentId);
+
+      // Shopify: blogId exists (from mock), returns content: "Existing HTML",
+      // which matches stored "Existing HTML" → no dest change
+      // Google Docs source with modifiedTime 2024-01-01 < sourceUpdatedAt 2025-01-01 → no source change
+      expect(result.hasConflict).toBe(false);
+      // Verify the Shopify client was actually called (fetchRemoteContent went through Shopify branch)
+      const { createShopifyClient } = await import("../shopify");
+      expect(createShopifyClient).toHaveBeenCalled();
     });
   });
 

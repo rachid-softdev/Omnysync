@@ -141,6 +141,328 @@ describe("Google Docs Connector", () => {
       expect(result.content).toContain("A1");
       expect(result.content).toContain("B1");
     });
+
+    it("should handle table with null/undefined tableRows", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        title: "Table Doc",
+        body: {
+          content: [
+            {
+              table: {},
+            },
+          ],
+        },
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      expect(result.content).toBe("");
+    });
+
+    it("should handle table row with null/undefined tableCells", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        title: "Table Doc",
+        body: {
+          content: [
+            {
+              table: {
+                tableRows: [{}],
+              },
+            },
+          ],
+        },
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      expect(result.content).toBe("\n");
+    });
+
+    it("should handle table cell with null/undefined content", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        title: "Table Doc",
+        body: {
+          content: [
+            {
+              table: {
+                tableRows: [
+                  {
+                    tableCells: [{}],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      expect(result.content).toBe(" | \n");
+    });
+
+    it("should handle table cell with content containing paragraph with null elements", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        title: "Table Doc",
+        body: {
+          content: [
+            {
+              table: {
+                tableRows: [
+                  {
+                    tableCells: [
+                      {
+                        content: [
+                          {
+                            paragraph: {
+                              // No elements array
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      // paragraph has no elements, so map returns undefined for the element,
+      // then join produces empty string, then || "" kicks in
+      expect(result.content).toBe(" | \n");
+    });
+
+    it("should handle table cell content with null paragraph", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        title: "Table Doc",
+        body: {
+          content: [
+            {
+              table: {
+                tableRows: [
+                  {
+                    tableCells: [
+                      {
+                        content: [
+                          {
+                            // No paragraph at all
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      // c.paragraph is undefined → optional chaining returns undefined for the element
+      expect(result.content).toBe(" | \n");
+    });
+
+    it("should handle multiple table cells in one row", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        title: "Table Doc",
+        body: {
+          content: [
+            {
+              table: {
+                tableRows: [
+                  {
+                    tableCells: [
+                      {
+                        content: [
+                          {
+                            paragraph: {
+                              elements: [{ textRun: { content: "Cell 1" } }],
+                            },
+                          },
+                        ],
+                      },
+                      {
+                        content: [
+                          {
+                            paragraph: {
+                              elements: [{ textRun: { content: "Cell 2" } }],
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      expect(result.content).toContain("Cell 1");
+      expect(result.content).toContain("Cell 2");
+      expect(result.content).toContain("|");
+    });
+
+    it("should handle cell with element having no textRun", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        title: "Table Doc",
+        body: {
+          content: [
+            {
+              table: {
+                tableRows: [
+                  {
+                    tableCells: [
+                      {
+                        content: [
+                          {
+                            paragraph: {
+                              elements: [{ someOtherField: "value" }],
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      // element has no textRun, so textRun?.content is undefined → "" via ||
+      expect(result.content).toBe(" | \n");
+    });
+
+    it("should handle cell with textRun having null content", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        title: "Table Doc",
+        body: {
+          content: [
+            {
+              table: {
+                tableRows: [
+                  {
+                    tableCells: [
+                      {
+                        content: [
+                          {
+                            paragraph: {
+                              elements: [{ textRun: { content: null } }],
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      // null || "" = ""
+      expect(result.content).toBe(" | \n");
+    });
+
+    it("should handle multiple content elements in single cell", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        title: "Table Doc",
+        body: {
+          content: [
+            {
+              table: {
+                tableRows: [
+                  {
+                    tableCells: [
+                      {
+                        content: [
+                          {
+                            paragraph: {
+                              elements: [{ textRun: { content: "Part 1" } }],
+                            },
+                          },
+                          {
+                            paragraph: {
+                              elements: [{ textRun: { content: "Part 2" } }],
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      expect(result.content).toContain("Part 1");
+      expect(result.content).toContain("Part 2");
+    });
+
+    it("should handle nested optional chaining in table cell with undefined paragraph.elements", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        title: "Table Doc",
+        body: {
+          content: [
+            {
+              table: {
+                tableRows: [
+                  {
+                    tableCells: [
+                      {
+                        content: [
+                          {
+                            paragraph: {
+                              elements: undefined,
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      // c.paragraph?.elements is undefined → ?.map returns undefined
+      // outer .map returns [undefined], .join(" ") → ""
+      expect(result.content).toBe(" | \n");
+    });
   });
 
   describe("saveGoogleDocsConnector", () => {

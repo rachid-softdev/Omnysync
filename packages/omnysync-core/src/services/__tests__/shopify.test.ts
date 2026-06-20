@@ -123,6 +123,47 @@ describe("Shopify Connector", () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain("Rate limit");
     });
+
+    it("should handle non-Error thrown values in catch block", async () => {
+      vi.mocked(fetchWithRetry).mockRejectedValue(
+        "string error message" as never,
+      );
+
+      const result = await testShopifyConnection(shopDomain, accessToken);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("string error message");
+    });
+
+    it("should handle Error-like object thrown (POJO with message property)", async () => {
+      vi.mocked(fetchWithRetry).mockRejectedValue({
+        code: 500,
+        message: "Server Error",
+      } as never);
+
+      const result = await testShopifyConnection(shopDomain, accessToken);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("[object Object]");
+    });
+
+    it("should handle null thrown value", async () => {
+      vi.mocked(fetchWithRetry).mockRejectedValue(null as never);
+
+      const result = await testShopifyConnection(shopDomain, accessToken);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("null");
+    });
+
+    it("should handle undefined thrown value", async () => {
+      vi.mocked(fetchWithRetry).mockRejectedValue(undefined as never);
+
+      const result = await testShopifyConnection(shopDomain, accessToken);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("undefined");
+    });
   });
 
   describe("Shopify API edge cases", () => {

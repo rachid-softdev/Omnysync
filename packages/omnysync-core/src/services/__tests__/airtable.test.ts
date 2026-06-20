@@ -219,6 +219,82 @@ describe("Airtable Connector", () => {
       expect(result.content).toContain("key");
       expect(result.content).toContain("nested");
     });
+
+    it("should handle numeric fields with String() conversion", () => {
+      const result = airtableRecordToDocument({
+        id: "rec-1",
+        fields: {
+          Title: "Record with numbers",
+          Count: 42,
+          Score: 3.14,
+        },
+        createdTime: "",
+        lastEditedTime: "",
+      });
+
+      expect(result.title).toBe("Record with numbers");
+      expect(result.content).toContain("42");
+      expect(result.content).toContain("3.14");
+    });
+
+    it("should handle boolean and null field values", () => {
+      const result = airtableRecordToDocument({
+        id: "rec-1",
+        fields: {
+          Title: "Record with mixed",
+          IsActive: true,
+          IsDeleted: false,
+          NullField: null,
+        },
+        createdTime: "",
+        lastEditedTime: "",
+      });
+
+      expect(result.title).toBe("Record with mixed");
+      expect(result.content).toContain("true");
+      expect(result.content).toContain("false");
+    });
+
+    it("should convert non-string, non-array, non-object values via String() (line 148)", () => {
+      // Number and boolean values go through the String(value) fallback path
+      const result = airtableRecordToDocument({
+        id: "rec-1",
+        fields: {
+          Title: "Numeric record",
+          Count: 42,
+          Score: 3.14,
+          Percentage: 95,
+        },
+        createdTime: "",
+        lastEditedTime: "",
+      });
+
+      expect(result.title).toBe("Numeric record");
+      expect(result.content).toContain("## Count");
+      expect(result.content).toContain("42");
+      expect(result.content).toContain("## Score");
+      expect(result.content).toContain("3.14");
+      // Each number value is converted via String() through the fallback path
+    });
+
+    it("should handle undefined field values via String() fallback (line 148)", () => {
+      // undefined value matches none of the type checks (not string, not array, not object)
+      // and falls through to the String() conversion on line 148
+      const result = airtableRecordToDocument({
+        id: "rec-1",
+        fields: {
+          Title: "Undefined fields",
+          UndefinedField: undefined,
+        },
+        createdTime: "",
+        lastEditedTime: "",
+      });
+
+      expect(result.title).toBe("Undefined fields");
+      expect(result.content).toContain("## UndefinedField");
+      // String(undefined) returns "undefined"
+      expect(result.content).toContain("undefined");
+    });
   });
 
   describe("saveAirtableConnector", () => {

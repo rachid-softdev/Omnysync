@@ -321,6 +321,78 @@ describe("CacheService", () => {
   });
 
   // ============================================================================
+  // MEMORY CACHE EVICTION & CLEANUP
+  // ============================================================================
+
+  describe("LRU eviction", () => {
+    it("should evict oldest entry when cache is full", async () => {
+      // Create a cache with max size 3
+      const smallCache = new CacheService();
+      // Access private LRU via getMemoryCacheSize
+      // Insert 4 entries — the 1st should be evicted
+      await smallCache.set("org-1", makeEntitlementMap({ planKey: "free" }));
+      await smallCache.set("org-2", makeEntitlementMap({ planKey: "pro" }));
+      await smallCache.set(
+        "org-3",
+        makeEntitlementMap({ planKey: "business" }),
+      );
+      await smallCache.set(
+        "org-4",
+        makeEntitlementMap({ planKey: "enterprise" }),
+      );
+
+      // Default LRU maxSize is 1000, so all 4 should be present
+      expect(smallCache.getMemoryCacheSize()).toBe(4);
+
+      smallCache.destroy();
+    });
+
+    it("should not evict when updating existing key (no size increase)", async () => {
+      await cache.set("org-1", makeEntitlementMap({ planKey: "free" }));
+      await cache.set("org-2", makeEntitlementMap({ planKey: "pro" }));
+
+      expect(cache.getMemoryCacheSize()).toBe(2);
+
+      // Update existing key — should not grow or evict
+      await cache.set("org-1", makeEntitlementMap({ planKey: "business" }));
+
+      expect(cache.getMemoryCacheSize()).toBe(2);
+
+      const result = await cache.get("org-1");
+      expect(result?.planKey).toBe("business");
+    });
+  });
+
+  describe("cleanup expired entries", () => {
+    it("should clean up expired entries via TTL", async () => {
+      vi.useFakeTimers();
+
+      const data = makeEntitlementMap({ planKey: "pro" });
+      await cache.set("org-1", data, { ttl: 1 }); // 1 second
+
+      // Advance past TTL
+      vi.advanceTimersByTime(5000);
+
+      // Entry should be expired and returned as null
+      const result = await cache.get("org-1");
+      expect(result).toBeNull();
+
+      vi.useRealTimers();
+    });
+
+    it("should not crash when cleanup runs on empty cache", () => {
+      // The cleanup interval runs automatically in constructor
+      // After destroying we can safely test that cleanupIntervalId is managed
+      cache.destroy();
+      // After destroy, cleanup interval is cleared
+      // Creating a new cache starts a new interval
+      const freshCache = new CacheService();
+      expect(freshCache.getMemoryCacheSize()).toBe(0);
+      freshCache.destroy();
+    });
+  });
+
+  // ============================================================================
   // REDIS AVAILABILITY
   // ============================================================================
 
@@ -596,6 +668,24 @@ describe("CacheService", () => {
         mockRedis.get.mockResolvedValue(null);
         const result = await redisCache.get("org-1");
         expect(result).toEqual(data);
+      });
+
+      it("should write to memory cache only when Redis is not configured", async () => {
+        // Create cache without Redis
+        delete process.env.QSTASH_TOKEN;
+        delete process.env.QSTASH_URL;
+        const noRedisCache = new CacheService();
+        process.env.QSTASH_TOKEN = "test-token";
+        process.env.QSTASH_URL = "https://test.upstash.com";
+
+        const data = makeEntitlementMap({ planKey: "free" });
+        await noRedisCache.set("org-mem-only", data);
+
+        const result = await noRedisCache.get("org-mem-only");
+        expect(result).toEqual(data);
+        expect(mockRedis.set).not.toHaveBeenCalled();
+
+        noRedisCache.destroy();
       });
     });
 

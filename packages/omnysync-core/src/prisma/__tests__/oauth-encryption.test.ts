@@ -166,6 +166,45 @@ describe("S1-3: OAuth encryption utilities", () => {
       expect(parts[2]).toMatch(/^[0-9a-f]{32}$/);
       expect(parts[3]!.length).toBeGreaterThan(0);
     });
+
+    it("throws on malformed encrypted format (wrong number of parts)", () => {
+      const data = { access_token: "ENC:tooshort" };
+      expect(() => decryptResult(data)).toThrow("Invalid encrypted format");
+    });
+
+    it("throws on malformed encrypted format with 3 parts", () => {
+      const data = { access_token: "ENC:iv:tag" };
+      expect(() => decryptResult(data)).toThrow("Invalid encrypted format");
+    });
+
+    it("throws on malformed encrypted format with more than 4 parts", () => {
+      const data = { access_token: "ENC:iv:tag:data:extra" };
+      expect(() => decryptResult(data)).toThrow("Invalid encrypted format");
+    });
+  });
+
+  // ── OAUTH_ENCRYPTION_KEY missing ──────────────────────────────────────────
+
+  describe("OAUTH_ENCRYPTION_KEY environment variable", () => {
+    const originalKey = process.env.OAUTH_ENCRYPTION_KEY;
+
+    afterEach(() => {
+      process.env.OAUTH_ENCRYPTION_KEY = originalKey;
+    });
+
+    it("should throw when OAUTH_ENCRYPTION_KEY is not set and encryptData is called", async () => {
+      // Reset modules to force re-evaluation with missing key
+      vi.resetModules();
+      delete process.env.OAUTH_ENCRYPTION_KEY;
+
+      // The derived key is cached in oauthKey module variable, so we need a fresh import
+      // to trigger deriveOAuthKey(). We call encryptData which calls getOAuthKey() →
+      // deriveOAuthKey() which throws.
+      await expect(async () => {
+        const mod = await import("../middleware/oauth-encryption");
+        mod.encryptData({ access_token: "test" });
+      }).rejects.toThrow("OAUTH_ENCRYPTION_KEY");
+    });
   });
 });
 

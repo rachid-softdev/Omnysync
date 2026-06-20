@@ -684,6 +684,191 @@ describe("html-parser", () => {
       expect(result.html).toContain("<del>");
       expect(result.html).toContain('<a href="https://example.com"');
     });
+
+    it("should handle paragraph element with no textRun (non-text element)", () => {
+      const result = parseGoogleDocToHtml({
+        title: "No textRun",
+        body: {
+          content: [
+            {
+              paragraph: {
+                elements: [
+                  { pageBreak: {} } as any,
+                  { textRun: { content: "After page break", textStyle: {} } },
+                ],
+                paragraphStyle: { namedStyleType: "NORMAL_TEXT" },
+              },
+            },
+          ],
+        },
+      });
+      // The non-textRun element should be skipped, text after it should appear
+      expect(result.html).toContain("After page break");
+    });
+
+    it("should handle table row with no tableCells", () => {
+      const result = parseGoogleDocToHtml({
+        title: "No cells",
+        body: {
+          content: [
+            {
+              table: {
+                tableRows: [
+                  {} as any,
+                  {
+                    tableCells: [
+                      {
+                        content: [
+                          {
+                            paragraph: {
+                              elements: [
+                                {
+                                  textRun: {
+                                    content: "Cell data",
+                                    textStyle: {},
+                                  },
+                                },
+                              ],
+                              paragraphStyle: { namedStyleType: "NORMAL_TEXT" },
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      });
+      expect(result.html).toContain("<table>");
+      expect(result.html).toContain("<tr>");
+      expect(result.html).toContain("Cell data");
+    });
+
+    it("should handle textElement with null textRun (line 74 falsy branch)", () => {
+      const result = parseGoogleDocToHtml({
+        title: "Null textRun",
+        body: {
+          content: [
+            {
+              paragraph: {
+                elements: [
+                  { textRun: null } as any,
+                  { textRun: { content: "After null", textStyle: {} } },
+                ],
+                paragraphStyle: { namedStyleType: "NORMAL_TEXT" },
+              },
+            },
+          ],
+        },
+      });
+      expect(result.html).toContain("After null");
+      // The null textRun should be skipped (no "null" string in output from it);
+      // "After null" contains "null" as a substring, so fix assertion to check
+      // that the skipped element didn't produce raw "null" text content
+      expect(result.html).not.toContain("undefined");
+    });
+
+    it("should handle textElement.textRun with no content (empty string)", () => {
+      const result = parseGoogleDocToHtml({
+        title: "Empty run",
+        body: {
+          content: [
+            {
+              paragraph: {
+                elements: [
+                  { textRun: { content: "", textStyle: {} } },
+                  { textRun: { content: "Non-empty", textStyle: {} } },
+                ],
+                paragraphStyle: { namedStyleType: "NORMAL_TEXT" },
+              },
+            },
+          ],
+        },
+      });
+      expect(result.html).toContain("Non-empty");
+    });
+
+    it("should handle table with empty tableCells array per row (line 154 empty fallback)", () => {
+      const result = parseGoogleDocToHtml({
+        title: "Empty cells",
+        body: {
+          content: [
+            {
+              table: {
+                tableRows: [
+                  { tableCells: [] },
+                  {
+                    tableCells: [
+                      {
+                        content: [
+                          {
+                            paragraph: {
+                              elements: [
+                                {
+                                  textRun: {
+                                    content: "Only cell",
+                                    textStyle: {},
+                                  },
+                                },
+                              ],
+                              paragraphStyle: { namedStyleType: "NORMAL_TEXT" },
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      });
+      expect(result.html).toContain("<table>");
+      expect(result.html).toContain("<tr>");
+      // First row with empty cells should still produce <td></td>... actually no,
+      // if tableCells is [] then the for loop doesn't execute, so no <td> from that row.
+      // The second row produces one <td>.
+      expect(result.html).toContain("Only cell");
+    });
+
+    it("should handle multiple cells in a single table row", () => {
+      const cellData = (text: string) => ({
+        paragraph: {
+          elements: [{ textRun: { content: text, textStyle: {} } }],
+          paragraphStyle: { namedStyleType: "NORMAL_TEXT" },
+        },
+      });
+      const result = parseGoogleDocToHtml({
+        title: "Multi cell",
+        body: {
+          content: [
+            {
+              table: {
+                tableRows: [
+                  {
+                    tableCells: [
+                      { content: [cellData("Cell A")] },
+                      { content: [cellData("Cell B")] },
+                      { content: [cellData("Cell C")] },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      });
+      expect(result.html).toContain("Cell A");
+      expect(result.html).toContain("Cell B");
+      expect(result.html).toContain("Cell C");
+      // Count occurrences of <td> - should be 3
+      const tdMatches = result.html.match(/<td>/g);
+      expect(tdMatches).toHaveLength(3);
+    });
   });
 
   describe("parseMarkdownToHtml — edge cases", () => {

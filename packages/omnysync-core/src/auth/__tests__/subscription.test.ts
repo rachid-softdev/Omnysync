@@ -109,6 +109,18 @@ describe("getUserPlan", () => {
     expect(plan).toBe("pro");
   });
 
+  it("should return 'free' when planKey is empty/null (truthy check fallback)", async () => {
+    mockPrismaClient.userOrganization.findFirst.mockResolvedValue({
+      userId: "user-1",
+      organizationId: "org-1",
+      organization: { subscriptions: [{ status: "ACTIVE", planKey: "" }] },
+    });
+
+    const plan = await getUserPlan("user-1");
+
+    expect(plan).toBe("free");
+  });
+
   it("should return 'free' when the subscription is not ACTIVE", async () => {
     mockOrgMembership("pro", "CANCELED");
 
@@ -131,6 +143,34 @@ describe("getUserPlan", () => {
     const plan = await getUserPlan("user-unknown");
 
     expect(plan).toBe("free");
+  });
+
+  it("should return 'free' when subscription exists but planKey is null (covers line 72 || fallback)", async () => {
+    mockPrismaClient.userOrganization.findFirst.mockResolvedValue({
+      userId: "user-1",
+      organizationId: "org-1",
+      organization: {
+        subscriptions: [{ status: "ACTIVE", planKey: null }],
+      },
+    });
+
+    const plan = await getUserPlan("user-1");
+
+    expect(plan).toBe("free");
+  });
+
+  it("should return the planKey as-is when subscription has a custom planKey (covers line 72 truthy path)", async () => {
+    mockPrismaClient.userOrganization.findFirst.mockResolvedValue({
+      userId: "user-1",
+      organizationId: "org-1",
+      organization: {
+        subscriptions: [{ status: "ACTIVE", planKey: "enterprise" }],
+      },
+    });
+
+    const plan = await getUserPlan("user-1");
+
+    expect(plan).toBe("enterprise");
   });
 });
 
@@ -226,6 +266,22 @@ describe("getQuotaUsage", () => {
     expect(result.syncCount).toBe(0);
     expect(result.percentUsed).toBe(0);
   });
+
+  it("should return percentUsed 0 for non-free plans (pro)", async () => {
+    mockOrgMembership("pro");
+    mockPrismaClient.quotaUsage.findUnique.mockResolvedValue({
+      syncCount: 50,
+    });
+    mockPrismaClient.connector.count.mockResolvedValue(5);
+    mockPrismaClient.document.count.mockResolvedValue(20);
+
+    const result = await getQuotaUsage("user-1");
+
+    // Pro plan: percentUsed is always 0 (only free plan calculates percentage)
+    expect(result.percentUsed).toBe(0);
+    expect(result.syncCount).toBe(50);
+    expect(result.syncLimit).toBe(100);
+  });
 });
 
 // ============================================================================
@@ -277,6 +333,21 @@ describe("checkAndIncrementQuota", () => {
       remaining: 0,
       upgradeUrl: "/pricing",
     });
+  });
+
+  it("should return remaining = limits.syncsPerMonth when updated record is null", async () => {
+    mockOrgMembership("pro");
+    mockPrismaClient.quotaUsage.upsert.mockResolvedValue({} as never);
+    mockPrismaClient.quotaUsage.updateMany.mockResolvedValue({
+      count: 1,
+    } as never);
+    // findUnique returns null after increment
+    mockPrismaClient.quotaUsage.findUnique.mockResolvedValue(null);
+
+    const result = await checkAndIncrementQuota("user-1");
+
+    // When updated is null, syncCount defaults to 0 => remaining = 100 - 0 = 100
+    expect(result).toEqual({ allowed: true, remaining: 100 });
   });
 });
 
@@ -385,6 +456,20 @@ describe("checkDocumentLimit", () => {
       upgradeUrl: undefined,
     });
   });
+
+  it("should return allowed false with upgradeUrl when document limit exceeded", async () => {
+    mockOrgMembership("free");
+    mockPrismaClient.document.count.mockResolvedValue(100); // free plan limit is 100, not less than 100
+
+    const result = await checkDocumentLimit("user-1");
+
+    expect(result).toEqual({
+      allowed: false,
+      current: 100,
+      limit: 100,
+      upgradeUrl: "/pricing",
+    });
+  });
 });
 
 // ============================================================================
@@ -429,5 +514,162 @@ describe("getPlanFromPriceId", () => {
     const plan = getPlanFromPriceId("any_price_id");
 
     expect(plan).toBe("free");
+  });
+
+  it("should return 'free' when priceId is empty string", () => {
+    const plan = getPlanFromPriceId("");
+
+    expect(plan).toBe("free");
+  });
+});
+
+// ============================================================================
+// getQuotaUsage — edge cases
+// ============================================================================
+
+describe("getQuotaUsage edge cases", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should return 100% percentUsed when syncCount equals free plan limit", async () => {
+    mockOrgMembership("free");
+    mockPrismaClient.quotaUsage.findUnique.mockResolvedValue({
+      syncCount: 10,
+    });
+    mockPrismaClient.connector.count.mockResolvedValue(2);
+    mockPrismaClient.document.count.mockResolvedValue(50);
+
+    const { getQuotaUsage } = await import("../subscription");
+    const result = await getQuotaUsage("user-1");
+
+    expect(result.percentUsed).toBe(100);
+    expect(result.syncCount).toBe(10);
+    expect(result.syncLimit).toBe(10);
+  });
+
+  it("should return 0% percentUsed when syncCount is 0 on free plan (covers line 108 ternary)", async () => {
+    mockOrgMembership("free");
+    mockPrismaClient.quotaUsage.findUnique.mockResolvedValue({
+      syncCount: 0,
+    });
+    mockPrismaClient.connector.count.mockResolvedValue(1);
+    mockPrismaClient.document.count.mockResolvedValue(5);
+
+    const { getQuotaUsage } = await import("../subscription");
+    const result = await getQuotaUsage("user-1");
+
+    expect(result.percentUsed).toBe(0);
+    expect(result.syncCount).toBe(0);
+    expect(result.syncLimit).toBe(10);
+  });
+
+  it("should return >100% percentUsed when syncCount exceeds free plan limit", async () => {
+    mockOrgMembership("free");
+    mockPrismaClient.quotaUsage.findUnique.mockResolvedValue({
+      syncCount: 15,
+    });
+    mockPrismaClient.connector.count.mockResolvedValue(2);
+    mockPrismaClient.document.count.mockResolvedValue(50);
+
+    const { getQuotaUsage } = await import("../subscription");
+    const result = await getQuotaUsage("user-1");
+
+    expect(result.percentUsed).toBe(150);
+    expect(result.syncCount).toBe(15);
+  });
+});
+
+// ============================================================================
+// checkAndIncrementQuota — edge cases
+// ============================================================================
+
+describe("checkAndIncrementQuota edge cases", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should return remaining = 0 when syncCount reaches the limit exactly (covers line 171 Math.max)", async () => {
+    mockOrgMembership("pro");
+    mockPrismaClient.quotaUsage.upsert.mockResolvedValue({} as never);
+    mockPrismaClient.quotaUsage.updateMany.mockResolvedValue({
+      count: 1,
+    } as never);
+    // syncCount = 100, limit = 100 → remaining = 0
+    mockPrismaClient.quotaUsage.findUnique.mockResolvedValue({
+      syncCount: 100,
+    });
+
+    const { checkAndIncrementQuota } = await import("../subscription");
+    const result = await checkAndIncrementQuota("user-1");
+
+    expect(result).toEqual({ allowed: true, remaining: 0 });
+  });
+
+  it("should return correct remaining when syncCount is just under limit", async () => {
+    mockOrgMembership("pro");
+    mockPrismaClient.quotaUsage.upsert.mockResolvedValue({} as never);
+    mockPrismaClient.quotaUsage.updateMany.mockResolvedValue({
+      count: 1,
+    } as never);
+    // syncCount = 99, limit = 100 → remaining = 1
+    mockPrismaClient.quotaUsage.findUnique.mockResolvedValue({
+      syncCount: 99,
+    });
+
+    const { checkAndIncrementQuota } = await import("../subscription");
+    const result = await checkAndIncrementQuota("user-1");
+
+    expect(result).toEqual({ allowed: true, remaining: 1 });
+  });
+});
+
+// ============================================================================
+// checkConnectorLimit — edge cases
+// ============================================================================
+
+describe("checkConnectorLimit edge cases", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should return allowed false with upgradeUrl when exactly at limit", async () => {
+    mockOrgMembership("free");
+    mockPrismaClient.connector.count.mockResolvedValue(2); // free limit is 2
+
+    const { checkConnectorLimit } = await import("../subscription");
+    const result = await checkConnectorLimit("user-1");
+
+    expect(result).toEqual({
+      allowed: false,
+      current: 2,
+      limit: 2,
+      upgradeUrl: "/pricing",
+    });
+  });
+});
+
+// ============================================================================
+// checkDocumentLimit — edge cases
+// ============================================================================
+
+describe("checkDocumentLimit edge cases", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should return allowed false with upgradeUrl when exactly at free plan limit (100 docs)", async () => {
+    mockOrgMembership("free");
+    mockPrismaClient.document.count.mockResolvedValue(100);
+
+    const { checkDocumentLimit } = await import("../subscription");
+    const result = await checkDocumentLimit("user-1");
+
+    expect(result).toEqual({
+      allowed: false,
+      current: 100,
+      limit: 100,
+      upgradeUrl: "/pricing",
+    });
   });
 });

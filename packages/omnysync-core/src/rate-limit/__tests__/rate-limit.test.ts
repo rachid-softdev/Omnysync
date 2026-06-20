@@ -131,6 +131,26 @@ describe("Rate Limit module", () => {
       stopRateLimitCleanup();
       stopRateLimitCleanup();
     });
+
+    it("should call pruneRateLimitEntries periodically via setInterval", async () => {
+      vi.useFakeTimers();
+      // Start cleanup with fake timers so the setInterval is faked
+      stopRateLimitCleanup(); // ensure clean state
+
+      // Create a test entry that will expire
+      rateLimit("expire-me");
+
+      // Advance time past window + 5 min interval so the interval fires
+      vi.advanceTimersByTime(RATE_LIMIT_WINDOW_MS + 5 * 60 * 1000 + 100);
+
+      // The interval should have run, pruning the expired entry
+      const result = rateLimit("expire-me");
+      // After pruning, the entry was removed so rateLimit creates a new one (allowed)
+      expect(result.allowed).toBe(true);
+
+      vi.useRealTimers();
+      stopRateLimitCleanup();
+    });
   });
 
   describe("shutdownRateLimit", () => {

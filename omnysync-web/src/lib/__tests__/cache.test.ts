@@ -25,7 +25,7 @@ vi.mock('@upstash/redis', () => ({
   },
 }))
 
-import { cache, withCache, CACHE_KEYS } from '../cache'
+import { cache, withCache, useCachedFetch, CACHE_KEYS } from '../cache'
 
 describe('cache.get', () => {
   beforeEach(() => {
@@ -443,5 +443,42 @@ describe('CACHE_KEYS', () => {
 
   it('generates sync logs key with page', () => {
     expect(CACHE_KEYS.SYNC_LOGS('org-1', 1)).toBe('org:org-1:logs:1')
+  })
+})
+
+describe('useCachedFetch', () => {
+  it('returns initial state with null data, false loading, null error', () => {
+    const fetchFn = vi.fn()
+    const result = useCachedFetch(fetchFn)
+
+    expect(result.data).toBeNull()
+    expect(result.loading).toBe(false)
+    expect(result.error).toBeNull()
+  })
+
+  it('refetch calls the fetch function and returns its result', async () => {
+    const fetchFn = vi.fn().mockResolvedValue('result-data')
+    const result = useCachedFetch(fetchFn)
+
+    const refetchResult = await result.refetch()
+
+    expect(fetchFn).toHaveBeenCalledTimes(1)
+    expect(refetchResult).toBe('result-data')
+  })
+
+  it('refetch propagates errors from fetch function', async () => {
+    const fetchFn = vi.fn().mockRejectedValue(new Error('fetch-error'))
+    const result = useCachedFetch(fetchFn)
+
+    await expect(result.refetch()).rejects.toThrow('fetch-error')
+  })
+
+  it('accepts options parameter without breaking', () => {
+    const fetchFn = vi.fn()
+    const result = useCachedFetch(fetchFn, { ttl: 300, prefix: 'test' })
+
+    expect(result.data).toBeNull()
+    expect(result.loading).toBe(false)
+    expect(result.error).toBeNull()
   })
 })

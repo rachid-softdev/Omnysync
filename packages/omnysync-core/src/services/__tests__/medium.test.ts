@@ -89,6 +89,22 @@ describe("Medium Connector", () => {
       expect(pubs).toEqual([]);
     });
 
+    it("should return empty array when data.data is null (falsy fallback)", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({ data: null } as any);
+
+      const pubs = await listMediumPublications(accessToken, "user-1");
+
+      expect(pubs).toEqual([]);
+    });
+
+    it("should return empty array when response has no data property", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({} as any);
+
+      const pubs = await listMediumPublications(accessToken, "user-1");
+
+      expect(pubs).toEqual([]);
+    });
+
     it("should throw on API error", async () => {
       vi.mocked(fetchWithRetry).mockRejectedValue(new Error("Failed to fetch"));
 
@@ -564,6 +580,246 @@ describe("Medium Connector", () => {
       await expect(publishToMedium("conn-1", "doc-1")).rejects.toThrow(
         "Document not found",
       );
+    });
+
+    it("should fall back to document.content when htmlContent is null", async () => {
+      const connector = {
+        id: "conn-1",
+        type: "MEDIUM",
+        credentials: "enc_token",
+        config: '{"userId":"user-1","username":"testuser"}',
+      };
+      const document = {
+        id: "doc-1",
+        title: "Test Doc",
+        htmlContent: null,
+        content: "Plain text fallback",
+        tags: [],
+      };
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue(
+        connector as any,
+      );
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(document as any);
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        data: {
+          id: "post-1",
+          title: "Test Doc",
+          authorId: "user-1",
+          tags: [],
+          url: "https://medium.com/p/post-1",
+          canonicalUrl: "",
+          publishStatus: "public",
+          publishedAt: "2026-06-01",
+          content: "Plain text fallback",
+          contentFormat: "html",
+        },
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+
+      const result = await publishToMedium("conn-1", "doc-1");
+
+      expect(result.url).toBe("https://medium.com/p/post-1");
+      expect(prisma.document.update).toHaveBeenCalled();
+    });
+
+    it("should use empty string when both htmlContent and content are null", async () => {
+      const connector = {
+        id: "conn-1",
+        type: "MEDIUM",
+        credentials: "enc_token",
+        config: '{"userId":"user-1","username":"testuser"}',
+      };
+      const document = {
+        id: "doc-1",
+        title: "Test Doc",
+        htmlContent: null,
+        content: null,
+        tags: [],
+      };
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue(
+        connector as any,
+      );
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(document as any);
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        data: {
+          id: "post-1",
+          title: "Test Doc",
+          authorId: "user-1",
+          tags: [],
+          url: "https://medium.com/p/post-1",
+          canonicalUrl: "",
+          publishStatus: "public",
+          publishedAt: "2026-06-01",
+          content: "",
+          contentFormat: "html",
+        },
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+
+      const result = await publishToMedium("conn-1", "doc-1");
+
+      expect(result.url).toBe("https://medium.com/p/post-1");
+      expect(prisma.document.update).toHaveBeenCalled();
+    });
+
+    it("should handle null connector credentials (fallback to empty string)", async () => {
+      const connector = {
+        id: "conn-1",
+        type: "MEDIUM",
+        credentials: null,
+        config: '{"userId":"user-1","username":"testuser"}',
+      };
+      const document = {
+        id: "doc-1",
+        title: "Test Doc",
+        htmlContent: "<p>Hello</p>",
+        content: "Hello",
+        tags: [],
+      };
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue(
+        connector as any,
+      );
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(document as any);
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        data: {
+          id: "post-null-creds",
+          title: "Test Doc",
+          authorId: "user-1",
+          tags: [],
+          url: "https://medium.com/p/post-null-creds",
+          canonicalUrl: "",
+          publishStatus: "public",
+          publishedAt: "2026-06-01",
+          content: "<p>Hello</p>",
+          contentFormat: "html",
+        },
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+
+      const result = await publishToMedium("conn-1", "doc-1");
+
+      expect(result.url).toBe("https://medium.com/p/post-null-creds");
+      expect(prisma.document.update).toHaveBeenCalled();
+    });
+
+    it("should handle null connector config (fallback to empty object)", async () => {
+      const connector = {
+        id: "conn-1",
+        type: "MEDIUM",
+        credentials: "enc_token",
+        config: null,
+      };
+      const document = {
+        id: "doc-1",
+        title: "Test Doc",
+        htmlContent: "<p>Hello</p>",
+        content: "Hello",
+        tags: [],
+      };
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue(
+        connector as any,
+      );
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(document as any);
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        data: {
+          id: "post-null-config",
+          title: "Test Doc",
+          authorId: "user-1",
+          tags: [],
+          url: "https://medium.com/p/post-null-config",
+          canonicalUrl: "",
+          publishStatus: "public",
+          publishedAt: "2026-06-01",
+          content: "<p>Hello</p>",
+          contentFormat: "html",
+        },
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+
+      const result = await publishToMedium("conn-1", "doc-1");
+
+      expect(result.url).toBe("https://medium.com/p/post-null-config");
+      expect(prisma.document.update).toHaveBeenCalled();
+    });
+
+    it("should handle undefined tags on document", async () => {
+      const connector = {
+        id: "conn-1",
+        type: "MEDIUM",
+        credentials: "enc_token",
+        config: '{"userId":"user-1","username":"testuser"}',
+      };
+      const document = {
+        id: "doc-1",
+        title: "Test Doc",
+        htmlContent: "<p>Hello</p>",
+        content: "Hello",
+        tags: undefined,
+      };
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue(
+        connector as any,
+      );
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(document as any);
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        data: {
+          id: "post-undefined-tags",
+          title: "Test Doc",
+          authorId: "user-1",
+          tags: [],
+          url: "https://medium.com/p/post-undefined-tags",
+          canonicalUrl: "",
+          publishStatus: "public",
+          publishedAt: "2026-06-01",
+          content: "<p>Hello</p>",
+          contentFormat: "html",
+        },
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+
+      const result = await publishToMedium("conn-1", "doc-1");
+
+      expect(result.url).toBe("https://medium.com/p/post-undefined-tags");
+      expect(prisma.document.update).toHaveBeenCalled();
+    });
+
+    it("should handle connector with empty string credentials and config", async () => {
+      const connector = {
+        id: "conn-1",
+        type: "MEDIUM",
+        credentials: "",
+        config: "",
+      };
+      const document = {
+        id: "doc-1",
+        title: "Test Doc",
+        htmlContent: "<p>Hello</p>",
+        content: "Hello",
+        tags: [],
+      };
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue(
+        connector as any,
+      );
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(document as any);
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        data: {
+          id: "post-empty-creds",
+          title: "Test Doc",
+          authorId: "user-1",
+          tags: [],
+          url: "https://medium.com/p/post-empty-creds",
+          canonicalUrl: "",
+          publishStatus: "public",
+          publishedAt: "2026-06-01",
+          content: "<p>Hello</p>",
+          contentFormat: "html",
+        },
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+
+      const result = await publishToMedium("conn-1", "doc-1");
+
+      expect(result.url).toBe("https://medium.com/p/post-empty-creds");
+      expect(prisma.document.update).toHaveBeenCalled();
     });
   });
 });

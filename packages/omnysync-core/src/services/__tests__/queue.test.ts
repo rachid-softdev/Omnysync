@@ -10,13 +10,19 @@ const MockQStashClient = vi.hoisted(
       publish = mockQstashPublish;
     },
 );
-const MockRedis = vi.hoisted(
-  () =>
-    class MockRedis {
-      exists = mockRedisExists;
-      set = mockRedisSet;
-    },
-);
+const MockRedis = vi.hoisted(() => {
+  const RedisClass = class MockRedis {
+    static shouldThrow = false;
+    exists = mockRedisExists;
+    set = mockRedisSet;
+    constructor() {
+      if (MockRedis.shouldThrow) {
+        throw new Error("Redis constructor failed");
+      }
+    }
+  };
+  return RedisClass;
+});
 
 vi.mock("@upstash/qstash", () => ({ Client: MockQStashClient }));
 vi.mock("@upstash/redis", () => ({ Redis: MockRedis }));
@@ -129,6 +135,34 @@ describe("Queue Service", () => {
       expect(await isJobCompleted("expiring-key")).toBe(false);
 
       vi.useRealTimers();
+    });
+
+    it("should fallback to in-memory when Redis constructor throws", async () => {
+      process.env.QSTASH_URL = "https://example.com";
+      process.env.QSTASH_TOKEN = "token";
+
+      MockRedis.shouldThrow = true;
+
+      // When Redis constructor throws, getRedis should return null,
+      // falling back to in-memory tracking
+      const completed = await isJobCompleted("throw-key");
+      expect(completed).toBe(false);
+
+      await markJobCompleted("throw-key", { fallback: true });
+
+      const after = await isJobCompleted("throw-key");
+      expect(after).toBe(true);
+
+      MockRedis.shouldThrow = false;
+    });
+
+    it("should use in-memory fallback when env vars are not set (getRedis returns null early)", async () => {
+      // Ensure env vars are not set (already done in beforeEach)
+      const completed = await isJobCompleted("no-env-key");
+      expect(completed).toBe(false);
+
+      await markJobCompleted("no-env-key", { data: "memory" });
+      expect(await isJobCompleted("no-env-key")).toBe(true);
     });
   });
 

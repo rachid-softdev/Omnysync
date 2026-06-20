@@ -743,4 +743,78 @@ describe("AI Service", () => {
       );
     });
   });
+
+  describe("getOpenAI internal — OPENAI_API_KEY missing", () => {
+    it("should wrap the missing key error in user-friendly message", async () => {
+      const originalKey = process.env.OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+
+      // generateSEO catches the getOpenAI() error and re-throws a user-friendly message
+      await expect(generateSEO("content", "Title")).rejects.toThrow(
+        "AI generation failed. Please try again.",
+      );
+
+      process.env.OPENAI_API_KEY = originalKey;
+    });
+
+    it("should throw the original error for functions that directly expose getOpenAI errors (via improveContent)", async () => {
+      const originalKey = process.env.OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+
+      // improveContent has the same wrapping pattern as generateSEO
+      await expect(improveContent("content", "make better")).rejects.toThrow(
+        "AI content improvement failed. Please try again.",
+      );
+
+      process.env.OPENAI_API_KEY = originalKey;
+    });
+
+    it("should wrap the missing key error for generateAImage", async () => {
+      const originalKey = process.env.OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+
+      await expect(generateAImage("A cat")).rejects.toThrow(
+        "AI image generation failed. Please try again.",
+      );
+
+      process.env.OPENAI_API_KEY = originalKey;
+    });
+
+    it("should wrap the missing key error for findInterlinkingOpportunities", async () => {
+      const originalKey = process.env.OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+
+      await expect(
+        findInterlinkingOpportunities("content", []),
+      ).rejects.toThrow("AI interlinking failed. Please try again.");
+
+      process.env.OPENAI_API_KEY = originalKey;
+    });
+
+    it("should wrap the missing key error for generateExcerpt", async () => {
+      const originalKey = process.env.OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+
+      // generateExcerpt with long content will try to call getOpenAI()
+      const longContent = "A".repeat(300);
+      await expect(generateExcerpt(longContent, 160)).rejects.toThrow(
+        "AI excerpt generation failed. Please try again.",
+      );
+
+      process.env.OPENAI_API_KEY = originalKey;
+    });
+
+    it("should wrap the missing key error for detectContentChanges", async () => {
+      const originalKey = process.env.OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+
+      await expect(
+        detectContentChanges("Old content", "New content"),
+      ).rejects.toThrow(
+        "AI content change detection failed. Please try again.",
+      );
+
+      process.env.OPENAI_API_KEY = originalKey;
+    });
+  });
 });

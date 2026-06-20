@@ -188,6 +188,45 @@ describe("Password Reset Service", () => {
         process.env.NEXTAUTH_URL = originalUrl;
       }
     });
+
+    it("should include correct expiry pluralization in email template (RESET_TOKEN_EXPIRY_HOURS=1 → singular)", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: userId,
+        email,
+      } as any);
+      vi.mocked(prisma.passwordReset.count).mockResolvedValue(0);
+      vi.mocked(prisma.passwordReset.create).mockResolvedValue({} as any);
+      vi.mocked(sendEmail).mockResolvedValue(undefined);
+
+      await createPasswordResetToken(email);
+
+      // RESET_TOKEN_EXPIRY_HOURS is 1, so the template should use singular "heure"
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          html: expect.stringContaining("1 heure"),
+        }),
+      );
+    });
+
+    it("should create email template with correct reset link format", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: userId,
+        email,
+      } as any);
+      vi.mocked(prisma.passwordReset.count).mockResolvedValue(0);
+      vi.mocked(prisma.passwordReset.create).mockResolvedValue({} as any);
+      vi.mocked(sendEmail).mockResolvedValue(undefined);
+
+      process.env.NEXTAUTH_URL = "https://omnysync.com";
+      const result = await createPasswordResetToken(email);
+
+      expect(result.success).toBe(true);
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          html: expect.stringContaining("omnysync.com/auth/reset-password"),
+        }),
+      );
+    });
   });
 
   describe("validateResetToken", () => {
