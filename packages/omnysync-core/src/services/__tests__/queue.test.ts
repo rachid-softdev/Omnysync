@@ -363,6 +363,86 @@ describe("Queue Service", () => {
       expect(result2).toEqual({ skipped: true, reason: "already_processed" });
       expect(processFn).toHaveBeenCalledTimes(1);
     });
+
+    it(
+      "should use 'Unknown error' fallback when Error has empty message",
+      { timeout: 60000 },
+      async () => {
+        vi.useFakeTimers();
+
+        const processFn = vi.fn().mockRejectedValue(new Error()); // Error with empty message
+        const deadLetterSpy = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
+
+        const job = {
+          id: "job-empty-msg",
+          type: "sync_document" as const,
+          payload: { documentId: "doc-empty-msg" },
+        };
+
+        const promise = processJobWithRetry(job, processFn);
+        promise.catch(() => {});
+
+        await vi.advanceTimersByTimeAsync(6000);
+
+        await expect(promise).rejects.toThrow("");
+
+        // addToDeadLetter should receive "Unknown error" because
+        // lastError.message is "" (empty string is falsy) → "" || "Unknown error"
+        expect(deadLetterSpy).toHaveBeenCalledWith(
+          "Job moved to dead letter queue:",
+          expect.objectContaining({
+            jobId: "job-empty-msg",
+            error: "Unknown error",
+            attempts: 3,
+          }),
+        );
+
+        deadLetterSpy.mockRestore();
+        vi.useRealTimers();
+      },
+    );
+
+    it(
+      "should crash in logFailedJob when non-Error value (string) is thrown — lastError.message is undefined",
+      { timeout: 60000 },
+      async () => {
+        vi.useFakeTimers();
+
+        // When a raw string is thrown, error as Error still leaves it as a string at runtime.
+        // lastError.message is undefined, and logFailedJob calls substring on undefined → TypeError.
+        const processFn = vi.fn().mockRejectedValue("string error");
+        const deadLetterSpy = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
+
+        const job = {
+          id: "job-non-error",
+          type: "sync_document" as const,
+          payload: { documentId: "doc-non-error" },
+        };
+
+        const promise = processJobWithRetry(job, processFn);
+        promise.catch(() => {});
+
+        await vi.advanceTimersByTimeAsync(6000);
+
+        // The error from logFailedJob (substring on undefined) propagates
+        await expect(promise).rejects.toThrow(
+          "Cannot read properties of undefined",
+        );
+
+        // Dead letter queue was NOT reached because logFailedJob threw first
+        expect(deadLetterSpy).not.toHaveBeenCalledWith(
+          "Job moved to dead letter queue:",
+          expect.objectContaining({ jobId: "job-non-error" }),
+        );
+
+        deadLetterSpy.mockRestore();
+        vi.useRealTimers();
+      },
+    );
   });
 
   describe("enqueueJob", () => {

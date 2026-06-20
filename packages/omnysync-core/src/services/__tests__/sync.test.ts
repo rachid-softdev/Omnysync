@@ -1826,5 +1826,87 @@ describe("Sync Service", () => {
         "Access denied",
       );
     });
+
+    it("should fetch remote post for Ghost connector", async () => {
+      // Reset authz mock so it doesn't reject
+      const authzModule = await import("../authz");
+      vi.mocked(authzModule.requireDocumentAccess).mockResolvedValue(undefined);
+
+      const ghostClient = vi.mocked(createGhostClient).mock.results[0]?.value;
+      const mockGhostClient = ghostClient || {
+        createPost: vi.fn(),
+        updatePost: vi.fn(),
+        getPost: vi.fn().mockResolvedValue({
+          id: "ghost-post-1",
+          title: "Remote Ghost Post",
+          html: "<p>Remote content</p>",
+        }),
+        getTags: vi.fn(),
+      };
+      if (!ghostClient) {
+        vi.mocked(createGhostClient).mockReturnValue(mockGhostClient as any);
+      } else {
+        mockGhostClient.getPost.mockResolvedValue({
+          id: "ghost-post-1",
+          title: "Remote Ghost Post",
+          html: "<p>Remote content</p>",
+        });
+      }
+
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        slug: "ghost-slug",
+        destConnector: {
+          type: "GHOST",
+          credentials: "enc_creds",
+          config: { siteUrl: "https://ghost.example.com" },
+        },
+      } as any);
+
+      const result = await checkRemoteChanges(documentId, userId);
+
+      expect(result).toBeDefined();
+      expect(result?.id).toBe("ghost-post-1");
+      expect(createGhostClient).toHaveBeenCalledWith(
+        "https://ghost.example.com",
+        "creds",
+      );
+      expect(mockGhostClient.getPost).toHaveBeenCalledWith("ghost-slug");
+    });
+
+    it("should handle null slug for Ghost connector", async () => {
+      // Reset authz mock so it doesn't reject
+      const authzModule = await import("../authz");
+      vi.mocked(authzModule.requireDocumentAccess).mockResolvedValue(undefined);
+
+      const ghostClient = vi.mocked(createGhostClient).mock.results[0]?.value;
+      const mockGhostClient = ghostClient || {
+        createPost: vi.fn(),
+        updatePost: vi.fn(),
+        getPost: vi.fn().mockResolvedValue({} as any),
+        getTags: vi.fn(),
+      };
+      if (!ghostClient) {
+        vi.mocked(createGhostClient).mockReturnValue(mockGhostClient as any);
+      } else {
+        mockGhostClient.getPost.mockResolvedValue({} as any);
+      }
+
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        slug: null,
+        destConnector: {
+          type: "GHOST",
+          credentials: "enc_creds",
+          config: { siteUrl: "https://ghost.example.com" },
+        },
+      } as any);
+
+      const result = await checkRemoteChanges(documentId, userId);
+
+      expect(result).toBeDefined();
+      // document.slug || "" → "" when slug is null
+      expect(mockGhostClient.getPost).toHaveBeenCalledWith("");
+    });
   });
 });

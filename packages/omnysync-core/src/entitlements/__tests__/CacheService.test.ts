@@ -46,6 +46,7 @@ const mockRedis = vi.hoisted(() => {
     duplicate: vi.fn().mockReturnValue(subscriber),
     _subscriber: subscriber,
     _messageHandlers: messageHandlers,
+    _constructorShouldThrow: false,
   };
 });
 
@@ -59,6 +60,11 @@ vi.mock("@upstash/redis", () => ({
     subscribe = mockRedis.subscribe;
     scan = mockRedis.scan;
     duplicate = mockRedis.duplicate;
+    constructor() {
+      if (mockRedis._constructorShouldThrow) {
+        throw new Error("Redis connection failed");
+      }
+    }
   },
 }));
 
@@ -1181,6 +1187,60 @@ describe("CacheService", () => {
     // ========================================================================
     // CLEAR ALL WITH REDIS
     // ========================================================================
+
+    // ========================================================================
+    // REDIS CONSTRUCTOR ERROR
+    // ========================================================================
+
+    describe("Redis constructor error handling", () => {
+      it("should handle Redis constructor throwing and fall back to memory-only (lines 142-143)", async () => {
+        // Set the flag to make Redis constructor throw
+        mockRedis._constructorShouldThrow = true;
+
+        // Create a new CacheService — the constructor tries new Redis() which will throw
+        const failingCache = new CacheService();
+
+        // After the constructor throw in initRedis, this.redis should be null
+        expect(failingCache.isRedisAvailable()).toBe(false);
+
+        // Memory cache should still work
+        await failingCache.set(
+          "org-ctor-fail",
+          makeEntitlementMap({ planKey: "pro" }),
+        );
+        const result = await failingCache.get("org-ctor-fail");
+        expect(result?.planKey).toBe("pro");
+
+        failingCache.destroy();
+
+        // Reset the flag so other tests are not affected
+        mockRedis._constructorShouldThrow = false;
+      });
+
+      it("should handle Redis constructor throwing when env vars are set and still fallback to memory", async () => {
+        // Ensure env vars are set
+        process.env.QSTASH_TOKEN = "test-token";
+        process.env.QSTASH_URL = "https://test.upstash.com";
+
+        mockRedis._constructorShouldThrow = true;
+
+        const failingCache = new CacheService();
+
+        // Redis should be unavailable due to constructor throw
+        expect(failingCache.isRedisAvailable()).toBe(false);
+
+        // Memory set/get should work as fallback
+        await failingCache.set(
+          "org-ctor-fail-2",
+          makeEntitlementMap({ planKey: "business" }),
+        );
+        const result = await failingCache.get("org-ctor-fail-2");
+        expect(result?.planKey).toBe("business");
+
+        failingCache.destroy();
+        mockRedis._constructorShouldThrow = false;
+      });
+    });
 
     describe("clearAll with Redis", () => {
       it("should call Redis.scan and Redis.del to clear Redis entries", async () => {

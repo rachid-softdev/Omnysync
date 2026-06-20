@@ -285,6 +285,31 @@ describe("AI Service", () => {
       expect(result.title).toBe("Special SEO Title");
       expect(result.keywords).toContain("spécial");
     });
+
+    it("should fallback to original title when API returns empty title string", async () => {
+      mockCreate.mockResolvedValue({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                title: "",
+                description: "Valid desc",
+                keywords: ["kw"],
+              }),
+            },
+          },
+        ],
+        usage: { total_tokens: 50 },
+      });
+
+      const result = await generateSEO("content", "Original Title");
+
+      // "" is the schema-valid but empty title → "".substring(0,60) is ""
+      // → "" || "Original Title" → "Original Title"
+      expect(result.title).toBe("Original Title");
+      expect(result.description).toBe("Valid desc");
+      expect(result.keywords).toEqual(["kw"]);
+    });
   });
 
   describe("generateAImage", () => {
@@ -619,6 +644,45 @@ describe("AI Service", () => {
       ]);
 
       expect(result.links).toEqual([]);
+      expect(logAIUsage).not.toHaveBeenCalled();
+    });
+
+    it("should handle null content from API and return empty links", async () => {
+      mockCreate.mockResolvedValue({
+        choices: [{ message: { content: null } }],
+        usage: { total_tokens: 10 },
+      });
+
+      const result = await findInterlinkingOpportunities("Content", [
+        { title: "Page", url: "/page", excerpt: "Excerpt" },
+      ]);
+
+      // null || '{"links": []}' → safeParseJSON with valid JSON → empty links
+      expect(result.links).toEqual([]);
+    });
+
+    it("should handle empty string content from API and return empty links", async () => {
+      mockCreate.mockResolvedValue({
+        choices: [{ message: { content: "" } }],
+        usage: null,
+      });
+
+      const result = await findInterlinkingOpportunities("Content", []);
+
+      // "" || '{"links": []}' → safeParseJSON with valid JSON → empty links
+      expect(result.links).toEqual([]);
+    });
+
+    it("should not call logAIUsage when message content is empty string in interlinking", async () => {
+      mockCreate.mockResolvedValue({
+        choices: [{ message: { content: "" } }],
+        usage: null,
+      });
+
+      await findInterlinkingOpportunities("Content", [
+        { title: "Page", url: "/page", excerpt: "Excerpt" },
+      ]);
+
       expect(logAIUsage).not.toHaveBeenCalled();
     });
   });
