@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Stripe Webhook Handler - Feature Flags & Entitlements
  * Omnysync - 2026
@@ -18,6 +19,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
@@ -419,17 +421,22 @@ export async function POST(req: NextRequest) {
   const eventId = event.id
   const eventType = event.type as SupportedEventType
 
-  // Check for idempotency - skip if already processed
-  const existingEvent = await prisma.webhookEvent.findUnique({
-    where: { eventId },
-  })
-
-  if (existingEvent) {
-    console.log(`[StripeWebhook] Event already processed: ${eventId}`)
-    return NextResponse.json({ received: true, skipped: true })
+  // 🔒 Atomic idempotency: claim the event BEFORE processing.
+  // Two parallel webhooks with the same eventId will race here.
+  // The unique constraint on eventId ensures only one wins — the other gets P2002.
+  try {
+    await prisma.webhookEvent.create({
+      data: { eventId, eventType },
+    })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      // Event already claimed — skip silently
+      return NextResponse.json({ received: true, skipped: true })
+    }
+    throw err
   }
 
-  // Process the event
+  // Process the event (idempotency is guaranteed by the create above)
   try {
     switch (eventType) {
       case 'checkout.session.completed':
@@ -464,19 +471,10 @@ export async function POST(req: NextRequest) {
         console.log(`[StripeWebhook] Unhandled event type: ${eventType}`)
     }
 
-    // Mark event as processed (idempotency)
-    await prisma.webhookEvent.create({
-      data: {
-        eventId,
-        eventType,
-      },
-    })
-
     return NextResponse.json({ received: true })
   } catch (error) {
     console.error('[StripeWebhook] Handler error:', error)
 
-    // Log but don't fail - the event is still recorded as attempted
     return NextResponse.json({ error: 'Handler error', eventId }, { status: 500 })
   }
 }

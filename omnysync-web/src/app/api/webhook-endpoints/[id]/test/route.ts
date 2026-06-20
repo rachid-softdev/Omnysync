@@ -6,6 +6,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+// 🔒 Block SSRF to private / internal / cloud-metadata IP ranges
+const BLOCKED_HOST_PATTERNS = [
+  /^localhost$/i,
+  /^127\./,
+  /^10\./,
+  /^172\.(1[6-9]|2\d|3[01])\./,
+  /^192\.168\./,
+  /^169\.254\./,
+  /^0\.0\.0\.0$/,
+  /^::$/,
+  /^fc00:/i,
+  /^fe80:/i,
+  /^\[?::1\]?$/,
+]
+
+function isPrivateHost(url: URL): boolean {
+  const host = url.hostname.replace(/^\[|\]$/g, '') // strip brackets for IPv6
+  return BLOCKED_HOST_PATTERNS.some((pattern) => pattern.test(host))
+}
+
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth()
@@ -39,6 +59,24 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
     if (!webhook.isActive) {
       return NextResponse.json({ error: 'Le webhook est désactivé' }, { status: 400 })
+    }
+
+    // 🔒 SSRF protection: reject requests to private / internal addresses
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(webhook.url)
+    } catch {
+      return NextResponse.json({ error: 'URL de webhook invalide' }, { status: 400 })
+    }
+
+    if (isPrivateHost(parsedUrl)) {
+      console.warn(
+        `SSRF blocked: webhook test to private address "${webhook.url}" (user ${session.user.id})`
+      )
+      return NextResponse.json(
+        { error: 'Les adresses réseau internes ne sont pas autorisées' },
+        { status: 400 }
+      )
     }
 
     // Envoyer une requête de test

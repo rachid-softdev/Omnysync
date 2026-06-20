@@ -1,12 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+
+vi.mock('@/lib/i18n/useTranslations', () => ({
+  useTranslations: () => ({ t: (key: string) => key, loading: false, locale: 'en' }),
+}))
+
 import Loading from '../loading'
 
 describe('Loading page', () => {
   it('renders loading indicator', () => {
     render(<Loading />)
-    expect(screen.getByText('Loading...')).toBeInTheDocument()
+    expect(screen.getByText('loading.default')).toBeInTheDocument()
   })
 
   it('renders spinning icon', () => {

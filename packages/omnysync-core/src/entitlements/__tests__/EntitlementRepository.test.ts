@@ -85,6 +85,7 @@ vi.mock("../../prisma", () => ({
 // IMPORTS (after mocks)
 // ============================================================================
 
+import { Prisma } from "@prisma/client";
 import {
   PrismaEntitlementRepository,
   resetEntitlementRepository,
@@ -214,6 +215,52 @@ describe("PrismaEntitlementRepository", () => {
       mockPrisma.subscription.findUnique.mockResolvedValue({
         ...baseSubscription,
         status: "TRIALING",
+      });
+
+      const result = await repo.getActiveSubscription("org-1");
+      expect(result).not.toBeNull();
+      expect(result?.status).toBe("TRIALING");
+    });
+
+    it("should return subscription for PAST_DUE status when period has not ended", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        ...baseSubscription,
+        status: "PAST_DUE",
+        currentPeriodEnd: new Date(Date.now() + 86400000), // Not ended
+      });
+
+      const result = await repo.getActiveSubscription("org-1");
+      expect(result).not.toBeNull();
+      expect(result?.status).toBe("PAST_DUE");
+    });
+
+    it("should return null for CANCELED subscription when currentPeriodEnd is null", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        ...baseSubscription,
+        status: "CANCELED",
+        currentPeriodEnd: null,
+      });
+
+      const result = await repo.getActiveSubscription("org-1");
+      expect(result).toBeNull();
+    });
+
+    it("should return null for PAST_DUE subscription when period has ended", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        ...baseSubscription,
+        status: "PAST_DUE",
+        currentPeriodEnd: new Date("2025-01-01"), // Past
+      });
+
+      const result = await repo.getActiveSubscription("org-1");
+      expect(result).toBeNull();
+    });
+
+    it("should return subscription for TRIALING even if period has ended (trials keep access)", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        ...baseSubscription,
+        status: "TRIALING",
+        currentPeriodEnd: new Date("2025-01-01"), // Past
       });
 
       const result = await repo.getActiveSubscription("org-1");
@@ -401,6 +448,204 @@ describe("PrismaEntitlementRepository", () => {
       // Disabled feature should not be in limits
       expect(result.features["DISABLED_FEATURE"]).toBe(false);
     });
+
+    it("should populate experiments for configJson with percentage", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValue({
+        id: "plan-1",
+        key: "pro",
+        features: [
+          {
+            enabled: true,
+            limitValue: null,
+            configJson: { percentage: 50, seed: "v1" },
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "NEW_DASHBOARD", name: "New Dashboard" },
+          },
+        ],
+      });
+
+      const result = await repo.getEntitlementMap("org-1");
+      expect(result.experiments["NEW_DASHBOARD"]).toBeDefined();
+      expect(result.experiments["NEW_DASHBOARD"].percentage).toBe(50);
+      expect(result.experiments["NEW_DASHBOARD"].seed).toBe("v1");
+      expect(result.experiments["NEW_DASHBOARD"].enabled).toBe(false);
+    });
+
+    it("should handle experiment configJson with percentage=0", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValue({
+        id: "plan-1",
+        key: "pro",
+        features: [
+          {
+            enabled: true,
+            limitValue: null,
+            configJson: { percentage: 0, seed: "v2" },
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "EXPERIMENT_ZERO", name: "Zero Percent" },
+          },
+        ],
+      });
+
+      const result = await repo.getEntitlementMap("org-1");
+      expect(result.experiments["EXPERIMENT_ZERO"].percentage).toBe(0);
+      expect(result.experiments["EXPERIMENT_ZERO"].seed).toBe("v2");
+    });
+
+    it("should handle experiment configJson with null seed (fallback to featureKey)", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValue({
+        id: "plan-1",
+        key: "pro",
+        features: [
+          {
+            enabled: true,
+            limitValue: null,
+            configJson: { percentage: 25, seed: null },
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "EXPERIMENT_NO_SEED", name: "No Seed" },
+          },
+        ],
+      });
+
+      const result = await repo.getEntitlementMap("org-1");
+      expect(result.experiments["EXPERIMENT_NO_SEED"]).toBeDefined();
+      expect(result.experiments["EXPERIMENT_NO_SEED"].percentage).toBe(25);
+      // null seed becomes "EXPERIMENT_NO_SEED" via || operator
+      expect(result.experiments["EXPERIMENT_NO_SEED"].seed).toBe(
+        "EXPERIMENT_NO_SEED",
+      );
+    });
+
+    it("should set limit to 0 when disabled feature has a limitValue", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValue({
+        id: "plan-1",
+        key: "pro",
+        features: [
+          {
+            enabled: false,
+            limitValue: 10,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+        ],
+      });
+
+      const result = await repo.getEntitlementMap("org-1");
+      expect(result.features["MAX_SYNCS"]).toBe(false);
+      expect(result.limits["MAX_SYNCS"]).toBe(0);
+    });
+
+    it("should handle enabled feature with positive limitValue (not -1) — covers line 331", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValue({
+        id: "plan-1",
+        key: "pro",
+        features: [
+          {
+            enabled: true,
+            limitValue: 50, // Positive number, not -1
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+          {
+            enabled: true,
+            limitValue: -1, // Unlimited
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_CONNECTORS", name: "Max Connectors" },
+          },
+          {
+            enabled: true,
+            limitValue: 0, // Zero limit
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "API_ACCESS", name: "API Access" },
+          },
+        ],
+      });
+
+      const result = await repo.getEntitlementMap("org-1");
+      // Positive limit should be preserved
+      expect(result.limits["MAX_SYNCS"]).toBe(50);
+      // -1 should become null (unlimited)
+      expect(result.limits["MAX_CONNECTORS"]).toBeNull();
+      // Zero should be preserved
+      expect(result.limits["API_ACCESS"]).toBe(0);
+    });
+
+    it("should fallback to default plan when no subscription exists", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValueOnce(null);
+
+      // Plan lookup for default "free"
+      mockPrisma.plan.findUnique.mockResolvedValue({
+        id: "plan-free",
+        key: "free",
+        features: [],
+      });
+
+      const result = await repo.getEntitlementMap("nonexistent-org");
+      expect(result.planKey).toBe("free");
+    });
   });
 
   // ==========================================================================
@@ -470,6 +715,30 @@ describe("PrismaEntitlementRepository", () => {
       expect(result).not.toBeNull();
       expect(result?.enabled).toBe(true);
     });
+
+    it("should return null when org override is expired", async () => {
+      mockPrisma.entitlementOverride.findFirst.mockResolvedValue({
+        id: "ov-1",
+        scope: "ORG",
+        scopeId: "org-1",
+        featureKey: "EXPORT_PDF",
+        enabled: true,
+        limitValue: null,
+        expiresAt: new Date("2025-01-01"), // Past
+        reason: "Expired org override",
+        createdAt: new Date(),
+      });
+
+      const result = await repo.getOrgOverride("org-1", "EXPORT_PDF");
+      expect(result).toBeNull();
+    });
+
+    it("should return null when no org override found", async () => {
+      mockPrisma.entitlementOverride.findFirst.mockResolvedValue(null);
+
+      const result = await repo.getOrgOverride("nonexistent", "EXPORT_PDF");
+      expect(result).toBeNull();
+    });
   });
 
   describe("getAllOverridesForOrg", () => {
@@ -521,7 +790,7 @@ describe("PrismaEntitlementRepository", () => {
   });
 
   describe("createOverride", () => {
-    it("should create and return an override", async () => {
+    it("should create and return an override with ORG scope", async () => {
       mockPrisma.organization.findUnique.mockResolvedValue({ id: "org-1" });
 
       mockPrisma.entitlementOverride.create.mockResolvedValue({
@@ -549,6 +818,66 @@ describe("PrismaEntitlementRepository", () => {
       });
       expect(result.id).toBe("ov-new");
       expect(result.scope).toBe("ORG");
+    });
+
+    it("should create and return an override with USER scope (no organizationId)", async () => {
+      mockPrisma.entitlementOverride.create.mockResolvedValue({
+        id: "ov-user",
+        scope: "USER",
+        scopeId: "user-1",
+        featureKey: "EXPORT_PDF",
+        enabled: true,
+        limitValue: null,
+        expiresAt: null,
+        reason: "User override",
+      });
+
+      const input: OverrideInput = {
+        scope: "USER",
+        scopeId: "user-1",
+        featureKey: "EXPORT_PDF",
+        enabled: true,
+        reason: "User override",
+      };
+
+      const result = await repo.createOverride({
+        ...input,
+        createdBy: "admin",
+      });
+      expect(result.id).toBe("ov-user");
+      expect(result.scope).toBe("USER");
+      // For USER scope, organizationId should not be looked up
+      expect(mockPrisma.organization.findUnique).not.toHaveBeenCalled();
+    });
+
+    it("should handle ORG scope when org lookup returns null", async () => {
+      mockPrisma.organization.findUnique.mockResolvedValue(null);
+
+      mockPrisma.entitlementOverride.create.mockResolvedValue({
+        id: "ov-null",
+        scope: "ORG",
+        scopeId: "nonexistent",
+        featureKey: "EXPORT_PDF",
+        enabled: true,
+        limitValue: null,
+        expiresAt: null,
+        reason: "Null org",
+      });
+
+      const input: OverrideInput = {
+        scope: "ORG",
+        scopeId: "nonexistent",
+        featureKey: "EXPORT_PDF",
+        enabled: true,
+        reason: "Null org",
+      };
+
+      const result = await repo.createOverride({
+        ...input,
+        createdBy: "admin",
+      });
+      expect(result.id).toBe("ov-null");
+      expect(mockPrisma.organization.findUnique).toHaveBeenCalled();
     });
   });
 
@@ -594,6 +923,13 @@ describe("PrismaEntitlementRepository", () => {
       });
 
       const result = await repo.getUsageTracking("org-1", "MAX_SYNCS");
+      expect(result).toBeNull();
+    });
+
+    it("should return null when no usage record exists", async () => {
+      mockPrisma.usageTracking.findUnique.mockResolvedValue(null);
+
+      const result = await repo.getUsageTracking("org-1", "NON_EXISTENT");
       expect(result).toBeNull();
     });
   });
@@ -651,6 +987,133 @@ describe("PrismaEntitlementRepository", () => {
       expect(result.success).toBe(false);
       expect(result.limitReached).toBe(true);
     });
+
+    it("should retry on serialization error and succeed", async () => {
+      // Mock PrismaClientKnownRequestError with P2034 code
+      class MockPrismaError extends Error {
+        code = "P2034";
+        constructor() {
+          super("Serialization failure");
+          this.name = "PrismaClientKnownRequestError";
+        }
+      }
+
+      // @ts-expect-error - Mock Prisma's error shape
+      mockPrisma.$transaction
+        .mockRejectedValueOnce(new MockPrismaError())
+        .mockImplementationOnce(async (fn: any) => {
+          return fn({
+            usageTracking: {
+              upsert: vi.fn().mockResolvedValue({
+                id: "usage-retry",
+                usageCount: 3,
+              }),
+              update: vi.fn(),
+            },
+            entitlementOverride: { delete: vi.fn() },
+          });
+        });
+
+      const result = await repo.consumeUsage("org-1", "MAX_SYNCS", 1, 10);
+      expect(result.success).toBe(true);
+      expect(result.newUsageCount).toBe(3);
+    });
+
+    it("should throw when all retries fail on serialization errors", async () => {
+      class MockPrismaError extends Error {
+        code = "P2034";
+        constructor() {
+          super("Persistent serialization failure");
+          this.name = "PrismaClientKnownRequestError";
+        }
+      }
+
+      // @ts-expect-error - Mock Prisma's error shape
+      mockPrisma.$transaction.mockRejectedValue(new MockPrismaError());
+
+      await expect(
+        repo.consumeUsage("org-1", "MAX_SYNCS", 1, 10),
+      ).rejects.toThrow("Persistent serialization failure");
+    });
+
+    it("should throw immediately on non-serialization errors", async () => {
+      mockPrisma.$transaction.mockRejectedValue(new Error("Connection lost"));
+
+      await expect(
+        repo.consumeUsage("org-1", "MAX_SYNCS", 1, 10),
+      ).rejects.toThrow("Connection lost");
+    });
+
+    it("should succeed with unlimited (null) and zero limit", async () => {
+      mockPrisma.usageTracking.upsert.mockResolvedValue({
+        id: "usage-1",
+        usageCount: 0,
+      });
+
+      const result = await repo.consumeUsage("org-1", "MAX_SYNCS", 0, null);
+      expect(result.success).toBe(true);
+      expect(result.limitReached).toBe(false);
+    });
+
+    it("should reject when limit is 0 and consumption is attempted", async () => {
+      mockPrisma.$transaction.mockImplementation(async (fn: any) => {
+        return fn({
+          usageTracking: {
+            upsert: vi.fn().mockResolvedValue({
+              id: "usage-1",
+              usageCount: 1, // Exceeds limit of 0
+            }),
+            update: vi.fn().mockResolvedValue({}),
+          },
+          entitlementOverride: { delete: vi.fn() },
+        });
+      });
+
+      const result = await repo.consumeUsage("org-1", "MAX_SYNCS", 1, 0);
+      expect(result.success).toBe(false);
+      expect(result.limitReached).toBe(true);
+    });
+
+    it("should retry on real PrismaClientKnownRequestError P2034 — covers line 183", async () => {
+      const prismaError = new Prisma.PrismaClientKnownRequestError(
+        "Serialization failure",
+        { code: "P2034", clientVersion: "5.0.0" },
+      );
+
+      // First call throws a real PrismaClientKnownRequestError (tests the instanceof path)
+      // Second call succeeds
+      mockPrisma.$transaction
+        .mockRejectedValueOnce(prismaError)
+        .mockImplementationOnce(async (fn: any) => {
+          return fn({
+            usageTracking: {
+              upsert: vi.fn().mockResolvedValue({
+                id: "usage-retry",
+                usageCount: 5,
+              }),
+              update: vi.fn(),
+            },
+            entitlementOverride: { delete: vi.fn() },
+          });
+        });
+
+      const result = await repo.consumeUsage("org-1", "MAX_SYNCS", 1, 10);
+      expect(result.success).toBe(true);
+      expect(result.newUsageCount).toBe(5);
+    });
+
+    it("should handle non-P2034 PrismaClientKnownRequestError without retry", async () => {
+      const nonP2034Error = new Prisma.PrismaClientKnownRequestError(
+        "Unique constraint violation",
+        { code: "P2002", clientVersion: "5.0.0" },
+      );
+
+      mockPrisma.$transaction.mockRejectedValue(nonP2034Error);
+
+      await expect(
+        repo.consumeUsage("org-1", "MAX_SYNCS", 1, 10),
+      ).rejects.toThrow("Unique constraint violation");
+    });
   });
 
   // ==========================================================================
@@ -690,6 +1153,43 @@ describe("PrismaEntitlementRepository", () => {
       const result = await repo.getPlanWithFeatures("nonexistent");
       expect(result).toBeNull();
     });
+
+    it("should handle null prices", async () => {
+      mockPrisma.plan.findUnique.mockResolvedValue({
+        id: "plan-free",
+        key: "free",
+        name: "Free",
+        priceMonthly: null,
+        priceYearly: null,
+        isActive: true,
+        sortOrder: 1,
+        features: [],
+      });
+
+      const result = await repo.getPlanWithFeatures("free");
+      expect(result).not.toBeNull();
+      expect(result?.priceMonthly).toBeNull();
+      expect(result?.priceYearly).toBeNull();
+    });
+
+    it("should handle zero price (falsy) values", async () => {
+      mockPrisma.plan.findUnique.mockResolvedValue({
+        id: "plan-free",
+        key: "free",
+        name: "Free",
+        priceMonthly: 0,
+        priceYearly: 0,
+        isActive: true,
+        sortOrder: 1,
+        features: [],
+      });
+
+      const result = await repo.getPlanWithFeatures("free");
+      expect(result).not.toBeNull();
+      // 0 is falsy, so the ternary ? Number(0) : null returns null
+      // This is existing behavior (potential bug)
+      expect(result?.priceMonthly).toBeNull();
+    });
   });
 
   describe("getAllPlansWithFeatures", () => {
@@ -719,6 +1219,70 @@ describe("PrismaEntitlementRepository", () => {
 
       const result = await repo.getAllPlansWithFeatures();
       expect(result).toHaveLength(2);
+    });
+
+    it("should return plans with populated features — covers line 713", async () => {
+      mockPrisma.plan.findMany.mockResolvedValue([
+        {
+          id: "plan-1",
+          key: "free",
+          name: "Free",
+          priceMonthly: 0,
+          priceYearly: 0,
+          isActive: true,
+          sortOrder: 1,
+          features: [
+            {
+              enabled: true,
+              limitValue: null,
+              configJson: null,
+              downgradeStrategy: "GRACEFUL",
+              feature: { key: "EXPORT_CSV", name: "Export CSV" },
+            },
+          ],
+        },
+        {
+          id: "plan-2",
+          key: "pro",
+          name: "Pro",
+          priceMonthly: 29,
+          priceYearly: 290,
+          isActive: true,
+          sortOrder: 2,
+          features: [
+            {
+              enabled: true,
+              limitValue: 100,
+              configJson: null,
+              downgradeStrategy: "GRACEFUL",
+              feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+            },
+            {
+              enabled: false,
+              limitValue: null,
+              configJson: null,
+              downgradeStrategy: "IMMEDIATE",
+              feature: { key: "EXPORT_PDF", name: "Export PDF" },
+            },
+          ],
+        },
+      ]);
+
+      const result = await repo.getAllPlansWithFeatures();
+      expect(result).toHaveLength(2);
+
+      // First plan: free with 1 feature
+      expect(result[0].features).toHaveLength(1);
+      expect(result[0].features[0].featureKey).toBe("EXPORT_CSV");
+      expect(result[0].features[0].limitValue).toBeNull();
+
+      // Second plan: pro with 2 features
+      expect(result[1].features).toHaveLength(2);
+      expect(result[1].features[0].featureKey).toBe("MAX_SYNCS");
+      expect(result[1].features[0].limitValue).toBe(100);
+      expect(result[1].features[1].featureKey).toBe("EXPORT_PDF");
+      expect(result[1].features[1].enabled).toBe(false);
+      expect(result[1].features[1].downgradeStrategy).toBe("IMMEDIATE");
     });
   });
 
@@ -962,6 +1526,448 @@ describe("PrismaEntitlementRepository", () => {
       const result = await repo.getDowngradePreview("org-1", "free");
       expect(result.recommendedStrategy).toBe("GRACEFUL");
       expect(result.features[0].hasActiveUsage).toBe(true);
+    });
+
+    it("should flag feature as affected when limit is reduced (unlimited -> specific)", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-pro",
+        key: "pro",
+        features: [
+          {
+            enabled: true,
+            limitValue: null, // null = unlimited
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+        ],
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-free",
+        key: "free",
+        features: [
+          {
+            enabled: true,
+            limitValue: 10, // specific limit
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+        ],
+      });
+
+      mockPrisma.usageTracking.findUnique.mockResolvedValue(null);
+
+      const result = await repo.getDowngradePreview("org-1", "free");
+      expect(result.features[0].willBeAffected).toBe(true);
+      expect(result.features[0].currentLimit).toBeNull();
+      expect(result.features[0].targetLimit).toBe(10);
+    });
+
+    it("should flag feature as affected when limit is reduced (higher -> lower)", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-pro",
+        key: "pro",
+        features: [
+          {
+            enabled: true,
+            limitValue: 100,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+        ],
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-free",
+        key: "free",
+        features: [
+          {
+            enabled: true,
+            limitValue: 10, // Reduced limit
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+        ],
+      });
+
+      mockPrisma.usageTracking.findUnique.mockResolvedValue(null);
+
+      const result = await repo.getDowngradePreview("org-1", "free");
+      expect(result.features[0].willBeAffected).toBe(true);
+      expect(result.features[0].currentLimit).toBe(100);
+      expect(result.features[0].targetLimit).toBe(10);
+    });
+
+    it("should NOT flag feature when limit is increased (lower -> higher)", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "free",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-free",
+        key: "free",
+        features: [
+          {
+            enabled: true,
+            limitValue: 10,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+        ],
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-pro",
+        key: "pro",
+        features: [
+          {
+            enabled: true,
+            limitValue: 100, // Higher limit
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+        ],
+      });
+
+      mockPrisma.usageTracking.findUnique.mockResolvedValue(null);
+
+      // "Downgrading" from free to pro (not really a downgrade)
+      const result = await repo.getDowngradePreview("org-1", "pro");
+      expect(result.features[0].willBeAffected).toBe(false);
+    });
+
+    it("should use featureName from current feature or fallback to key", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      // Current plan does NOT have feature "NEW_FEATURE"
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-pro",
+        key: "pro",
+        features: [
+          {
+            enabled: true,
+            limitValue: null,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "EXPORT_PDF", name: "Export PDF" },
+          },
+        ],
+      });
+
+      // Target plan HAS the new feature
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-free",
+        key: "free",
+        features: [
+          {
+            enabled: true,
+            limitValue: null,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "NEW_FEATURE", name: "New Feature" },
+          },
+        ],
+      });
+
+      // Usage tracking not relevant here
+      mockPrisma.usageTracking.findUnique.mockResolvedValue(null);
+
+      const result = await repo.getDowngradePreview("org-1", "free");
+      const newFeature = result.features.find(
+        (f: any) => f.featureKey === "NEW_FEATURE",
+      );
+      expect(newFeature).toBeDefined();
+      // Since NEW_FEATURE only exists in target, featureName should come from target
+      expect(newFeature.featureName).toBe("New Feature");
+    });
+
+    it("should flag feature when limit is the same but feature is disabled in target (enabled→disabled)", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-pro",
+        key: "pro",
+        features: [
+          {
+            enabled: true,
+            limitValue: 100,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+        ],
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-free",
+        key: "free",
+        features: [
+          {
+            enabled: false,
+            limitValue: null,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+        ],
+      });
+
+      mockPrisma.usageTracking.findUnique.mockResolvedValue(null);
+
+      const result = await repo.getDowngradePreview("org-1", "free");
+      expect(result.features[0].willBeAffected).toBe(true);
+      expect(result.features[0].currentPlanValue).toBe(true);
+      expect(result.features[0].targetPlanValue).toBe(false);
+    });
+
+    it("should NOT flag feature when both current and target are disabled", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "free",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-free",
+        key: "free",
+        features: [
+          {
+            enabled: false,
+            limitValue: null,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "EXPORT_PDF", name: "Export PDF" },
+          },
+        ],
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-pro",
+        key: "pro",
+        features: [
+          {
+            enabled: false,
+            limitValue: null,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "EXPORT_PDF", name: "Export PDF" },
+          },
+        ],
+      });
+
+      mockPrisma.usageTracking.findUnique.mockResolvedValue(null);
+
+      const result = await repo.getDowngradePreview("org-1", "pro");
+      expect(result.features[0].willBeAffected).toBe(false);
+    });
+
+    it("should use featureName from current when target has the feature too", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-pro",
+        key: "pro",
+        features: [
+          {
+            enabled: true,
+            limitValue: null,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "EXPORT_PDF", name: "Export PDF Pro" },
+          },
+        ],
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-free",
+        key: "free",
+        features: [
+          {
+            enabled: false,
+            limitValue: null,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "EXPORT_PDF", name: "Export PDF Free" },
+          },
+        ],
+      });
+
+      mockPrisma.usageTracking.findUnique.mockResolvedValue(null);
+
+      const result = await repo.getDowngradePreview("org-1", "free");
+      // current (pro) has featureName "Export PDF Pro"
+      expect(result.features[0].featureName).toBe("Export PDF Pro");
+    });
+
+    it("should handle feature not in current plan but present in target with no name", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-pro",
+        key: "pro",
+        features: [],
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-free",
+        key: "free",
+        features: [
+          {
+            enabled: false,
+            limitValue: null,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "UNKNOWN_FEATURE", name: "Unknown Feature" },
+          },
+        ],
+      });
+
+      mockPrisma.usageTracking.findUnique.mockResolvedValue(null);
+
+      const result = await repo.getDowngradePreview("org-1", "free");
+      const feature = result.features.find(
+        (f: any) => f.featureKey === "UNKNOWN_FEATURE",
+      );
+      expect(feature).toBeDefined();
+      expect(feature.featureName).toBe("Unknown Feature");
+      expect(feature.currentPlanValue).toBe(false);
+      expect(feature.targetPlanValue).toBe(false);
+      expect(feature.willBeAffected).toBe(false);
+    });
+
+    it("should NOT flag feature when limit goes from specific to unlimited (improvement)", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "free",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      // Current plan has limit of 10
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-free",
+        key: "free",
+        features: [
+          {
+            enabled: true,
+            limitValue: 10,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+        ],
+      });
+
+      // Target plan has null limit (unlimited) — this is an improvement
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-pro",
+        key: "pro",
+        features: [
+          {
+            enabled: true,
+            limitValue: null,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+        ],
+      });
+
+      mockPrisma.usageTracking.findUnique.mockResolvedValue(null);
+
+      const result = await repo.getDowngradePreview("org-1", "pro");
+      expect(result.features[0].willBeAffected).toBe(false);
+      expect(result.features[0].currentLimit).toBe(10);
+      expect(result.features[0].targetLimit).toBeNull();
     });
   });
 

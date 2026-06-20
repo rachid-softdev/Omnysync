@@ -212,5 +212,10 @@
   "UI_SIGN_IN": "Sign In",
   "UI_GET_STARTED": "Get Started",
   "UI_REDIRECTING": "Redirecting...",
-  "UI_SKIP_TO_CONTENT": "Skip to content"
+  "UI_SKIP_TO_CONTENT": "Skip to content",
+  "error.title": "Something went wrong",
+  "error.description": "An unexpected error occurred. Please try again.",
+  "error.retry": "Try again",
+  "error.home": "Home",
+  "loading.default": "Loading..."
 }

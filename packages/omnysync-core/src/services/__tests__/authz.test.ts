@@ -70,4 +70,57 @@ describe("authz / requireDocumentAccess", () => {
       "DB error",
     );
   });
+
+  it("should throw UnauthorizedError when document has null organizationId", async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({
+      organizationId: null,
+    } as any);
+    vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null);
+
+    await expect(requireDocumentAccess(documentId, userId)).rejects.toThrow(
+      UnauthorizedError,
+    );
+    expect(prisma.userOrganization.findFirst).toHaveBeenCalledWith({
+      where: { userId, organizationId: null },
+    });
+  });
+
+  it("should throw UnauthorizedError with empty documentId", async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(null);
+
+    await expect(requireDocumentAccess("", userId)).rejects.toThrow(
+      UnauthorizedError,
+    );
+    expect(prisma.document.findUnique).toHaveBeenCalledWith({
+      where: { id: "" },
+      select: { organizationId: true },
+    });
+  });
+
+  it("should throw UnauthorizedError with empty userId", async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({
+      organizationId: "org-1",
+    } as any);
+    vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null);
+
+    await expect(requireDocumentAccess(documentId, "")).rejects.toThrow(
+      UnauthorizedError,
+    );
+    expect(prisma.userOrganization.findFirst).toHaveBeenCalledWith({
+      where: { userId: "", organizationId: "org-1" },
+    });
+  });
+
+  it("should propagate prisma error on userOrganization query", async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({
+      organizationId: "org-1",
+    } as any);
+    vi.mocked(prisma.userOrganization.findFirst).mockRejectedValue(
+      new Error("DB constraint violation"),
+    );
+
+    await expect(requireDocumentAccess(documentId, userId)).rejects.toThrow(
+      "DB constraint violation",
+    );
+  });
 });

@@ -166,6 +166,132 @@ describe("S1-3: OAuth encryption utilities", () => {
       expect(parts[2]).toMatch(/^[0-9a-f]{32}$/);
       expect(parts[3]!.length).toBeGreaterThan(0);
     });
+
+    it("throws on malformed encrypted format (wrong number of parts)", () => {
+      const data = { access_token: "ENC:tooshort" };
+      expect(() => decryptResult(data)).toThrow("Invalid encrypted format");
+    });
+
+    it("throws on malformed encrypted format with 3 parts", () => {
+      const data = { access_token: "ENC:iv:tag" };
+      expect(() => decryptResult(data)).toThrow("Invalid encrypted format");
+    });
+
+    it("throws on malformed encrypted format with more than 4 parts", () => {
+      const data = { access_token: "ENC:iv:tag:data:extra" };
+      expect(() => decryptResult(data)).toThrow("Invalid encrypted format");
+    });
+  });
+
+  // ── Cryptographic tamper detection ─────────────────────────────────────
+
+  describe("cryptographic tamper detection", () => {
+    it("should throw when ciphertext has been tampered with (GCM auth tag mismatch)", () => {
+      const data = { access_token: "sensitive-token" };
+      encryptData(data);
+      const encrypted = data.access_token as string;
+
+      // Parse and tamper with the ciphertext portion
+      const parts = encrypted.split(":");
+      const ciphertextHex = parts[3]!;
+      const lastDigit = parseInt(ciphertextHex.slice(-1), 16);
+      const tamperedCiphertext =
+        ciphertextHex.slice(0, -1) + (lastDigit ^ 1).toString(16);
+      const tampered = `${parts[0]}:${parts[1]}:${parts[2]}:${tamperedCiphertext}`;
+
+      // GCM auth tag validation should fail
+      expect(() => decryptResult({ access_token: tampered })).toThrow();
+    });
+
+    it("should throw when authTag is tampered", () => {
+      const data = { access_token: "another-token" };
+      encryptData(data);
+      const encrypted = data.access_token as string;
+
+      const parts = encrypted.split(":");
+      const authTagHex = parts[2]!;
+      const lastDigit = parseInt(authTagHex.slice(-1), 16);
+      const tamperedAuthTag =
+        authTagHex.slice(0, -1) + (lastDigit ^ 1).toString(16);
+      const tampered = `${parts[0]}:${parts[1]}:${tamperedAuthTag}:${parts[3]!}`;
+
+      expect(() => decryptResult({ access_token: tampered })).toThrow();
+    });
+  });
+
+  // ── Non-string OAuth field values ──────────────────────────────────────
+
+  describe("non-string OAuth field values", () => {
+    it("should skip non-string access_token (number)", () => {
+      const data = { access_token: 12345 };
+      encryptData(data as any);
+      // Should not have been encrypted — typeof check skips non-strings
+      expect(typeof data.access_token).toBe("number");
+      expect(data.access_token).toBe(12345);
+    });
+
+    it("should skip non-string refresh_token (boolean)", () => {
+      const data = { refresh_token: true };
+      encryptData(data as any);
+      expect(data.refresh_token).toBe(true);
+    });
+
+    it("should skip null scope", () => {
+      const data = { scope: null };
+      encryptData(data as any);
+      expect(data.scope).toBeNull();
+    });
+
+    it("should skip undefined token_type", () => {
+      const data: Record<string, unknown> = {};
+      data.token_type = undefined;
+      encryptData(data);
+      expect(data.token_type).toBeUndefined();
+    });
+  });
+
+  // ── Edge-case encrypted formats ────────────────────────────────────────
+
+  describe("edge-case encrypted formats", () => {
+    it("should throw on bare ENC: prefix with no parts", () => {
+      expect(() => decryptResult({ access_token: "ENC:" })).toThrow(
+        "Invalid encrypted format",
+      );
+    });
+
+    it("should throw on ENC::: with empty segments", () => {
+      expect(() => decryptResult({ access_token: "ENC:::" })).toThrow();
+    });
+
+    it("should not modify non-ENC string (backward compat)", () => {
+      const data = { access_token: "legacy_plain_token" };
+      decryptResult(data);
+      expect(data.access_token).toBe("legacy_plain_token");
+    });
+  });
+
+  // ── OAUTH_ENCRYPTION_KEY missing ──────────────────────────────────────────
+
+  describe("OAUTH_ENCRYPTION_KEY environment variable", () => {
+    const originalKey = process.env.OAUTH_ENCRYPTION_KEY;
+
+    afterEach(() => {
+      process.env.OAUTH_ENCRYPTION_KEY = originalKey;
+    });
+
+    it("should throw when OAUTH_ENCRYPTION_KEY is not set and encryptData is called", async () => {
+      // Reset modules to force re-evaluation with missing key
+      vi.resetModules();
+      delete process.env.OAUTH_ENCRYPTION_KEY;
+
+      // The derived key is cached in oauthKey module variable, so we need a fresh import
+      // to trigger deriveOAuthKey(). We call encryptData which calls getOAuthKey() →
+      // deriveOAuthKey() which throws.
+      await expect(async () => {
+        const mod = await import("../middleware/oauth-encryption");
+        mod.encryptData({ access_token: "test" });
+      }).rejects.toThrow("OAUTH_ENCRYPTION_KEY");
+    });
   });
 });
 

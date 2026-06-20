@@ -19,6 +19,8 @@ model User {
   emailVerified DateTime?
   password            String?   // Hasher avec bcrypt - null pour OAuth
   passwordChangedAt   DateTime? // Pour invalidation de session JWT
+  disabledAt          DateTime? // Admin can disable user, invalidating all JWT sessions
+  deletedAt           DateTime? // Soft delete, invalidating all JWT sessions
   image               String?
   lastLoginAt         DateTime?
   createdAt     DateTime  @default(now())

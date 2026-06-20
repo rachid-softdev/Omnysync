@@ -59,32 +59,37 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hashPassword(password)
 
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        createdAt: true,
-      },
-    })
+    // 🛡️ Wrap user + org creation in a Prisma transaction.
+    // Without this, if organization.create() fails after user.create() succeeds,
+    // the user becomes an orphan with no organization and cannot use the app.
+    const { user } = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          createdAt: true,
+        },
+      })
 
-    // Create "Personal" organization for the new user
-    await prisma.organization.create({
-      data: {
-        name: 'Personal',
-        users: {
-          create: {
-            userId: user.id,
-            role: 'OWNER',
+      await tx.organization.create({
+        data: {
+          name: 'Personal',
+          users: {
+            create: {
+              userId: createdUser.id,
+              role: 'OWNER',
+            },
           },
         },
-      },
+      })
+
+      return { user: createdUser }
     })
 
     return NextResponse.json(

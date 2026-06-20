@@ -226,10 +226,15 @@ export async function checkDocumentLimit(userId: string): Promise<{
 
 export async function withQuotaCheck(
   request: Request,
-  handler: () => Promise<Response>
+  handler: (userId: string) => Promise<Response>
 ): Promise<Response> {
-  const userId = request.headers.get('x-user-id')
+  // 🔒 Use session authentication instead of trusting the x-user-id header.
+  // The x-user-id header is trivially forgeable by clients and would allow
+  // quota bypass / identity impersonation.
+  const { auth } = await import('@/lib/auth')
+  const session = await auth()
 
+  const userId = session?.user?.id
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -249,7 +254,7 @@ export async function withQuotaCheck(
   }
 
   try {
-    return await handler()
+    return await handler(userId)
   } catch (error) {
     await decrementQuotaOnFailure(userId)
     throw error

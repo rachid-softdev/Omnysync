@@ -1,5 +1,6 @@
 import { prisma } from "../prisma";
 import { performSync } from "./sync";
+import { sanitizeErrorMessage } from "./sanitize";
 
 // Note: QStash scheduling requires the serverless SDK or direct HTTP calls
 // For now, we'll use a simpler approach with setTimeout for development
@@ -31,9 +32,11 @@ export function calculateNextSync(
 
     case "MONTHLY":
       // First day of next month at 9am
+      // ⚠️ Always setDate(1) BEFORE setMonth() to avoid Date auto-rolling
+      // (e.g. Jan 31 + 1 month → Feb 31 → auto-rolls to March 3)
       const nextMonth = new Date(now);
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
       nextMonth.setDate(1);
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
       nextMonth.setHours(9, 0, 0, 0);
       return nextMonth;
 
@@ -73,7 +76,7 @@ export async function scheduleSync(
     return {
       success: false,
       nextSyncAt: new Date(),
-      error: (error as Error).message,
+      error: sanitizeErrorMessage(error),
     };
   }
 }
@@ -108,9 +111,14 @@ export async function runScheduledSyncs(): Promise<{
   failed: number;
   errors: string[];
 }> {
+  // ⚠️ Create independent Date objects — do NOT chain setHours() on the same instance,
+  // otherwise the second setHours() mutates the same underlying `now` and both
+  // startOfDay and endOfDay end up pointing at midnight.
   const now = new Date();
-  const startOfDay = new Date(now.setHours(0, 0, 0, 0));
-  const endOfDay = new Date(now.setHours(23, 59, 59, 999));
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(now);
+  endOfDay.setHours(23, 59, 59, 999);
 
   // Trouver tous les documents avec sync programmé
   const scheduledDocs = await prisma.document.findMany({
@@ -153,8 +161,9 @@ export async function runScheduledSyncs(): Promise<{
         results.executed++;
       }
     } catch (error) {
+      const safeMsg = sanitizeErrorMessage(error);
       results.failed++;
-      results.errors.push(`Doc ${doc.id}: ${(error as Error).message}`);
+      results.errors.push(`Doc ${doc.id}: ${safeMsg}`);
 
       // Logger l'erreur
       await prisma.syncLog.create({
@@ -164,7 +173,7 @@ export async function runScheduledSyncs(): Promise<{
           documentId: doc.id,
           action: "scheduled_sync_failed",
           status: "ERROR",
-          message: (error as Error).message,
+          message: safeMsg,
         },
       });
     }
@@ -246,15 +255,16 @@ export async function handleScheduledSyncRun(
         : result.error || "Sync failed",
     };
   } catch (error) {
+    const safeMsg = sanitizeErrorMessage(error);
     // Logger l'erreur
     await prisma.document.update({
       where: { id: documentId },
-      data: { lastSyncError: (error as Error).message },
+      data: { lastSyncError: safeMsg },
     });
 
     return {
       success: false,
-      message: (error as Error).message,
+      message: safeMsg,
     };
   }
 }

@@ -23,24 +23,20 @@ export async function sendEmail({
     return;
   }
 
-  try {
-    const resend = await getResend();
-    if (!resend) {
-      console.log(
-        `[Email] Resend not available, would send to ${to}: ${subject}`,
-      );
-      return;
-    }
-
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to,
-      subject,
-      html,
-    });
-  } catch (error) {
-    console.error("Failed to send email:", error);
+  const resend = await getResend();
+  if (!resend) {
+    console.log(
+      `[Email] Resend not available, would send to ${to}: ${subject}`,
+    );
+    return;
   }
+
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject,
+    html,
+  });
 }
 
 export async function sendWelcomeEmail(email: string, name: string) {

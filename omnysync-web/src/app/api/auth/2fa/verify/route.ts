@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rateLimitRedisWithConfig } from '@/lib/rate-limit-redis'
 import { verifyTotpCode } from '@omnysync/core/services/two-factor'
 import { z } from 'zod'
 
@@ -17,6 +18,25 @@ export async function POST(request: NextRequest) {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    // Rate limiting: 5 tentatives par minute par IP
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
+
+    const rateResult = await rateLimitRedisWithConfig(
+      `2fa:verify:${ip}`,
+      { max: 5, windowMs: 60000 },
+      request
+    )
+
+    if (!rateResult.allowed) {
+      return NextResponse.json(
+        { error: 'Trop de tentatives. Réessayez dans une minute.' },
+        { status: 429 }
+      )
     }
 
     const body = await request.json()

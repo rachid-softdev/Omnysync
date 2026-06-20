@@ -130,7 +130,7 @@ async function enrichContentWithAI(
       take: 10,
     });
 
-    if (existingDocs.length > 0) {
+    if (existingDocs && existingDocs.length > 0) {
       const links = await findInterlinkingOpportunities(
         htmlContent,
         existingDocs.map(
@@ -239,6 +239,22 @@ export async function performSync(
 
   // Vérifier les droits d'accès
   await requireDocumentAccess(documentId, userId);
+
+  // ⏰ Auto-reset stale SYNCING status (> 5 minutes without completion).
+  // Prevents documents from being permanently stuck if the process crashed
+  // mid-sync (syncStatus="SYNCING" blocks all future sync attempts).
+  await prisma.document.updateMany({
+    where: {
+      id: documentId,
+      syncStatus: "SYNCING",
+      updatedAt: { lt: new Date(Date.now() - 5 * 60 * 1000) },
+    },
+    data: {
+      syncStatus: "FAILED",
+      lastSyncError:
+        "Sync timed out — the previous process may have crashed. Please retry.",
+    },
+  });
 
   // Optimistic locking: increment version atomically
   const updated = await prisma.document.updateMany({
@@ -477,24 +493,33 @@ export async function performSync(
       documentId,
     };
   } catch (error) {
-    await prisma.document.update({
-      where: { id: documentId },
-      data: {
-        syncStatus: "FAILED",
-        lastSyncError: sanitizeErrorMessage(error),
-      },
-    });
+    // Rollback the version increment that was done during optimistic locking.
+    // Without this, each failed sync permanently increments the version number,
+    // making it an unreliable indicator of actual sync count and potentially
+    // causing false conflict detection in two-way sync.
+    try {
+      await prisma.document.update({
+        where: { id: documentId },
+        data: {
+          syncStatus: "FAILED",
+          lastSyncError: sanitizeErrorMessage(error),
+          version: { decrement: 1 },
+        },
+      });
 
-    await prisma.syncLog.create({
-      data: {
-        userId: document.userId,
-        organizationId: document.organizationId,
-        documentId,
-        action: "sync_failed",
-        status: "ERROR",
-        message: sanitizeErrorMessage(error),
-      },
-    });
+      await prisma.syncLog.create({
+        data: {
+          userId: document.userId,
+          organizationId: document.organizationId,
+          documentId,
+          action: "sync_failed",
+          status: "ERROR",
+          message: sanitizeErrorMessage(error),
+        },
+      });
+    } catch (rollbackError) {
+      console.error("Rollback failed:", rollbackError);
+    }
 
     // Send failure email
     try {
@@ -625,12 +650,16 @@ async function publishToDestination(
           data: { slug: result.article.id.toString() },
         });
       }
+    } else {
+      console.warn(
+        `[Sync] No Shopify blogs found for ${config.shopDomain} — skipping article publish`,
+      );
     }
   }
 
   // Contentful integration
   if (document.destConnector.type === "CONTENTFUL") {
-    const { createContentfulEntry, updateContentfulEntry } =
+    const { createContentfulEntry, updateContentfulEntry, getContentfulEntry } =
       await import("./contentful");
     const spaceId = config.spaceId;
     const accessToken = rawCredentials;
@@ -647,18 +676,22 @@ async function publishToDestination(
     };
 
     if (document.slug) {
-      // Update existing entry - get current version first
-      const entry = await prisma.document.findUnique({
-        where: { id: document.id },
-        select: { version: true },
-      });
-      if (entry) {
+      // Update existing entry — fetch the real Contentful entry version
+      // for optimistic concurrency control (X-Contentful-Version).
+      // Using the Omnysync document version is incorrect because Contentful
+      // manages its own version counter independently.
+      const contentfulEntry = await getContentfulEntry(
+        accessToken,
+        spaceId,
+        document.slug,
+      );
+      if (contentfulEntry) {
         await updateContentfulEntry(
           accessToken,
           spaceId,
           document.slug,
           fields,
-          entry.version,
+          contentfulEntry.version,
         );
       }
     } else {

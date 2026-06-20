@@ -146,7 +146,7 @@ describe("hasPermission", () => {
     expect(mockCache.getOrSet).toHaveBeenCalledWith(
       expect.stringContaining("perm:user-1:org-1:document:read"),
       expect.any(Function),
-      5 * 60 * 1000,
+      30, // 30 secondes — TTL réduit
     );
   });
 });
@@ -423,6 +423,63 @@ describe("canAccessResource", () => {
       "read",
     );
 
+    expect(result).toBe(false);
+  });
+
+  it("should return false for unknown resource type (default case)", async () => {
+    mockPrisma.userOrganization.findUnique.mockResolvedValue({
+      role: "MEMBER",
+    });
+
+    const result = await canAccessResource(
+      "user-1",
+      "org-1",
+      "unknown-resource" as any,
+      "res-1",
+      "read",
+    );
+
+    expect(result).toBe(false);
+  });
+
+  it("should return false for sync resource when member lacks the specific action (covers sync case branch)", async () => {
+    mockPrisma.userOrganization.findUnique.mockResolvedValue({
+      role: "MEMBER",
+    });
+
+    // member has sync:read but NOT sync:delete
+    const readResult = await canAccessResource(
+      "user-1",
+      "org-1",
+      "sync",
+      "sync-1",
+      "read",
+    );
+    expect(readResult).toBe(true);
+
+    const deleteResult = await canAccessResource(
+      "user-1",
+      "org-1",
+      "sync",
+      "sync-1",
+      "delete",
+    );
+    expect(deleteResult).toBe(false);
+  });
+
+  it("should return false for viewer trying to sync:update (no doc-level access)", async () => {
+    mockPrisma.userOrganization.findUnique.mockResolvedValue({
+      role: "VIEWER",
+    });
+
+    // viewer has sync:read but NOT sync:update
+    const result = await canAccessResource(
+      "user-1",
+      "org-1",
+      "sync",
+      "sync-1",
+      "update",
+    );
     expect(result).toBe(false);
   });
 });

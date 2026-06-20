@@ -276,6 +276,62 @@ describe("checkQuota", () => {
     expect(result.current).toBe(1);
     expect(result.limit).toBe(1);
   });
+
+  it("should return invalid plan error for unknown plan key (line 135)", async () => {
+    mockPrisma.organization.findUnique.mockResolvedValue({
+      id: orgId,
+      name: "Test Org",
+      subscriptions: [
+        { id: "sub-1", planKey: "unknown-plan", status: "active" },
+      ],
+    });
+
+    const result = await checkQuota(orgId, "maxConnectors");
+
+    expect(result.allowed).toBe(false);
+    expect(result.message).toBe("Invalid plan");
+  });
+
+  it("should return allowed=true for unknown numeric feature (default switch case, line 212)", async () => {
+    // Pass a non-existent feature name as `keyof PlanFeatures` to reach the default case.
+    // At runtime, plan["nonExistentFeature"] is undefined → not boolean, not -1,
+    // not in the switch → hits default: return { allowed: true }
+    const result = await checkQuota(
+      orgId,
+      "nonExistentFeature" as keyof import("../features").PlanFeatures,
+    );
+
+    expect(result.allowed).toBe(true);
+  });
+
+  it("should handle org with no subscription (free plan fallback)", async () => {
+    mockPrisma.organization.findUnique.mockResolvedValue({
+      id: orgId,
+      name: "Test Org",
+      subscriptions: [],
+    });
+
+    // vi.clearAllMocks() was called in beforeEach, so connector.count
+    // returns undefined by default. Set it explicitly to 0 so count < limit passes.
+    mockPrisma.connector.count.mockResolvedValue(0);
+
+    // Should fall back to free plan (limit 2)
+    const result = await checkQuota(orgId, "maxConnectors");
+
+    expect(result.allowed).toBe(true); // 0 connectors used, 2 allowed → allowed
+    expect(result.limit).toBe(2);
+  });
+
+  it("should have message undefined for maxDocuments when under limit (line 170-173)", async () => {
+    mockPrisma.document.count.mockResolvedValue(50); // under free plan limit of 100
+
+    const result = await checkQuota(orgId, "maxDocuments");
+
+    expect(result.allowed).toBe(true);
+    expect(result.current).toBe(50);
+    expect(result.limit).toBe(100);
+    expect(result.message).toBeUndefined();
+  });
 });
 
 // ============================================================================
@@ -313,6 +369,15 @@ describe("withQuotaCheck", () => {
     await expect(
       withQuotaCheck(orgId, "maxConnectors", action),
     ).rejects.toThrow("Limite de 2 connecteurs atteinte");
+    expect(action).not.toHaveBeenCalled();
+  });
+
+  it("should use 'Quota exceeded' fallback for boolean feature with no message (line 227)", async () => {
+    // twoWaySync is disabled on free plan → returns { allowed: false } with no message
+    const action = vi.fn();
+    await expect(withQuotaCheck(orgId, "twoWaySync", action)).rejects.toThrow(
+      "Quota exceeded",
+    );
     expect(action).not.toHaveBeenCalled();
   });
 });
@@ -363,6 +428,39 @@ describe("recordUsage", () => {
     const monthKey = upsertCall.where.userId_month.month;
     // Should match YYYY-MM format
     expect(monthKey).toMatch(/^\d{4}-\d{2}$/);
+  });
+
+  it("should create with syncCount=0 for non-sync resources like document (lines 270-273)", async () => {
+    await recordUsage(orgId, "document");
+
+    expect(mockPrisma.quotaUsage.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ syncCount: 0 }),
+        update: expect.not.objectContaining({
+          syncCount: expect.anything(),
+        }),
+      }),
+    );
+  });
+
+  it("should create with syncCount=0 for non-sync resources like connector (lines 270-273)", async () => {
+    await recordUsage(orgId, "connector");
+
+    expect(mockPrisma.quotaUsage.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ syncCount: 0 }),
+      }),
+    );
+  });
+
+  it("should create with syncCount=0 for non-sync resources like member (lines 270-273)", async () => {
+    await recordUsage(orgId, "member");
+
+    expect(mockPrisma.quotaUsage.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ syncCount: 0 }),
+      }),
+    );
   });
 });
 
@@ -422,6 +520,17 @@ describe("getUsageStats", () => {
 
     expect(stats).not.toBeNull();
     expect(stats!.syncCount).toBe(0);
+  });
+
+  it("should return null when org has no owner users", async () => {
+    mockPrisma.organization.findUnique.mockResolvedValue({
+      id: orgId,
+      name: "Test Org",
+      users: [],
+    });
+
+    const stats = await getUsageStats(orgId);
+    expect(stats).toBeNull();
   });
 });
 
@@ -500,6 +609,33 @@ describe("updateUserPlan", () => {
     expect(auditBilling.planUpgraded).not.toHaveBeenCalled();
     expect(auditBilling.planDowngraded).not.toHaveBeenCalled();
   });
+
+  it("should return early when no OWNER membership found (line 342)", async () => {
+    mockPrisma.userOrganization.findFirst.mockResolvedValue(null);
+
+    await updateUserPlan(userId, "pro");
+
+    // Should not upsert or audit
+    expect(mockPrisma.subscription.upsert).not.toHaveBeenCalled();
+    expect(auditBilling.planUpgraded).not.toHaveBeenCalled();
+    expect(auditBilling.planDowngraded).not.toHaveBeenCalled();
+  });
+
+  it("should fall back to 'free' when old subscription is null (line 350)", async () => {
+    mockPrisma.subscription.findUnique.mockResolvedValue(null);
+
+    await updateUserPlan(userId, "pro");
+
+    // Should upsert new subscription with pro plan
+    expect(mockPrisma.subscription.upsert).toHaveBeenCalled();
+    // oldPlan = "free" (fallback), new plan = "pro" → price 0 → 29 → upgrade
+    expect(auditBilling.planUpgraded).toHaveBeenCalledWith(
+      organizationId,
+      "free",
+      "pro",
+    );
+    expect(auditBilling.planDowngraded).not.toHaveBeenCalled();
+  });
 });
 
 // ============================================================================
@@ -534,6 +670,16 @@ describe("cancelSubscription", () => {
     expect(auditBilling.subscriptionCancelled).toHaveBeenCalledWith(
       organizationId,
     );
+  });
+
+  it("should return early when no OWNER membership (line 390)", async () => {
+    mockPrisma.userOrganization.findFirst.mockResolvedValue(null);
+
+    await cancelSubscription(userId);
+
+    // Should not update subscription or audit
+    expect(mockPrisma.subscription.update).not.toHaveBeenCalled();
+    expect(auditBilling.subscriptionCancelled).not.toHaveBeenCalled();
   });
 });
 

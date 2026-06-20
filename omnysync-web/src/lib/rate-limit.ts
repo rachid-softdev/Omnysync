@@ -15,19 +15,48 @@ const rateLimitMap = new Map<string, RateLimitRecord>()
 let cleanupInterval: ReturnType<typeof setInterval> | null = null
 
 /**
- * Extract client IP from request headers
+ * Valide une adresse IPv4 ou IPv6.
+ * Retourne true si l'adresse est syntaxiquement valide.
+ */
+export function isValidIp(ip: string): boolean {
+  // IPv4 pattern: quatre octets séparés par des points (0-255)
+  const ipv4Pattern = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/
+
+  // IPv6 pattern: huit groupes hexadécimaux (simplifié)
+  const ipv6Pattern = /^(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}$/
+
+  return ipv4Pattern.test(ip) || ipv6Pattern.test(ip)
+}
+
+/**
+ * Extract client IP from request headers.
+ *
+ * 🔒 Sécurité : valide que l'IP extraite est une adresse IP valide.
+ * Si x-forwarded-for contient une valeur invalide (tentative de spoofing),
+ * on ignore ce header et on passe au suivant.
  */
 export function getClientIp(request: NextRequest): string {
   // Check various headers for client IP
   const forwarded = request.headers.get('x-forwarded-for')
   const realIp = request.headers.get('x-real-ip')
+  const cfIp = request.headers.get('cf-connecting-ip')
 
+  // x-forwarded-for peut contenir plusieurs IPs (proxy chain), prendre la première
   if (forwarded) {
-    // x-forwarded-for can contain multiple IPs, take the first (client)
-    return forwarded.split(',')[0]!.trim()
+    const firstIp = forwarded.split(',')[0]!.trim()
+    // 🔒 Valider que c'est une IP légitime — rejeter les valeurs forgées
+    if (isValidIp(firstIp)) {
+      return firstIp
+    }
+    // Si invalide, logger et continuer vers les headers suivants
+    console.warn(`[RATE-LIMIT] Rejet x-forwarded-for invalide: "${firstIp}"`)
   }
 
-  return realIp ?? request.headers.get('cf-connecting-ip') ?? 'unknown'
+  // Fallback vers x-real-ip ou cf-connecting-ip avec validation
+  if (realIp && isValidIp(realIp)) return realIp
+  if (cfIp && isValidIp(cfIp)) return cfIp
+
+  return 'unknown'
 }
 
 /**

@@ -7,34 +7,41 @@ import { Header } from '@/components/header'
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
-export const metadata: Metadata = {
-  title: {
-    default: 'Omnysync - Sync Your Content Everywhere',
-    template: '%s | Omnysync',
-  },
-  description:
-    'Sync your content across all platforms automatically. Publish once, everywhere - WordPress, Ghost, Webflow, Shopify and more.',
-  keywords: [
-    'content sync',
-    'multi-platform publishing',
-    'WordPress',
-    'Ghost',
-    'CMS',
-    'automation',
-  ],
-  authors: [{ name: 'Omnysync' }],
-  openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    siteName: 'Omnysync',
-  },
-  twitter: {
-    card: 'summary_large_image',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const headersList = await headers()
+  const acceptLanguage = headersList.get('accept-language') || ''
+  const locale = acceptLanguage.split(',')[0]?.split('-')[0] || 'en'
+  const ogLocale = locale === 'fr' ? 'fr_FR' : 'en_US'
+
+  return {
+    title: {
+      default: 'Omnysync - Sync Your Content Everywhere',
+      template: '%s | Omnysync',
+    },
+    description:
+      'Sync your content across all platforms automatically. Publish once, everywhere - WordPress, Ghost, Webflow, Shopify and more.',
+    keywords: [
+      'content sync',
+      'multi-platform publishing',
+      'WordPress',
+      'Ghost',
+      'CMS',
+      'automation',
+    ],
+    authors: [{ name: 'Omnysync' }],
+    openGraph: {
+      type: 'website',
+      locale: ogLocale,
+      siteName: 'Omnysync',
+    },
+    twitter: {
+      card: 'summary_large_image',
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  }
 }
 
 export default async function RootLayout({
