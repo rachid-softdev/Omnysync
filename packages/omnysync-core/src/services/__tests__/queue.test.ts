@@ -276,6 +276,74 @@ describe("Queue Service", () => {
       vi.useRealTimers();
     });
 
+    it(
+      "should call addToDeadLetter with correct params after all retries exhausted",
+      { timeout: 40000 },
+      async () => {
+        vi.useFakeTimers();
+
+        const processFn = vi
+          .fn()
+          .mockRejectedValue(new Error("Permanent failure"));
+        const job = {
+          id: "job-dlq",
+          type: "sync_document" as const,
+          payload: { documentId: "doc-dlq" },
+        };
+
+        const consoleErrorSpy = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
+
+        const promise = processJobWithRetry(job, processFn);
+
+        // Attach a silent catch to prevent unhandled rejection from the promise
+        // during advanceTimersByTimeAsync (which triggers the throw lastError)
+        promise.catch(() => {});
+
+        // Advance past all retry delays: 1000ms + 5000ms
+        await vi.advanceTimersByTimeAsync(6000);
+
+        await expect(promise).rejects.toThrow("Permanent failure");
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          "Job moved to dead letter queue:",
+          expect.objectContaining({ jobId: "job-dlq", attempts: 3 }),
+        );
+
+        consoleErrorSpy.mockRestore();
+        vi.useRealTimers();
+      },
+    );
+
+    it("should handle null result from processFn", async () => {
+      const processFn = vi.fn().mockResolvedValue(null);
+      const job = {
+        id: "job-null-result",
+        type: "sync_document" as const,
+        payload: { documentId: "doc-null" },
+      };
+
+      const result = await processJobWithRetry(job, processFn);
+
+      expect(result).toBeNull();
+      expect(processFn).toHaveBeenCalledTimes(1);
+    });
+
+    it("should handle undefined result from processFn", async () => {
+      const processFn = vi.fn().mockResolvedValue(undefined);
+      const job = {
+        id: "job-undefined-result",
+        type: "sync_document" as const,
+        payload: { documentId: "doc-undefined" },
+      };
+
+      const result = await processJobWithRetry(job, processFn);
+
+      expect(result).toBeUndefined();
+      expect(processFn).toHaveBeenCalledTimes(1);
+    });
+
     it("should generate type-only idempotency key when no documentId in payload", async () => {
       const processFn = vi.fn().mockResolvedValue({ processed: true });
 

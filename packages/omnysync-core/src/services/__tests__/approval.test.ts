@@ -200,6 +200,37 @@ describe("Approval Service", () => {
       expect(result.success).toBe(false);
       expect(result.error).toBe("DB connection lost");
     });
+
+    it("should fallback to localhost when NEXTAUTH_URL is not set", async () => {
+      const originalUrl = process.env.NEXTAUTH_URL;
+      delete process.env.NEXTAUTH_URL;
+
+      try {
+        vi.mocked(prisma.document.findFirst).mockResolvedValue({
+          id: documentId,
+          organizationId: orgId,
+          status: "DRAFT",
+        } as any);
+        vi.mocked(prisma.approvalRequest.create).mockResolvedValue({
+          id: "approval-1",
+          token: "test-token",
+        } as any);
+        vi.mocked(auditApproval.requested).mockResolvedValue(undefined as any);
+
+        const result = await createApprovalRequest(
+          orgId,
+          { documentId },
+          userId,
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.approvalUrl).toContain(
+          "http://localhost:3000/public/approval/",
+        );
+      } finally {
+        process.env.NEXTAUTH_URL = originalUrl;
+      }
+    });
   });
 
   // ==========================================================================
@@ -272,6 +303,22 @@ describe("Approval Service", () => {
         where: { id: "approval-1" },
         data: { status: "EXPIRED" },
       });
+    });
+
+    it("should propagate error when marking expired approval fails", async () => {
+      vi.mocked(prisma.approvalRequest.findUnique).mockResolvedValue({
+        id: "approval-1",
+        token: "expired-token",
+        status: "PENDING",
+        expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      } as any);
+      vi.mocked(prisma.approvalRequest.update).mockRejectedValue(
+        new Error("Update failed"),
+      );
+
+      await expect(getApprovalByToken("expired-token")).rejects.toThrow(
+        "Update failed",
+      );
     });
   });
 
@@ -373,6 +420,40 @@ describe("Approval Service", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("DB error");
+    });
+
+    it("should catch error when document.update fails after approval", async () => {
+      vi.mocked(prisma.approvalRequest.findUnique).mockResolvedValue(
+        mockApproval as any,
+      );
+      vi.mocked(prisma.approvalRequest.update).mockResolvedValue({} as any);
+      vi.mocked(auditApproval.approved).mockResolvedValue(undefined as any);
+      vi.mocked(prisma.document.update).mockRejectedValue(
+        new Error("Document update failed"),
+      );
+
+      const result = await respondToApproval(token, { action: "APPROVED" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Document update failed");
+    });
+
+    it("should catch error when auditApproval.rejected fails", async () => {
+      vi.mocked(prisma.approvalRequest.findUnique).mockResolvedValue(
+        mockApproval as any,
+      );
+      vi.mocked(prisma.approvalRequest.update).mockResolvedValue({} as any);
+      vi.mocked(auditApproval.rejected).mockRejectedValue(
+        new Error("Audit failed"),
+      );
+
+      const result = await respondToApproval(token, {
+        action: "REJECTED",
+        comments: "Nope",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Audit failed");
     });
   });
 
@@ -527,6 +608,29 @@ describe("Approval Service", () => {
         }),
       );
     });
+
+    it("should set hasMore=false when on last page", async () => {
+      vi.mocked(prisma.approvalRequest.findMany).mockResolvedValue([
+        { id: "approval-1", document: { id: "doc-1", title: "Doc" } },
+      ] as any);
+      vi.mocked(prisma.approvalRequest.count).mockResolvedValue(1);
+
+      const result = await getApprovalsList(orgId, { limit: 10, offset: 0 });
+
+      expect(result.pagination.hasMore).toBe(false);
+      expect(result.pagination.total).toBe(1);
+    });
+
+    it("should use default limit when options are empty", async () => {
+      vi.mocked(prisma.approvalRequest.findMany).mockResolvedValue([] as any);
+      vi.mocked(prisma.approvalRequest.count).mockResolvedValue(0);
+
+      await getApprovalsList(orgId);
+
+      expect(prisma.approvalRequest.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 20, skip: 0 }),
+      );
+    });
   });
 
   // ==========================================================================
@@ -559,6 +663,14 @@ describe("Approval Service", () => {
       const result = await expirePendingApprovals();
 
       expect(result).toBe(0);
+    });
+
+    it("should propagate Prisma error", async () => {
+      vi.mocked(prisma.approvalRequest.updateMany).mockRejectedValue(
+        new Error("DB error"),
+      );
+
+      await expect(expirePendingApprovals()).rejects.toThrow("DB error");
     });
   });
 

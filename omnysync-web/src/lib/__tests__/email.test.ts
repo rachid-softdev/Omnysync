@@ -230,4 +230,47 @@ describe('Email Service', () => {
       consoleLogSpy.mockRestore()
     })
   })
+
+  describe('sendEmail — edge cases', () => {
+    it('should handle HTML characters in document title gracefully', async () => {
+      vi.stubEnv('RESEND_API_KEY', 're_abc123')
+      mockResend.emails.send.mockResolvedValue({ id: 'email-id' })
+
+      await expect(
+        sendSyncCompleteEmail(
+          'user@example.com',
+          '<script>alert("xss")</script>',
+          true,
+          'https://example.com'
+        )
+      ).resolves.toBeUndefined()
+
+      const callArg = mockResend.emails.send.mock.calls[0]![0] as { html: string }
+      expect(callArg.html).toContain('<script>alert("xss")</script>')
+    })
+
+    it('should handle HTML characters in welcome name gracefully', async () => {
+      vi.stubEnv('RESEND_API_KEY', 're_abc123')
+      mockResend.emails.send.mockResolvedValue({ id: 'email-id' })
+
+      await expect(
+        sendWelcomeEmail('user@example.com', '<b>HTML</b> & <script>')
+      ).resolves.toBeUndefined()
+
+      const callArg = mockResend.emails.send.mock.calls[0]![0] as { html: string }
+      expect(callArg.html).toContain('HTML')
+    })
+
+    it('should handle special characters in subject gracefully', async () => {
+      vi.stubEnv('RESEND_API_KEY', 're_abc123')
+      mockResend.emails.send.mockResolvedValue({ id: 'email-id' })
+
+      await expect(
+        sendSyncCompleteEmail('user@example.com', 'Doc with 日本語 and emoji 🎉', true)
+      ).resolves.toBeUndefined()
+
+      const callArg = mockResend.emails.send.mock.calls[0]![0] as { subject: string }
+      expect(callArg.subject).toContain('Doc with 日本語 and emoji 🎉')
+    })
+  })
 })

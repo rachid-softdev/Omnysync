@@ -8,7 +8,7 @@ const mockPrisma = vi.hoisted(() => ({
 vi.mock("../../prisma", () => ({ prisma: mockPrisma }));
 vi.mock("../../crypto", () => ({
   encrypt: vi.fn((s) => `enc_${s}`),
-  decrypt: vi.fn((s) => s.replace("enc_", "")),
+  decrypt: vi.fn((s) => (s ? s.replace("enc_", "") : "")),
 }));
 vi.mock("../../http", () => ({ fetchWithRetry: vi.fn() }));
 vi.mock("../../errors", () => ({ ERR_FETCH_CONTENT: "ERR_FETCH_CONTENT" }));
@@ -163,6 +163,15 @@ describe("Airtable Connector", () => {
       await expect(
         getAirtableRecords(apiKey, baseId, "nonexistent-table"),
       ).rejects.toThrow("Failed to fetch Airtable records");
+    });
+
+    it("should fall back to [] when response has no records field (line 112)", async () => {
+      // data.records is undefined → undefined || [] → []
+      vi.mocked(fetchWithRetry).mockResolvedValue({} as any);
+
+      const records = await getAirtableRecords(apiKey, baseId, tableId);
+
+      expect(records).toEqual([]);
     });
   });
 
@@ -690,6 +699,189 @@ describe("Airtable Connector", () => {
       await expect(
         getAirtableRecordContent("conn-1", "nonexistent"),
       ).rejects.toThrow("Record not found");
+    });
+  });
+
+  describe("listAirtableDocuments — decrypt/JSON.parse edge cases", () => {
+    it("should handle connector with null credentials (falls back to empty string)", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "AIRTABLE",
+        credentials: null,
+        config: JSON.stringify({ baseId: "base-1" }),
+      } as any);
+      vi.mocked(fetchWithRetry).mockResolvedValue({ tables: [] } as any);
+
+      const result = await listAirtableDocuments("conn-1");
+      expect(result).toEqual([]);
+    });
+
+    it("should handle connector with null config (falls back to '{}')", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "AIRTABLE",
+        credentials: "enc_key",
+        config: null,
+      } as any);
+
+      const result = await listAirtableDocuments("conn-1");
+      // No baseId in config — returns empty array
+      expect(result).toEqual([]);
+    });
+
+    it("should handle empty tables list when iterating all tables", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "AIRTABLE",
+        credentials: "enc_key",
+        config: JSON.stringify({ baseId: "base-1" }),
+      } as any);
+      vi.mocked(fetchWithRetry).mockResolvedValue({ tables: [] } as any);
+
+      const result = await listAirtableDocuments("conn-1");
+      expect(result).toEqual([]);
+    });
+
+    it("should handle tables with zero records each", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "AIRTABLE",
+        credentials: "enc_key",
+        config: JSON.stringify({ baseId: "base-1" }),
+      } as any);
+      vi.mocked(fetchWithRetry)
+        .mockResolvedValueOnce({
+          tables: [{ id: "table-1", name: "Empty Table" }],
+        } as any)
+        .mockResolvedValueOnce({ records: [] } as any);
+
+      const result = await listAirtableDocuments("conn-1");
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("getAirtableRecordContent — decrypt/JSON.parse edge cases", () => {
+    it("should handle connector with null credentials (falls back to empty string)", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "AIRTABLE",
+        credentials: null,
+        config: JSON.stringify({ baseId: "base-1", tableId: "table-1" }),
+      } as any);
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        records: [
+          {
+            id: "rec-1",
+            fields: { Title: "Found", Body: "OK" },
+            createdTime: "",
+            lastEditedTime: "",
+          },
+        ],
+      } as any);
+
+      const result = await getAirtableRecordContent("conn-1", "rec-1");
+      expect(result.title).toBe("Found");
+    });
+
+    it("should handle connector with null config (falls back to '{}')", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "AIRTABLE",
+        credentials: "enc_key",
+        config: null,
+      } as any);
+
+      // baseId missing — should throw "Invalid record ID"
+      await expect(getAirtableRecordContent("conn-1", "rec-1")).rejects.toThrow(
+        "Invalid record ID",
+      );
+    });
+
+    it("should throw when config has no baseId", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "AIRTABLE",
+        credentials: "enc_key",
+        config: JSON.stringify({ tableId: "table-1" }),
+      } as any);
+
+      await expect(getAirtableRecordContent("conn-1", "rec-1")).rejects.toThrow(
+        "Invalid record ID",
+      );
+    });
+
+    it("should throw when compound recordId has empty actualRecordId part", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "AIRTABLE",
+        credentials: "enc_key",
+        config: JSON.stringify({ baseId: "base-1", tableId: "table-1" }),
+      } as any);
+
+      await expect(
+        getAirtableRecordContent("conn-1", "table-1:"),
+      ).rejects.toThrow("Invalid record ID");
+    });
+
+    it("should throw when config has neither baseId nor tableId and no compound recordId", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "AIRTABLE",
+        credentials: "enc_key",
+        config: JSON.stringify({}),
+      } as any);
+
+      await expect(getAirtableRecordContent("conn-1", "rec-1")).rejects.toThrow(
+        "Invalid record ID",
+      );
+    });
+  });
+
+  describe("airtableRecordToDocument — edge cases", () => {
+    it("should return Untitled when fields object is empty", () => {
+      const result = airtableRecordToDocument({
+        id: "rec-1",
+        fields: {},
+        createdTime: "",
+        lastEditedTime: "",
+      });
+
+      expect(result.title).toBe("Untitled");
+      expect(result.content).toBe("");
+    });
+
+    it("should return Untitled when no string value exists in fields (all non-strings)", () => {
+      const result = airtableRecordToDocument({
+        id: "rec-1",
+        fields: {
+          Count: 42,
+          IsActive: true,
+          Data: { key: "value" },
+        },
+        createdTime: "",
+        lastEditedTime: "",
+      });
+
+      // title fallback: Title → title → Name → name → find string → "Untitled"
+      expect(result.title).toBe("Untitled");
+      expect(result.content).toContain("## Count");
+      expect(result.content).toContain("## IsActive");
+      expect(result.content).toContain("## Data");
+    });
+
+    it("should pick the first string when none of the title fields match", () => {
+      const result = airtableRecordToDocument({
+        id: "rec-1",
+        fields: {
+          Heading: "First string",
+          Body: "Second string",
+        },
+        createdTime: "",
+        lastEditedTime: "",
+      });
+
+      // Title, title, Name, name all missing → find string → "First string"
+      expect(result.title).toBe("First string");
     });
   });
 });

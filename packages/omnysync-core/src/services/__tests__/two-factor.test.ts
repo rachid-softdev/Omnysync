@@ -151,6 +151,21 @@ describe("Two-Factor Authentication", () => {
       expect(result1.backupCodes).not.toEqual(result2.backupCodes);
     });
 
+    it("should catch error when userOrganization.findFirst throws (in try block)", async () => {
+      vi.mocked(prisma.twoFactorAuth.upsert).mockResolvedValue({} as any);
+      vi.mocked(prisma.userOrganization.findFirst).mockRejectedValue(
+        new Error("DB query failed"),
+      );
+
+      const result = await setupTwoFactor(userId, secret);
+
+      // Error is caught and wrapped
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Échec de la configuration du 2FA");
+      // Pending secret cleaned up in finally block
+      expect(pendingSecrets.has(userId)).toBe(false);
+    });
+
     it("should update existing 2FA record (not just create)", async () => {
       vi.mocked(prisma.twoFactorAuth.upsert).mockResolvedValue({} as any);
       vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null);
@@ -367,6 +382,74 @@ describe("Two-Factor Authentication", () => {
       const result = await verifyTotpCode(userId, "ZZZZZZZZ");
       expect(result.valid).toBe(false);
       expect(result.error).toBe("Code invalide");
+    });
+
+    it("should handle lowercase backup code by uppercasing before hashing", async () => {
+      const backupCode = "abcd1234"; // lowercase input
+      const userSpecificSalt = userId.substring(0, 16);
+      const { createHash } = await import("crypto");
+      // Source does code.toUpperCase() before hashing
+      const codeHash = createHash("sha256")
+        .update("ABCD1234" + userSpecificSalt)
+        .digest("hex");
+
+      vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
+        secret: "enc_JBSWY3DPEHPK3PXP",
+        backupCodes: [codeHash, "otherhash"],
+      } as any);
+      vi.mocked(prisma.twoFactorAuth.update).mockResolvedValue({} as any);
+
+      const result = await verifyTotpCode(userId, backupCode);
+      expect(result.valid).toBe(true);
+    });
+
+    it("should accept TOTP code at +30s boundary (within ±1 window)", async () => {
+      vi.useFakeTimers();
+      const secret = "JBSWY3DPEHPK3PXP";
+      const totp = new TOTP({
+        secret: Secret.fromBase32(secret),
+        issuer: "Omnysync",
+        label: "Omnysync",
+      });
+      const validCode = totp.generate();
+
+      vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
+        secret: `enc_${secret}`,
+        backupCodes: [],
+      } as any);
+
+      // Advance 30s (one step, still within ±1 window)
+      vi.advanceTimersByTime(30 * 1000);
+
+      const result = await verifyTotpCode(userId, validCode);
+      expect(result.valid).toBe(true);
+
+      vi.useRealTimers();
+    });
+
+    it("should reject TOTP code at +90s (outside ±1 window)", async () => {
+      vi.useFakeTimers();
+      const secret = "JBSWY3DPEHPK3PXP";
+      const totp = new TOTP({
+        secret: Secret.fromBase32(secret),
+        issuer: "Omnysync",
+        label: "Omnysync",
+      });
+      const validCode = totp.generate();
+
+      vi.mocked(prisma.twoFactorAuth.findUnique).mockResolvedValue({
+        secret: `enc_${secret}`,
+        backupCodes: [],
+      } as any);
+
+      // Advance 90s (3 steps — outside ±1 window)
+      vi.advanceTimersByTime(90 * 1000);
+
+      const result = await verifyTotpCode(userId, validCode);
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe("Code invalide");
+
+      vi.useRealTimers();
     });
   });
 

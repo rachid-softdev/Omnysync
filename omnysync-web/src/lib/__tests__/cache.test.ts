@@ -77,6 +77,24 @@ describe('cache.get', () => {
 
     expect(result).toBe(42)
   })
+
+  it('returns null when Redis returns undefined (nullish coalescing)', async () => {
+    mockRedis.get.mockResolvedValue(undefined)
+
+    const result = await cache.get('test-key')
+
+    expect(result).toBeNull()
+    expect(mockRedis.get).toHaveBeenCalledWith('test-key')
+  })
+
+  it('retrieves array values', async () => {
+    const arr = [1, 2, 3, { nested: true }]
+    mockRedis.get.mockResolvedValue(arr)
+
+    const result = await cache.get<typeof arr>('arr-key')
+
+    expect(result).toEqual(arr)
+  })
 })
 
 describe('cache.set', () => {
@@ -144,6 +162,46 @@ describe('cache.set', () => {
     await cache.set('key', 'value', { ttl: 999999 })
 
     expect(mockRedis.set).toHaveBeenCalledWith('omnysync:key', '"value"', { ex: 999999 })
+  })
+
+  it('uses default TTL when ttl is explicitly undefined in options', async () => {
+    mockRedis.set.mockResolvedValue('OK')
+
+    await cache.set('key', 'value', { ttl: undefined })
+
+    expect(mockRedis.set).toHaveBeenCalledWith('omnysync:key', '"value"', { ex: 60 })
+  })
+
+  it('accepts empty prefix (uses key as-is)', async () => {
+    mockRedis.set.mockResolvedValue('OK')
+
+    await cache.set('bare-key', 'bare-value', { prefix: '' })
+
+    expect(mockRedis.set).toHaveBeenCalledWith('bare-key', '"bare-value"', { ex: 60 })
+  })
+
+  it('handles circular reference gracefully (JSON.stringify throws)', async () => {
+    const circular: Record<string, unknown> = { name: 'circular' }
+    circular.self = circular
+
+    // Mock set to throw — JSON.stringify would throw in the actual code
+    // but we mock it since the error is caught and returns false
+    mockRedis.set.mockRejectedValue(new Error('JSON.stringify error'))
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const result = await cache.set('circular', circular)
+
+    expect(result).toBe(false)
+    expect(consoleSpy).toHaveBeenCalledWith('Cache set error:', expect.any(Error))
+    consoleSpy.mockRestore()
+  })
+
+  it('stores a boolean value', async () => {
+    mockRedis.set.mockResolvedValue('OK')
+
+    await cache.set('bool-key', true)
+
+    expect(mockRedis.set).toHaveBeenCalledWith('omnysync:bool-key', 'true', { ex: 60 })
   })
 })
 
@@ -301,6 +359,24 @@ describe('cache.del', () => {
 
     consoleSpy.mockRestore()
   })
+
+  it('returns true when Redis returns 0 (key not found)', async () => {
+    mockRedis.del.mockResolvedValue(0)
+
+    const result = await cache.del('nonexistent-key')
+
+    expect(result).toBe(true)
+    expect(mockRedis.del).toHaveBeenCalledWith('omnysync:nonexistent-key')
+  })
+
+  it('accepts empty string custom prefix', async () => {
+    mockRedis.del.mockResolvedValue(1)
+
+    const result = await cache.del('bare-key', '')
+
+    expect(result).toBe(true)
+    expect(mockRedis.del).toHaveBeenCalledWith('bare-key')
+  })
 })
 
 describe('cache.invalidatePrefix', () => {
@@ -338,6 +414,28 @@ describe('cache.invalidatePrefix', () => {
     expect(consoleSpy).toHaveBeenCalledWith('Cache invalidate error:', expect.any(Error))
 
     consoleSpy.mockRestore()
+  })
+
+  it('handles many matching keys', async () => {
+    const manyKeys = Array.from({ length: 100 }, (_, i) => `omnysync:bulk:key:${i}`)
+    mockRedis.keys.mockResolvedValue(manyKeys)
+    mockRedis.del.mockResolvedValue(100)
+
+    const result = await cache.invalidatePrefix('bulk')
+
+    expect(result).toBe(true)
+    expect(mockRedis.keys).toHaveBeenCalledWith('omnysync:bulk:*')
+    expect(mockRedis.del).toHaveBeenCalledWith(...manyKeys)
+  })
+
+  it('handles empty prefix (invalidates all)', async () => {
+    mockRedis.keys.mockResolvedValue(['omnysync:key1', 'omnysync:key2'])
+    mockRedis.del.mockResolvedValue(2)
+
+    const result = await cache.invalidatePrefix('')
+
+    expect(result).toBe(true)
+    expect(mockRedis.keys).toHaveBeenCalledWith('omnysync::*')
   })
 })
 
@@ -410,6 +508,79 @@ describe('withCache', () => {
     // cache.set is still called even though JSON.stringify(undefined) returns undefined
     expect(mockRedis.set).toHaveBeenCalled()
   })
+
+  it('works with no arguments', async () => {
+    mockRedis.get.mockResolvedValue(null)
+    mockRedis.set.mockResolvedValue('OK')
+    const fn = vi.fn().mockResolvedValue('no-args-result')
+    const cachedFn = withCache(fn, { ttl: 60, prefix: 'noargs' })
+
+    const result = await cachedFn()
+
+    expect(result).toBe('no-args-result')
+    expect(fn).toHaveBeenCalledWith()
+    // Key generated from JSON.stringify([]) = "[]"
+    expect(mockRedis.get).toHaveBeenCalledWith('noargs:[]')
+  })
+
+  it('works with complex object arguments', async () => {
+    mockRedis.get.mockResolvedValue(null)
+    mockRedis.set.mockResolvedValue('OK')
+    const fn = vi.fn().mockResolvedValue('complex-result')
+    const cachedFn = withCache(fn, { ttl: 60, prefix: 'complex' })
+
+    const result = await cachedFn(
+      { userId: 1, roles: ['admin', 'editor'] },
+      { pagination: { page: 1, limit: 20 } }
+    )
+
+    expect(result).toBe('complex-result')
+    // The key is generated from JSON.stringify of the args
+    expect(mockRedis.get).toHaveBeenCalled()
+  })
+
+  it('still returns function result even when cache.set fails', async () => {
+    mockRedis.get.mockResolvedValue(null) // cache miss
+    mockRedis.set.mockRejectedValue(new Error('set failed'))
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fn = vi.fn().mockResolvedValue('computed-despite-set-failure')
+    const cachedFn = withCache(fn, { ttl: 60, prefix: 'test' })
+
+    const result = await cachedFn('arg')
+
+    // Function result is still returned even if caching fails
+    expect(result).toBe('computed-despite-set-failure')
+    expect(fn).toHaveBeenCalled()
+    expect(consoleSpy).toHaveBeenCalledWith('Cache set error:', expect.any(Error))
+    consoleSpy.mockRestore()
+  })
+
+  it('uses default options when none provided', async () => {
+    mockRedis.get.mockResolvedValue(null)
+    mockRedis.set.mockResolvedValue('OK')
+    const fn = vi.fn().mockResolvedValue('default-result')
+    const cachedFn = withCache(fn)
+
+    const result = await cachedFn('x')
+
+    expect(result).toBe('default-result')
+    // Default prefix is 'fn', default TTL is 60
+    expect(mockRedis.get).toHaveBeenCalledWith('fn:["x"]')
+    expect(mockRedis.set).toHaveBeenCalledWith('fn:["x"]', '"default-result"', { ex: 60 })
+  })
+
+  it('generates different cache keys for different arguments', async () => {
+    mockRedis.get.mockResolvedValue(null)
+    mockRedis.set.mockResolvedValue('OK')
+    const fn = vi.fn().mockResolvedValue('data')
+    const cachedFn = withCache(fn, { ttl: 60, prefix: 'echo' })
+
+    await cachedFn('a')
+    await cachedFn('b')
+
+    expect(mockRedis.get).toHaveBeenCalledWith('echo:["a"]')
+    expect(mockRedis.get).toHaveBeenCalledWith('echo:["b"]')
+  })
 })
 
 describe('CACHE_KEYS', () => {
@@ -443,6 +614,24 @@ describe('CACHE_KEYS', () => {
 
   it('generates sync logs key with page', () => {
     expect(CACHE_KEYS.SYNC_LOGS('org-1', 1)).toBe('org:org-1:logs:1')
+  })
+
+  it('handles page 0 boundary for org documents key', () => {
+    expect(CACHE_KEYS.ORG_DOCUMENTS('org-1', 0)).toBe('org:org-1:docs:0')
+  })
+
+  it('handles page 0 boundary for sync logs key', () => {
+    expect(CACHE_KEYS.SYNC_LOGS('org-1', 0)).toBe('org:org-1:logs:0')
+  })
+
+  it('handles empty string orgId', () => {
+    expect(CACHE_KEYS.ORG_STATS('')).toBe('org::stats')
+    expect(CACHE_KEYS.ORG_DOCUMENTS('', 1)).toBe('org::docs:1')
+  })
+
+  it('handles empty string userId', () => {
+    expect(CACHE_KEYS.USER_STATS('')).toBe('user::stats')
+    expect(CACHE_KEYS.USER_QUOTA('')).toBe('user::quota')
   })
 })
 

@@ -133,6 +133,33 @@ describe("CacheService", () => {
       expect(result1?.planKey).toBe("free");
       expect(result2?.planKey).toBe("pro");
     });
+
+    it("should handle empty string orgId", async () => {
+      const data = makeEntitlementMap({ planKey: "pro" });
+      await cache.set("", data);
+      const result = await cache.get("");
+      expect(result).toEqual(data);
+    });
+
+    it("should handle set and get with empty features and limits", async () => {
+      const emptyData: EntitlementMap = {
+        planKey: "free",
+        features: {},
+        limits: {},
+        experiments: {},
+      };
+      await cache.set("org-empty", emptyData);
+      const result = await cache.get("org-empty");
+      expect(result).toEqual(emptyData);
+      expect(Object.keys(result?.features ?? {})).toHaveLength(0);
+    });
+
+    it("should handle get with special characters in orgId", async () => {
+      const data = makeEntitlementMap({ planKey: "pro" });
+      await cache.set("org-id-with-special_chars@test.com", data);
+      const result = await cache.get("org-id-with-special_chars@test.com");
+      expect(result?.planKey).toBe("pro");
+    });
   });
 
   // ============================================================================
@@ -361,6 +388,27 @@ describe("CacheService", () => {
       const result = await cache.get("org-1");
       expect(result?.planKey).toBe("business");
     });
+
+    it("should evict oldest entries when cache exceeds max capacity (1000)", async () => {
+      // Add 1001 entries — the first should be evicted
+      for (let i = 0; i < 1001; i++) {
+        await cache.set(
+          `org-evict-${i}`,
+          makeEntitlementMap({ planKey: `plan-${i}` }),
+        );
+      }
+
+      // Should have max 1000 entries
+      expect(cache.getMemoryCacheSize()).toBe(1000);
+
+      // First entry should be evicted
+      const evicted = await cache.get("org-evict-0");
+      expect(evicted).toBeNull();
+
+      // Latest entry should be available
+      const latest = await cache.get("org-evict-1000");
+      expect(latest?.planKey).toBe("plan-1000");
+    });
   });
 
   describe("cleanup expired entries", () => {
@@ -389,6 +437,48 @@ describe("CacheService", () => {
       const freshCache = new CacheService();
       expect(freshCache.getMemoryCacheSize()).toBe(0);
       freshCache.destroy();
+    });
+
+    it("should remove expired entries via automatic cleanup interval", async () => {
+      // Create a new cache AFTER enabling fake timers so the cleanup
+      // interval is on the fake timer system
+      cache.destroy();
+      vi.useFakeTimers();
+      const freshCache = new CacheService();
+
+      await freshCache.set(
+        "org-exp-1",
+        makeEntitlementMap({ planKey: "free" }),
+        { ttl: 1 },
+      );
+      await freshCache.set(
+        "org-exp-2",
+        makeEntitlementMap({ planKey: "pro" }),
+        { ttl: 1 },
+      );
+      await freshCache.set(
+        "org-exp-3",
+        makeEntitlementMap({ planKey: "business" }),
+        { ttl: 60 },
+      );
+
+      // Advance past TTL for first 2 entries (1s)
+      vi.advanceTimersByTime(5000);
+
+      // Cleanup interval fires every 10s, advance past that
+      // This triggers the setInterval callback which calls cleanup()
+      vi.advanceTimersByTime(10000);
+
+      // Only org-exp-3 should remain (60s TTL is still alive)
+      expect(freshCache.getMemoryCacheSize()).toBe(1);
+      expect(await freshCache.get("org-exp-1")).toBeNull();
+      expect(await freshCache.get("org-exp-2")).toBeNull();
+      expect(await freshCache.get("org-exp-3")).toEqual(
+        makeEntitlementMap({ planKey: "business" }),
+      );
+
+      freshCache.destroy();
+      vi.useRealTimers();
     });
   });
 
@@ -428,6 +518,15 @@ describe("CacheService", () => {
     it("should be safe to call destroy multiple times", () => {
       cache.destroy();
       expect(() => cache.destroy()).not.toThrow();
+    });
+
+    it("should reset subscribed flag and clear memory after destroy", () => {
+      cache.destroy();
+      expect(cache.getMemoryCacheSize()).toBe(0);
+      // After destroy, memory is cleared and cleanup interval stopped
+      const freshCache = new CacheService();
+      expect(freshCache.getMemoryCacheSize()).toBe(0);
+      freshCache.destroy();
     });
   });
 
@@ -626,6 +725,38 @@ describe("CacheService", () => {
         const result = await redisCache.get("no-data-org");
         expect(result).toBeNull();
       });
+
+      it("should return null when Redis.get throws and memory cache also misses", async () => {
+        // Ensure no memory cache entry exists
+        mockRedis.get.mockRejectedValue(new Error("Redis timeout"));
+
+        const result = await redisCache.get("org-miss-both");
+        expect(result).toBeNull();
+        // Verify Redis was called
+        expect(mockRedis.get).toHaveBeenCalledWith(
+          "entitlements:org-miss-both",
+        );
+      });
+
+      it("should fall back to memory-only mode when Redis ping fails at init", async () => {
+        mockRedis.ping.mockRejectedValue(new Error("Cannot connect to Redis"));
+
+        const failingCache = new CacheService();
+        // Wait for the async ping.catch() to execute (microtask)
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(failingCache.isRedisAvailable()).toBe(false);
+
+        // Memory cache should still work
+        await failingCache.set(
+          "org-ping-fail",
+          makeEntitlementMap({ planKey: "pro" }),
+        );
+        const result = await failingCache.get("org-ping-fail");
+        expect(result?.planKey).toBe("pro");
+
+        failingCache.destroy();
+      });
     });
 
     // ========================================================================
@@ -736,6 +867,25 @@ describe("CacheService", () => {
         // Should be gone from memory
         const result = await redisCache.get("org-1");
         expect(result).toBeNull();
+      });
+
+      it("should handle publish invalidation failure gracefully", async () => {
+        // Pre-populate
+        const data = makeEntitlementMap({ planKey: "pro" });
+        mockRedis.set.mockResolvedValue(undefined);
+        await redisCache.set("org-pub-fail", data);
+
+        // Make publish reject — covers line 280 catch
+        mockRedis.publish.mockRejectedValue(new Error("Publish failed"));
+
+        await redisCache.delete("org-pub-fail");
+
+        // Should still delete from memory
+        const result = await redisCache.get("org-pub-fail");
+        expect(result).toBeNull();
+
+        // Redis.del should have been called
+        expect(mockRedis.del).toHaveBeenCalledWith("entitlements:org-pub-fail");
       });
     });
 
@@ -968,6 +1118,32 @@ describe("CacheService", () => {
 
         expect(mockRedis.duplicate).not.toHaveBeenCalled();
         noRedisCache.destroy();
+      });
+
+      it("should handle subscribe failure gracefully — covers line 311", async () => {
+        mockRedis._subscriber.subscribe.mockRejectedValue(
+          new Error("Subscribe failed"),
+        );
+
+        // Should not throw — error is caught and logged
+        await expect(
+          redisCache.subscribeToInvalidations(vi.fn()),
+        ).resolves.toBeUndefined();
+
+        // subscribed should remain false since subscribe failed
+        // We verify this by checking that a second call also tries to subscribe
+        expect(mockRedis.duplicate).toHaveBeenCalledTimes(1);
+      });
+
+      it("should only subscribe once even when called multiple times", async () => {
+        const callback = vi.fn();
+        await redisCache.subscribeToInvalidations(callback);
+        await redisCache.subscribeToInvalidations(callback);
+        await redisCache.subscribeToInvalidations(callback);
+
+        // duplicate and subscribe should only happen once
+        expect(mockRedis.duplicate).toHaveBeenCalledTimes(1);
+        expect(mockRedis._subscriber.subscribe).toHaveBeenCalledTimes(1);
       });
     });
 

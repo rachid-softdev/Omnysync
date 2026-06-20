@@ -9,7 +9,7 @@ const mockPrisma = vi.hoisted(() => ({
 vi.mock("../../prisma", () => ({ prisma: mockPrisma }));
 vi.mock("../../crypto", () => ({
   encrypt: vi.fn((s) => `enc_${s}`),
-  decrypt: vi.fn((s) => s.replace("enc_", "")),
+  decrypt: vi.fn((s) => (s ? s.replace("enc_", "") : "")),
 }));
 vi.mock("../../http", () => ({ fetchWithRetry: vi.fn() }));
 vi.mock("../../errors", () => ({ ERR_FETCH_CONTENT: "ERR_FETCH_CONTENT" }));
@@ -220,6 +220,19 @@ describe("Contentful Connector", () => {
         expect.stringContaining("limit=150"),
         expect.any(Object),
       );
+    });
+
+    it("should fall back to [] when response has no items field (line 116)", async () => {
+      // data.items is undefined → undefined || [] → []
+      vi.mocked(fetchWithRetry).mockResolvedValue({} as any);
+
+      const entries = await listContentfulEntries(
+        accessToken,
+        spaceId,
+        contentTypeId,
+      );
+
+      expect(entries).toEqual([]);
     });
   });
 
@@ -830,6 +843,252 @@ describe("Contentful Connector", () => {
       await expect(
         getContentfulEntryContent("conn-1", "nonexistent"),
       ).rejects.toThrow("Entry not found");
+    });
+  });
+
+  describe("listContentfulDocuments — decrypt/JSON.parse edge cases", () => {
+    it("should handle connector with null credentials (falls back to empty string)", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "CONTENTFUL",
+        credentials: null,
+        config: JSON.stringify({
+          spaceId: "space-1",
+          contentTypeId: "article",
+        }),
+      } as any);
+      vi.mocked(fetchWithRetry).mockResolvedValue({ items: [] } as any);
+
+      const result = await listContentfulDocuments("conn-1");
+      expect(result).toEqual([]);
+    });
+
+    it("should handle connector with null config (falls back to '{}')", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "CONTENTFUL",
+        credentials: "enc_token",
+        config: null,
+      } as any);
+
+      // No spaceId in config — returns empty array
+      const result = await listContentfulDocuments("conn-1");
+      expect(result).toEqual([]);
+    });
+
+    it("should return empty array when content types list is empty", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "CONTENTFUL",
+        credentials: "enc_token",
+        config: JSON.stringify({ spaceId: "space-1" }),
+      } as any);
+      vi.mocked(fetchWithRetry).mockResolvedValue({ items: [] } as any);
+
+      const result = await listContentfulDocuments("conn-1");
+      expect(result).toEqual([]);
+    });
+
+    it("should handle content types with zero entries each", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "CONTENTFUL",
+        credentials: "enc_token",
+        config: JSON.stringify({ spaceId: "space-1" }),
+      } as any);
+      vi.mocked(fetchWithRetry)
+        .mockResolvedValueOnce({
+          items: [{ id: "article", name: "Article" }],
+        } as any)
+        .mockResolvedValueOnce({ items: [] } as any);
+
+      const result = await listContentfulDocuments("conn-1");
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("getContentfulEntryContent — decrypt/JSON.parse edge cases", () => {
+    it("should handle connector with null credentials (falls back to empty string)", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "CONTENTFUL",
+        credentials: null,
+        config: JSON.stringify({
+          spaceId: "space-1",
+          contentTypeId: "article",
+        }),
+      } as any);
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        items: [
+          {
+            sys: { id: "entry-1" },
+            fields: { title: "Found", body: "Works" },
+          },
+        ],
+      } as any);
+
+      const result = await getContentfulEntryContent("conn-1", "entry-1");
+      expect(result.title).toBe("Found");
+    });
+
+    it("should handle connector with null config (falls back to '{}')", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "CONTENTFUL",
+        credentials: "enc_token",
+        config: null,
+      } as any);
+
+      await expect(
+        getContentfulEntryContent("conn-1", "entry-1"),
+      ).rejects.toThrow("Missing space ID");
+    });
+
+    it("should throw when compound entryId has empty actualEntryId part", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "CONTENTFUL",
+        credentials: "enc_token",
+        config: JSON.stringify({
+          spaceId: "space-1",
+          contentTypeId: "article",
+        }),
+      } as any);
+
+      await expect(
+        getContentfulEntryContent("conn-1", "article:"),
+      ).rejects.toThrow("Invalid entry ID");
+    });
+
+    it("should throw when compound entryId has empty contentTypeId part and no default", async () => {
+      vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+        id: "conn-1",
+        type: "CONTENTFUL",
+        credentials: "enc_token",
+        config: JSON.stringify({ spaceId: "space-1" }),
+      } as any);
+
+      // entryId is ":entry-1" → split gives ["" , "entry-1"], contentTypeId is "" → falsy → throw
+      await expect(
+        getContentfulEntryContent("conn-1", ":entry-1"),
+      ).rejects.toThrow("Invalid entry ID");
+    });
+  });
+
+  describe("listContentfulSpaces — edge cases", () => {
+    it("should return empty array when items field is null", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({} as any);
+
+      const result = await listContentfulSpaces(accessToken);
+      expect(result).toEqual([]);
+    });
+
+    it("should return empty array when items is an empty array", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({ items: [] } as any);
+
+      const result = await listContentfulSpaces(accessToken);
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("listContentfulEntries — edge cases", () => {
+    it("should use fields.name as title when fields.title is missing", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        items: [
+          {
+            sys: { id: "entry-1" },
+            fields: { name: "Named Entry", body: "Content" },
+          },
+        ],
+      } as any);
+
+      const entries = await listContentfulEntries(
+        accessToken,
+        spaceId,
+        contentTypeId,
+      );
+
+      expect(entries[0].title).toBe("Named Entry");
+    });
+
+    it("should handle entry with no sys object at all", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        items: [
+          {
+            fields: { title: "Orphan Entry" },
+          },
+        ],
+      } as any);
+
+      const entries = await listContentfulEntries(
+        accessToken,
+        spaceId,
+        contentTypeId,
+      );
+
+      expect(entries.length).toBe(1);
+      expect(entries[0].id).toBe("");
+      expect(entries[0].title).toBe("Orphan Entry");
+    });
+
+    it("should handle entry with null sys", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        items: [
+          {
+            sys: null,
+            fields: { title: "Null Sys Entry" },
+          },
+        ],
+      } as any);
+
+      const entries = await listContentfulEntries(
+        accessToken,
+        spaceId,
+        contentTypeId,
+      );
+
+      expect(entries[0].id).toBe("");
+      expect(entries[0].title).toBe("Null Sys Entry");
+    });
+
+    it("should handle entry with only null fields", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        items: [
+          {
+            sys: { id: "entry-null-fields" },
+            fields: null,
+          },
+        ],
+      } as any);
+
+      const entries = await listContentfulEntries(
+        accessToken,
+        spaceId,
+        contentTypeId,
+      );
+
+      expect(entries[0].id).toBe("entry-null-fields");
+      expect(entries[0].title).toBe("Untitled");
+      expect(entries[0].fields).toEqual({});
+    });
+
+    it("should handle entry with fields property containing name instead of title (via contentfulEntryToDocument)", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        items: [
+          {
+            sys: { id: "entry-name-title" },
+            fields: { name: "Name field", text: "Some text content" },
+          },
+        ],
+      } as any);
+
+      const entries = await listContentfulEntries(
+        accessToken,
+        spaceId,
+        contentTypeId,
+      );
+
+      expect(entries[0].title).toBe("Name field");
     });
   });
 });

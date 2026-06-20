@@ -281,6 +281,14 @@ describe("Password Reset Service", () => {
       expect(result.valid).toBe(false);
       expect(result.error).toBe("Token expiré");
     });
+
+    it("should propagate Prisma error during validation", async () => {
+      vi.mocked(prisma.passwordReset.findUnique).mockRejectedValue(
+        new Error("DB error"),
+      );
+
+      await expect(validateResetToken(token)).rejects.toThrow("DB error");
+    });
   });
 
   describe("resetPassword", () => {
@@ -427,6 +435,50 @@ describe("Password Reset Service", () => {
         "DB write failed",
       );
     });
+
+    it("should propagate Prisma error during audit log creation", async () => {
+      vi.mocked(prisma.passwordReset.findUnique).mockResolvedValue({
+        token,
+        userId,
+        usedAt: null,
+        expiresAt: new Date(Date.now() + 3600000),
+        user: { id: userId },
+      } as any);
+      vi.mocked(prisma.user.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.session.deleteMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.passwordReset.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue({
+        organizationId: "org-1",
+      } as any);
+      vi.mocked(prisma.auditLog.create).mockRejectedValue(
+        new Error("Audit log failed"),
+      );
+
+      await expect(resetPassword(token, "new-password-123")).rejects.toThrow(
+        "Audit log failed",
+      );
+    });
+
+    it("should propagate bcrypt hash failure", async () => {
+      vi.mocked(prisma.passwordReset.findUnique).mockResolvedValue({
+        token,
+        userId,
+        usedAt: null,
+        expiresAt: new Date(Date.now() + 3600000),
+        user: { id: userId },
+      } as any);
+      const { hash } = await import("bcrypt");
+      vi.mocked(hash).mockRejectedValue(new Error("bcrypt failed"));
+
+      await expect(resetPassword(token, "new-password-123")).rejects.toThrow(
+        "bcrypt failed",
+      );
+
+      // Restore mock so subsequent tests aren't affected
+      vi.mocked(hash).mockResolvedValue("$2b$12$newhash");
+    });
   });
 
   describe("cleanupExpiredTokens", () => {
@@ -512,6 +564,59 @@ describe("Password Reset Service", () => {
       await expect(resetPassword(token, "new-password-123")).rejects.toThrow(
         "DB error",
       );
+    });
+
+    it("should block 6th same-email request via global rate limit (count > 5)", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: userId,
+        email,
+      } as any);
+      vi.mocked(prisma.passwordReset.count).mockResolvedValue(0);
+      vi.mocked(prisma.passwordReset.create).mockResolvedValue({} as any);
+      vi.mocked(sendEmail).mockResolvedValue(undefined);
+
+      // First 5 requests succeed
+      for (let i = 0; i < 5; i++) {
+        const result = await createPasswordResetToken(email);
+        expect(result.success).toBe(true);
+      }
+
+      // 6th same-email request is blocked by global rate limit
+      const result = await createPasswordResetToken(email);
+      expect(result.success).toBe(false);
+      expect(result.message).toContain("Trop de demandes");
+    });
+
+    it("should reset global rate limit after window expires (15 min)", async () => {
+      vi.useFakeTimers();
+      try {
+        vi.mocked(prisma.user.findUnique).mockResolvedValue({
+          id: userId,
+          email,
+        } as any);
+        vi.mocked(prisma.passwordReset.count).mockResolvedValue(0);
+        vi.mocked(prisma.passwordReset.create).mockResolvedValue({} as any);
+        vi.mocked(sendEmail).mockResolvedValue(undefined);
+
+        // Make 5 requests
+        for (let i = 0; i < 5; i++) {
+          await createPasswordResetToken(email);
+        }
+
+        // 6th should fail
+        let result = await createPasswordResetToken(email);
+        expect(result.success).toBe(false);
+
+        // Advance past the 15-minute rate limit window
+        vi.advanceTimersByTime(15 * 60 * 1000 + 1);
+
+        // Now should succeed (window reset)
+        vi.mocked(prisma.passwordReset.create).mockResolvedValue({} as any);
+        result = await createPasswordResetToken(email);
+        expect(result.success).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });

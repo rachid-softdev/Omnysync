@@ -1175,6 +1175,170 @@ describe("Sync Service", () => {
       expect(shopifyClient.createArticle).not.toHaveBeenCalled();
     });
 
+    it("should log interlinking opportunities when AI returns links", async () => {
+      const aiModule = await import("../ai");
+      vi.mocked(aiModule.findInterlinkingOpportunities).mockResolvedValue({
+        links: [
+          { url: "/existing-article", text: "Existing Article", position: 1 },
+        ],
+      });
+
+      // Use mockImplementation to conditionally return docs only for the interlinking query
+      // but restore default for other calls to avoid state leakage
+      const originalFindMany = prisma.document.findMany.getMockImplementation();
+      vi.mocked(prisma.document.findMany).mockImplementation(async (args) => {
+        // Return docs when query has organizationId (interlinking query)
+        if (args && "where" in args) {
+          return Promise.resolve([
+            {
+              title: "Existing Article",
+              slug: "/existing-article",
+              excerpt: "An existing article for interlinking",
+            },
+          ] as any);
+        }
+        return Promise.resolve([]);
+      });
+
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        baseDocument as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(true);
+      // Should have logged interlinking found
+      expect(prisma.syncLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: "ai_interlinking_found",
+          }),
+        }),
+      );
+
+      // Restore findMany to avoid state leakage
+      vi.mocked(prisma.document.findMany).mockImplementation(
+        originalFindMany as any,
+      );
+    });
+
+    it("should handle source fetch failure (getGoogleDocContent throws) with proper rollback", async () => {
+      const googleDocsModule = await import("../google-docs");
+      const originalImpl =
+        googleDocsModule.getGoogleDocContent.getMockImplementation();
+      vi.mocked(googleDocsModule.getGoogleDocContent).mockRejectedValue(
+        new Error("Google Docs API unavailable"),
+      );
+
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        baseDocument as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update)
+        .mockRejectedValueOnce(new Error("Google API error"))
+        .mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(false);
+      // Catch block should attempt to send failure email with success=false
+      expect(sendSyncCompleteEmail).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        false,
+      );
+
+      // Restore getGoogleDocContent to avoid state leakage
+      vi.mocked(googleDocsModule.getGoogleDocContent).mockImplementation(
+        originalImpl as any,
+      );
+    });
+
+    it("should skip sending email when user has no email address", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: "user-1",
+        name: "No Email User",
+        email: null,
+      } as any);
+
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        baseDocument as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(true);
+      // Email should NOT be sent when user has no email
+      expect(sendSyncCompleteEmail).not.toHaveBeenCalled();
+    });
+
+    it("should handle invalid JSON in source connector credentials gracefully", async () => {
+      const badCredsDoc = {
+        ...baseDocument,
+        sourceConnector: {
+          ...baseDocument.sourceConnector,
+          credentials: "enc_{invalid json}",
+        },
+      };
+
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        badCredsDoc as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update)
+        .mockRejectedValueOnce(new Error("JSON Parse error"))
+        .mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        email: "user@test.com",
+      } as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(false);
+    });
+
     it("should handle null sourceConnector (optional chaining fallback at line 364)", async () => {
       const nullSourceDoc = {
         ...baseDocument,
@@ -1513,6 +1677,28 @@ describe("Sync Service", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Missing connector IDs");
+    });
+
+    it("should return no changes when AI detects no changes (ERR_SYNC_NO_CHANGES)", async () => {
+      const aiModule = await import("../ai");
+      vi.mocked(aiModule.detectContentChanges).mockResolvedValue({
+        hasChanges: false,
+        summary: "No changes detected",
+      });
+
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        ...baseDocument,
+        status: "PUBLISHED",
+        sourceConnectorId,
+        destConnectorId,
+        sourceConnector: baseDocument.sourceConnector,
+        destConnector: baseDocument.destConnector,
+      } as any);
+
+      const result = await detectAndSyncChanges(documentId, userId);
+
+      expect(result.success).toBe(true);
+      expect(result.changesDetected).toBe(false);
     });
 
     it("should handle detectContentChanges throwing an error", async () => {

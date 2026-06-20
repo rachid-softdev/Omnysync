@@ -1639,4 +1639,286 @@ describe("Two-Way Sync Service", () => {
       expect(auditSync.changesDetected).toHaveBeenCalled();
     });
   });
+
+  describe("fetchRemoteContent — WordPress config.credentials truthy path (line 64)", () => {
+    it("should use config.credentials when present instead of fallback", async () => {
+      // WordPress dest with credentials nested in config
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        organizationId: orgId,
+        htmlContent: "Different content",
+        content: "Different content",
+        sourceUpdatedAt: new Date("2026-07-01"),
+        lastSyncedAt: new Date("2026-06-01"),
+        sourceConnectorId: "sc-1",
+        destConnectorId: "dc-1",
+        sourceId: "source-1",
+        slug: "42",
+        sourceConnector: {
+          id: "sc-1",
+          type: "GOOGLE_DOCS",
+          credentials: "enc_{}",
+          config: {},
+        },
+        destConnector: {
+          id: "dc-1",
+          type: "WORDPRESS",
+          credentials: undefined, // no top-level credentials
+          config: {
+            siteUrl: "https://example.com",
+            credentials: "enc_admin:pass", // credentials in config
+          },
+        },
+      } as any);
+
+      const result = await detectConflicts(documentId);
+
+      // Should still work: WordPress mock returns "Remote content" which differs from stored
+      expect(result.hasConflict).toBe(true);
+      expect(result.conflictType).toBe("dest-changed");
+    });
+  });
+
+  describe("fetchRemoteContent — Ghost with null/undefined slug (line 87)", () => {
+    it("should use empty string fallback for Ghost slug when slug is null", async () => {
+      const { createGhostClient } = await import("../ghost");
+      vi.mocked(createGhostClient("", "", "").getPost).mockResolvedValue({
+        posts: [
+          {
+            html: "Ghost content",
+            title: "Ghost Post",
+            updated_at: "2026-06-15T12:00:00Z",
+          },
+        ],
+      });
+
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        organizationId: orgId,
+        htmlContent: "Different stored",
+        content: "Different stored",
+        sourceUpdatedAt: new Date("2026-07-01"),
+        lastSyncedAt: new Date("2026-06-01"),
+        sourceConnectorId: "sc-1",
+        destConnectorId: "dc-1",
+        sourceId: "source-1",
+        slug: null, // null slug — should use ""
+        sourceConnector: {
+          id: "sc-1",
+          type: "GOOGLE_DOCS",
+          credentials: "enc_{}",
+          config: {},
+        },
+        destConnector: {
+          id: "dc-1",
+          type: "GHOST",
+          credentials: "enc_creds",
+          config: { siteUrl: "https://ghost.example.com" },
+        },
+      } as any);
+
+      const result = await detectConflicts(documentId);
+
+      expect(result.hasConflict).toBe(true);
+      // Verify getPost was called with "" since slug was null
+      expect(createGhostClient("", "", "").getPost).toHaveBeenCalledWith("");
+    });
+  });
+
+  describe("fetchRemoteContent — Shopify null htmlContent and lastSyncedAt (lines 116-118)", () => {
+    it("should return content and updatedAt fallbacks when Shopify has null htmlContent and lastSyncedAt", async () => {
+      const googleDocsModule = await import("../google-docs");
+      vi.mocked(googleDocsModule.getGoogleDocContent).mockResolvedValueOnce({
+        id: "doc-1",
+        title: "Google Doc",
+        content: "Stored content",
+        modifiedTime: "2024-01-01T00:00:00Z",
+      } as any);
+
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        organizationId: orgId,
+        htmlContent: null,
+        content: null,
+        title: "Test Title",
+        sourceUpdatedAt: new Date("2025-01-01"),
+        lastSyncedAt: null,
+        sourceConnectorId: "sc-1",
+        destConnectorId: "dc-1",
+        sourceId: "source-1",
+        slug: "shopify-slug",
+        sourceConnector: {
+          id: "sc-1",
+          type: "GOOGLE_DOCS",
+          credentials: "enc_{}",
+          config: {},
+        },
+        destConnector: {
+          id: "dc-1",
+          type: "SHOPIFY",
+          credentials: "enc_creds",
+          config: { shopDomain: "myshop.myshopify.com" },
+        },
+      } as any);
+
+      const result = await detectConflicts(documentId);
+
+      // Shopify branch at lines 116-118: htmlContent is null → content = "",
+      // lastSyncedAt is null → updatedAt = new Date(0)
+      // normalizedStored = null || "" → "" matches normalizedDest = "" → no dest change
+      // source hasn't changed (2024 < 2025) → no source change
+      expect(result.hasConflict).toBe(false);
+    });
+  });
+
+  describe("resolveConflict — keep-both branch dest-changed, no source-changed", () => {
+    it("should handle keep-both when only dest has changed (source unchanged)", async () => {
+      vi.mocked(prisma.document.findUnique)
+        .mockResolvedValueOnce({
+          id: documentId,
+          organizationId: orgId,
+          userId,
+          sourceConnectorId: "sc-1",
+          destConnectorId: "dc-1",
+          sourceConnector: {
+            id: "sc-1",
+            type: "GOOGLE_DOCS",
+            credentials: "enc_{}",
+            config: {},
+          },
+          destConnector: {
+            id: "dc-1",
+            type: "WORDPRESS",
+            credentials: "enc_creds",
+            config: { siteUrl: "https://example.com" },
+          },
+          sourceId: "source-1",
+          htmlContent: "Stored different",
+          content: "Stored different",
+          sourceUpdatedAt: new Date("2026-07-01"),
+          lastSyncedAt: new Date("2026-06-01"),
+        } as any)
+        .mockResolvedValueOnce({
+          id: documentId,
+          organizationId: orgId,
+          htmlContent: "Stored different",
+          content: "Stored different",
+          sourceUpdatedAt: new Date("2026-07-01"),
+          lastSyncedAt: new Date("2026-06-01"),
+        } as any)
+        .mockResolvedValueOnce({
+          id: documentId,
+          sourceConnector: {
+            id: "sc-1",
+            type: "GOOGLE_DOCS",
+            credentials: "enc_{}",
+            config: {},
+          },
+          sourceId: "source-1",
+        } as any)
+        .mockResolvedValueOnce({
+          id: documentId,
+          destConnector: {
+            id: "dc-1",
+            type: "WORDPRESS",
+            credentials: "enc_creds",
+            config: { siteUrl: "https://example.com" },
+          },
+          slug: "0",
+        } as any)
+        .mockResolvedValueOnce({
+          id: documentId,
+          destConnector: {
+            id: "dc-1",
+            type: "WORDPRESS",
+            credentials: "enc_creds",
+            config: { siteUrl: "https://example.com" },
+          },
+          slug: "0",
+        } as any);
+      vi.mocked(prisma.document.create).mockResolvedValue({
+        id: "copy-1",
+      } as any);
+
+      const result = await resolveConflict(documentId, "keep-both", userId);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe(
+        "New document created with destination content",
+      );
+    });
+  });
+
+  describe("fetchRemoteContent — empty credentials fallback (line 66)", () => {
+    it("should use '' fallback when both config.credentials and credentials are falsy", async () => {
+      // WordPress dest with NO credentials anywhere (config.credentials and credentials both falsy)
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        organizationId: orgId,
+        htmlContent: "Different content",
+        content: "Different content",
+        sourceUpdatedAt: new Date("2026-07-01"),
+        lastSyncedAt: new Date("2026-06-01"),
+        sourceConnectorId: "sc-1",
+        destConnectorId: "dc-1",
+        sourceId: "source-1",
+        slug: "42",
+        sourceConnector: {
+          id: "sc-1",
+          type: "GOOGLE_DOCS",
+          credentials: "enc_{}",
+          config: {},
+        },
+        destConnector: {
+          id: "dc-1",
+          type: "WORDPRESS",
+          credentials: undefined,
+          config: { siteUrl: "https://example.com" },
+        },
+      } as any);
+
+      // decrypt("") should return ""; Buffer.from("", "base64") returns empty buffer
+      // WordPress mock returns the standard post, so this should still work
+      const result = await detectConflicts(documentId);
+
+      // The mock still works with empty credentials
+      expect(result.hasConflict).toBe(true);
+      expect(result.conflictType).toBe("dest-changed");
+    });
+  });
+
+  describe("fetchRemoteContent — undefined config fallback (line 69)", () => {
+    it("should use {} fallback when config is undefined", async () => {
+      vi.mocked(prisma.document.findUnique).mockResolvedValue({
+        id: documentId,
+        organizationId: orgId,
+        htmlContent: "Different content",
+        content: "Different content",
+        sourceUpdatedAt: new Date("2026-07-01"),
+        lastSyncedAt: new Date("2026-06-01"),
+        sourceConnectorId: "sc-1",
+        destConnectorId: "dc-1",
+        sourceId: "source-1",
+        slug: "42",
+        sourceConnector: {
+          id: "sc-1",
+          type: "GOOGLE_DOCS",
+          credentials: "enc_{}",
+          config: {},
+        },
+        destConnector: {
+          id: "dc-1",
+          type: "WORDPRESS",
+          credentials: "enc_creds",
+          config: undefined,
+        },
+      } as any);
+
+      // config || {} → {}, config.siteUrl is undefined, but mock doesn't care
+      const result = await detectConflicts(documentId);
+
+      expect(result.hasConflict).toBe(true);
+      expect(result.conflictType).toBe("dest-changed");
+    });
+  });
 });

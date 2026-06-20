@@ -85,6 +85,7 @@ vi.mock("../../prisma", () => ({
 // IMPORTS (after mocks)
 // ============================================================================
 
+import { Prisma } from "@prisma/client";
 import {
   PrismaEntitlementRepository,
   resetEntitlementRepository,
@@ -582,6 +583,56 @@ describe("PrismaEntitlementRepository", () => {
       expect(result.limits["MAX_SYNCS"]).toBe(0);
     });
 
+    it("should handle enabled feature with positive limitValue (not -1) — covers line 331", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "pro",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      mockPrisma.plan.findUnique.mockResolvedValue({
+        id: "plan-1",
+        key: "pro",
+        features: [
+          {
+            enabled: true,
+            limitValue: 50, // Positive number, not -1
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+          {
+            enabled: true,
+            limitValue: -1, // Unlimited
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_CONNECTORS", name: "Max Connectors" },
+          },
+          {
+            enabled: true,
+            limitValue: 0, // Zero limit
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "API_ACCESS", name: "API Access" },
+          },
+        ],
+      });
+
+      const result = await repo.getEntitlementMap("org-1");
+      // Positive limit should be preserved
+      expect(result.limits["MAX_SYNCS"]).toBe(50);
+      // -1 should become null (unlimited)
+      expect(result.limits["MAX_CONNECTORS"]).toBeNull();
+      // Zero should be preserved
+      expect(result.limits["API_ACCESS"]).toBe(0);
+    });
+
     it("should fallback to default plan when no subscription exists", async () => {
       mockPrisma.subscription.findUnique.mockResolvedValueOnce(null);
 
@@ -1022,6 +1073,47 @@ describe("PrismaEntitlementRepository", () => {
       expect(result.success).toBe(false);
       expect(result.limitReached).toBe(true);
     });
+
+    it("should retry on real PrismaClientKnownRequestError P2034 — covers line 183", async () => {
+      const prismaError = new Prisma.PrismaClientKnownRequestError(
+        "Serialization failure",
+        { code: "P2034", clientVersion: "5.0.0" },
+      );
+
+      // First call throws a real PrismaClientKnownRequestError (tests the instanceof path)
+      // Second call succeeds
+      mockPrisma.$transaction
+        .mockRejectedValueOnce(prismaError)
+        .mockImplementationOnce(async (fn: any) => {
+          return fn({
+            usageTracking: {
+              upsert: vi.fn().mockResolvedValue({
+                id: "usage-retry",
+                usageCount: 5,
+              }),
+              update: vi.fn(),
+            },
+            entitlementOverride: { delete: vi.fn() },
+          });
+        });
+
+      const result = await repo.consumeUsage("org-1", "MAX_SYNCS", 1, 10);
+      expect(result.success).toBe(true);
+      expect(result.newUsageCount).toBe(5);
+    });
+
+    it("should handle non-P2034 PrismaClientKnownRequestError without retry", async () => {
+      const nonP2034Error = new Prisma.PrismaClientKnownRequestError(
+        "Unique constraint violation",
+        { code: "P2002", clientVersion: "5.0.0" },
+      );
+
+      mockPrisma.$transaction.mockRejectedValue(nonP2034Error);
+
+      await expect(
+        repo.consumeUsage("org-1", "MAX_SYNCS", 1, 10),
+      ).rejects.toThrow("Unique constraint violation");
+    });
   });
 
   // ==========================================================================
@@ -1127,6 +1219,70 @@ describe("PrismaEntitlementRepository", () => {
 
       const result = await repo.getAllPlansWithFeatures();
       expect(result).toHaveLength(2);
+    });
+
+    it("should return plans with populated features — covers line 713", async () => {
+      mockPrisma.plan.findMany.mockResolvedValue([
+        {
+          id: "plan-1",
+          key: "free",
+          name: "Free",
+          priceMonthly: 0,
+          priceYearly: 0,
+          isActive: true,
+          sortOrder: 1,
+          features: [
+            {
+              enabled: true,
+              limitValue: null,
+              configJson: null,
+              downgradeStrategy: "GRACEFUL",
+              feature: { key: "EXPORT_CSV", name: "Export CSV" },
+            },
+          ],
+        },
+        {
+          id: "plan-2",
+          key: "pro",
+          name: "Pro",
+          priceMonthly: 29,
+          priceYearly: 290,
+          isActive: true,
+          sortOrder: 2,
+          features: [
+            {
+              enabled: true,
+              limitValue: 100,
+              configJson: null,
+              downgradeStrategy: "GRACEFUL",
+              feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+            },
+            {
+              enabled: false,
+              limitValue: null,
+              configJson: null,
+              downgradeStrategy: "IMMEDIATE",
+              feature: { key: "EXPORT_PDF", name: "Export PDF" },
+            },
+          ],
+        },
+      ]);
+
+      const result = await repo.getAllPlansWithFeatures();
+      expect(result).toHaveLength(2);
+
+      // First plan: free with 1 feature
+      expect(result[0].features).toHaveLength(1);
+      expect(result[0].features[0].featureKey).toBe("EXPORT_CSV");
+      expect(result[0].features[0].limitValue).toBeNull();
+
+      // Second plan: pro with 2 features
+      expect(result[1].features).toHaveLength(2);
+      expect(result[1].features[0].featureKey).toBe("MAX_SYNCS");
+      expect(result[1].features[0].limitValue).toBe(100);
+      expect(result[1].features[1].featureKey).toBe("EXPORT_PDF");
+      expect(result[1].features[1].enabled).toBe(false);
+      expect(result[1].features[1].downgradeStrategy).toBe("IMMEDIATE");
     });
   });
 
@@ -1761,6 +1917,57 @@ describe("PrismaEntitlementRepository", () => {
       expect(feature.currentPlanValue).toBe(false);
       expect(feature.targetPlanValue).toBe(false);
       expect(feature.willBeAffected).toBe(false);
+    });
+
+    it("should NOT flag feature when limit goes from specific to unlimited (improvement)", async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        id: "sub-1",
+        organizationId: "org-1",
+        planKey: "free",
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 86400000),
+        cancelAtPeriodEnd: false,
+        trialStart: null,
+        trialEnd: null,
+      });
+
+      // Current plan has limit of 10
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-free",
+        key: "free",
+        features: [
+          {
+            enabled: true,
+            limitValue: 10,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+        ],
+      });
+
+      // Target plan has null limit (unlimited) — this is an improvement
+      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+        id: "plan-pro",
+        key: "pro",
+        features: [
+          {
+            enabled: true,
+            limitValue: null,
+            configJson: null,
+            downgradeStrategy: "GRACEFUL",
+            feature: { key: "MAX_SYNCS", name: "Max Syncs" },
+          },
+        ],
+      });
+
+      mockPrisma.usageTracking.findUnique.mockResolvedValue(null);
+
+      const result = await repo.getDowngradePreview("org-1", "pro");
+      expect(result.features[0].willBeAffected).toBe(false);
+      expect(result.features[0].currentLimit).toBe(10);
+      expect(result.features[0].targetLimit).toBeNull();
     });
   });
 

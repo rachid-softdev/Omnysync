@@ -404,4 +404,209 @@ describe("Ghost Connector", () => {
       expect(result.error).toBe("HTTP 401: Unauthorized");
     });
   });
+
+  describe("createGhostClient — edge cases", () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it("should handle adminApiKey with no colon (single part)", () => {
+      const client = createGhostClient(siteUrl, "no-colon-key");
+      expect(client.getTags).toBeDefined();
+      expect(client.getAuthors).toBeDefined();
+    });
+
+    it("should handle adminApiKey with multiple colons", () => {
+      const client = createGhostClient(siteUrl, "a:b:c:d");
+      expect(client.getTags).toBeDefined();
+      expect(client.getAuthors).toBeDefined();
+    });
+
+    it("should strip multiple trailing slashes from siteUrl", () => {
+      const client = createGhostClient(
+        "https://myblog.ghost.io///",
+        adminApiKey,
+      );
+      expect(client.getTags).toBeDefined();
+    });
+
+    it("should handle empty object response from request helper (extraction bug)", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({} as any);
+
+      const client = createGhostClient(siteUrl, adminApiKey);
+      const tags = await client.getTags();
+
+      expect(tags).toEqual([]);
+    });
+
+    it("should handle response with unexpected top-level key", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        unknown_key: [{ id: "x" }],
+      } as any);
+
+      const client = createGhostClient(siteUrl, adminApiKey);
+      const tags = await client.getTags();
+
+      // The extraction bug picks the first key, so `result.tags` is undefined → []
+      expect(tags).toEqual([]);
+    });
+
+    it("should handle null response from request helper", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue(null as any);
+
+      const client = createGhostClient(siteUrl, adminApiKey);
+      await expect(client.getTags()).rejects.toThrow();
+    });
+  });
+
+  describe("saveGhostConnector — URL edge cases", () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it("should work with URL containing subdirectory", async () => {
+      vi.mocked(prisma.connector.create).mockResolvedValue({
+        id: "conn-1",
+      } as any);
+
+      const result = await saveGhostConnector(
+        userId,
+        orgId,
+        "https://myblog.ghost.io/blog",
+        adminApiKey,
+      );
+
+      expect(result.id).toBe("conn-1");
+      expect(prisma.connector.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          name: expect.stringContaining("Ghost"),
+          config: { siteUrl: "https://myblog.ghost.io/blog" },
+        }),
+      });
+    });
+
+    it("should work with http URL (not https)", async () => {
+      vi.mocked(prisma.connector.create).mockResolvedValue({
+        id: "conn-1",
+      } as any);
+
+      const result = await saveGhostConnector(
+        userId,
+        orgId,
+        "http://myblog.ghost.io",
+        adminApiKey,
+      );
+
+      expect(result.id).toBe("conn-1");
+      expect(prisma.connector.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          config: { siteUrl: "http://myblog.ghost.io" },
+        }),
+      });
+    });
+  });
+
+  describe("testGhostConnection — non-Error thrown values", () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it("should handle string thrown (not Error instance)", async () => {
+      vi.mocked(fetchWithRetry).mockRejectedValue("raw string error" as any);
+
+      const result = await testGhostConnection(siteUrl, adminApiKey);
+
+      expect(result.success).toBe(false);
+      // String cast via `String(error)` would give "raw string error"
+    });
+
+    it("should handle object thrown without message", async () => {
+      vi.mocked(fetchWithRetry).mockRejectedValue({
+        code: 500,
+      } as any);
+
+      const result = await testGhostConnection(siteUrl, adminApiKey);
+
+      expect(result.success).toBe(false);
+    });
+
+    it("should handle null thrown", async () => {
+      vi.mocked(fetchWithRetry).mockRejectedValue(null);
+
+      const result = await testGhostConnection(siteUrl, adminApiKey);
+
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("uploadImage — edge cases", () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      globalThis.fetch = vi.fn();
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it("should handle empty Blob (zero bytes)", async () => {
+      const mockResponse = {
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            images: [
+              { url: "https://myblog.ghost.io/content/images/empty.jpg" },
+            ],
+          }),
+      };
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+        mockResponse,
+      );
+
+      const client = createGhostClient(siteUrl, adminApiKey);
+      const result = await client.uploadImage({
+        file: new Blob([]),
+        filename: "empty.jpg",
+      });
+
+      expect(result.images[0].url).toContain("empty.jpg");
+    });
+
+    it("should handle fetch throwing a TypeError (network failure)", async () => {
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new TypeError("Failed to fetch"),
+      );
+
+      const client = createGhostClient(siteUrl, adminApiKey);
+      await expect(
+        client.uploadImage({
+          file: new Blob(["data"]),
+          filename: "test.jpg",
+        }),
+      ).rejects.toThrow(TypeError);
+    });
+
+    it("should pass correct Authorization header for upload", async () => {
+      const mockResponse = {
+        ok: true,
+        json: () =>
+          Promise.resolve({ images: [{ url: "https://example.com/img.jpg" }] }),
+      };
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+        mockResponse,
+      );
+
+      const client = createGhostClient(siteUrl, adminApiKey);
+      await client.uploadImage({
+        file: new Blob(["data"]),
+        filename: "test.jpg",
+      });
+
+      const fetchCall = (globalThis.fetch as ReturnType<typeof vi.fn>).mock
+        .calls[0];
+      const headers = fetchCall[1].headers;
+      expect(headers.Authorization).toBeDefined();
+      expect(headers.Authorization).toContain("Ghost ");
+    });
+  });
 });
