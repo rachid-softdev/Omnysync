@@ -8,6 +8,85 @@ import { randomBytes, createHash, timingSafeEqual } from "crypto";
 import * as OTPAuth from "otpauth";
 
 /**
+ * Stockage temporaire des secrets 2FA en mémoire (setup en cours).
+ *
+ * ⚠️ In-memory Map uniquement — ne scale PAS horizontalement.
+ * Pour une architecture multi-instance, utilisez plutôt le cache Redis
+ * via la fonction storePendingSecret/setPendingSecretInCache/getPendingSecretFromCache
+ * qui sont disponibles ci-dessous.
+ *
+ * TODO: Migrer vers Redis uniquement quand l'infra Redis est garantie disponible.
+ */
+export const pendingSecrets = new Map<
+  string,
+  { secret: string; expiresAt: Date }
+>();
+
+// Nettoyer les secrets expirés toutes les 5 minutes
+setInterval(
+  () => {
+    const now = new Date();
+    for (const [key, value] of pendingSecrets) {
+      if (value.expiresAt < now) pendingSecrets.delete(key);
+    }
+  },
+  5 * 60 * 1000,
+);
+
+/**
+ * Stocke un secret 2FA temporaire, en priorité dans Redis si disponible.
+ */
+export async function storePendingSecret(
+  userId: string,
+  secret: string,
+  ttlSeconds = 600, // 10 minutes par défaut
+): Promise<void> {
+  const { cache } = await import("../cache");
+  const entry = { secret, expiresAt: new Date(Date.now() + ttlSeconds * 1000) };
+
+  if (cache.isAvailable()) {
+    await cache.set(`2fa:pending:${userId}`, entry, { ttl: ttlSeconds });
+  }
+  // Fallback in-memory pour les environnements sans Redis
+  pendingSecrets.set(userId, entry);
+}
+
+/**
+ * Récupère un secret 2FA temporaire, depuis Redis si disponible.
+ */
+export async function getPendingSecret(
+  userId: string,
+): Promise<{ secret: string; expiresAt: Date } | null> {
+  const { cache } = await import("../cache");
+
+  if (cache.isAvailable()) {
+    const cached = await cache.get<{ secret: string; expiresAt: Date }>(
+      `2fa:pending:${userId}`,
+    );
+    if (cached) return cached;
+  }
+
+  const entry = pendingSecrets.get(userId);
+  if (!entry) return null;
+  if (entry.expiresAt < new Date()) {
+    pendingSecrets.delete(userId);
+    return null;
+  }
+  return entry;
+}
+
+/**
+ * Supprime un secret 2FA temporaire, dans Redis et en mémoire.
+ */
+export async function removePendingSecret(userId: string): Promise<void> {
+  const { cache } = await import("../cache");
+  if (cache.isAvailable()) {
+    await cache.del(`2fa:pending:${userId}`);
+  }
+  pendingSecrets.delete(userId);
+}
+
+/**
  * Génère un secret TOTP pour l'utilisateur (format Base32, compatible RFC 6238)
  */
 export function generateTotpSecret(): { secret: string; otpauthUrl: string } {
@@ -33,55 +112,60 @@ export async function setupTwoFactor(
   userId: string,
   secret: string,
 ): Promise<{ success: boolean; backupCodes?: string[]; error?: string }> {
-  // Générer les backup codes (10 codes de 8 caractères)
-  const backupCodes = Array.from({ length: 10 }, () =>
-    randomBytes(4).toString("hex").toUpperCase(),
-  );
-
-  // Hasher les backup codes avec un salt utilisateur-spécifique
-  const userSpecificSalt = userId.substring(0, 16);
-  const hashedBackupCodes = backupCodes.map((code) =>
-    createHash("sha256")
-      .update(code + userSpecificSalt)
-      .digest("hex"),
-  );
-
   try {
-    await prisma.twoFactorAuth.upsert({
-      where: { userId },
-      create: {
-        userId,
-        secret: encrypt(secret),
-        backupCodes: hashedBackupCodes,
-      },
-      update: {
-        secret: encrypt(secret),
-        backupCodes: hashedBackupCodes,
-      },
-    });
+    // Générer les backup codes (10 codes de 8 caractères)
+    const backupCodes = Array.from({ length: 10 }, () =>
+      randomBytes(4).toString("hex").toUpperCase(),
+    );
 
-    // Audit log
-    const org = await prisma.userOrganization.findFirst({
-      where: { userId, role: "OWNER" },
-      include: { organization: true },
-    });
+    // Hasher les backup codes avec un salt utilisateur-spécifique
+    const userSpecificSalt = userId.substring(0, 16);
+    const hashedBackupCodes = backupCodes.map((code) =>
+      createHash("sha256")
+        .update(code + userSpecificSalt)
+        .digest("hex"),
+    );
 
-    if (org) {
-      await prisma.auditLog.create({
-        data: {
-          organizationId: org.organizationId,
+    try {
+      await prisma.twoFactorAuth.upsert({
+        where: { userId },
+        create: {
           userId,
-          action: "twofactor.enabled",
-          targetType: "user",
-          targetId: userId,
+          secret: encrypt(secret),
+          backupCodes: hashedBackupCodes,
+        },
+        update: {
+          secret: encrypt(secret),
+          backupCodes: hashedBackupCodes,
         },
       });
-    }
 
-    return { success: true, backupCodes };
-  } catch (error) {
-    console.error("Failed to setup 2FA:", error);
-    return { success: false, error: "Échec de la configuration du 2FA" };
+      // Audit log
+      const org = await prisma.userOrganization.findFirst({
+        where: { userId, role: "OWNER" },
+        include: { organization: true },
+      });
+
+      if (org) {
+        await prisma.auditLog.create({
+          data: {
+            organizationId: org.organizationId,
+            userId,
+            action: "twofactor.enabled",
+            targetType: "user",
+            targetId: userId,
+          },
+        });
+      }
+
+      return { success: true, backupCodes };
+    } catch (error) {
+      console.error("Failed to setup 2FA:", error);
+      return { success: false, error: "Échec de la configuration du 2FA" };
+    }
+  } finally {
+    // Nettoyer le secret temporaire en mémoire quoi qu'il arrive
+    pendingSecrets.delete(userId);
   }
 }
 

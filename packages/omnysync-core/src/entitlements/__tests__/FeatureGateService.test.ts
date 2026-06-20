@@ -282,6 +282,10 @@ class MockEntitlementRepository implements IEntitlementRepository {
   _setUsage(orgId: string, featureKey: string, usage: UsageData) {
     this.usage.set(`${orgId}:${featureKey}`, usage);
   }
+
+  _setFeature(featureKey: string, data: FeatureData) {
+    this.features.set(featureKey, data);
+  }
 }
 
 // ============================================================================
@@ -851,7 +855,7 @@ describe("Race Conditions", () => {
   it("should handle concurrent consume requests", async () => {
     const mockRepo = new MockEntitlementRepository();
 
-    // Setup pro plan features with MAX_SYNCS enabled
+    // Setup pro plan features with MAX_SYNCS limit
     mockRepo._setPlanFeatures("pro", [
       {
         featureKey: "MAX_SYNCS",
@@ -884,6 +888,134 @@ describe("Race Conditions", () => {
     // First consume should succeed
     const result = await service.consume("org-1", "MAX_SYNCS", 1);
     expect(result.success).toBe(true);
+  });
+
+  it("should handle 5 concurrent consume requests correctly", async () => {
+    const mockRepo = new MockEntitlementRepository();
+    const LIMIT = 5;
+
+    // Register the API_CALLS feature definition (consume requires it)
+    (mockRepo as any)._setFeature("API_CALLS", {
+      id: "4",
+      key: "API_CALLS",
+      name: "API Calls",
+      description: "Monthly API call limit",
+      type: "LIMIT" as FeatureType,
+      defaultConfig: null,
+    });
+
+    // Setup with a small limit to test concurrent edge cases
+    mockRepo._setPlanFeatures("pro", [
+      {
+        featureKey: "API_CALLS",
+        featureName: "API Calls",
+        enabled: true,
+        limitValue: LIMIT,
+        configJson: null,
+        downgradeStrategy: "IMMEDIATE",
+      },
+    ]);
+
+    mockRepo._setSubscription("org-1", {
+      id: "1",
+      organizationId: "org-1",
+      planKey: "pro",
+      status: "ACTIVE",
+      currentPeriodStart: new Date(),
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      cancelAtPeriodEnd: false,
+      trialStart: null,
+      trialEnd: null,
+    });
+
+    // Set initial usage to 0
+    mockRepo._setUsage("org-1", "API_CALLS", {
+      usageCount: 0,
+      monthlyLimit: LIMIT,
+    });
+
+    const service = new FeatureGateService({
+      repository: mockRepo,
+      cacheService: new CacheService(),
+      experimentService: new ExperimentService(),
+    });
+
+    // Lancer 5 consumes en parallèle — ils doivent tous réussir car on est dans la limite
+    const results = await Promise.all(
+      Array.from({ length: LIMIT }, (_, i) =>
+        service.consume("org-1", "API_CALLS", 1),
+      ),
+    );
+
+    expect(results).toHaveLength(LIMIT);
+    results.forEach((r) => {
+      expect(r.success).toBe(true);
+    });
+  });
+
+  it("should reject when concurrent requests exceed the limit", async () => {
+    const mockRepo = new MockEntitlementRepository();
+    const LIMIT = 3;
+
+    // Register the API_CALLS feature definition (consume requires it)
+    (mockRepo as any)._setFeature("API_CALLS", {
+      id: "5",
+      key: "API_CALLS",
+      name: "API Calls",
+      description: "Monthly API call limit",
+      type: "LIMIT" as FeatureType,
+      defaultConfig: null,
+    });
+
+    mockRepo._setPlanFeatures("pro", [
+      {
+        featureKey: "API_CALLS",
+        featureName: "API Calls",
+        enabled: true,
+        limitValue: LIMIT,
+        configJson: null,
+        downgradeStrategy: "IMMEDIATE",
+      },
+    ]);
+
+    mockRepo._setSubscription("org-1", {
+      id: "1",
+      organizationId: "org-1",
+      planKey: "pro",
+      status: "ACTIVE",
+      currentPeriodStart: new Date(),
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      cancelAtPeriodEnd: false,
+      trialStart: null,
+      trialEnd: null,
+    });
+
+    mockRepo._setUsage("org-1", "API_CALLS", {
+      usageCount: 0,
+      monthlyLimit: LIMIT,
+    });
+
+    const service = new FeatureGateService({
+      repository: mockRepo,
+      cacheService: new CacheService(),
+      experimentService: new ExperimentService(),
+    });
+
+    // On lance 10 requêtes alors que la limite est 3
+    const results = await Promise.allSettled(
+      Array.from({ length: 10 }, (_, i) =>
+        service.consume("org-1", "API_CALLS", 1),
+      ),
+    );
+
+    const succeeded = results.filter(
+      (r) => r.status === "fulfilled" && r.value.success,
+    ).length;
+    const failed = results.filter((r) => r.status === "rejected").length;
+
+    // Au maximum 3 doivent réussir (le reste doit être rejeté par LimitReachedError)
+    expect(succeeded).toBeLessThanOrEqual(LIMIT);
+    expect(succeeded + failed).toBe(10);
   });
 });
 

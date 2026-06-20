@@ -14,8 +14,16 @@ vi.mock('@/lib/auth', () => ({
   auth: mockAuth,
 }))
 
+const mockTxUserCreate = vi.fn()
+const mockTxOrgCreate = vi.fn()
 vi.mock('@/lib/prisma', () => ({
   prisma: {
+    $transaction: vi.fn(async (cb: any) => {
+      return cb({
+        user: { create: mockTxUserCreate },
+        organization: { create: mockTxOrgCreate },
+      })
+    }),
     user: {
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -41,7 +49,7 @@ vi.mock('bcrypt', () => ({
 vi.mock('@/lib/auth/password', () => ({
   hashPassword: vi.fn().mockResolvedValue('$2b$12$hashedpassword'),
   verifyPassword: vi.fn(),
-  validatePasswordStrength: vi.fn().mockReturnValue({ valid: true, errors: [] }),
+  validatePasswordStrength: vi.fn().mockReturnValue({ valid: true, errors: [], warnings: [] }),
 }))
 
 vi.mock('@/lib/crypto', () => ({
@@ -72,6 +80,7 @@ vi.mock('@omnysync/core/services/two-factor', () => ({
   verifyTotpCode: vi.fn().mockResolvedValue({ valid: true }),
   getTwoFactorStatus: vi.fn(),
   disableTwoFactor: vi.fn(),
+  pendingSecrets: new Map(),
 }))
 
 vi.mock('otpauth', () => ({
@@ -97,13 +106,13 @@ describe('POST /api/auth/register (mocked)', () => {
   it('should register a new user successfully', async () => {
     const { prisma } = await import('@/lib/prisma')
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
-    vi.mocked(prisma.user.create).mockResolvedValue({
+    mockTxUserCreate.mockResolvedValue({
       id: 'user-1',
       name: 'New User',
       email: 'new@test.com',
       createdAt: new Date(),
     } as any)
-    vi.mocked(prisma.organization.create).mockResolvedValue({} as any)
+    mockTxOrgCreate.mockResolvedValue({} as any)
 
     const { POST } = await import('@/app/api/auth/register/route')
     const request = new NextRequest('http://localhost:3000/api/auth/register', {

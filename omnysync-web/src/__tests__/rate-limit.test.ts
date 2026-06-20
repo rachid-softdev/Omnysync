@@ -43,6 +43,12 @@ vi.mock('@upstash/redis', () => ({
 vi.mock('@/lib/rate-limit', () => ({
   rateLimit: mockInMemRateLimit,
   getClientIp: mockInMemGetClientIp,
+  isValidIp: (ip: string) => {
+    // Real implementation — pure function, pas besoin de mock
+    const ipv4 = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/
+    const ipv6 = /^(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}$/
+    return ipv4.test(ip) || ipv6.test(ip)
+  },
   RATE_LIMIT_WINDOW_MS: 60 * 1000,
   RATE_LIMIT_MAX: 30,
   createRateLimitResponse: vi.fn(),
@@ -561,7 +567,7 @@ describe('rateLimitRedisWithConfig (per-endpoint)', () => {
       expect(mockInMemRateLimit).toHaveBeenCalled()
     })
 
-    it("retourne { allowed: true } quand fallbackRequest n'est PAS fourni (fail open)", async () => {
+    it("retourne { allowed: false } quand fallbackRequest n'est PAS fourni (fail closed)", async () => {
       const { rateLimitRedisWithConfig } = await importRateLimitModule()
 
       const result = await rateLimitRedisWithConfig('auth:register:192.168.1.1', {
@@ -569,7 +575,8 @@ describe('rateLimitRedisWithConfig (per-endpoint)', () => {
         windowMs: 60 * 60 * 1000,
       })
 
-      expect(result.allowed).toBe(true)
+      expect(result.allowed).toBe(false)
+      expect(result.remainingTime).toBe(60 * 60 * 1000) // windowMs par défaut
       expect(mockInMemRateLimit).not.toHaveBeenCalled()
     })
   })
@@ -601,7 +608,7 @@ describe('rateLimitRedisWithConfig (per-endpoint)', () => {
       expect(mockInMemRateLimit).toHaveBeenCalled()
     })
 
-    it("retourne { allowed: true } (fail open) quand fallbackRequest n'est PAS fourni", async () => {
+    it("retourne { allowed: false } (fail closed) quand fallbackRequest n'est PAS fourni", async () => {
       mockRedisIncr.mockRejectedValue(new Error('Redis timeout'))
       const { rateLimitRedisWithConfig } = await importRateLimitModule()
 
@@ -610,7 +617,8 @@ describe('rateLimitRedisWithConfig (per-endpoint)', () => {
         windowMs: 60 * 60 * 1000,
       })
 
-      expect(result.allowed).toBe(true)
+      expect(result.allowed).toBe(false)
+      expect(result.remainingTime).toBe(60 * 60 * 1000) // windowMs = fail-closed fallback
     })
   })
 })

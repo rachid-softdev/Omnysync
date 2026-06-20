@@ -49,7 +49,7 @@ export async function GET() {
         connectorName: w.connector?.name,
         type: w.type,
         url: w.url,
-        secret: w.secret,
+        secret: '***',
         isActive: w.isActive,
         createdAt: w.createdAt.toISOString(),
       })),

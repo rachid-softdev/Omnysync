@@ -12,6 +12,7 @@ import {
   checkConnectorLimit,
   checkDocumentLimit,
   getPlanFromPriceId,
+  withQuotaCheck,
 } from '../auth/subscription'
 
 // Mock prisma
@@ -47,7 +48,13 @@ vi.mock('next/server', () => ({
   },
 }))
 
+// Mock next-auth auth() for withQuotaCheck
+vi.mock('@/lib/auth', () => ({
+  auth: vi.fn(),
+}))
+
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 
 // Helper to build mock userOrg lookup response
 function mockUserOrgLookup(planKey: string | null, status: string | null) {
@@ -151,6 +158,22 @@ describe('Subscription Service', () => {
 
       const plan = await getUserPlan('user-123')
       expect(plan).toBe('business')
+    })
+
+    it('should return free when subscription planKey is empty/missing', async () => {
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue({
+        organization: {
+          subscriptions: [
+            {
+              planKey: '',
+              status: 'ACTIVE',
+            },
+          ],
+        },
+      } as any)
+
+      const plan = await getUserPlan('user-123')
+      expect(plan).toBe('free')
     })
   })
 
@@ -527,6 +550,60 @@ describe('Subscription Service', () => {
     it('should return free for unknown price id', () => {
       const plan = getPlanFromPriceId('price_unknown')
       expect(plan).toBe('free')
+    })
+  })
+
+  describe('withQuotaCheck', () => {
+    it('should allow request and delegate to handler when quota available', async () => {
+      vi.mocked(auth).mockResolvedValue({ user: { id: 'user-123' } } as any)
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null) // free plan
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([{ allowed: true, sync_count: 1 }])
+
+      const handler = vi.fn().mockResolvedValue(new Response('ok', { status: 200 }))
+      const request = new Request('http://localhost/test')
+      const result = await withQuotaCheck(request, handler)
+
+      expect(result.status).toBe(200)
+      expect(handler).toHaveBeenCalledWith('user-123')
+    })
+
+    it('should return 401 when user is not authenticated', async () => {
+      vi.mocked(auth).mockResolvedValue(null)
+
+      const handler = vi.fn()
+      const request = new Request('http://localhost/test')
+      const result = await withQuotaCheck(request, handler)
+
+      expect(result.status).toBe(401)
+      expect(handler).not.toHaveBeenCalled()
+    })
+
+    it('should return 403 when quota exceeded', async () => {
+      vi.mocked(auth).mockResolvedValue({ user: { id: 'user-123' } } as any)
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null) // free plan
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([{ allowed: false, sync_count: 0 }])
+
+      const handler = vi.fn()
+      const request = new Request('http://localhost/test')
+      const result = await withQuotaCheck(request, handler)
+
+      expect(result.status).toBe(403)
+      expect(handler).not.toHaveBeenCalled()
+    })
+
+    it('should decrement quota and re-throw when handler fails', async () => {
+      vi.mocked(auth).mockResolvedValue({ user: { id: 'user-123' } } as any)
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null) // free plan
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([{ allowed: true, sync_count: 1 }])
+      vi.mocked(prisma.quotaUsage.updateMany).mockResolvedValue({ count: 1 } as any)
+
+      const testError = new Error('Handler failed')
+      const handler = vi.fn().mockRejectedValue(testError)
+      const request = new Request('http://localhost/test')
+
+      await expect(withQuotaCheck(request, handler)).rejects.toThrow('Handler failed')
+      expect(handler).toHaveBeenCalledWith('user-123')
+      expect(prisma.quotaUsage.updateMany).toHaveBeenCalled()
     })
   })
 })

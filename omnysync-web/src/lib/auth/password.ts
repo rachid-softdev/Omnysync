@@ -30,8 +30,13 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
  * @param password - Le mot de passe à valider
  * @returns { valid: boolean, errors: string[] }
  */
-export function validatePasswordStrength(password: string): { valid: boolean; errors: string[] } {
+export function validatePasswordStrength(password: string): {
+  valid: boolean
+  errors: string[]
+  warnings: string[]
+} {
   const errors: string[] = []
+  const warnings: string[] = []
 
   if (password.length < 8) {
     errors.push('Le mot de passe doit contenir au moins 8 caractères')
@@ -52,11 +57,12 @@ export function validatePasswordStrength(password: string): { valid: boolean; er
   // Le mot de passe est valide même sans caractère spécial
   // mais on peut ajouter une suggestion
   if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    errors.push('Suggestion: ajoutez un caractère spécial pour plus de sécurité')
+    warnings.push('Suggestion: ajoutez un caractère spécial pour plus de sécurité')
   }
 
   return {
     valid: errors.length === 0,
     errors,
+    warnings,
   }
 }

@@ -343,65 +343,74 @@ export async function syncFromDest(
   documentId: string,
   userId: string,
 ): Promise<TwoWaySyncResult> {
-  const document = await prisma.document.findUnique({
-    where: { id: documentId },
-    include: { sourceConnector: true, destConnector: true },
-  });
+  try {
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+      include: { sourceConnector: true, destConnector: true },
+    });
 
-  if (!document || !document.sourceConnector || !document.destConnector) {
+    if (!document || !document.sourceConnector || !document.destConnector) {
+      return {
+        success: false,
+        direction: "none",
+        changesDetected: false,
+        message: "Document not found",
+      };
+    }
+
+    await requireDocumentAccess(documentId, userId);
+
+    // Pour le moment, seulement Notion peut être modifié via API
+    if (document.sourceConnector.type !== "NOTION") {
+      return {
+        success: false,
+        direction: "none",
+        changesDetected: false,
+        message: "Reverse sync not supported for this source type",
+      };
+    }
+
+    const destContent = await fetchRemoteContent(documentId);
+    if (!destContent) {
+      return {
+        success: false,
+        direction: "none",
+        changesDetected: false,
+        message: "Destination content not available",
+      };
+    }
+
+    // Mettre à jour le document local avec le contenu distant
+    await prisma.document.update({
+      where: { id: documentId },
+      data: {
+        content: destContent.content,
+        htmlContent: destContent.content,
+        title: destContent.title,
+        lastSyncedAt: new Date(),
+      },
+    });
+
+    await auditSync.completed(document.organizationId, documentId, {
+      sourceType: document.sourceConnector.type,
+      destType: document.destConnector.type,
+      direction: "dest-to-source",
+    });
+
+    return {
+      success: true,
+      direction: "dest-to-source",
+      changesDetected: true,
+      message: "Changes synced from destination to source",
+    };
+  } catch (error) {
     return {
       success: false,
       direction: "none",
       changesDetected: false,
-      message: "Document not found",
+      message: sanitizeErrorMessage(error),
     };
   }
-
-  await requireDocumentAccess(documentId, userId);
-
-  // Pour le moment, seulement Notion peut être modifié via API
-  if (document.sourceConnector.type !== "NOTION") {
-    return {
-      success: false,
-      direction: "none",
-      changesDetected: false,
-      message: "Reverse sync not supported for this source type",
-    };
-  }
-
-  const destContent = await fetchRemoteContent(documentId);
-  if (!destContent) {
-    return {
-      success: false,
-      direction: "none",
-      changesDetected: false,
-      message: "Destination content not available",
-    };
-  }
-
-  // Mettre à jour le document local avec le contenu distant
-  await prisma.document.update({
-    where: { id: documentId },
-    data: {
-      content: destContent.content,
-      htmlContent: destContent.content,
-      title: destContent.title,
-      lastSyncedAt: new Date(),
-    },
-  });
-
-  await auditSync.completed(document.organizationId, documentId, {
-    sourceType: document.sourceConnector.type,
-    destType: document.destConnector.type,
-    direction: "dest-to-source",
-  });
-
-  return {
-    success: true,
-    direction: "dest-to-source",
-    changesDetected: true,
-    message: "Changes synced from destination to source",
-  };
 }
 
 /**

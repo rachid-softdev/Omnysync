@@ -70,6 +70,7 @@ import {
   useFeature,
   useLimit,
   FeatureGuard,
+  UsageBar,
 } from "../useEntitlements";
 
 // ============================================================================
@@ -368,6 +369,390 @@ describe("useEntitlements", () => {
 
       // When fallback is null, <>{null}</> renders a Fragment with null child
       expect(result).toBeTruthy();
+    });
+  });
+
+  // ==========================================================================
+  // UsageBar Component
+  // ==========================================================================
+
+  describe("UsageBar", () => {
+    it("should render null for unlimited features (limit === null)", () => {
+      const data: EntitlementsResponse = {
+        plan: "pro",
+        features: {},
+        limits: { UNLIMITED_FEATURE: null },
+        usage: { UNLIMITED_FEATURE: 50 },
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({ feature: "UNLIMITED_FEATURE" });
+      expect(result).toBeNull();
+    });
+
+    it("should render with correct percentage width", () => {
+      const data: EntitlementsResponse = {
+        plan: "pro",
+        features: {},
+        limits: { MAX_SYNCS: 100 },
+        usage: { MAX_SYNCS: 25 },
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({ feature: "MAX_SYNCS" });
+
+      // Should be a div element
+      expect(result).toBeTruthy();
+      expect(result.type).toBe("div");
+
+      // Top row: first child div
+      const topRow = result.props.children[0];
+      expect(topRow.type).toBe("div");
+      expect(topRow.props.className).toBe("flex justify-between text-sm mb-1");
+
+      // First span: "25 / 100"
+      const labelSpan = topRow.props.children[0];
+      expect(labelSpan.type).toBe("span");
+      const labelText = Array.isArray(labelSpan.props.children)
+        ? labelSpan.props.children.join("")
+        : labelSpan.props.children;
+      expect(labelText).toBe("25 / 100");
+
+      // Second span: percentage
+      const percentageSpan = topRow.props.children[1];
+      expect(percentageSpan.type).toBe("span");
+      const pctText = Array.isArray(percentageSpan.props.children)
+        ? percentageSpan.props.children.join("")
+        : percentageSpan.props.children;
+      expect(pctText).toBe("25%");
+
+      // Bar container: second child div
+      const barContainer = result.props.children[1];
+      expect(barContainer.type).toBe("div");
+
+      // Bar fill: inner div
+      const barFill = barContainer.props.children;
+      expect(barFill.type).toBe("div");
+      expect(barFill.props.style).toEqual({ width: "25%" });
+      expect(barFill.props.className).toContain("bg-blue-500");
+    });
+
+    it("should render label when provided (used / limit text)", () => {
+      const data: EntitlementsResponse = {
+        plan: "pro",
+        features: {},
+        limits: { MAX_DOCS: 50 },
+        usage: { MAX_DOCS: 10 },
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({ feature: "MAX_DOCS" });
+
+      const topRow = result.props.children[0];
+      const labelSpan = topRow.props.children[0];
+      const labelText = Array.isArray(labelSpan.props.children)
+        ? labelSpan.props.children.join("")
+        : labelSpan.props.children;
+
+      // Should display "used / limit" format
+      expect(labelText).toBe("10 / 50");
+    });
+
+    it("should show warning color (bg-blue-500) when usage <= 80%", () => {
+      const data: EntitlementsResponse = {
+        plan: "pro",
+        features: {},
+        limits: { MAX_SYNCS: 100 },
+        usage: { MAX_SYNCS: 80 }, // 80% - boundary
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({ feature: "MAX_SYNCS" });
+      const barFill = result.props.children[1].props.children;
+
+      // At 80%, remaining = 20 > 0 so not at limit → blue
+      expect(barFill.props.className).toContain("bg-blue-500");
+      expect(barFill.props.className).not.toContain("bg-red-500");
+    });
+
+    it("should show error color (bg-red-500) when usage > 100% (over limit)", () => {
+      const data: EntitlementsResponse = {
+        plan: "pro",
+        features: {},
+        limits: { MAX_SYNCS: 100 },
+        usage: { MAX_SYNCS: 150 }, // 150% - over limit
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({ feature: "MAX_SYNCS" });
+      const barFill = result.props.children[1].props.children;
+
+      // Over limit → remaining = 0 → isAtLimit → red
+      expect(barFill.props.className).toContain("bg-red-500");
+    });
+
+    it("should show error color when usage exactly equals 100%", () => {
+      const data: EntitlementsResponse = {
+        plan: "pro",
+        features: {},
+        limits: { MAX_SYNCS: 100 },
+        usage: { MAX_SYNCS: 100 }, // 100% - at limit
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({ feature: "MAX_SYNCS" });
+      const barFill = result.props.children[1].props.children;
+
+      // At 100%, remaining = 0 → isAtLimit → red
+      expect(barFill.props.className).toContain("bg-red-500");
+    });
+
+    it("should show red color when usage just exceeds limit (e.g., 101%)", () => {
+      const data: EntitlementsResponse = {
+        plan: "pro",
+        features: {},
+        limits: { MAX_SYNCS: 100 },
+        usage: { MAX_SYNCS: 101 }, // 101%
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({ feature: "MAX_SYNCS" });
+      const barFill = result.props.children[1].props.children;
+
+      expect(barFill.props.className).toContain("bg-red-500");
+    });
+
+    it("should clamp bar width to 100% when usage exceeds max", () => {
+      const data: EntitlementsResponse = {
+        plan: "pro",
+        features: {},
+        limits: { MAX_SYNCS: 100 },
+        usage: { MAX_SYNCS: 200 }, // 200% of limit
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({ feature: "MAX_SYNCS" });
+      const barFill = result.props.children[1].props.children;
+
+      // percentage = Math.round(200/100 * 100) = 200
+      // style width = Math.min(200, 100) = 100%
+      expect(barFill.props.style).toEqual({ width: "100%" });
+    });
+
+    it("should render 0% when usage is 0", () => {
+      const data: EntitlementsResponse = {
+        plan: "pro",
+        features: {},
+        limits: { MAX_SYNCS: 100 },
+        usage: { MAX_SYNCS: 0 },
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({ feature: "MAX_SYNCS" });
+
+      // Top row should show 0 / 100
+      const topRow = result.props.children[0];
+      const labelSpan = topRow.props.children[0];
+      const labelText = Array.isArray(labelSpan.props.children)
+        ? labelSpan.props.children.join("")
+        : labelSpan.props.children;
+      expect(labelText).toBe("0 / 100");
+
+      // Percentage should show 0%
+      const percentageSpan = topRow.props.children[1];
+      const pctText = Array.isArray(percentageSpan.props.children)
+        ? percentageSpan.props.children.join("")
+        : percentageSpan.props.children;
+      expect(pctText).toBe("0%");
+
+      // Bar fill should have 0% width
+      const barFill = result.props.children[1].props.children;
+      expect(barFill.props.style).toEqual({ width: "0%" });
+    });
+
+    it("should render with correct ARIA-related structure (percentage visible text)", () => {
+      // This component uses visible percentage text rather than ARIA attributes.
+      // Verify the percentage text is screen-reader friendly.
+      const data: EntitlementsResponse = {
+        plan: "pro",
+        features: {},
+        limits: { MAX_SYNCS: 100 },
+        usage: { MAX_SYNCS: 42 },
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({ feature: "MAX_SYNCS" });
+
+      const topRow = result.props.children[0];
+      const percentageSpan = topRow.props.children[1];
+
+      // Verify the percentage text is human-readable
+      const pctText = Array.isArray(percentageSpan.props.children)
+        ? percentageSpan.props.children.join("")
+        : percentageSpan.props.children;
+      expect(pctText).toBe("42%");
+
+      // Verify bar fill has a style-based width (accessible via DOM)
+      const barFill = result.props.children[1].props.children;
+      expect(barFill.props.style).toEqual({ width: "42%" });
+    });
+
+    it("should handle undefined className gracefully (defaults to empty string)", () => {
+      const data: EntitlementsResponse = {
+        plan: "pro",
+        features: {},
+        limits: { MAX_SYNCS: 50 },
+        usage: { MAX_SYNCS: 10 },
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({
+        feature: "MAX_SYNCS",
+        // className not provided
+      });
+
+      expect(result.props.className).toBe("");
+    });
+
+    it("should render with custom className", () => {
+      const data: EntitlementsResponse = {
+        plan: "pro",
+        features: {},
+        limits: { MAX_SYNCS: 50 },
+        usage: { MAX_SYNCS: 10 },
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({
+        feature: "MAX_SYNCS",
+        className: "my-custom-class",
+      });
+
+      expect(result.props.className).toBe("my-custom-class");
+    });
+
+    it("should not show upgrade link when showUpgradeOnLimit is false and at limit", () => {
+      const data: EntitlementsResponse = {
+        plan: "free",
+        features: {},
+        limits: { MAX_SYNCS: 10 },
+        usage: { MAX_SYNCS: 10 }, // at limit
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({ feature: "MAX_SYNCS" });
+
+      // The third child is the boolean false from the conditional
+      expect(result.props.children.length).toBe(3);
+      expect(result.props.children[2]).toBe(false);
+    });
+
+    it("should show upgrade link when showUpgradeOnLimit is true and at limit", () => {
+      const data: EntitlementsResponse = {
+        plan: "free",
+        features: {},
+        limits: { MAX_SYNCS: 10 },
+        usage: { MAX_SYNCS: 10 }, // at limit
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({
+        feature: "MAX_SYNCS",
+        showUpgradeOnLimit: true,
+      });
+
+      // Three children: top row, bar container, and upgrade link
+      expect(result.props.children.length).toBe(3);
+
+      // Third child is the upgrade link
+      const upgradeLink = result.props.children[2];
+      expect(upgradeLink.type).toBe("a");
+      expect(upgradeLink.props.href).toBe("/billing/upgrade");
+      expect(upgradeLink.props.children).toBe("Upgrade to get more");
+    });
+
+    it("should not show upgrade link when showUpgradeOnLimit is true but NOT at limit", () => {
+      const data: EntitlementsResponse = {
+        plan: "free",
+        features: {},
+        limits: { MAX_SYNCS: 10 },
+        usage: { MAX_SYNCS: 5 }, // under limit
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({
+        feature: "MAX_SYNCS",
+        showUpgradeOnLimit: true,
+      });
+
+      // The third child is the boolean false from the conditional
+      expect(result.props.children.length).toBe(3);
+      expect(result.props.children[2]).toBe(false);
+    });
+
+    it("should handle small usage values correctly (used=1, limit=1000)", () => {
+      const data: EntitlementsResponse = {
+        plan: "pro",
+        features: {},
+        limits: { MAX_SYNCS: 1000 },
+        usage: { MAX_SYNCS: 1 },
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({ feature: "MAX_SYNCS" });
+
+      const topRow = result.props.children[0];
+      const percentageSpan = topRow.props.children[1];
+      const pctText = Array.isArray(percentageSpan.props.children)
+        ? percentageSpan.props.children.join("")
+        : percentageSpan.props.children;
+
+      // Math.round(1/1000 * 100) = Math.round(0.1) = 0
+      expect(pctText).toBe("0%");
+
+      // Bar fill: 0% width
+      const barFill = result.props.children[1].props.children;
+      expect(barFill.props.style).toEqual({ width: "0%" });
+    });
+
+    it("should handle exactly 1% usage", () => {
+      const data: EntitlementsResponse = {
+        plan: "pro",
+        features: {},
+        limits: { MAX_SYNCS: 200 },
+        usage: { MAX_SYNCS: 2 },
+        resetAt: {},
+      };
+      setupDefaultMocks(data);
+
+      const result = UsageBar({ feature: "MAX_SYNCS" });
+
+      const percentageSpan = result.props.children[0].props.children[1];
+      const pctText = Array.isArray(percentageSpan.props.children)
+        ? percentageSpan.props.children.join("")
+        : percentageSpan.props.children;
+
+      // Math.round(2/200 * 100) = Math.round(1) = 1
+      expect(pctText).toBe("1%");
+
+      const barFill = result.props.children[1].props.children;
+      expect(barFill.props.style).toEqual({ width: "1%" });
     });
   });
 });

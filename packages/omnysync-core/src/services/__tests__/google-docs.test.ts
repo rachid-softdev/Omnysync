@@ -189,4 +189,115 @@ describe("Google Docs Connector", () => {
       });
     });
   });
+
+  describe("getGoogleDocContent — edge cases", () => {
+    it("should handle body with no content array (null/undefined)", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        title: "Empty Doc",
+        body: {},
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      expect(result.id).toBe("doc-1");
+      expect(result.title).toBe("Empty Doc");
+      expect(result.content).toBe("");
+    });
+
+    it("should handle body.content as empty array", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        title: "Empty Doc",
+        body: { content: [] },
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      expect(result.content).toBe("");
+    });
+
+    it("should handle missing title (falls back to Untitled)", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        body: {
+          content: [
+            {
+              paragraph: {
+                elements: [{ textRun: { content: "Hi" } }],
+              },
+            },
+          ],
+        },
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      expect(result.title).toBe("Untitled");
+      expect(result.content).toContain("Hi");
+    });
+
+    it("should handle paragraph with no elements array", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        title: "Test",
+        body: {
+          content: [{ paragraph: {} }],
+        },
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      expect(result.title).toBe("Test");
+      expect(result.content).toBe("\n");
+    });
+
+    it("should handle element with no textRun", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({
+        documentId: "doc-1",
+        title: "Test",
+        body: {
+          content: [
+            {
+              paragraph: {
+                elements: [{ someOtherField: "value" }],
+              },
+            },
+          ],
+        },
+      } as any);
+
+      const result = await getGoogleDocContent("doc-1", accessToken);
+
+      expect(result.content).toBe("\n");
+    });
+
+    it("should handle fetchWithRetry rejection (API error)", async () => {
+      vi.mocked(fetchWithRetry).mockRejectedValue(
+        new Error("Google API error"),
+      );
+
+      await expect(getGoogleDocContent("doc-1", accessToken)).rejects.toThrow(
+        "Google API error",
+      );
+    });
+  });
+
+  describe("listGoogleDocs — edge cases", () => {
+    it("should return empty list when no files found", async () => {
+      vi.mocked(fetchWithRetry).mockResolvedValue({ files: [] } as any);
+
+      const docs = await listGoogleDocs(accessToken);
+
+      expect(docs).toEqual([]);
+    });
+
+    it("should handle fetchWithRetry rejection", async () => {
+      vi.mocked(fetchWithRetry).mockRejectedValue(new Error("Network error"));
+
+      await expect(listGoogleDocs(accessToken)).rejects.toThrow(
+        "Network error",
+      );
+    });
+  });
 });

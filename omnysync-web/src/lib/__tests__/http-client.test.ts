@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { fetchWithTimeout, fetchWithRetry } from '../http-client'
 
@@ -129,6 +128,48 @@ describe('fetchWithTimeout', () => {
     global.fetch = vi.fn().mockRejectedValue(abortError)
 
     await expect(fetchWithTimeout('http://example.com/api', {}, 100)).rejects.toThrow('Aborted')
+  })
+
+  it('handles invalid URLs', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
+
+    await expect(fetchWithTimeout('not-a-valid-url')).rejects.toThrow(TypeError)
+  })
+
+  it('handles response JSON parsing errors', async () => {
+    const mockResponse = {
+      ok: true,
+      json: vi.fn().mockRejectedValue(new SyntaxError('Unexpected token in JSON')),
+    }
+    global.fetch = vi.fn().mockResolvedValue(mockResponse)
+
+    await expect(fetchWithTimeout('http://example.com/api')).rejects.toThrow(SyntaxError)
+  })
+
+  it('handles empty response body', async () => {
+    const mockResponse = {
+      ok: true,
+      json: vi.fn().mockRejectedValue(new SyntaxError('Unexpected end of JSON input')),
+    }
+    global.fetch = vi.fn().mockResolvedValue(mockResponse)
+
+    await expect(fetchWithTimeout('http://example.com/api')).rejects.toThrow(
+      'Unexpected end of JSON input'
+    )
+  })
+
+  it('clears timeout in finally block', async () => {
+    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout')
+    const mockResponse = {
+      ok: true,
+      json: vi.fn().mockResolvedValue({ data: 'test' }),
+    }
+    global.fetch = vi.fn().mockResolvedValue(mockResponse)
+
+    await fetchWithTimeout('http://example.com/api')
+
+    expect(clearTimeoutSpy).toHaveBeenCalled()
+    clearTimeoutSpy.mockRestore()
   })
 })
 
@@ -334,4 +375,38 @@ describe('fetchWithRetry', () => {
     expect(result).toEqual(mockData)
     expect(global.fetch).toHaveBeenCalledTimes(2)
   }, 10000)
+
+  it('logs retry attempts with exponential backoff', async () => {
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    global.fetch = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Network error'))
+      .mockRejectedValueOnce(new Error('Network error'))
+      .mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ success: true }),
+      })
+
+    await fetchWithRetry('http://example.com/api', {}, 3)
+
+    expect(consoleLogSpy).toHaveBeenCalledTimes(2)
+    expect(consoleLogSpy).toHaveBeenNthCalledWith(1, 'Retry 1/3 after 1000ms')
+    expect(consoleLogSpy).toHaveBeenNthCalledWith(2, 'Retry 2/3 after 2000ms')
+
+    consoleLogSpy.mockRestore()
+  }, 10000)
+
+  it('attempts once with 0 maxRetries', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error('Network error'))
+
+    await expect(fetchWithRetry('http://example.com/api', {}, 0)).rejects.toThrow(undefined)
+    expect(global.fetch).toHaveBeenCalledTimes(0)
+  })
+
+  it('attempts once with 1 maxRetry', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error('Network error'))
+
+    await expect(fetchWithRetry('http://example.com/api', {}, 1)).rejects.toThrow('Network error')
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+  })
 })

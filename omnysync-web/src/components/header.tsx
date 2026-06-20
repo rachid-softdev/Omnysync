@@ -16,17 +16,22 @@ export function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-3 bg-background/80 backdrop-blur-sm border-b border-border">
-      <Link href="/" className="text-xl font-bold">
+      <Link href="/" className="text-xl font-bold" aria-label="Omnysync home">
         Omnysync
       </Link>
       {isHome && (
         <div className="hidden md:flex items-center gap-8">
-          <Link href="#features" className="text-sm text-muted-foreground hover:text-foreground">
+          <Link
+            href="#features"
+            className="text-sm text-muted-foreground hover:text-foreground"
+            aria-label={t('nav_features')}
+          >
             {t('nav_features')}
           </Link>
           <Link
             href="#how-it-works"
             className="text-sm text-muted-foreground hover:text-foreground"
+            aria-label={t('nav_how_it_works')}
           >
             {t('nav_how_it_works')}
           </Link>

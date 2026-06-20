@@ -4,6 +4,7 @@
 import { prisma } from "../prisma";
 import { sendEmail } from "../email";
 import { randomBytes } from "crypto";
+import { sanitizeErrorMessage } from "./sanitize";
 
 const VERIFICATION_TOKEN_EXPIRY_DAYS = 7;
 
@@ -64,7 +65,10 @@ export async function sendVerificationEmail(
 
     return { success: true };
   } catch (error) {
-    console.error("Failed to send verification email:", error);
+    console.error(
+      "Failed to send verification email:",
+      sanitizeErrorMessage(error),
+    );
     return { success: false, error: "Échec de l'envoi de l'email" };
   }
 }

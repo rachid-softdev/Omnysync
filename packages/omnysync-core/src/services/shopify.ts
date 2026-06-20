@@ -112,6 +112,9 @@ export async function testShopifyConnection(
     await client.getBlogs();
     return { success: true };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }

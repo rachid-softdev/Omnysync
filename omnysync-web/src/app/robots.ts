@@ -15,13 +15,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         allow: ['/pricing', '/blog', '/blog/'],
       },
-      // Sitemap location
-      {
-        userAgent: '*',
-        disallow: '/',
-      },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
-    host: baseUrl,
   }
 }

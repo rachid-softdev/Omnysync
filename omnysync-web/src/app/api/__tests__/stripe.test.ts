@@ -43,6 +43,18 @@ vi.mock('stripe', () => ({
   }),
 }))
 
+vi.mock('@prisma/client', () => ({
+  Prisma: {
+    PrismaClientKnownRequestError: class extends Error {
+      code: string
+      constructor(message: string, meta: { code: string }) {
+        super(message)
+        this.code = meta.code
+      }
+    },
+  },
+}))
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     webhookEvent: {
@@ -84,6 +96,7 @@ vi.mock('@/lib/api-error', () => ({
 import { prisma } from '@/lib/prisma'
 import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
 import { apiError } from '@/lib/api-error'
+import { Prisma } from '@prisma/client'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -448,11 +461,12 @@ describe('POST /api/stripe/webhook', () => {
       },
     })
 
-    // Event déjà traité
-    vi.mocked(prisma.webhookEvent.findUnique).mockResolvedValue({
-      id: 'existing',
-      eventId,
-    } as any)
+    // Simulate P2002 unique constraint violation (event already processed)
+    const P2002Error = new (vi.mocked(Prisma).PrismaClientKnownRequestError)(
+      'Unique constraint failed',
+      { code: 'P2002' }
+    )
+    vi.mocked(prisma.webhookEvent.create).mockRejectedValue(P2002Error)
 
     const { POST } = await import('@/app/api/stripe/webhook/route')
     const response = await POST(makeWebhookRequest(JSON.stringify({})))
@@ -465,7 +479,6 @@ describe('POST /api/stripe/webhook', () => {
     // Aucun traitement métier
     expect(prisma.subscription.upsert).not.toHaveBeenCalled()
     expect(prisma.subscription.update).not.toHaveBeenCalled()
-    expect(prisma.webhookEvent.create).not.toHaveBeenCalled()
   })
 
   // ==========================================================================
@@ -484,16 +497,18 @@ describe('POST /api/stripe/webhook', () => {
       },
     })
 
-    // La recherche d'org est OK, mais subscription.upsert échoue
     vi.mocked(prisma.organization.findFirst).mockResolvedValue({
       id: 'org-1',
     } as any)
 
     vi.mocked(prisma.subscription.upsert).mockRejectedValue(new Error('DB connection lost'))
+    vi.mocked(prisma.webhookEvent.create).mockResolvedValue({} as any)
 
     const { POST } = await import('@/app/api/stripe/webhook/route')
     const response = await POST(makeWebhookRequest(JSON.stringify({})))
 
     expect(response.status).toBe(500)
+    const body = await response.json()
+    expect(body.error).toBe('Handler error')
   })
 })

@@ -1,14 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 import { getUserOrgId } from '@/lib/auth/org'
 import { encrypt } from '@/lib/crypto'
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
-  const state = req.nextUrl.searchParams.get('state')
+  const stateParam = req.nextUrl.searchParams.get('state')
 
-  if (!code || !state) {
+  if (!code || !stateParam) {
     return NextResponse.redirect(new URL('/dashboard/connectors?error=missing_params', req.url))
+  }
+
+  // 🔒 Verify the OAuth state: decode & validate nonce + ensure the caller is authenticated
+  let userId: string
+  try {
+    const decoded = JSON.parse(Buffer.from(stateParam, 'base64url').toString())
+    if (!decoded.userId || !decoded.nonce) {
+      throw new Error('Invalid state payload')
+    }
+    userId = decoded.userId
+
+    // Verify that the user behind this callback is the same one who initiated the flow
+    const session = await auth()
+    if (!session?.user?.id || session.user.id !== userId) {
+      return NextResponse.redirect(new URL('/auth/signin', req.url))
+    }
+  } catch {
+    return NextResponse.redirect(new URL('/dashboard/connectors?error=invalid_state', req.url))
   }
 
   const clientId = process.env.NOTION_CLIENT_ID
@@ -41,11 +60,11 @@ export async function GET(req: NextRequest) {
   }
 
   const tokens = await tokenResponse.json()
-  const orgId = await getUserOrgId(state)
+  const orgId = await getUserOrgId(userId)
 
   // Save or update connector
   const existing = await prisma.connector.findFirst({
-    where: { userId: state, type: 'NOTION' },
+    where: { userId, type: 'NOTION' },
   })
 
   if (existing) {
@@ -59,7 +78,7 @@ export async function GET(req: NextRequest) {
   } else {
     await prisma.connector.create({
       data: {
-        userId: state,
+        userId,
         organizationId: orgId,
         type: 'NOTION',
         name: 'Notion',

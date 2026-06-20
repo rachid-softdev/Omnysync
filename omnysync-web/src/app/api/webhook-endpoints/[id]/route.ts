@@ -56,7 +56,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         type: webhook.type,
         url: webhook.url,
         isActive: webhook.isActive,
-        secret: webhook.secret ? '***' : null,
+        secret: '***',
         createdAt: webhook.createdAt.toISOString(),
         updatedAt: webhook.updatedAt.toISOString(),
       },

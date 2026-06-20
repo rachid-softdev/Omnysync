@@ -212,5 +212,10 @@
   "UI_SIGN_IN": "Connexion",
   "UI_GET_STARTED": "Commencer",
   "UI_REDIRECTING": "Redirection...",
-  "UI_SKIP_TO_CONTENT": "Aller au contenu"
+  "UI_SKIP_TO_CONTENT": "Aller au contenu",
+  "error.title": "Une erreur est survenue",
+  "error.description": "Nous avons rencontré un problème inattendu. Veuillez réessayer.",
+  "error.retry": "Réessayer",
+  "error.home": "Accueil",
+  "loading.default": "Chargement..."
 }

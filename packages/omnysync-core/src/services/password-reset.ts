@@ -19,6 +19,11 @@ const globalResetRateLimit = new Map<
 const GLOBAL_RATE_LIMIT_MAX = 5;
 const GLOBAL_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 
+/** Exposed for tests — reset the in-memory rate limit store */
+export function resetGlobalResetRateLimit(): void {
+  globalResetRateLimit.clear();
+}
+
 /**
  * Génère un token de réinitialisation
  */
@@ -171,7 +176,10 @@ export async function resetPassword(
     },
   });
 
-  // Invalider toutes les sessions existantes (sauf celle en cours)
+  // Invalider toutes les sessions existantes.
+  // Note: la session courante n'est pas exclue car l'ID de session n'est pas transmis à cette fonction.
+  // En production, toutes les sessions de l'utilisateur sont invalidées après un reset de mot de passe,
+  // ce qui force une reconnexion sur tous les appareils.
   await prisma.session.deleteMany({
     where: { userId: validation.userId },
   });

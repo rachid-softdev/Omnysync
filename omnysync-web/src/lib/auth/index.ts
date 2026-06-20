@@ -30,7 +30,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         })
 
         if (!user || !user.password) {
-          // User doesn't exist or used OAuth (no password)
+          // 🔒 Constant-time: always run bcrypt compare to prevent email
+          // enumeration via timing attack. The dummy hash will never match.
+          await verifyPassword(credentials.password as string, '$2b$10$' + 'x'.repeat(53))
           return null
         }
 
@@ -86,17 +88,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
       }
 
-      // On-access password invalidation: lightweight (single indexed field query)
-      // Without this, a compromised JWT remains valid after password change (7 days maxAge).
+      // On-access validation: single query for password change + account status
+      // Without this, a compromised JWT remains valid after password change or session revocation.
       // DB session deletion (in resetPassword) has NO effect on JWT strategy tokens.
-      if (token.passwordChangedAt && trigger !== 'update') {
-        const pwChanged = await prisma.user.findUnique({
+      if (trigger !== 'update') {
+        const userStatus = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { passwordChangedAt: true },
+          select: { passwordChangedAt: true, disabledAt: true, deletedAt: true },
         })
-        if (pwChanged?.passwordChangedAt?.getTime() > (token.passwordChangedAt as number)) {
-          // Password was changed after this JWT was issued — invalidate
-          return { ...token, exp: Math.floor(Date.now() / 1000) - 1 }
+
+        if (userStatus) {
+          // Password was changed after this JWT was issued → invalidate
+          if (
+            token.passwordChangedAt &&
+            userStatus.passwordChangedAt?.getTime() > (token.passwordChangedAt as number)
+          ) {
+            return { ...token, exp: Math.floor(Date.now() / 1000) - 1 }
+          }
+
+          // Account was disabled/deleted after this JWT was issued → invalidate
+          // Uses token.iat (seconds since epoch, set by NextAuth on JWT creation)
+          if (token.iat) {
+            const issuedAt = (token.iat as number) * 1000
+            if (
+              (userStatus.disabledAt && issuedAt < userStatus.disabledAt.getTime()) ||
+              (userStatus.deletedAt && issuedAt < userStatus.deletedAt.getTime())
+            ) {
+              return { ...token, exp: Math.floor(Date.now() / 1000) - 1 }
+            }
+          }
         }
       }
 
@@ -123,17 +143,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async signIn({ user, account }) {
       if (!user?.id) return true
 
-      if (account?.provider === 'credentials') {
-        // Check if user has 2FA enabled
-        const twoFactor = await prisma.twoFactorAuth.findUnique({
-          where: { userId: user.id },
-        })
+      // 🔒 2FA check applies to ALL providers, not just credentials.
+      // Previously only credentials provider was checked, allowing Google OAuth
+      // users with 2FA enabled to bypass the second factor entirely.
+      const twoFactor = await prisma.twoFactorAuth.findUnique({
+        where: { userId: user.id },
+      })
 
-        if (twoFactor) {
-          // Store user ID in session for 2FA verification
-          // Return special URL to trigger 2FA verification
-          return '/auth/2fa-verify?continue=true'
-        }
+      if (twoFactor) {
+        return '/auth/2fa-verify?continue=true'
       }
 
       // Auto-create a "Personal" organization on first sign-in for OAuth

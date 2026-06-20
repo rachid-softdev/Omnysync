@@ -197,6 +197,31 @@ export async function createContentfulEntry(
 }
 
 /**
+ * Récupère une entrée Contentful via l'API Management pour obtenir sa version courante.
+ * Nécessaire pour l'optimistic locking de Contentful (X-Contentful-Version).
+ */
+export async function getContentfulEntry(
+  accessToken: string,
+  spaceId: string,
+  entryId: string,
+): Promise<{ id: string; version: number } | null> {
+  try {
+    const data = await fetchWithRetry<{
+      sys: { id: string; version: number };
+    }>(`${CONTENTFUL_MANAGEMENT}/spaces/${spaceId}/entries/${entryId}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/vnd.contentful.management.v1+json",
+      },
+    });
+
+    return { id: data.sys.id, version: data.sys.version };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Met à jour une entrée existante
  */
 export async function updateContentfulEntry(

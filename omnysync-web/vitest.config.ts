@@ -69,6 +69,24 @@ export default defineConfig({
       'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
       'react-dom/client': path.resolve(__dirname, 'node_modules/react-dom/client.js'),
       'react-dom/server': path.resolve(__dirname, 'node_modules/react-dom/server.js'),
+      // Resolve pnpm-hoisted dependencies (stored in root .pnpm, not in workspace node_modules)
+      // Resolve pnpm-hoisted dependencies (isolated node-linker doesn't hoist to workspace)
+      zod: path.resolve(__dirname, '../node_modules/.pnpm/zod@4.4.3/node_modules/zod'),
+      '@upstash/redis': path.resolve(
+        __dirname,
+        '../node_modules/.pnpm/@upstash+redis@1.38.0/node_modules/@upstash/redis'
+      ),
+      'lucide-react': path.resolve(
+        __dirname,
+        '../node_modules/.pnpm/lucide-react@1.18.0_react@19.2.7/node_modules/lucide-react'
+      ),
+      'next-auth': path.resolve(__dirname, 'node_modules/next-auth'),
+      bcrypt: path.resolve(__dirname, '../node_modules/.pnpm/bcrypt@6.0.0/node_modules/bcrypt'),
+      otpauth: path.resolve(__dirname, '../node_modules/.pnpm/otpauth@9.5.1/node_modules/otpauth'),
+      // Provide a stub for resend (not installed) so tests resolve the import
+      resend: path.resolve(__dirname, 'src/__tests__/__mocks__/resend.ts'),
+      // Provide a stub for server-only (Next.js internal) so tests can resolve it
+      'server-only': path.resolve(__dirname, 'src/__tests__/__mocks__/server-only.ts'),
     },
   },
 })

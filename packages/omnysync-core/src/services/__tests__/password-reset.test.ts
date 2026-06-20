@@ -31,6 +31,7 @@ import {
   validateResetToken,
   resetPassword,
   cleanupExpiredTokens,
+  resetGlobalResetRateLimit,
 } from "../password-reset";
 
 describe("Password Reset Service", () => {
@@ -40,6 +41,7 @@ describe("Password Reset Service", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    resetGlobalResetRateLimit();
   });
 
   describe("createPasswordResetToken", () => {
@@ -120,6 +122,71 @@ describe("Password Reset Service", () => {
 
       expect(result.success).toBe(false);
       expect(result.message).toContain("Trop de demandes");
+    });
+
+    it("should handle Prisma failure when looking up user", async () => {
+      vi.mocked(prisma.user.findUnique).mockRejectedValue(
+        new Error("DB error"),
+      );
+
+      await expect(createPasswordResetToken(email)).rejects.toThrow("DB error");
+    });
+
+    it("should handle Prisma failure when creating token", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: userId,
+        email,
+      } as any);
+      vi.mocked(prisma.passwordReset.count).mockResolvedValue(0);
+      vi.mocked(prisma.passwordReset.create).mockRejectedValue(
+        new Error("DB error"),
+      );
+
+      await expect(createPasswordResetToken(email)).rejects.toThrow("DB error");
+    });
+
+    it("should handle sendEmail failure gracefully", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: userId,
+        email,
+      } as any);
+      vi.mocked(prisma.passwordReset.count).mockResolvedValue(0);
+      vi.mocked(prisma.passwordReset.create).mockResolvedValue({} as any);
+      vi.mocked(sendEmail).mockRejectedValue(new Error("SMTP error"));
+
+      await expect(createPasswordResetToken(email)).rejects.toThrow(
+        "SMTP error",
+      );
+
+      // Reset sendEmail to avoid leaking rejection to subsequent tests
+      vi.mocked(sendEmail).mockResolvedValue(undefined);
+    });
+
+    it("should handle NEXTAUTH_URL being undefined", async () => {
+      const originalUrl = process.env.NEXTAUTH_URL;
+      delete process.env.NEXTAUTH_URL;
+
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: userId,
+        email,
+      } as any);
+      vi.mocked(prisma.passwordReset.count).mockResolvedValue(0);
+      vi.mocked(prisma.passwordReset.create).mockResolvedValue({} as any);
+      // Ensure sendEmail is in default resolved state
+      vi.mocked(sendEmail).mockResolvedValue(undefined);
+
+      try {
+        const result = await createPasswordResetToken(email);
+
+        expect(result.success).toBe(true);
+        expect(sendEmail).toHaveBeenCalledWith(
+          expect.objectContaining({
+            html: expect.stringContaining("undefined/auth/reset-password"),
+          }),
+        );
+      } finally {
+        process.env.NEXTAUTH_URL = originalUrl;
+      }
     });
   });
 
@@ -221,6 +288,106 @@ describe("Password Reset Service", () => {
       expect(result.success).toBe(false);
       expect(result.error).toBe("Token invalide");
     });
+
+    it("should not allow token reuse after password reset", async () => {
+      // First call — token valide
+      vi.mocked(prisma.passwordReset.findUnique).mockResolvedValue({
+        token,
+        userId,
+        usedAt: null,
+        expiresAt: new Date(Date.now() + 3600000),
+        user: { id: userId },
+      } as any);
+      vi.mocked(prisma.user.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.session.deleteMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.passwordReset.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue({
+        organizationId: "org-1",
+      } as any);
+
+      const firstResult = await resetPassword(token, "new-password-123");
+      expect(firstResult.success).toBe(true);
+
+      // Second call — même token, maintenant marqué usedAt
+      vi.mocked(prisma.passwordReset.findUnique).mockResolvedValue({
+        token,
+        userId,
+        usedAt: new Date(), // Déjà utilisé
+        expiresAt: new Date(Date.now() + 3600000),
+        user: { id: userId },
+      } as any);
+
+      const secondResult = await resetPassword(token, "another-password-456");
+      expect(secondResult.success).toBe(false);
+      expect(secondResult.error).toBe("Token déjà utilisé");
+    });
+
+    it("should handle userOrganization.findFirst returning null", async () => {
+      vi.mocked(prisma.passwordReset.findUnique).mockResolvedValue({
+        token,
+        userId,
+        usedAt: null,
+        expiresAt: new Date(Date.now() + 3600000),
+        user: { id: userId },
+      } as any);
+      vi.mocked(prisma.user.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.session.deleteMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.passwordReset.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null);
+
+      const result = await resetPassword(token, "new-password-123");
+
+      expect(result.success).toBe(true);
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            organizationId: "system",
+          }),
+        }),
+      );
+    });
+
+    it("should handle Prisma write failure during user update", async () => {
+      vi.mocked(prisma.passwordReset.findUnique).mockResolvedValue({
+        token,
+        userId,
+        usedAt: null,
+        expiresAt: new Date(Date.now() + 3600000),
+        user: { id: userId },
+      } as any);
+      vi.mocked(prisma.user.update).mockRejectedValue(
+        new Error("DB write failed"),
+      );
+
+      await expect(resetPassword(token, "new-password-123")).rejects.toThrow(
+        "DB write failed",
+      );
+    });
+
+    it("should handle Prisma write failure during token update", async () => {
+      vi.mocked(prisma.passwordReset.findUnique).mockResolvedValue({
+        token,
+        userId,
+        usedAt: null,
+        expiresAt: new Date(Date.now() + 3600000),
+        user: { id: userId },
+      } as any);
+      vi.mocked(prisma.user.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.session.deleteMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.passwordReset.update).mockRejectedValue(
+        new Error("DB write failed"),
+      );
+
+      await expect(resetPassword(token, "new-password-123")).rejects.toThrow(
+        "DB write failed",
+      );
+    });
   });
 
   describe("cleanupExpiredTokens", () => {
@@ -235,6 +402,77 @@ describe("Password Reset Service", () => {
       expect(prisma.passwordReset.deleteMany).toHaveBeenCalledWith({
         where: { expiresAt: { lt: expect.any(Date) } },
       });
+    });
+
+    it("should return 0 when no expired tokens exist", async () => {
+      vi.mocked(prisma.passwordReset.deleteMany).mockResolvedValue({
+        count: 0,
+      } as any);
+
+      const count = await cleanupExpiredTokens();
+
+      expect(count).toBe(0);
+    });
+
+    it("should handle Prisma failure", async () => {
+      vi.mocked(prisma.passwordReset.deleteMany).mockRejectedValue(
+        new Error("DB error"),
+      );
+
+      await expect(cleanupExpiredTokens()).rejects.toThrow("DB error");
+    });
+  });
+
+  describe("Edge cases — rate limit boundaries", () => {
+    it("global rate limit: exactly 5th request should succeed", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: userId,
+        email,
+      } as any);
+      vi.mocked(prisma.passwordReset.count).mockResolvedValue(0);
+      vi.mocked(prisma.passwordReset.create).mockResolvedValue({} as any);
+
+      for (let i = 0; i < 5; i++) {
+        const result = await createPasswordResetToken(email);
+        expect(result.success).toBe(true);
+      }
+    });
+
+    it("per-user rate limit boundary: exactly 3 should succeed, 4th blocked", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: userId,
+        email,
+      } as any);
+      vi.mocked(prisma.passwordReset.count).mockResolvedValue(3); // Already 3 recent resets
+      vi.mocked(prisma.passwordReset.create).mockResolvedValue({} as any);
+
+      const result = await createPasswordResetToken(email);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain("Trop de demandes");
+    });
+
+    it("should reject session deletion failure (fail-closed)", async () => {
+      vi.mocked(prisma.passwordReset.findUnique).mockResolvedValue({
+        token,
+        userId,
+        usedAt: null,
+        expiresAt: new Date(Date.now() + 3600000),
+        user: { id: userId },
+      } as any);
+      vi.mocked(prisma.user.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.session.deleteMany).mockRejectedValue(
+        new Error("DB error"),
+      );
+      vi.mocked(prisma.passwordReset.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue({
+        organizationId: "org-1",
+      } as any);
+
+      // Le code ne catch pas l'erreur de session.deleteMany — elle doit remonter
+      await expect(resetPassword(token, "new-password-123")).rejects.toThrow(
+        "DB error",
+      );
     });
   });
 });

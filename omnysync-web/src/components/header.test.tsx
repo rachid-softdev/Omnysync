@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { Header } from './header'
@@ -56,5 +55,36 @@ describe('Header', () => {
     expect(screen.getByText('Omnysync')).toBeInTheDocument()
     expect(screen.queryByText('Features')).not.toBeInTheDocument()
     expect(screen.queryByText('How it works')).not.toBeInTheDocument()
+  })
+
+  it('renders ThemeToggle component', () => {
+    render(<Header />)
+    expect(screen.getByLabelText('Toggle theme')).toBeInTheDocument()
+  })
+
+  it('has correct link hrefs on home page', () => {
+    render(<Header />)
+    const homeLink = screen.getByLabelText('Omnysync home')
+    expect(homeLink).toHaveAttribute('href', '/')
+
+    const signInLink = screen.getByText('Sign In')
+    expect(signInLink.closest('a')).toHaveAttribute('href', '/auth/signin')
+
+    const getStartedLink = screen.getByText('Get Started')
+    expect(getStartedLink.closest('a')).toHaveAttribute('href', '/auth/signin')
+  })
+
+  it('has correct aria-labels on navigation links', () => {
+    render(<Header />)
+    expect(screen.getByLabelText('Omnysync home')).toBeInTheDocument()
+    expect(screen.getByLabelText('Features')).toBeInTheDocument()
+    expect(screen.getByLabelText('How it works')).toBeInTheDocument()
+  })
+
+  it('renders with proper accessible heading structure', () => {
+    render(<Header />)
+    const header = document.querySelector('header')
+    expect(header).toBeInTheDocument()
+    expect(header?.className).toContain('fixed top-0')
   })
 })

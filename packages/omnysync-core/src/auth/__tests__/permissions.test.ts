@@ -146,7 +146,7 @@ describe("hasPermission", () => {
     expect(mockCache.getOrSet).toHaveBeenCalledWith(
       expect.stringContaining("perm:user-1:org-1:document:read"),
       expect.any(Function),
-      5 * 60 * 1000,
+      30, // 30 secondes — TTL réduit
     );
   });
 });

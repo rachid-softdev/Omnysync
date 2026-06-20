@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { Redis } from '@upstash/redis'
-import { rateLimit as inMemoryRateLimit, getClientIp as getClientIpMemory } from '@/lib/rate-limit'
+import { rateLimit as inMemoryRateLimit, isValidIp } from '@/lib/rate-limit'
 
 export const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute
 export const RATE_LIMIT_MAX = 30 // requests per window
@@ -19,17 +19,29 @@ const redis = process.env.UPSTASH_REDIS_REST_URL
   : null
 
 /**
- * Extract client IP from request headers
+ * Extract client IP from request headers.
+ *
+ * 🔒 Sécurité : valide que l'IP extraite est une adresse IP valide.
+ * Rejette les valeurs forgées dans x-forwarded-for qui permettraient
+ * de bypasser le rate limiting.
  */
 export function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
   const realIp = request.headers.get('x-real-ip')
+  const cfIp = request.headers.get('cf-connecting-ip')
 
   if (forwarded) {
-    return forwarded.split(',')[0]!.trim()
+    const firstIp = forwarded.split(',')[0]!.trim()
+    if (isValidIp(firstIp)) {
+      return firstIp
+    }
+    console.warn(`[RATE-LIMIT-REDIS] Rejet x-forwarded-for invalide: "${firstIp}"`)
   }
 
-  return realIp ?? request.headers.get('cf-connecting-ip') ?? 'unknown'
+  if (realIp && isValidIp(realIp)) return realIp
+  if (cfIp && isValidIp(cfIp)) return cfIp
+
+  return 'unknown'
 }
 
 /**
@@ -122,13 +134,19 @@ export async function rateLimitRedisWithConfig(
 ): Promise<{ allowed: boolean; remainingTime?: number }> {
   if (!redis) {
     if (fallbackRequest) {
-      console.warn(
-        `Redis not configured — per-endpoint rate limit for "${identifier}" using in-memory fallback`
-      )
+      console.warn(`[RATE-LIMIT] Redis not configured — "${identifier}" using in-memory fallback`)
       return inMemoryRateLimit(fallbackRequest)
     }
-    console.warn(`Redis not configured — per-endpoint rate limit for "${identifier}" bypassed`)
-    return { allowed: true }
+    // 🔒 Fail-closed by default when Redis is unavailable and no fallback is provided.
+    // This prevents silent rate-limit bypass. Routes that need rate limiting must
+    // provide a fallbackRequest (typically the original NextRequest) so in-memory
+    // fallback can be used.
+    console.error(
+      `[RATE-LIMIT] ⚠️ CRITICAL: Redis not configured and no fallback request provided — ` +
+        `rate limit for "${identifier}" DENIED (fail-closed). ` +
+        `Set UPSTASH_REDIS_REST_URL or pass a fallbackRequest to use in-memory fallback.`
+    )
+    return { allowed: false, remainingTime: config.windowMs }
   }
 
   const key = `ratelimit:${identifier}`
@@ -156,7 +174,9 @@ export async function rateLimitRedisWithConfig(
       console.warn(`Using in-memory fallback for "${identifier}"`)
       return inMemoryRateLimit(fallbackRequest)
     }
-    return { allowed: true }
+    // 🔒 Fail-closed: si Redis est indisponible ET aucun fallback,
+    // on refuse la requête par défaut pour ne pas bypasser le rate limiting
+    return { allowed: false, remainingTime: config.windowMs }
   }
 }
 

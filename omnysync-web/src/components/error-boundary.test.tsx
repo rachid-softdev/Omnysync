@@ -25,7 +25,7 @@ describe('ErrorBoundary', () => {
         <ThrowError message="Test error!" />
       </ErrorBoundary>
     )
-    expect(screen.getByText('Une erreur est survenue')).toBeInTheDocument()
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument()
   })
 
   it('shows error message in development', () => {
@@ -52,7 +52,7 @@ describe('ErrorBoundary', () => {
   })
 
   it('resets error state then re-catches persistent errors', () => {
-    // When children always throw, clicking Réessayer resets the boundary
+    // When children always throw, clicking retry resets the boundary
     // but the children immediately throw again, re-triggering the fallback
     render(
       <ErrorBoundary>
@@ -61,14 +61,14 @@ describe('ErrorBoundary', () => {
     )
 
     // Confirm we see the error
-    expect(screen.getByText('Une erreur est survenue')).toBeInTheDocument()
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument()
 
     // Click retry - this resets the boundary, but ThrowError always throws
-    fireEvent.click(screen.getByText('Réessayer'))
+    fireEvent.click(screen.getByText('Try again'))
 
     // Error boundary catches the error again, so fallback is still shown
     // This is correct behavior for a component that always throws
-    expect(screen.getByText('Une erreur est survenue')).toBeInTheDocument()
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument()
   })
 })
 

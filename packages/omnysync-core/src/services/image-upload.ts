@@ -22,18 +22,25 @@ function validateImageUrl(url: string): void {
   }
 
   // Bloquer les adresses IP privées
-  const hostname = parsed.hostname.toLowerCase();
+  // Note: Node.js URL.hostname retourne les IPv6 avec crochets → "[fc00::1]"
+  // On strip les crochets pour pouvoir matcher les patterns
+  const hostname = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, "");
   const blockedPatterns = [
+    // IPv4 privées
     /^127\./,
     /^10\./,
     /^172\.(1[6-9]|2\d|3[01])\./,
     /^192\.168\./,
     /^0\./,
-    /^localhost$/,
     /^169\.254\./,
+    // IPv4 localhost
+    /^localhost$/,
+    // IPv6 loopback
     /^::1$/,
-    /^fc00:/,
-    /^fe80:/,
+    // IPv6 Unique Local Addresses (fc00::/7)
+    /^f[cd][0-9a-f]{2}:/i,
+    // IPv6 Link-Local (fe80::/10)
+    /^fe[89ab][0-9a-f]:/i,
   ];
 
   for (const pattern of blockedPatterns) {

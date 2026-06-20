@@ -233,7 +233,7 @@ export async function hasPermission(
       const permissions = rolePermissions[role];
       return permissions.includes(permission);
     },
-    5 * 60 * 1000,
+    30, // 30 secondes max — court TTL pour invalidation rapide après changement de rôle
   );
 }
 

@@ -4,27 +4,15 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { rateLimitRedisWithConfig } from '@/lib/rate-limit-redis'
 import {
   generateTotpSecret,
   setupTwoFactor,
   getTwoFactorStatus,
+  pendingSecrets,
 } from '@omnysync/core/services/two-factor'
 import * as OTPAuth from 'otpauth'
 import { z } from 'zod'
-
-// Stockage temporaire des secrets 2FA en mémoire
-// En production, utiliser Redis ou une session chiffrée
-const pendingSecrets = new Map<string, { secret: string; expiresAt: Date }>()
-// Nettoyer les secrets expirés toutes les 5 minutes
-setInterval(
-  () => {
-    const now = new Date()
-    for (const [key, value] of pendingSecrets) {
-      if (value.expiresAt < now) pendingSecrets.delete(key)
-    }
-  },
-  5 * 60 * 1000
-)
 
 const setupSchema = z.object({
   action: z.enum(['initiate', 'verify', 'cancel']),
@@ -67,6 +55,25 @@ export async function POST(request: NextRequest) {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    // Rate limiting: 10 tentatives par minute par IP
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
+
+    const rateResult = await rateLimitRedisWithConfig(
+      `2fa:setup:${ip}`,
+      { max: 10, windowMs: 60000 },
+      request
+    )
+
+    if (!rateResult.allowed) {
+      return NextResponse.json(
+        { error: 'Trop de tentatives. Réessayez dans une minute.' },
+        { status: 429 }
+      )
     }
 
     const body = await request.json()
@@ -128,8 +135,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Configurer le 2FA avec le vrai secret vérifié
+      // Le nettoyage de pendingSecrets est géré par setupTwoFactor (finally)
       const result = await setupTwoFactor(session.user.id, pending.secret)
-      pendingSecrets.delete(session.user.id) // Nettoyer
 
       if (!result.success) {
         return NextResponse.json({ error: result.error }, { status: 500 })
