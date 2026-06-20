@@ -49,7 +49,7 @@ export function createGhostClient(siteUrl: string, adminApiKey: string) {
         headers: { ...headers, ...options.headers },
       },
     );
-    return data[Object.keys(data)[0]] as T;
+    return data as T;
   }
 
   return {
@@ -144,6 +144,9 @@ export async function testGhostConnection(
     await client.getTags();
     return { success: true };
   } catch (error) {
-    return { success: false, error: (error as Error).message };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }

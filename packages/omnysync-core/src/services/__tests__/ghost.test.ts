@@ -86,15 +86,12 @@ describe("Ghost Connector", () => {
     });
   });
 
-  describe("createGhostClient — API methods (with known request extraction bug)", () => {
+  describe("createGhostClient — API methods", () => {
     beforeEach(() => {
       vi.clearAllMocks();
     });
 
-    it("getTags should call the API and verify URL", async () => {
-      // NOTE: The internal `request` helper extracts the first value from the
-      // response object via `data[Object.keys(data)[0]]`, so `getTags` receives
-      // the array directly — then `result.tags` is undefined → returns [].
+    it("getTags should call the API and return tags", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({
         tags: [
           { id: "tag-1", name: "News", slug: "news" },
@@ -105,16 +102,17 @@ describe("Ghost Connector", () => {
       const client = createGhostClient(siteUrl, adminApiKey);
       const tags = await client.getTags();
 
-      // Due to the request-extraction bug, tags is always [].
-      // This test verifies the endpoint URL is correct.
-      expect(tags).toEqual([]);
+      expect(tags).toEqual([
+        { id: "tag-1", name: "News", slug: "news" },
+        { id: "tag-2", name: "Tech", slug: "tech" },
+      ]);
       expect(fetchWithRetry).toHaveBeenCalledWith(
         expect.stringContaining("/tags/"),
         expect.any(Object),
       );
     });
 
-    it("getAuthors should call the API and verify URL", async () => {
+    it("getAuthors should call the API and return authors", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({
         authors: [{ id: "auth-1", name: "John", slug: "john" }],
       } as any);
@@ -122,14 +120,14 @@ describe("Ghost Connector", () => {
       const client = createGhostClient(siteUrl, adminApiKey);
       const authors = await client.getAuthors();
 
-      expect(authors).toEqual([]);
+      expect(authors).toEqual([{ id: "auth-1", name: "John", slug: "john" }]);
       expect(fetchWithRetry).toHaveBeenCalledWith(
         expect.stringContaining("/authors/"),
         expect.any(Object),
       );
     });
 
-    it("createPost should call the API with POST and correct URL", async () => {
+    it("createPost should call the API with POST and return response", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({
         posts: [{ id: "post-1" }],
       } as any);
@@ -141,7 +139,7 @@ describe("Ghost Connector", () => {
         status: "draft",
       });
 
-      // Due to request extraction bug, result.posts is undefined
+      expect(result.posts).toEqual([{ id: "post-1" }]);
       expect(fetchWithRetry).toHaveBeenCalledWith(
         expect.stringContaining("/posts/"),
         expect.objectContaining({ method: "POST" }),
@@ -430,14 +428,14 @@ describe("Ghost Connector", () => {
       expect(client.getTags).toBeDefined();
     });
 
-    it("should throw on empty object response from request helper (extraction bug)", async () => {
+    it("should handle empty object response (no matching key)", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({} as any);
 
       const client = createGhostClient(siteUrl, adminApiKey);
 
-      // The request helper does `data[Object.keys(data)[0]]` on `{}`,
-      // returning `undefined`. Then `result.tags` throws.
-      await expect(client.getTags()).rejects.toThrow();
+      // request returns the full response object — `result.tags` is undefined → []
+      const tags = await client.getTags();
+      expect(tags).toEqual([]);
     });
 
     it("should handle response with unexpected top-level key", async () => {
@@ -448,7 +446,7 @@ describe("Ghost Connector", () => {
       const client = createGhostClient(siteUrl, adminApiKey);
       const tags = await client.getTags();
 
-      // The extraction bug picks the first key, so `result.tags` is undefined → []
+      // The response has no `tags` key, so `result.tags` is undefined → []
       expect(tags).toEqual([]);
     });
 
@@ -531,12 +529,14 @@ describe("Ghost Connector", () => {
       expect(result.success).toBe(false);
     });
 
-    it("should throw when null is thrown (source bug: (error as Error).message crashes)", async () => {
+    it("should handle null thrown gracefully", async () => {
       vi.mocked(fetchWithRetry).mockRejectedValue(null);
 
-      // The catch block does `(error as Error).message` which throws
-      // when error is null (Cannot read properties of null).
-      await expect(testGhostConnection(siteUrl, adminApiKey)).rejects.toThrow();
+      // Fixed catch block: `String(error)` converts null to "null"
+      const result = await testGhostConnection(siteUrl, adminApiKey);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("null");
     });
   });
 
@@ -658,7 +658,7 @@ describe("Ghost Connector", () => {
       vi.clearAllMocks();
     });
 
-    it("should return [] even when tags are present (extraction bug)", async () => {
+    it("should return tags when present", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({
         tags: [
           { id: "tag-1", name: "News", slug: "news" },
@@ -669,8 +669,10 @@ describe("Ghost Connector", () => {
       const client = createGhostClient(siteUrl, adminApiKey);
       const tags = await client.getTags();
 
-      // Due to extraction bug: request returns the array, then result.tags is undefined → []
-      expect(tags).toEqual([]);
+      expect(tags).toEqual([
+        { id: "tag-1", name: "News", slug: "news" },
+        { id: "tag-2", name: "Tech", slug: "tech" },
+      ]);
     });
 
     it("should use correct API endpoint URL", async () => {
@@ -703,7 +705,7 @@ describe("Ghost Connector", () => {
       vi.clearAllMocks();
     });
 
-    it("should return [] even when authors are present (extraction bug)", async () => {
+    it("should return authors when present", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({
         authors: [{ id: "auth-1", name: "Alice", slug: "alice" }],
       } as any);
@@ -711,7 +713,7 @@ describe("Ghost Connector", () => {
       const client = createGhostClient(siteUrl, adminApiKey);
       const authors = await client.getAuthors();
 
-      expect(authors).toEqual([]);
+      expect(authors).toEqual([{ id: "auth-1", name: "Alice", slug: "alice" }]);
     });
 
     it("should use correct API endpoint URL", async () => {
@@ -726,11 +728,12 @@ describe("Ghost Connector", () => {
       );
     });
 
-    it("should handle empty response object for authors", async () => {
+    it("should handle empty response object for authors (no authors key)", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue({} as any);
 
       const client = createGhostClient(siteUrl, adminApiKey);
-      await expect(client.getAuthors()).rejects.toThrow();
+      const authors = await client.getAuthors();
+      expect(authors).toEqual([]);
     });
 
     it("should propagate API errors for getAuthors", async () => {
@@ -844,9 +847,7 @@ describe("Ghost Connector", () => {
         html: "<p>Content</p>",
       });
 
-      // Extraction bug: returns the empty array
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toHaveLength(0);
+      expect(result.posts).toEqual([]);
     });
   });
 
@@ -905,7 +906,7 @@ describe("Ghost Connector", () => {
       vi.clearAllMocks();
     });
 
-    it("should return post array from response (extraction bug)", async () => {
+    it("should return post from response with posts wrapper", async () => {
       const postData = {
         id: "post-1",
         title: "Test Post",
@@ -917,10 +918,7 @@ describe("Ghost Connector", () => {
       const client = createGhostClient(siteUrl, adminApiKey);
       const result = await client.getPost("post-1");
 
-      // Extraction bug: returns the array directly, not { posts: [...] }
-      expect(Array.isArray(result)).toBe(true);
-      expect(result[0].id).toBe("post-1");
-      expect(result[0].title).toBe("Test Post");
+      expect(result.posts).toEqual([postData]);
     });
 
     it("should handle getPost with include params for tags and authors", async () => {
@@ -941,15 +939,15 @@ describe("Ghost Connector", () => {
       const client = createGhostClient(siteUrl, adminApiKey);
       const result = await client.getPost("non-existent");
 
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toHaveLength(0);
+      expect(result.posts).toEqual([]);
     });
 
     it("should handle null response from getPost", async () => {
       vi.mocked(fetchWithRetry).mockResolvedValue(null as any);
 
       const client = createGhostClient(siteUrl, adminApiKey);
-      await expect(client.getPost("post-1")).rejects.toThrow();
+      const result = await client.getPost("post-1");
+      expect(result).toBeNull();
     });
   });
 
@@ -994,15 +992,15 @@ describe("Ghost Connector", () => {
       expect(result.error).toContain("aborted");
     });
 
-    it("should return failure when getTags throws due to extraction bug", async () => {
-      vi.mocked(fetchWithRetry).mockResolvedValue({} as any);
+    it("should return failure on network timeout via getTags", async () => {
+      vi.mocked(fetchWithRetry).mockRejectedValue(
+        new Error("fetch failed: timeout"),
+      );
 
-      // The empty object causes getTags to throw TypeError: Cannot read properties of undefined.
-      // Since TypeError extends Error, the catch block handles it via (error as Error).message.
       const result = await testGhostConnection(siteUrl, adminApiKey);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain("Cannot read properties of undefined");
+      expect(result.error).toContain("tim");
     });
   });
 
