@@ -108,7 +108,7 @@
     "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lucide-react": "^1.17.0",
+    "lucide-react": "^1.18.0",
     "otpauth": "^9.5.1",
     "pg": "^8.20.0",
     "resend": "^6.12.4",
