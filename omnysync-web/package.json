@@ -18,13 +18,13 @@
     "@auth/prisma-adapter": "^2.11.2",
     "@omnysync/core": "workspace:*",
     "@prisma/client": "^7.8.0",
-    "@sentry/nextjs": "^10.57.0",
+    "@sentry/nextjs": "^10.59.0",
     "bcrypt": "^6.0.0",
     "clsx": "^2.1.1",
     "next": "16.2.9",
     "next-auth": "^5.0.0-beta.31",
     "next-themes": "^0.4.6",
-    "openai": "^6.42.0",
+    "openai": "^6.44.0",
     "otpauth": "^9.5.1",
     "react": "19.2.7",
     "react-dom": "19.2.7",
@@ -40,13 +40,13 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.1",
-    "@vitest/coverage-v8": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.9",
     "eslint-config-next": "16.2.9",
     "stripe": "^22.2.2",
     "tailwindcss": "^4",
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.22.4",
     "typescript": "^5",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.9"
   }
 }
