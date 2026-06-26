@@ -48,10 +48,6 @@ export default function UsagePage() {
   const [loading, setLoading] = useState(true)
   const [usage, setUsage] = useState<UsageData | null>(null)
 
-  useEffect(() => {
-    fetchUsage()
-  }, [])
-
   const fetchUsage = async () => {
     try {
       const res = await fetch('/api/usage')
@@ -65,6 +61,10 @@ export default function UsagePage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchUsage()
+  }, [])
 
   // Demo data fallback
   const demoUsage: UsageData = {

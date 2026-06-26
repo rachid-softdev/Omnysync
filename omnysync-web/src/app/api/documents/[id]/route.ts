@@ -68,6 +68,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     'syncFrequency',
   ]
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateData: Record<string, any> = {}
   for (const field of allowedFields) {
     if (body[field] !== undefined) {

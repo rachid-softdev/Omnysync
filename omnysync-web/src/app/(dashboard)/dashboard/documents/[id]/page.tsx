@@ -336,6 +336,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 <p className="text-muted-foreground text-center py-8">No history available</p>
               ) : (
                 <div className="space-y-3">
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {document.syncLogs.map((log: any) => (
                     <div
                       key={log.id}

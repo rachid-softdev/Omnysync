@@ -57,10 +57,6 @@ export default function TeamSettingsPage() {
   const [inviting, setInviting] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchTeam()
-  }, [])
-
   const fetchTeam = async () => {
     try {
       const res = await fetch('/api/team')
@@ -74,6 +70,10 @@ export default function TeamSettingsPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchTeam()
+  }, [])
 
   const handleInvite = async () => {
     if (!inviteEmail) return

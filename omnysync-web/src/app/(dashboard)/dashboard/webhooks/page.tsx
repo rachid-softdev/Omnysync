@@ -65,10 +65,6 @@ export default function WebhooksPage() {
     url: '',
   })
 
-  useEffect(() => {
-    fetchWebhooks()
-  }, [])
-
   const fetchWebhooks = async () => {
     try {
       const res = await fetch('/api/webhooks')
@@ -82,6 +78,10 @@ export default function WebhooksPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchWebhooks()
+  }, [])
 
   const createWebhook = async () => {
     try {

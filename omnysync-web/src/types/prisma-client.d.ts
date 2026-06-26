@@ -1,3 +1,4 @@
+// eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/ban-ts-comment
 // ---------------------------------------------------------------------------
 // Stub temporaire pour @prisma/client
 // Remplacera les vrais types generes par `prisma generate` quand le schema

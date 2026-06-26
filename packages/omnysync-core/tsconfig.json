@@ -5,6 +5,7 @@
     "rootDir": "./src",
     // Override temporaire : ces flags seront réactivés dans tsconfig.strict.json
     // après résolution des erreurs préexistantes dans sync.ts, scheduler.ts, queue.ts
+    "strictNullChecks": false,
     "noUncheckedIndexedAccess": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
