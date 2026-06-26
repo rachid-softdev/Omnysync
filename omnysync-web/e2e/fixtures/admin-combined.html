@@ -1,135 +1,530 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ressources — Omnysync</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-background text-foreground">
-  <div class="p-8" id="app">
-    <!-- AdminPageHeader -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-      <div class="space-y-1">
-        <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Ressources</h1>
-        <p class="text-sm text-muted-foreground" data-testid="page-description">35 ressources sur la plateforme</p>
-      </div>
-      <button id="reset-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3" data-testid="reset-btn">
-        Réinitialiser
-      </button>
-    </div>
-
-    <!-- Search + Filter row -->
-    <div class="flex flex-col sm:flex-row gap-4 mb-6">
-      <div class="relative max-w-sm flex-1">
-        <input type="text" id="search-input" placeholder="Rechercher..." class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" data-testid="search-input" />
-        <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      </div>
-      <select id="type-filter" class="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" data-testid="type-filter">
-        <option value="ALL">Tous les types</option>
-        <option value="BOOLEAN">BOOLEAN</option>
-        <option value="LIMIT">LIMIT</option>
-        <option value="EXPERIMENT">EXPERIMENT</option>
-      </select>
-    </div>
-
-    <!-- Error banner -->
-    <div id="error-banner" class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm" data-testid="error-banner">
-      <span id="error-message" data-testid="error-message"></span>
-    </div>
-
-    <!-- Table -->
-    <div class="space-y-4">
-      <div class="relative w-full overflow-auto rounded-md border">
-        <table class="w-full caption-bottom text-sm">
-          <thead class="[&_tr]:border-b">
-            <tr class="border-b transition-colors hover:bg-muted/50">
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-column="key" data-testid="col-header-key" aria-sort="ascending">Key</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-column="name" data-testid="col-header-name">Name</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-column="type" data-testid="col-header-type">Type</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-column="email" data-testid="col-header-email">Email</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-column="role" data-testid="col-header-role">Rôle</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-column="org" data-testid="col-header-org">Organisation</th>
-            </tr>
-          </thead>
-          <tbody id="table-body" class="[&_tr:last-child]:border-0" data-testid="table-body"></tbody>
-        </table>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ressources — Omnysync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-background text-foreground">
+    <div class="p-8" id="app">
+      <!-- AdminPageHeader -->
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+        <div class="space-y-1">
+          <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Ressources</h1>
+          <p class="text-sm text-muted-foreground" data-testid="page-description">
+            35 ressources sur la plateforme
+          </p>
+        </div>
+        <button
+          id="reset-btn"
+          class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
+          data-testid="reset-btn"
+        >
+          Réinitialiser
+        </button>
       </div>
 
-      <!-- Pagination -->
-      <div id="pagination" class="hidden flex items-center justify-between text-sm text-muted-foreground" data-testid="pagination">
-        <p id="pagination-info" data-testid="pagination-info"></p>
-        <div class="flex items-center gap-2">
-          <button id="prev-btn" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 h-8 gap-1.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50" aria-label="Page précédente" data-testid="prev-page"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 18l-6-6 6-6"/></svg></button>
-          <span id="page-indicator" class="min-w-[4rem] text-center font-medium" data-testid="page-indicator">Page 1 / 1</span>
-          <button id="next-btn" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 h-8 gap-1.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50" aria-label="Page suivante" data-testid="next-page"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>
+      <!-- Search + Filter row -->
+      <div class="flex flex-col sm:flex-row gap-4 mb-6">
+        <div class="relative max-w-sm flex-1">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Rechercher..."
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            data-testid="search-input"
+          />
+          <svg
+            class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </div>
+        <select
+          id="type-filter"
+          class="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          data-testid="type-filter"
+        >
+          <option value="ALL">Tous les types</option>
+          <option value="BOOLEAN">BOOLEAN</option>
+          <option value="LIMIT">LIMIT</option>
+          <option value="EXPERIMENT">EXPERIMENT</option>
+        </select>
+      </div>
+
+      <!-- Error banner -->
+      <div
+        id="error-banner"
+        class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm"
+        data-testid="error-banner"
+      >
+        <span id="error-message" data-testid="error-message"></span>
+      </div>
+
+      <!-- Table -->
+      <div class="space-y-4">
+        <div class="relative w-full overflow-auto rounded-md border">
+          <table class="w-full caption-bottom text-sm">
+            <thead class="[&_tr]:border-b">
+              <tr class="border-b transition-colors hover:bg-muted/50">
+                <th
+                  class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground"
+                  data-column="key"
+                  data-testid="col-header-key"
+                  aria-sort="ascending"
+                >
+                  Key
+                </th>
+                <th
+                  class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground"
+                  data-column="name"
+                  data-testid="col-header-name"
+                >
+                  Name
+                </th>
+                <th
+                  class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground"
+                  data-column="type"
+                  data-testid="col-header-type"
+                >
+                  Type
+                </th>
+                <th
+                  class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground"
+                  data-column="email"
+                  data-testid="col-header-email"
+                >
+                  Email
+                </th>
+                <th
+                  class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground"
+                  data-column="role"
+                  data-testid="col-header-role"
+                >
+                  Rôle
+                </th>
+                <th
+                  class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground"
+                  data-column="org"
+                  data-testid="col-header-org"
+                >
+                  Organisation
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id="table-body"
+              class="[&_tr:last-child]:border-0"
+              data-testid="table-body"
+            ></tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div
+          id="pagination"
+          class="hidden flex items-center justify-between text-sm text-muted-foreground"
+          data-testid="pagination"
+        >
+          <p id="pagination-info" data-testid="pagination-info"></p>
+          <div class="flex items-center gap-2">
+            <button
+              id="prev-btn"
+              class="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 h-8 gap-1.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+              aria-label="Page précédente"
+              data-testid="prev-page"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 18l-6-6 6-6"
+                />
+              </svg>
+            </button>
+            <span
+              id="page-indicator"
+              class="min-w-[4rem] text-center font-medium"
+              data-testid="page-indicator"
+              >Page 1 / 1</span
+            >
+            <button
+              id="next-btn"
+              class="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 h-8 gap-1.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+              aria-label="Page suivante"
+              data-testid="next-page"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <script>
-    const MOCK_DATA = [
-      { id: '1',  key: 'ALPHA_PROJECT',    name: 'Alpha Project',    type: 'BOOLEAN',    email: 'alpha@acme.com',       role: 'ADMIN',   org: 'Acme Corp' },
-      { id: '2',  key: 'BETA_SYNC',        name: 'Beta Sync',        type: 'LIMIT',      email: 'beta@betainc.com',     role: 'USER',    org: 'Beta Inc' },
-      { id: '3',  key: 'GAMMA_CONNECTOR',  name: 'Gamma Connector',  type: 'EXPERIMENT', email: 'gamma@acme.com',       role: 'VIEWER',  org: 'Acme Corp' },
-      { id: '4',  key: 'DELTA_HUB',        name: 'Delta Hub',        type: 'BOOLEAN',    email: 'delta@deltaco.com',    role: 'ADMIN',   org: 'Delta Co' },
-      { id: '5',  key: 'EPSILON_BRIDGE',   name: 'Epsilon Bridge',   type: 'LIMIT',      email: 'epsilon@echomedia.com',role: 'USER',    org: 'Echo Media' },
-      { id: '6',  key: 'ZETA_CACHE',       name: 'Zeta Cache',       type: 'EXPERIMENT', email: 'zeta@foxtrot.io',      role: 'VIEWER',  org: 'Foxtrot IO' },
-      { id: '7',  key: 'ETA_QUEUE',        name: 'Eta Queue',        type: 'BOOLEAN',    email: 'eta@globalnet.com',    role: 'USER',    org: 'Global Net' },
-      { id: '8',  key: 'THETA_GATEWAY',    name: 'Theta Gateway',    type: 'LIMIT',      email: 'theta@horizon.com',    role: 'VIEWER',  org: 'Horizon Ltd' },
-      { id: '9',  key: 'IOTA_WORKER',      name: 'Iota Worker',      type: 'EXPERIMENT', email: 'iota@integrate.com',   role: 'USER',    org: 'Integrate Pro' },
-      { id: '10', key: 'KAPPA_STORE',      name: 'Kappa Store',      type: 'BOOLEAN',    email: 'kappa@kappa.io',       role: 'ADMIN',   org: 'Kappa IO' },
-      { id: '11', key: 'LAMBDA_SCAN',      name: 'Lambda Scan',      type: 'LIMIT',      email: 'lambda@lambdatech.com',role: 'USER',    org: 'Lambda Tech' },
-      { id: '12', key: 'MU_SYNC',          name: 'Mu Sync',          type: 'EXPERIMENT', email: 'mu@megacorp.com',      role: 'VIEWER',  org: 'Mega Corp' },
-      { id: '13', key: 'NU_PROXY',         name: 'Nu Proxy',         type: 'BOOLEAN',    email: 'nu@netnova.com',       role: 'ADMIN',   org: 'Net Nova' },
-      { id: '14', key: 'XI_ROUTER',        name: 'Xi Router',        type: 'LIMIT',      email: 'xi@nexgen.com',        role: 'USER',    org: 'NexGen Solutions' },
-      { id: '15', key: 'OMICRON_NODE',     name: 'Omicron Node',     type: 'EXPERIMENT', email: 'omicron@omnysync.com', role: 'VIEWER',  org: 'Omnysync' },
-      { id: '16', key: 'PI_CLUSTER',       name: 'Pi Cluster',       type: 'BOOLEAN',    email: 'pi@omnysync.com',      role: 'ADMIN',   org: 'Omnysync' },
-      { id: '17', key: 'RHO_ADAPTER',      name: 'Rho Adapter',      type: 'LIMIT',      email: 'rho@proserve.com',     role: 'USER',    org: 'ProServe' },
-      { id: '18', key: 'SIGMA_BALANCER',   name: 'Sigma Balancer',   type: 'EXPERIMENT', email: 'sigma@quantum.com',    role: 'VIEWER',  org: 'Quantum Labs' },
-      { id: '19', key: 'TAU_COMPILER',     name: 'Tau Compiler',     type: 'BOOLEAN',    email: 'tau@rapidtech.com',    role: 'ADMIN',   org: 'Rapid Tech' },
-      { id: '20', key: 'UPSILON_PARSER',   name: 'Upsilon Parser',   type: 'LIMIT',      email: 'upsilon@synergy.com',  role: 'USER',    org: 'Synergy Inc' },
-      { id: '21', key: 'PHI_CONNECTOR',    name: 'Phi Connector',    type: 'EXPERIMENT', email: 'phi@techstack.com',    role: 'VIEWER',  org: 'TechStack' },
-      { id: '22', key: 'CHI_FILTER',       name: 'Chi Filter',       type: 'BOOLEAN',    email: 'chi@testlab.com',      role: 'ADMIN',   org: 'Test Lab' },
-      { id: '23', key: 'PSI_ANALYZER',     name: 'Psi Analyzer',     type: 'LIMIT',      email: 'psi@testlab.com',      role: 'USER',    org: 'Test Lab' },
-      { id: '24', key: 'OMEGA_SCHEDULER',  name: 'Omega Scheduler',  type: 'EXPERIMENT', email: 'omega@testlab.com',    role: 'VIEWER',  org: 'Test Lab' },
-      { id: '25', key: 'A_A_TEST',         name: 'A/A Test',         type: 'BOOLEAN',    email: 'aatest@test.com',      role: 'ADMIN',   org: 'Test Corp' },
-      { id: '26', key: 'A_B_TEST_V2',      name: 'A/B Test v2',      type: 'LIMIT',      email: 'abtest@test.com',      role: 'USER',    org: 'Test Corp' },
-      { id: '27', key: 'BACKUP_SYNC',      name: 'Backup Sync',      type: 'EXPERIMENT', email: 'backup@betainc.com',   role: 'VIEWER',  org: 'Beta Inc' },
-      { id: '28', key: 'CACHE_PROXY',      name: 'Cache Proxy',      type: 'BOOLEAN',    email: 'cache@acme.com',       role: 'ADMIN',   org: 'Acme Corp' },
-      { id: '29', key: 'DASHBOARD_V2',     name: 'Dashboard v2',     type: 'LIMIT',      email: 'dash@deltaco.com',     role: 'USER',    org: 'Delta Co' },
-      { id: '30', key: 'EMAIL_GATEWAY',    name: 'Email Gateway',    type: 'EXPERIMENT', email: 'email@echomedia.com',   role: 'VIEWER',  org: 'Echo Media' },
-      { id: '31', key: 'FILE_INDEXER',     name: 'File Indexer',     type: 'BOOLEAN',    email: 'file@foxtrot.io',      role: 'ADMIN',   org: 'Foxtrot IO' },
-      { id: '32', key: 'GRAPH_QL_API',     name: 'GraphQL API',      type: 'LIMIT',      email: 'graph@globalnet.com',  role: 'USER',    org: 'Global Net' },
-      { id: '33', key: 'HASH_WORKER',      name: 'Hash Worker',      type: 'EXPERIMENT', email: 'hash@horizon.com',     role: 'VIEWER',  org: 'Horizon Ltd' },
-      { id: '34', key: 'INDEX_BUILDER',    name: 'Index Builder',    type: 'BOOLEAN',    email: 'index@integrate.com',  role: 'ADMIN',   org: 'Integrate Pro' },
-      { id: '35', key: 'JOB_SCHEDULER',    name: 'Job Scheduler',    type: 'LIMIT',      email: 'job@kappa.io',         role: 'USER',    org: 'Kappa IO' },
-    ];
+    <script>
+      const MOCK_DATA = [
+        {
+          id: '1',
+          key: 'ALPHA_PROJECT',
+          name: 'Alpha Project',
+          type: 'BOOLEAN',
+          email: 'alpha@acme.com',
+          role: 'ADMIN',
+          org: 'Acme Corp',
+        },
+        {
+          id: '2',
+          key: 'BETA_SYNC',
+          name: 'Beta Sync',
+          type: 'LIMIT',
+          email: 'beta@betainc.com',
+          role: 'USER',
+          org: 'Beta Inc',
+        },
+        {
+          id: '3',
+          key: 'GAMMA_CONNECTOR',
+          name: 'Gamma Connector',
+          type: 'EXPERIMENT',
+          email: 'gamma@acme.com',
+          role: 'VIEWER',
+          org: 'Acme Corp',
+        },
+        {
+          id: '4',
+          key: 'DELTA_HUB',
+          name: 'Delta Hub',
+          type: 'BOOLEAN',
+          email: 'delta@deltaco.com',
+          role: 'ADMIN',
+          org: 'Delta Co',
+        },
+        {
+          id: '5',
+          key: 'EPSILON_BRIDGE',
+          name: 'Epsilon Bridge',
+          type: 'LIMIT',
+          email: 'epsilon@echomedia.com',
+          role: 'USER',
+          org: 'Echo Media',
+        },
+        {
+          id: '6',
+          key: 'ZETA_CACHE',
+          name: 'Zeta Cache',
+          type: 'EXPERIMENT',
+          email: 'zeta@foxtrot.io',
+          role: 'VIEWER',
+          org: 'Foxtrot IO',
+        },
+        {
+          id: '7',
+          key: 'ETA_QUEUE',
+          name: 'Eta Queue',
+          type: 'BOOLEAN',
+          email: 'eta@globalnet.com',
+          role: 'USER',
+          org: 'Global Net',
+        },
+        {
+          id: '8',
+          key: 'THETA_GATEWAY',
+          name: 'Theta Gateway',
+          type: 'LIMIT',
+          email: 'theta@horizon.com',
+          role: 'VIEWER',
+          org: 'Horizon Ltd',
+        },
+        {
+          id: '9',
+          key: 'IOTA_WORKER',
+          name: 'Iota Worker',
+          type: 'EXPERIMENT',
+          email: 'iota@integrate.com',
+          role: 'USER',
+          org: 'Integrate Pro',
+        },
+        {
+          id: '10',
+          key: 'KAPPA_STORE',
+          name: 'Kappa Store',
+          type: 'BOOLEAN',
+          email: 'kappa@kappa.io',
+          role: 'ADMIN',
+          org: 'Kappa IO',
+        },
+        {
+          id: '11',
+          key: 'LAMBDA_SCAN',
+          name: 'Lambda Scan',
+          type: 'LIMIT',
+          email: 'lambda@lambdatech.com',
+          role: 'USER',
+          org: 'Lambda Tech',
+        },
+        {
+          id: '12',
+          key: 'MU_SYNC',
+          name: 'Mu Sync',
+          type: 'EXPERIMENT',
+          email: 'mu@megacorp.com',
+          role: 'VIEWER',
+          org: 'Mega Corp',
+        },
+        {
+          id: '13',
+          key: 'NU_PROXY',
+          name: 'Nu Proxy',
+          type: 'BOOLEAN',
+          email: 'nu@netnova.com',
+          role: 'ADMIN',
+          org: 'Net Nova',
+        },
+        {
+          id: '14',
+          key: 'XI_ROUTER',
+          name: 'Xi Router',
+          type: 'LIMIT',
+          email: 'xi@nexgen.com',
+          role: 'USER',
+          org: 'NexGen Solutions',
+        },
+        {
+          id: '15',
+          key: 'OMICRON_NODE',
+          name: 'Omicron Node',
+          type: 'EXPERIMENT',
+          email: 'omicron@omnysync.com',
+          role: 'VIEWER',
+          org: 'Omnysync',
+        },
+        {
+          id: '16',
+          key: 'PI_CLUSTER',
+          name: 'Pi Cluster',
+          type: 'BOOLEAN',
+          email: 'pi@omnysync.com',
+          role: 'ADMIN',
+          org: 'Omnysync',
+        },
+        {
+          id: '17',
+          key: 'RHO_ADAPTER',
+          name: 'Rho Adapter',
+          type: 'LIMIT',
+          email: 'rho@proserve.com',
+          role: 'USER',
+          org: 'ProServe',
+        },
+        {
+          id: '18',
+          key: 'SIGMA_BALANCER',
+          name: 'Sigma Balancer',
+          type: 'EXPERIMENT',
+          email: 'sigma@quantum.com',
+          role: 'VIEWER',
+          org: 'Quantum Labs',
+        },
+        {
+          id: '19',
+          key: 'TAU_COMPILER',
+          name: 'Tau Compiler',
+          type: 'BOOLEAN',
+          email: 'tau@rapidtech.com',
+          role: 'ADMIN',
+          org: 'Rapid Tech',
+        },
+        {
+          id: '20',
+          key: 'UPSILON_PARSER',
+          name: 'Upsilon Parser',
+          type: 'LIMIT',
+          email: 'upsilon@synergy.com',
+          role: 'USER',
+          org: 'Synergy Inc',
+        },
+        {
+          id: '21',
+          key: 'PHI_CONNECTOR',
+          name: 'Phi Connector',
+          type: 'EXPERIMENT',
+          email: 'phi@techstack.com',
+          role: 'VIEWER',
+          org: 'TechStack',
+        },
+        {
+          id: '22',
+          key: 'CHI_FILTER',
+          name: 'Chi Filter',
+          type: 'BOOLEAN',
+          email: 'chi@testlab.com',
+          role: 'ADMIN',
+          org: 'Test Lab',
+        },
+        {
+          id: '23',
+          key: 'PSI_ANALYZER',
+          name: 'Psi Analyzer',
+          type: 'LIMIT',
+          email: 'psi@testlab.com',
+          role: 'USER',
+          org: 'Test Lab',
+        },
+        {
+          id: '24',
+          key: 'OMEGA_SCHEDULER',
+          name: 'Omega Scheduler',
+          type: 'EXPERIMENT',
+          email: 'omega@testlab.com',
+          role: 'VIEWER',
+          org: 'Test Lab',
+        },
+        {
+          id: '25',
+          key: 'A_A_TEST',
+          name: 'A/A Test',
+          type: 'BOOLEAN',
+          email: 'aatest@test.com',
+          role: 'ADMIN',
+          org: 'Test Corp',
+        },
+        {
+          id: '26',
+          key: 'A_B_TEST_V2',
+          name: 'A/B Test v2',
+          type: 'LIMIT',
+          email: 'abtest@test.com',
+          role: 'USER',
+          org: 'Test Corp',
+        },
+        {
+          id: '27',
+          key: 'BACKUP_SYNC',
+          name: 'Backup Sync',
+          type: 'EXPERIMENT',
+          email: 'backup@betainc.com',
+          role: 'VIEWER',
+          org: 'Beta Inc',
+        },
+        {
+          id: '28',
+          key: 'CACHE_PROXY',
+          name: 'Cache Proxy',
+          type: 'BOOLEAN',
+          email: 'cache@acme.com',
+          role: 'ADMIN',
+          org: 'Acme Corp',
+        },
+        {
+          id: '29',
+          key: 'DASHBOARD_V2',
+          name: 'Dashboard v2',
+          type: 'LIMIT',
+          email: 'dash@deltaco.com',
+          role: 'USER',
+          org: 'Delta Co',
+        },
+        {
+          id: '30',
+          key: 'EMAIL_GATEWAY',
+          name: 'Email Gateway',
+          type: 'EXPERIMENT',
+          email: 'email@echomedia.com',
+          role: 'VIEWER',
+          org: 'Echo Media',
+        },
+        {
+          id: '31',
+          key: 'FILE_INDEXER',
+          name: 'File Indexer',
+          type: 'BOOLEAN',
+          email: 'file@foxtrot.io',
+          role: 'ADMIN',
+          org: 'Foxtrot IO',
+        },
+        {
+          id: '32',
+          key: 'GRAPH_QL_API',
+          name: 'GraphQL API',
+          type: 'LIMIT',
+          email: 'graph@globalnet.com',
+          role: 'USER',
+          org: 'Global Net',
+        },
+        {
+          id: '33',
+          key: 'HASH_WORKER',
+          name: 'Hash Worker',
+          type: 'EXPERIMENT',
+          email: 'hash@horizon.com',
+          role: 'VIEWER',
+          org: 'Horizon Ltd',
+        },
+        {
+          id: '34',
+          key: 'INDEX_BUILDER',
+          name: 'Index Builder',
+          type: 'BOOLEAN',
+          email: 'index@integrate.com',
+          role: 'ADMIN',
+          org: 'Integrate Pro',
+        },
+        {
+          id: '35',
+          key: 'JOB_SCHEDULER',
+          name: 'Job Scheduler',
+          type: 'LIMIT',
+          email: 'job@kappa.io',
+          role: 'USER',
+          org: 'Kappa IO',
+        },
+      ]
 
-    let data = [...MOCK_DATA];
-    const PAGE_SIZE = 10;
-    let currentPage = 1;
-    let searchQuery = '';
-    let typeFilter = 'ALL';
-    let currentSort = { column: 'key', direction: 'asc' };
+      let data = [...MOCK_DATA]
+      const PAGE_SIZE = 10
+      let currentPage = 1
+      let searchQuery = ''
+      let typeFilter = 'ALL'
+      let currentSort = { column: 'key', direction: 'asc' }
 
-    const badgeTypeStyles = {
-      BOOLEAN: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800',
-      LIMIT: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800',
-      EXPERIMENT: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800',
-    };
+      const badgeTypeStyles = {
+        BOOLEAN:
+          'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800',
+        LIMIT:
+          'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+        EXPERIMENT:
+          'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800',
+      }
 
-    const badgeRoleStyles = {
-      ADMIN: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
-      USER: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800',
-      VIEWER: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800',
-    };
+      const badgeRoleStyles = {
+        ADMIN:
+          'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
+        USER: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800',
+        VIEWER:
+          'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800',
+      }
 
-    function renderRow(item) {
-      const typeStyle = badgeTypeStyles[item.type] || badgeTypeStyles.BOOLEAN;
-      const roleStyle = badgeRoleStyles[item.role] || badgeRoleStyles.USER;
-      return `
+      function renderRow(item) {
+        const typeStyle = badgeTypeStyles[item.type] || badgeTypeStyles.BOOLEAN
+        const roleStyle = badgeRoleStyles[item.role] || badgeRoleStyles.USER
+        return `
         <tr class="border-b transition-colors hover:bg-muted/50" data-testid="data-row-${item.id}">
           <td class="p-4 align-middle" data-testid="cell-key-${item.id}"><span class="font-mono text-sm">${item.key}</span></td>
           <td class="p-4 align-middle font-medium" data-testid="cell-name-${item.id}">${item.name}</td>
@@ -142,51 +537,53 @@
           </td>
           <td class="p-4 align-middle text-muted-foreground" data-testid="cell-org-${item.id}">${item.org}</td>
         </tr>
-      `;
-    }
-
-    function render() {
-      // Step 1: filter by type
-      let filtered = data;
-      if (typeFilter !== 'ALL') {
-        filtered = filtered.filter(item => item.type === typeFilter);
+      `
       }
 
-      // Step 2: filter by search query (all text columns)
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        filtered = filtered.filter(item =>
-          item.key.toLowerCase().includes(q) ||
-          item.name.toLowerCase().includes(q) ||
-          item.type.toLowerCase().includes(q) ||
-          item.email.toLowerCase().includes(q) ||
-          item.role.toLowerCase().includes(q) ||
-          item.org.toLowerCase().includes(q)
-        );
-      }
+      function render() {
+        // Step 1: filter by type
+        let filtered = data
+        if (typeFilter !== 'ALL') {
+          filtered = filtered.filter((item) => item.type === typeFilter)
+        }
 
-      // Step 3: sort
-      const col = currentSort.column;
-      const dir = currentSort.direction;
-      filtered = [...filtered].sort((a, b) => {
-        let va = a[col], vb = b[col];
-        if (typeof va === 'string') va = va.toLowerCase();
-        if (typeof vb === 'string') vb = vb.toLowerCase();
-        if (va < vb) return dir === 'asc' ? -1 : 1;
-        if (va > vb) return dir === 'asc' ? 1 : -1;
-        return 0;
-      });
+        // Step 2: filter by search query (all text columns)
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase()
+          filtered = filtered.filter(
+            (item) =>
+              item.key.toLowerCase().includes(q) ||
+              item.name.toLowerCase().includes(q) ||
+              item.type.toLowerCase().includes(q) ||
+              item.email.toLowerCase().includes(q) ||
+              item.role.toLowerCase().includes(q) ||
+              item.org.toLowerCase().includes(q)
+          )
+        }
 
-      // Step 4: paginate
-      const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-      if (currentPage > totalPages) currentPage = totalPages;
-      const start = (currentPage - 1) * PAGE_SIZE;
-      const paginated = filtered.slice(start, start + PAGE_SIZE);
+        // Step 3: sort
+        const col = currentSort.column
+        const dir = currentSort.direction
+        filtered = [...filtered].sort((a, b) => {
+          let va = a[col],
+            vb = b[col]
+          if (typeof va === 'string') va = va.toLowerCase()
+          if (typeof vb === 'string') vb = vb.toLowerCase()
+          if (va < vb) return dir === 'asc' ? -1 : 1
+          if (va > vb) return dir === 'asc' ? 1 : -1
+          return 0
+        })
 
-      // Step 5: render rows
-      const tbody = document.getElementById('table-body');
-      if (filtered.length === 0) {
-        tbody.innerHTML = `
+        // Step 4: paginate
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+        if (currentPage > totalPages) currentPage = totalPages
+        const start = (currentPage - 1) * PAGE_SIZE
+        const paginated = filtered.slice(start, start + PAGE_SIZE)
+
+        // Step 5: render rows
+        const tbody = document.getElementById('table-body')
+        if (filtered.length === 0) {
+          tbody.innerHTML = `
           <tr>
             <td colspan="6" class="p-4 text-center">
               <div class="flex flex-col items-center justify-center py-12 text-muted-foreground" data-testid="empty-state">
@@ -195,151 +592,161 @@
               </div>
             </td>
           </tr>
-        `;
-      } else {
-        tbody.innerHTML = paginated.map(renderRow).join('');
-      }
-
-      // Step 6: update pagination UI
-      const pagination = document.getElementById('pagination');
-      if (totalPages > 1) {
-        pagination.classList.remove('hidden');
-      } else {
-        pagination.classList.add('hidden');
-      }
-      document.getElementById('page-indicator').textContent = `Page ${currentPage} / ${totalPages}`;
-      document.getElementById('prev-btn').disabled = currentPage <= 1;
-      document.getElementById('next-btn').disabled = currentPage >= totalPages;
-
-      // Page description
-      const desc = document.querySelector('[data-testid="page-description"]');
-      if (desc) {
-        const count = data.length;
-        desc.textContent = `${count} ressource${count > 1 ? 's' : ''} sur la plateforme`;
-      }
-
-      // Update column header aria-sort
-      document.querySelectorAll('th[data-column]').forEach(th => {
-        const c = th.getAttribute('data-column');
-        if (c === currentSort.column) {
-          th.setAttribute('aria-sort', currentSort.direction === 'asc' ? 'ascending' : 'descending');
+        `
         } else {
-          th.removeAttribute('aria-sort');
+          tbody.innerHTML = paginated.map(renderRow).join('')
         }
-      });
-    }
 
-    // ── Event listeners ─────────────────────────────────────────────────
-
-    document.getElementById('search-input').addEventListener('input', function() {
-      searchQuery = this.value;
-      currentPage = 1;
-      render();
-    });
-
-    document.getElementById('type-filter').addEventListener('change', function() {
-      typeFilter = this.value;
-      currentPage = 1;
-      render();
-    });
-
-    document.querySelectorAll('th[data-column]').forEach(th => {
-      th.addEventListener('click', function() {
-        const col = this.getAttribute('data-column');
-        if (currentSort.column === col) {
-          currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+        // Step 6: update pagination UI
+        const pagination = document.getElementById('pagination')
+        if (totalPages > 1) {
+          pagination.classList.remove('hidden')
         } else {
-          currentSort.column = col;
-          currentSort.direction = 'asc';
+          pagination.classList.add('hidden')
         }
-        render();
-      });
-    });
+        document.getElementById('page-indicator').textContent =
+          `Page ${currentPage} / ${totalPages}`
+        document.getElementById('prev-btn').disabled = currentPage <= 1
+        document.getElementById('next-btn').disabled = currentPage >= totalPages
 
-    document.getElementById('prev-btn').addEventListener('click', function() {
-      if (currentPage > 1) { currentPage--; render(); }
-    });
+        // Page description
+        const desc = document.querySelector('[data-testid="page-description"]')
+        if (desc) {
+          const count = data.length
+          desc.textContent = `${count} ressource${count > 1 ? 's' : ''} sur la plateforme`
+        }
 
-    document.getElementById('next-btn').addEventListener('click', function() {
-      const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
-      if (currentPage < totalPages) { currentPage++; render(); }
-    });
-
-    document.getElementById('reset-btn').addEventListener('click', function() {
-      document.getElementById('search-input').value = '';
-      searchQuery = '';
-      typeFilter = 'ALL';
-      document.getElementById('type-filter').value = 'ALL';
-      currentSort = { column: 'key', direction: 'asc' };
-      currentPage = 1;
-      render();
-    });
-
-    // ── Global helpers ──────────────────────────────────────────────────
-
-    window.__showError = function(message) {
-      const banner = document.getElementById('error-banner');
-      banner.classList.remove('hidden');
-      document.getElementById('error-message').textContent = message;
-      document.getElementById('table-body').innerHTML = '';
-      document.getElementById('pagination').classList.add('hidden');
-    };
-
-    window.__clearError = function() {
-      document.getElementById('error-banner').classList.add('hidden');
-    };
-
-    window.__setData = function(newData) {
-      data = newData;
-      searchQuery = '';
-      document.getElementById('search-input').value = '';
-      typeFilter = 'ALL';
-      document.getElementById('type-filter').value = 'ALL';
-      currentSort = { column: 'key', direction: 'asc' };
-      currentPage = 1;
-      window.__clearError();
-      render();
-    };
-
-    window.__setSearch = function(query) {
-      document.getElementById('search-input').value = query;
-      searchQuery = query;
-      currentPage = 1;
-      render();
-    };
-
-    window.__triggerSort = function(column) {
-      const th = document.querySelector(`th[data-column="${column}"]`);
-      if (th) th.click();
-    };
-
-    window.__goToPage = function(page) {
-      const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
-      if (page >= 1 && page <= totalPages) {
-        currentPage = page;
-        render();
+        // Update column header aria-sort
+        document.querySelectorAll('th[data-column]').forEach((th) => {
+          const c = th.getAttribute('data-column')
+          if (c === currentSort.column) {
+            th.setAttribute(
+              'aria-sort',
+              currentSort.direction === 'asc' ? 'ascending' : 'descending'
+            )
+          } else {
+            th.removeAttribute('aria-sort')
+          }
+        })
       }
-    };
 
-    window.__setFilterType = function(type) {
-      typeFilter = type;
-      document.getElementById('type-filter').value = type;
-      currentPage = 1;
-      render();
-    };
+      // ── Event listeners ─────────────────────────────────────────────────
 
-    window.__resetAll = function() {
-      document.getElementById('search-input').value = '';
-      searchQuery = '';
-      typeFilter = 'ALL';
-      document.getElementById('type-filter').value = 'ALL';
-      currentSort = { column: 'key', direction: 'asc' };
-      currentPage = 1;
-      render();
-    };
+      document.getElementById('search-input').addEventListener('input', function () {
+        searchQuery = this.value
+        currentPage = 1
+        render()
+      })
 
-    // ── Initial render ──────────────────────────────────────────────────
-    render();
-  </script>
-</body>
+      document.getElementById('type-filter').addEventListener('change', function () {
+        typeFilter = this.value
+        currentPage = 1
+        render()
+      })
+
+      document.querySelectorAll('th[data-column]').forEach((th) => {
+        th.addEventListener('click', function () {
+          const col = this.getAttribute('data-column')
+          if (currentSort.column === col) {
+            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc'
+          } else {
+            currentSort.column = col
+            currentSort.direction = 'asc'
+          }
+          render()
+        })
+      })
+
+      document.getElementById('prev-btn').addEventListener('click', function () {
+        if (currentPage > 1) {
+          currentPage--
+          render()
+        }
+      })
+
+      document.getElementById('next-btn').addEventListener('click', function () {
+        const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE))
+        if (currentPage < totalPages) {
+          currentPage++
+          render()
+        }
+      })
+
+      document.getElementById('reset-btn').addEventListener('click', function () {
+        document.getElementById('search-input').value = ''
+        searchQuery = ''
+        typeFilter = 'ALL'
+        document.getElementById('type-filter').value = 'ALL'
+        currentSort = { column: 'key', direction: 'asc' }
+        currentPage = 1
+        render()
+      })
+
+      // ── Global helpers ──────────────────────────────────────────────────
+
+      window.__showError = function (message) {
+        const banner = document.getElementById('error-banner')
+        banner.classList.remove('hidden')
+        document.getElementById('error-message').textContent = message
+        document.getElementById('table-body').innerHTML = ''
+        document.getElementById('pagination').classList.add('hidden')
+      }
+
+      window.__clearError = function () {
+        document.getElementById('error-banner').classList.add('hidden')
+      }
+
+      window.__setData = function (newData) {
+        data = newData
+        searchQuery = ''
+        document.getElementById('search-input').value = ''
+        typeFilter = 'ALL'
+        document.getElementById('type-filter').value = 'ALL'
+        currentSort = { column: 'key', direction: 'asc' }
+        currentPage = 1
+        window.__clearError()
+        render()
+      }
+
+      window.__setSearch = function (query) {
+        document.getElementById('search-input').value = query
+        searchQuery = query
+        currentPage = 1
+        render()
+      }
+
+      window.__triggerSort = function (column) {
+        const th = document.querySelector(`th[data-column="${column}"]`)
+        if (th) th.click()
+      }
+
+      window.__goToPage = function (page) {
+        const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE))
+        if (page >= 1 && page <= totalPages) {
+          currentPage = page
+          render()
+        }
+      }
+
+      window.__setFilterType = function (type) {
+        typeFilter = type
+        document.getElementById('type-filter').value = type
+        currentPage = 1
+        render()
+      }
+
+      window.__resetAll = function () {
+        document.getElementById('search-input').value = ''
+        searchQuery = ''
+        typeFilter = 'ALL'
+        document.getElementById('type-filter').value = 'ALL'
+        currentSort = { column: 'key', direction: 'asc' }
+        currentPage = 1
+        render()
+      }
+
+      // ── Initial render ──────────────────────────────────────────────────
+      render()
+    </script>
+  </body>
 </html>

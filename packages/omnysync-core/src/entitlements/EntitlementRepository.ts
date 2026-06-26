@@ -210,9 +210,9 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
   async getActiveSubscription(orgId: string): Promise<SubscriptionData | null> {
     const prisma = getPrisma();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const subscription = await (prisma.subscription.findUnique as any)({
+    const subscription = (await (prisma.subscription.findUnique as any)({
       where: { organizationId: orgId },
-    }) as SubscriptionData | null;
+    })) as SubscriptionData | null;
 
     if (!subscription) return null;
 
@@ -589,7 +589,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
         return await prisma.$transaction(
           async (tx) => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const p = tx as any
+            const p = tx as any;
             const usage = await p.usageTracking.upsert({
               where: {
                 organizationId_featureKey_periodStart: {

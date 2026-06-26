@@ -184,7 +184,9 @@ export default function NewPlanPage() {
                   min="0"
                   placeholder="29.00"
                   value={priceMonthly}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPriceMonthly(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setPriceMonthly(e.target.value)
+                  }
                   className={errors.priceMonthly ? 'border-destructive' : ''}
                 />
                 {errors.priceMonthly && (
@@ -200,7 +202,9 @@ export default function NewPlanPage() {
                   min="0"
                   placeholder="290.00"
                   value={priceYearly}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPriceYearly(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setPriceYearly(e.target.value)
+                  }
                   className={errors.priceYearly ? 'border-destructive' : ''}
                 />
                 {errors.priceYearly && (

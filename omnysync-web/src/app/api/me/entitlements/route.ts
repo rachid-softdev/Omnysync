@@ -51,7 +51,12 @@ export async function GET(request: NextRequest) {
     const experimentService = getExperimentService()
 
     // Get entitlements from cache
-    const entitlements = (await featureGate.getAllEntitlements(orgId)) as { planKey: string; features: Record<string, boolean>; limits: Record<string, number | null>; experiments: Record<string, unknown> }
+    const entitlements = (await featureGate.getAllEntitlements(orgId)) as {
+      planKey: string
+      features: Record<string, boolean>
+      limits: Record<string, number | null>
+      experiments: Record<string, unknown>
+    }
 
     // Build usage map
     const usage: Record<string, number> = {}
@@ -77,7 +82,10 @@ export async function GET(request: NextRequest) {
 
     if (userId) {
       for (const [key, config] of Object.entries(entitlements.experiments || {})) {
-        const group = experimentService.getExperimentGroup(userId, config as { seed: string; percentage: number })
+        const group = experimentService.getExperimentGroup(
+          userId,
+          config as { seed: string; percentage: number }
+        )
         experimentGroups[key] = group
       }
     }

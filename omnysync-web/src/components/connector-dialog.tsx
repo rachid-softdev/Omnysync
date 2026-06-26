@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, CheckCircle, CircleX } from 'lucide-react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 const PLATFORM_FIELDS: Record<
   string,
@@ -206,11 +212,15 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
 
             <div className="flex gap-2 pt-2">
               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              <Button variant="outline" className="flex-1" {...({onClick: onClose} as any)}>
+              <Button variant="outline" className="flex-1" {...({ onClick: onClose } as any)}>
                 Cancel
               </Button>
               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              <Button className="flex-1" {...({onClick: handleConnect} as any)} disabled={loading}>
+              <Button
+                className="flex-1"
+                {...({ onClick: handleConnect } as any)}
+                disabled={loading}
+              >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />}
                 Connect
               </Button>

@@ -126,12 +126,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     })
 
     if (document.sourceConnectorId && document.destConnectorId) {
-      const result = await (performSync as (orgId: string, documentId: string, ...args: unknown[]) => Promise<unknown>)(
-        id,
-        document.sourceConnectorId,
-        document.destConnectorId,
-        session.user.id
-      )
+      const result = await (
+        performSync as (orgId: string, documentId: string, ...args: unknown[]) => Promise<unknown>
+      )(id, document.sourceConnectorId, document.destConnectorId, session.user.id)
       return NextResponse.json(result)
     }
 
@@ -149,7 +146,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       )
     }
 
-    const result = await (scheduleSync as (orgId: string, connectorId: string, interval: string) => Promise<void>)(id, frequency)
+    const result = await (
+      scheduleSync as (orgId: string, connectorId: string, interval: string) => Promise<void>
+    )(id, frequency)
 
     if (!result.success) {
       return NextResponse.json(

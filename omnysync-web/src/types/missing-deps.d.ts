@@ -3,7 +3,9 @@
 // ---------------------------------------------------------------------------
 
 declare module 'dotenv' {
-  export function config(options?: { path?: string; override?: boolean }): { parsed?: Record<string, string> }
+  export function config(options?: { path?: string; override?: boolean }): {
+    parsed?: Record<string, string>
+  }
 }
 
 declare module 'prisma/config' {

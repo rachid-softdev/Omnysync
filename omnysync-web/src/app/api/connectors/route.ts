@@ -84,7 +84,9 @@ export async function POST(req: NextRequest) {
       testResult = { success: await testWebflowConnection(credentials.accessToken) }
       break
     case 'SHOPIFY':
-      testResult = { success: await testShopifyConnection(config.shopDomain, credentials.accessToken) }
+      testResult = {
+        success: await testShopifyConnection(config.shopDomain, credentials.accessToken),
+      }
       break
     case 'GOOGLE_DOCS':
       // Google Docs doesn't have a test connection unless we try listing docs
@@ -101,7 +103,9 @@ export async function POST(req: NextRequest) {
       testResult = { success: await testAirtableConnection(credentials.apiKey) }
       break
     case 'CONTENTFUL':
-      testResult = { success: await testContentfulConnection(config.spaceId, credentials.accessToken) }
+      testResult = {
+        success: await testContentfulConnection(config.spaceId, credentials.accessToken),
+      }
       break
   }
 
@@ -142,7 +146,11 @@ export async function POST(req: NextRequest) {
     }
     case 'GOOGLE_DOCS': {
       const { saveGoogleDocsConnector } = await import('@omnysync/core/services/google-docs')
-      connector = await saveGoogleDocsConnector(orgId, credentials.accessToken, credentials.refreshToken ?? '')
+      connector = await saveGoogleDocsConnector(
+        orgId,
+        credentials.accessToken,
+        credentials.refreshToken ?? ''
+      )
       break
     }
     case 'NOTION': {

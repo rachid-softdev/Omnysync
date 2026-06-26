@@ -116,7 +116,20 @@ export async function POST(request: NextRequest) {
     const createdBy = admin.id
 
     const repo = getEntitlementRepository()
-    const override = await (repo as unknown as { createOverride(data: { scope: string; scopeId: string; featureKey: string; enabled: boolean; limitValue: unknown; expiresAt: Date | null; reason: string; createdBy: string }): Promise<unknown> }).createOverride({
+    const override = await (
+      repo as unknown as {
+        createOverride(data: {
+          scope: string
+          scopeId: string
+          featureKey: string
+          enabled: boolean
+          limitValue: unknown
+          expiresAt: Date | null
+          reason: string
+          createdBy: string
+        }): Promise<unknown>
+      }
+    ).createOverride({
       scope,
       scopeId,
       featureKey,

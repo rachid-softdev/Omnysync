@@ -27,8 +27,16 @@ declare module '@omnysync/core/hooks' {
   export function useIsMobile(): boolean
   export function useEntitlements(): { entitlements: Record<string, unknown>; isLoading: boolean }
   export function useFeature(featureKey: string): { enabled: boolean; isLoading: boolean }
-  export function useLimit(featureKey: string): { limit: number | null; usage: number; isLoading: boolean }
-  export function FeatureGuard(props: { featureKey: string; children: React.ReactNode; fallback?: React.ReactNode }): JSX.Element
+  export function useLimit(featureKey: string): {
+    limit: number | null
+    usage: number
+    isLoading: boolean
+  }
+  export function FeatureGuard(props: {
+    featureKey: string
+    children: React.ReactNode
+    fallback?: React.ReactNode
+  }): JSX.Element
   export function UsageBar(props: { featureKey: string; className?: string }): JSX.Element
 }
 
@@ -43,7 +51,11 @@ declare module '@omnysync/core/ui' {
   import type { FC, ReactNode } from 'react'
 
   // AlertDialog — compound + named exports
-  export const AlertDialog: FC<{ children: ReactNode; open?: boolean; onOpenChange?: (open: any) => void }> & {
+  export const AlertDialog: FC<{
+    children: ReactNode
+    open?: boolean
+    onOpenChange?: (open: any) => void
+  }> & {
     Trigger: FC<{ children: ReactNode; asChild?: boolean }>
     Content: FC<{ children: ReactNode; className?: string }>
     Header: FC<{ children: ReactNode; className?: string }>
@@ -53,14 +65,28 @@ declare module '@omnysync/core/ui' {
     Action: FC<{ children: ReactNode; className?: string }>
     Cancel: FC<{ children: ReactNode; className?: string }>
   }
-  export const AlertDialogTrigger: FC<{ children: ReactNode; className?: string; asChild?: boolean }>
+  export const AlertDialogTrigger: FC<{
+    children: ReactNode
+    className?: string
+    asChild?: boolean
+  }>
   export const AlertDialogContent: FC<{ children: ReactNode; className?: string }>
   export const AlertDialogHeader: FC<{ children: ReactNode; className?: string }>
   export const AlertDialogFooter: FC<{ children: ReactNode; className?: string }>
   export const AlertDialogTitle: FC<{ children: ReactNode; className?: string }>
   export const AlertDialogDescription: FC<{ children: ReactNode; className?: string }>
-  export const AlertDialogAction: FC<{ children: ReactNode; className?: string; onClick?: () => void; disabled?: boolean }>
-  export const AlertDialogCancel: FC<{ children: ReactNode; className?: string; onClick?: () => void; disabled?: boolean }>
+  export const AlertDialogAction: FC<{
+    children: ReactNode
+    className?: string
+    onClick?: () => void
+    disabled?: boolean
+  }>
+  export const AlertDialogCancel: FC<{
+    children: ReactNode
+    className?: string
+    onClick?: () => void
+    disabled?: boolean
+  }>
 
   // Avatar — compound + named exports
   export const Avatar: FC<{ className?: string; children?: ReactNode }> & {
@@ -73,7 +99,15 @@ declare module '@omnysync/core/ui' {
   export const Badge: FC<{ className?: string; variant?: string; children?: ReactNode }>
 
   // Button — avec onClick
-  export const Button: FC<{ className?: string; variant?: string; size?: string; type?: string; disabled?: boolean; onClick?: () => void; children?: ReactNode }>
+  export const Button: FC<{
+    className?: string
+    variant?: string
+    size?: string
+    type?: string
+    disabled?: boolean
+    onClick?: () => void
+    children?: ReactNode
+  }>
 
   // Card — compound + named exports
   export const Card: FC<{ className?: string; children?: ReactNode }>
@@ -83,10 +117,20 @@ declare module '@omnysync/core/ui' {
   export const CardDescription: FC<{ className?: string; children?: ReactNode }>
   export const CardFooter: FC<{ className?: string; children?: ReactNode }>
 
-  export const Checkbox: FC<{ className?: string; id?: string; checked?: boolean; onCheckedChange?: (checked: any) => void; disabled?: boolean }>
+  export const Checkbox: FC<{
+    className?: string
+    id?: string
+    checked?: boolean
+    onCheckedChange?: (checked: any) => void
+    disabled?: boolean
+  }>
 
   // Dialog — compound + named exports
-  export const Dialog: FC<{ children: ReactNode; open?: boolean; onOpenChange?: (open: any) => void }> & {
+  export const Dialog: FC<{
+    children: ReactNode
+    open?: boolean
+    onOpenChange?: (open: any) => void
+  }> & {
     Trigger: FC<{ children: ReactNode; asChild?: boolean }>
     Content: FC<{ children: ReactNode; className?: string }>
     Header: FC<{ children: ReactNode; className?: string }>
@@ -110,20 +154,43 @@ declare module '@omnysync/core/ui' {
     Separator: FC<{ className?: string }>
   }
 
-  export const Input: FC<{ className?: string; id?: string; type?: string; placeholder?: string; value?: string; onChange?: (e: unknown) => void; disabled?: boolean; step?: string | number; min?: string | number; maxLength?: number; required?: boolean; max?: string | number }>
+  export const Input: FC<{
+    className?: string
+    id?: string
+    type?: string
+    placeholder?: string
+    value?: string
+    onChange?: (e: unknown) => void
+    disabled?: boolean
+    step?: string | number
+    min?: string | number
+    maxLength?: number
+    required?: boolean
+    max?: string | number
+  }>
   export const Label: FC<{ children: ReactNode; className?: string; htmlFor?: string }>
 
   // Pagination — compound + named exports
   export const Pagination: FC<{ className?: string; children?: ReactNode }> & {
     Content: FC<{ className?: string; children?: ReactNode }>
-    Item: FC<{ className?: string; children?: ReactNode; onClick?: () => void; disabled?: boolean; isActive?: boolean }>
+    Item: FC<{
+      className?: string
+      children?: ReactNode
+      onClick?: () => void
+      disabled?: boolean
+      isActive?: boolean
+    }>
     Previous: FC<{ className?: string; onClick?: () => void; disabled?: boolean }>
     Next: FC<{ className?: string; onClick?: () => void; disabled?: boolean }>
   }
   export const Progress: FC<{ className?: string; value?: number }>
 
   // Select — compound + named exports
-  export const Select: FC<{ children: ReactNode; value?: string; onValueChange?: (value: string) => void }> & {
+  export const Select: FC<{
+    children: ReactNode
+    value?: string
+    onValueChange?: (value: string) => void
+  }> & {
     Trigger: FC<{ className?: string; children?: ReactNode }>
     Content: FC<{ className?: string; children?: ReactNode }>
     Item: FC<{ className?: string; children?: ReactNode; value: string }>
@@ -131,12 +198,26 @@ declare module '@omnysync/core/ui' {
   }
   export const SelectTrigger: FC<{ className?: string; children?: ReactNode }>
   export const SelectContent: FC<{ className?: string; children?: ReactNode }>
-  export const SelectItem: FC<{ className?: string; children?: ReactNode; value: string; disabled?: boolean }>
+  export const SelectItem: FC<{
+    className?: string
+    children?: ReactNode
+    value: string
+    disabled?: boolean
+  }>
   export const SelectValue: FC<{ placeholder?: string; children?: ReactNode }>
 
-  export const Separator: FC<{ className?: string; orientation?: 'horizontal' | 'vertical'; decorative?: boolean }>
+  export const Separator: FC<{
+    className?: string
+    orientation?: 'horizontal' | 'vertical'
+    decorative?: boolean
+  }>
   export const Skeleton: FC<{ className?: string }>
-  export const Switch: FC<{ className?: string; id?: string; checked?: boolean; onCheckedChange?: (checked: any) => void }>
+  export const Switch: FC<{
+    className?: string
+    id?: string
+    checked?: boolean
+    onCheckedChange?: (checked: any) => void
+  }>
 
   // Table — compound + named exports
   export const Table: FC<{ children: ReactNode; className?: string }> & {
@@ -149,7 +230,12 @@ declare module '@omnysync/core/ui' {
   }
 
   // Tabs — compound + named exports
-  export const Tabs: FC<{ children: ReactNode; value?: string; onValueChange?: (value: string) => void; className?: string }> & {
+  export const Tabs: FC<{
+    children: ReactNode
+    value?: string
+    onValueChange?: (value: string) => void
+    className?: string
+  }> & {
     List: FC<{ children: ReactNode; className?: string }>
     Trigger: FC<{ children: ReactNode; className?: string; value: string }>
     Content: FC<{ children: ReactNode; className?: string; value: string }>
@@ -158,7 +244,14 @@ declare module '@omnysync/core/ui' {
   export const TabsTrigger: FC<{ children: ReactNode; className?: string; value: string }>
   export const TabsContent: FC<{ children: ReactNode; className?: string; value: string }>
 
-  export const Textarea: FC<{ className?: string; id?: string; rows?: number; placeholder?: string; value?: string; onChange?: (e: unknown) => void }>
+  export const Textarea: FC<{
+    className?: string
+    id?: string
+    rows?: number
+    placeholder?: string
+    value?: string
+    onChange?: (e: unknown) => void
+  }>
 }
 
 declare module '@omnysync/core/entitlements' {
@@ -166,15 +259,28 @@ declare module '@omnysync/core/entitlements' {
 }
 
 declare module '@omnysync/core/entitlements/index' {
-  export function checkFeatureAccess(orgId: string, featureKey: string): Promise<{ allowed: boolean }>
+  export function checkFeatureAccess(
+    orgId: string,
+    featureKey: string
+  ): Promise<{ allowed: boolean }>
   export function getOrganizationEntitlements(orgId: string): Promise<Record<string, unknown>>
 }
 
 declare module '@omnysync/core/entitlements/types' {
   export type FeatureType = 'boolean' | 'numeric' | 'tiered'
   // DowngradeStrategy couvre les valeurs DB (lowercase) + valeurs internes web (uppercase)
-  export type DowngradeStrategy = 'block' | 'warn' | 'soft_block' | 'grace_period' | 'GRACEFUL' | 'IMMEDIATE' | 'FREEZE' | string
-  export interface EntitlementMap { [key: string]: unknown }
+  export type DowngradeStrategy =
+    | 'block'
+    | 'warn'
+    | 'soft_block'
+    | 'grace_period'
+    | 'GRACEFUL'
+    | 'IMMEDIATE'
+    | 'FREEZE'
+    | string
+  export interface EntitlementMap {
+    [key: string]: unknown
+  }
   export interface DowngradePreview {
     features: Array<{
       willBeAffected: boolean
@@ -185,8 +291,14 @@ declare module '@omnysync/core/entitlements/types' {
     }>
     recommendedStrategy: DowngradeStrategy
   }
-  export interface ExperimentConfig { seed: string; percentage: number; [key: string]: unknown }
-  export interface ExperimentBucket { [key: string]: unknown }
+  export interface ExperimentConfig {
+    seed: string
+    percentage: number
+    [key: string]: unknown
+  }
+  export interface ExperimentBucket {
+    [key: string]: unknown
+  }
   export interface EntitlementsResponse {
     allowed: boolean
     hasActiveSubscription: boolean
@@ -195,10 +307,34 @@ declare module '@omnysync/core/entitlements/types' {
     overrides: OverrideInfo[]
     debug?: { featureKey: string; resolved: boolean; source: string }
   }
-  export interface OverrideInfo { featureKey: string; enabled: boolean; reason?: string }
-  export interface PlanFeatureData { featureKey: string; featureName: string; enabled: boolean; limitValue: number | null; configJson: unknown; downgradeStrategy: DowngradeStrategy }
-  export interface PlanData { id: string; key: string; name: string; features: PlanFeatureData[] }
-  export interface FeatureWithPlans { id: string; key: string; name: string; description: string | null; type: FeatureType; defaultConfig: unknown; plans: PlanFeatureData[] }
+  export interface OverrideInfo {
+    featureKey: string
+    enabled: boolean
+    reason?: string
+  }
+  export interface PlanFeatureData {
+    featureKey: string
+    featureName: string
+    enabled: boolean
+    limitValue: number | null
+    configJson: unknown
+    downgradeStrategy: DowngradeStrategy
+  }
+  export interface PlanData {
+    id: string
+    key: string
+    name: string
+    features: PlanFeatureData[]
+  }
+  export interface FeatureWithPlans {
+    id: string
+    key: string
+    name: string
+    description: string | null
+    type: FeatureType
+    defaultConfig: unknown
+    plans: PlanFeatureData[]
+  }
 }
 
 declare module '@omnysync/core/entitlements/constants' {
@@ -210,7 +346,11 @@ declare module '@omnysync/core/entitlements/constants' {
   export const ACTIVE_SUBSCRIPTION_STATUSES: string[]
   export const SUBSCRIPTION_STATUSES: string[]
   export const ERROR_MESSAGES: Record<string, string>
-  export const EXPERIMENT_DEFAULTS: { DEFAULT_PERCENTAGE: number; SEED_PREFIX: string; [key: string]: unknown }
+  export const EXPERIMENT_DEFAULTS: {
+    DEFAULT_PERCENTAGE: number
+    SEED_PREFIX: string
+    [key: string]: unknown
+  }
   export const PAGINATION_DEFAULTS: Record<string, unknown>
   export const DEFAULT_DOWNGRADE_STRATEGY: string
   export const STRIPE_PRICE_IDS: Record<string, string>
@@ -242,7 +382,12 @@ declare module '@omnysync/core/entitlements/errors' {
   }
   export function logFeatureGateError(err: unknown): void
   export function isFeatureGateError(err: unknown): boolean
-  export function handleFeatureGateError(err: unknown): { error: string; status: number; body?: string; statusCode?: number }
+  export function handleFeatureGateError(err: unknown): {
+    error: string
+    status: number
+    body?: string
+    statusCode?: number
+  }
 }
 
 declare module '@omnysync/core/entitlements/CacheService' {
@@ -257,13 +402,19 @@ declare module '@omnysync/core/entitlements/CacheService' {
 declare module '@omnysync/core/entitlements/FeatureGateService' {
   export class FeatureGateService {
     invalidateCache(orgId: string): Promise<void>
-    getAllEntitlements(orgId: string): Promise<{ planKey: string; limits: Record<string, { enabled: boolean; limit?: number }> }>
+    getAllEntitlements(
+      orgId: string
+    ): Promise<{ planKey: string; limits: Record<string, { enabled: boolean; limit?: number }> }>
     getDebugTrace(orgId: string, featureKey: string): Promise<Record<string, unknown>>
     hasFeature(orgId: string, featureKey: string): Promise<boolean>
     assertFeature(orgId: string, featureKey: string): Promise<void>
     canConsume(orgId: string, featureKey: string, amount?: number): Promise<boolean>
     getLimit(orgId: string, featureKey: string): Promise<number | null>
-    consume(orgId: string, featureKey: string, amount?: number): Promise<{ remaining?: number } & { valueOf(): boolean }>
+    consume(
+      orgId: string,
+      featureKey: string,
+      amount?: number
+    ): Promise<{ remaining?: number } & { valueOf(): boolean }>
   }
   export function getFeatureGateService(): FeatureGateService
   export function resetFeatureGateService(): void
@@ -276,8 +427,15 @@ declare module '@omnysync/core/entitlements/EntitlementRepository' {
     getActiveSubscription(orgId: string): Promise<import('./types').SubscriptionData | null>
     getPlanKey(orgId: string): Promise<string | null>
     getAllOverridesForOrg(orgId: string): Promise<import('./types').OverrideInfo[]>
-    createOverride(orgId: string, featureKey: string, data: { enabled: boolean; reason?: string }): Promise<import('./types').OverrideInfo>
-     getDowngradePreview(orgId: string, targetPlanKey: string): Promise<import('./types').DowngradePreview>
+    createOverride(
+      orgId: string,
+      featureKey: string,
+      data: { enabled: boolean; reason?: string }
+    ): Promise<import('./types').OverrideInfo>
+    getDowngradePreview(
+      orgId: string,
+      targetPlanKey: string
+    ): Promise<import('./types').DowngradePreview>
     getFeature(orgId: string, featureKey: string): Promise<import('./types').FeatureData | null>
   }
   export interface IEntitlementRepository {
@@ -286,15 +444,47 @@ declare module '@omnysync/core/entitlements/EntitlementRepository' {
     getActiveSubscription(orgId: string): Promise<import('./types').SubscriptionData | null>
     getPlanKey(orgId: string): Promise<string | null>
     getAllOverridesForOrg(orgId: string): Promise<import('./types').OverrideInfo[]>
-    createOverride(orgId: string, featureKey: string, data: { enabled: boolean; reason?: string }): Promise<import('./types').OverrideInfo>
-    getDowngradePreview(orgId: string, targetPlanKey: string): Promise<import('./types').DowngradePreview>
+    createOverride(
+      orgId: string,
+      featureKey: string,
+      data: { enabled: boolean; reason?: string }
+    ): Promise<import('./types').OverrideInfo>
+    getDowngradePreview(
+      orgId: string,
+      targetPlanKey: string
+    ): Promise<import('./types').DowngradePreview>
     getFeature(orgId: string, featureKey: string): Promise<import('./types').FeatureData | null>
   }
-  export interface SubscriptionData { planKey: string; status: string; currentPeriodEnd?: Date | null | string }
-  export interface FeatureData { key: string; name: string; type: string; defaultConfig?: unknown; enabled?: boolean; limit?: number }
-  export interface PlanFeatureData { featureKey: string; featureName: string; enabled: boolean; limitValue: number | null; downgradeStrategy: string }
-  export interface OverrideData { featureKey: string; enabled: boolean; reason?: string }
-  export interface UsageData { featureKey: string; usageCount: number; periodStart: Date }
+  export interface SubscriptionData {
+    planKey: string
+    status: string
+    currentPeriodEnd?: Date | null | string
+  }
+  export interface FeatureData {
+    key: string
+    name: string
+    type: string
+    defaultConfig?: unknown
+    enabled?: boolean
+    limit?: number
+  }
+  export interface PlanFeatureData {
+    featureKey: string
+    featureName: string
+    enabled: boolean
+    limitValue: number | null
+    downgradeStrategy: string
+  }
+  export interface OverrideData {
+    featureKey: string
+    enabled: boolean
+    reason?: string
+  }
+  export interface UsageData {
+    featureKey: string
+    usageCount: number
+    periodStart: Date
+  }
   export function getEntitlementRepository(): IEntitlementRepository
   export function setEntitlementRepository(repo: IEntitlementRepository): void
   export function resetEntitlementRepository(): void
@@ -325,7 +515,11 @@ declare module '@omnysync/core/services/types' {
 
 declare module '@omnysync/core/services/sync' {
   export function performSync(orgId: string, documentId: string): Promise<unknown>
-  export function detectAndSyncChanges(orgId: string, documentId: string, accessToken?: string): Promise<unknown>
+  export function detectAndSyncChanges(
+    orgId: string,
+    documentId: string,
+    accessToken?: string
+  ): Promise<unknown>
   export function checkRemoteChanges(orgId: string, documentId: string): Promise<boolean>
 }
 
@@ -344,13 +538,23 @@ declare module '@omnysync/core/services/ai' {
 
 declare module '@omnysync/core/services/ai-usage' {
   export function logAIUsage(orgId: string, feature: string, tokens: number): Promise<void>
-  export function getAIUsageStats(orgId: string): Promise<{ totalTokens: number; byFeature: Record<string, number> }>
+  export function getAIUsageStats(
+    orgId: string
+  ): Promise<{ totalTokens: number; byFeature: Record<string, number> }>
 }
 
 declare module '@omnysync/core/services/approval' {
-  export function createApprovalRequest(orgId: string, createdBy: string, data: unknown): Promise<unknown>
+  export function createApprovalRequest(
+    orgId: string,
+    createdBy: string,
+    data: unknown
+  ): Promise<unknown>
   export function approveRequest(requestId: string, userId: string): Promise<unknown>
-  export function rejectRequest(requestId: string, userId: string, reason?: string): Promise<unknown>
+  export function rejectRequest(
+    requestId: string,
+    userId: string,
+    reason?: string
+  ): Promise<unknown>
   export function cancelRequest(requestId: string, userId: string): Promise<unknown>
   export function getApprovalRequests(orgId: string): Promise<unknown[]>
 }
@@ -398,8 +602,17 @@ declare module '@omnysync/core/services/scheduler' {
 declare module '@omnysync/core/services/google-docs' {
   export function listGoogleDocs(accessToken: string): Promise<unknown[]>
   export function getGoogleDocContent(documentId: string, accessToken: string): Promise<unknown>
-  export function saveGoogleDocsConnector(orgId: string, accessToken: string, refreshToken: string): Promise<unknown>
-  export function updateConnectorCredentials(orgId: string, connectorId: string, accessToken: string, refreshToken: string): Promise<unknown>
+  export function saveGoogleDocsConnector(
+    orgId: string,
+    accessToken: string,
+    refreshToken: string
+  ): Promise<unknown>
+  export function updateConnectorCredentials(
+    orgId: string,
+    connectorId: string,
+    accessToken: string,
+    refreshToken: string
+  ): Promise<unknown>
 }
 
 declare module '@omnysync/core/services/notion' {
@@ -426,41 +639,86 @@ declare module '@omnysync/core/services/contentful' {
   export function testContentfulConnection(spaceId: string, accessToken: string): Promise<boolean>
   export function listContentfulSpaces(accessToken: string): Promise<unknown[]>
   export function contentfulEntryToDocument(entry: unknown): Promise<unknown>
-  export function saveContentfulConnector(orgId: string, spaceId: string, accessToken: string): Promise<unknown>
+  export function saveContentfulConnector(
+    orgId: string,
+    spaceId: string,
+    accessToken: string
+  ): Promise<unknown>
 }
 
 declare module '@omnysync/core/services/ghost' {
   export function testGhostConnection(apiUrl: string, apiKey: string): Promise<boolean>
   export function publishToGhost(apiUrl: string, apiKey: string, data: unknown): Promise<unknown>
-  export function saveGhostConnector(orgId: string, apiUrl: string, apiKey: string): Promise<unknown>
+  export function saveGhostConnector(
+    orgId: string,
+    apiUrl: string,
+    apiKey: string
+  ): Promise<unknown>
   export function createGhostClient(apiUrl: string, apiKey: string): unknown
 }
 
 declare module '@omnysync/core/services/webflow' {
   export function testWebflowConnection(apiToken: string): Promise<boolean>
-  export function publishToWebflow(apiToken: string, siteId: string, data: unknown): Promise<unknown>
-  export function saveWebflowConnector(orgId: string, apiToken: string, siteId: string): Promise<unknown>
+  export function publishToWebflow(
+    apiToken: string,
+    siteId: string,
+    data: unknown
+  ): Promise<unknown>
+  export function saveWebflowConnector(
+    orgId: string,
+    apiToken: string,
+    siteId: string
+  ): Promise<unknown>
 }
 
 declare module '@omnysync/core/services/wordpress' {
   export function testWordPressConnection(apiUrl: string, credentials: unknown): Promise<boolean>
-  export function publishToWordpress(apiUrl: string, credentials: unknown, data: unknown): Promise<unknown>
-  export function saveWordPressConnector(orgId: string, apiUrl: string, credentials: unknown): Promise<unknown>
+  export function publishToWordpress(
+    apiUrl: string,
+    credentials: unknown,
+    data: unknown
+  ): Promise<unknown>
+  export function saveWordPressConnector(
+    orgId: string,
+    apiUrl: string,
+    credentials: unknown
+  ): Promise<unknown>
   export function createWordPressClient(apiUrl: string, credentials: unknown): unknown
 }
 
 declare module '@omnysync/core/services/shopify' {
   export function testShopifyConnection(shopDomain: string, accessToken: string): Promise<boolean>
-  export function publishToShopify(shopDomain: string, accessToken: string, data: unknown): Promise<unknown>
-  export function saveShopifyConnector(orgId: string, shopDomain: string, accessToken: string): Promise<unknown>
+  export function publishToShopify(
+    shopDomain: string,
+    accessToken: string,
+    data: unknown
+  ): Promise<unknown>
+  export function saveShopifyConnector(
+    orgId: string,
+    shopDomain: string,
+    accessToken: string
+  ): Promise<unknown>
 }
 
 declare module '@omnysync/core/services/two-factor' {
-  export function generateTotpSecret(userId: string): Promise<{ secret: string; qrCode: string; otpauthUrl: string }>
-  export function setupTwoFactor(userId: string, code: string): Promise<{ success: boolean; error?: string; backupCodes: string[] }>
-  export function verifyTotpCode(userId: string, code: string): Promise<{ valid: boolean; error?: string }>
-  export function disableTwoFactor(userId: string, code: string): Promise<{ success: boolean; error?: string }>
-  export function getTwoFactorStatus(userId: string): Promise<{ enabled: boolean; enabledAt?: Date }>
+  export function generateTotpSecret(
+    userId: string
+  ): Promise<{ secret: string; qrCode: string; otpauthUrl: string }>
+  export function setupTwoFactor(
+    userId: string,
+    code: string
+  ): Promise<{ success: boolean; error?: string; backupCodes: string[] }>
+  export function verifyTotpCode(
+    userId: string,
+    code: string
+  ): Promise<{ valid: boolean; error?: string }>
+  export function disableTwoFactor(
+    userId: string,
+    code: string
+  ): Promise<{ success: boolean; error?: string }>
+  export function getTwoFactorStatus(
+    userId: string
+  ): Promise<{ enabled: boolean; enabledAt?: Date }>
   export function storePendingSecret(userId: string, secret: string): Promise<void>
   export function getPendingSecret(userId: string): Promise<string | null>
   export function removePendingSecret(userId: string): Promise<void>

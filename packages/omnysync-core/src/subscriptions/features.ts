@@ -345,9 +345,9 @@ export async function updateUserPlan(
   const organizationId = orgMembership.organizationId;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const oldSubscription = await (prisma.subscription.findUnique as any)({
+  const oldSubscription = (await (prisma.subscription.findUnique as any)({
     where: { organizationId },
-  }) as { planKey?: string } | null;
+  })) as { planKey?: string } | null;
 
   const oldPlan = oldSubscription?.planKey || "free";
 

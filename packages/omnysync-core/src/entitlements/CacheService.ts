@@ -293,24 +293,29 @@ export class CacheService {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.subscriber = (this.redis as any).duplicate();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (this.subscriber as any).subscribe(CACHE_CONFIG.INVALIDATION_CHANNEL);
+      await (this.subscriber as any).subscribe(
+        CACHE_CONFIG.INVALIDATION_CHANNEL,
+      );
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (this.subscriber as any).on("message", (_channel: string, message: string) => {
-        try {
-          const data = JSON.parse(message) as InvalidationMessage;
-          if (data.type === "invalidate") {
-            // console.debug(`[CacheService] Received invalidation for org: ${data.orgId}`)
-            this.memoryCache.delete(this.getCacheKey(data.orgId));
-            callback(data.orgId);
+      (this.subscriber as any).on(
+        "message",
+        (_channel: string, message: string) => {
+          try {
+            const data = JSON.parse(message) as InvalidationMessage;
+            if (data.type === "invalidate") {
+              // console.debug(`[CacheService] Received invalidation for org: ${data.orgId}`)
+              this.memoryCache.delete(this.getCacheKey(data.orgId));
+              callback(data.orgId);
+            }
+          } catch (err) {
+            console.warn(
+              "[CacheService] Failed to parse invalidation message:",
+              err,
+            );
           }
-        } catch (err) {
-          console.warn(
-            "[CacheService] Failed to parse invalidation message:",
-            err,
-          );
-        }
-      });
+        },
+      );
 
       this.subscribed = true;
     } catch (err) {

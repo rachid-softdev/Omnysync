@@ -1,78 +1,97 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Erreur — Omnysync</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-background text-foreground min-h-screen">
-  <!-- Normal content (shown when no error) -->
-  <div id="normal-content" class="p-8">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-      <div class="space-y-1">
-        <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Administration</h1>
-        <p class="text-sm text-muted-foreground" data-testid="page-description">Vue d'ensemble de la plateforme</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Erreur — Omnysync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-background text-foreground min-h-screen">
+    <!-- Normal content (shown when no error) -->
+    <div id="normal-content" class="p-8">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+        <div class="space-y-1">
+          <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Administration</h1>
+          <p class="text-sm text-muted-foreground" data-testid="page-description">
+            Vue d'ensemble de la plateforme
+          </p>
+        </div>
       </div>
-    </div>
-    <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6" data-testid="content-card">
-      <p class="text-sm">Contenu normal de la page d'administration.</p>
-    </div>
-  </div>
-
-  <!-- Error boundary UI (shown when error is active) -->
-  <!-- Mimics the global error.tsx component at src/app/(dashboard)/admin/error.tsx -->
-  <div id="error-boundary" class="hidden" data-testid="error-boundary" role="alert" aria-live="assertive">
-    <div class="flex flex-col items-center justify-center min-h-[400px] gap-4">
-      <h2 class="text-lg font-semibold" data-testid="error-title">Une erreur est survenue</h2>
-      <div class="flex flex-col items-center gap-2">
-        <span id="error-status-badge" class="hidden inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold border-red-500/50 bg-red-50 text-red-600" data-testid="error-status-badge"></span>
-        <p class="text-sm text-muted-foreground" id="error-message" data-testid="error-message"></p>
-      </div>
-      <button
-        id="retry-btn"
-        class="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        data-testid="retry-btn"
+      <div
+        class="rounded-lg border bg-card text-card-foreground shadow-sm p-6"
+        data-testid="content-card"
       >
-        Réessayer
-      </button>
+        <p class="text-sm">Contenu normal de la page d'administration.</p>
+      </div>
     </div>
-  </div>
 
-  <script>
-    window.__showError = function (message, statusCode) {
-      // Hide normal content
-      document.getElementById('normal-content').classList.add('hidden');
+    <!-- Error boundary UI (shown when error is active) -->
+    <!-- Mimics the global error.tsx component at src/app/(dashboard)/admin/error.tsx -->
+    <div
+      id="error-boundary"
+      class="hidden"
+      data-testid="error-boundary"
+      role="alert"
+      aria-live="assertive"
+    >
+      <div class="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <h2 class="text-lg font-semibold" data-testid="error-title">Une erreur est survenue</h2>
+        <div class="flex flex-col items-center gap-2">
+          <span
+            id="error-status-badge"
+            class="hidden inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold border-red-500/50 bg-red-50 text-red-600"
+            data-testid="error-status-badge"
+          ></span>
+          <p
+            class="text-sm text-muted-foreground"
+            id="error-message"
+            data-testid="error-message"
+          ></p>
+        </div>
+        <button
+          id="retry-btn"
+          class="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          data-testid="retry-btn"
+        >
+          Réessayer
+        </button>
+      </div>
+    </div>
 
-      // Show error boundary
-      const errorBoundary = document.getElementById('error-boundary');
-      errorBoundary.classList.remove('hidden');
+    <script>
+      window.__showError = function (message, statusCode) {
+        // Hide normal content
+        document.getElementById('normal-content').classList.add('hidden')
 
-      // Set message
-      document.getElementById('error-message').textContent = message;
+        // Show error boundary
+        const errorBoundary = document.getElementById('error-boundary')
+        errorBoundary.classList.remove('hidden')
 
-      // Set status code badge
-      const badge = document.getElementById('error-status-badge');
-      if (statusCode !== undefined && statusCode !== null) {
-        badge.textContent = '' + statusCode;
-        badge.classList.remove('hidden');
-      } else {
-        badge.classList.add('hidden');
+        // Set message
+        document.getElementById('error-message').textContent = message
+
+        // Set status code badge
+        const badge = document.getElementById('error-status-badge')
+        if (statusCode !== undefined && statusCode !== null) {
+          badge.textContent = '' + statusCode
+          badge.classList.remove('hidden')
+        } else {
+          badge.classList.add('hidden')
+        }
       }
-    };
 
-    window.__clearError = function () {
-      // Hide error boundary
-      document.getElementById('error-boundary').classList.add('hidden');
+      window.__clearError = function () {
+        // Hide error boundary
+        document.getElementById('error-boundary').classList.add('hidden')
 
-      // Show normal content
-      document.getElementById('normal-content').classList.remove('hidden');
-    };
+        // Show normal content
+        document.getElementById('normal-content').classList.remove('hidden')
+      }
 
-    // Retry button handler: clears the error (simulates successful recovery)
-    document.getElementById('retry-btn').addEventListener('click', function () {
-      window.__clearError();
-    });
-  </script>
-</body>
+      // Retry button handler: clears the error (simulates successful recovery)
+      document.getElementById('retry-btn').addEventListener('click', function () {
+        window.__clearError()
+      })
+    </script>
+  </body>
 </html>

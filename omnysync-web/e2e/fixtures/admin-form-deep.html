@@ -1,529 +1,643 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin — Création (Feature / Plan / Override)</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .tab-active { background-color: #1d4ed8; color: white; }
-    .tab-inactive { background-color: #e5e7eb; color: #374151; }
-    .form-section { display: none; }
-    .form-section.active { display: block; }
-  </style>
-</head>
-<body class="bg-gray-50 text-gray-900 min-h-screen">
-  <div id="app" class="max-w-2xl mx-auto p-8">
-    <!-- Page Header -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Création</h1>
-      <p class="text-sm text-gray-500 mt-1">Créer une fonctionnalité, un plan ou un dépassement</p>
-    </div>
-
-    <!-- Tabs -->
-    <div class="flex gap-2 mb-8 border-b border-gray-200 pb-2" data-testid="form-tabs">
-      <button
-        data-testid="tab-feature"
-        data-form="feature"
-        class="tab-active px-4 py-2 text-sm font-medium rounded-t-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-        onclick="switchTab('feature')"
-      >
-        Fonctionnalité
-      </button>
-      <button
-        data-testid="tab-plan"
-        data-form="plan"
-        class="tab-inactive px-4 py-2 text-sm font-medium rounded-t-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-        onclick="switchTab('plan')"
-      >
-        Plan
-      </button>
-      <button
-        data-testid="tab-override"
-        data-form="override"
-        class="tab-inactive px-4 py-2 text-sm font-medium rounded-t-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-        onclick="switchTab('override')"
-      >
-        Dépassement
-      </button>
-    </div>
-
-    <!-- ================================================================== -->
-    <!-- Feature Form                                                       -->
-    <!-- ================================================================== -->
-    <div id="feature-form-section" class="form-section active" data-testid="feature-form-section">
-      <form id="feature-form" class="max-w-lg space-y-6" novalidate>
-        <!-- Key -->
-        <div class="space-y-2">
-          <label for="feature-key" class="text-sm font-medium leading-none" data-testid="feature-key-label">Clé</label>
-          <input
-            type="text"
-            id="feature-key"
-            name="key"
-            data-testid="feature-key"
-            placeholder="ex. MA_FONCTIONNALITÉ"
-            class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            required
-          />
-          <p id="feature-key-error" class="text-sm text-red-500 hidden" data-testid="feature-key-error"></p>
-        </div>
-
-        <!-- Name -->
-        <div class="space-y-2">
-          <label for="feature-name" class="text-sm font-medium leading-none" data-testid="feature-name-label">Nom</label>
-          <input
-            type="text"
-            id="feature-name"
-            name="name"
-            data-testid="feature-name"
-            placeholder="ex. Ma fonctionnalité"
-            class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            required
-          />
-          <p id="feature-name-error" class="text-sm text-red-500 hidden" data-testid="feature-name-error"></p>
-        </div>
-
-        <div class="flex items-center gap-4">
-          <button
-            type="submit"
-            id="feature-submit"
-            data-testid="feature-submit"
-            class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-9 px-4"
-          >
-            Créer la fonctionnalité
-          </button>
-          <button
-            type="reset"
-            data-testid="feature-reset"
-            class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 bg-gray-200 text-gray-700 hover:bg-gray-300 h-9 px-4"
-          >
-            Réinitialiser
-          </button>
-          <a
-            href="/admin/features"
-            data-testid="feature-cancel"
-            class="text-sm text-gray-500 hover:text-gray-700 underline"
-            onclick="handleCancel(event, '/admin/features')"
-          >
-            Annuler
-          </a>
-        </div>
-
-        <p id="feature-form-error" class="text-sm text-red-500 hidden" data-testid="form-error"></p>
-      </form>
-    </div>
-
-    <!-- ================================================================== -->
-    <!-- Plan Form                                                          -->
-    <!-- ================================================================== -->
-    <div id="plan-form-section" class="form-section" data-testid="plan-form-section">
-      <form id="plan-form" class="max-w-lg space-y-6" novalidate>
-        <!-- Key -->
-        <div class="space-y-2">
-          <label for="plan-key" class="text-sm font-medium leading-none" data-testid="plan-key-label">Clé</label>
-          <input
-            type="text"
-            id="plan-key"
-            name="key"
-            data-testid="plan-key"
-            placeholder="ex. pro"
-            class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            required
-          />
-          <p id="plan-key-error" class="text-sm text-red-500 hidden" data-testid="plan-key-error"></p>
-        </div>
-
-        <!-- Name -->
-        <div class="space-y-2">
-          <label for="plan-name" class="text-sm font-medium leading-none" data-testid="plan-name-label">Nom</label>
-          <input
-            type="text"
-            id="plan-name"
-            name="name"
-            data-testid="plan-name"
-            placeholder="ex. Pro"
-            class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            required
-          />
-          <p id="plan-name-error" class="text-sm text-red-500 hidden" data-testid="plan-name-error"></p>
-        </div>
-
-        <!-- Price Monthly -->
-        <div class="space-y-2">
-          <label for="plan-price-monthly" class="text-sm font-medium leading-none" data-testid="plan-price-monthly-label">Prix mensuel</label>
-          <input
-            type="number"
-            step="0.01"
-            id="plan-price-monthly"
-            name="priceMonthly"
-            data-testid="plan-price-monthly"
-            placeholder="0.00"
-            class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-          />
-          <p id="plan-price-error" class="text-sm text-red-500 hidden" data-testid="plan-price-error"></p>
-        </div>
-
-        <!-- Price Yearly -->
-        <div class="space-y-2">
-          <label for="plan-price-yearly" class="text-sm font-medium leading-none" data-testid="plan-price-yearly-label">Prix annuel</label>
-          <input
-            type="number"
-            step="0.01"
-            id="plan-price-yearly"
-            name="priceYearly"
-            data-testid="plan-price-yearly"
-            placeholder="0.00"
-            class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-          />
-        </div>
-
-        <div class="flex items-center gap-4">
-          <button
-            type="submit"
-            id="plan-submit"
-            data-testid="plan-submit"
-            class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-9 px-4"
-          >
-            Créer le plan
-          </button>
-          <button
-            type="reset"
-            data-testid="plan-reset"
-            class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 bg-gray-200 text-gray-700 hover:bg-gray-300 h-9 px-4"
-          >
-            Réinitialiser
-          </button>
-          <a
-            href="/admin/plans"
-            data-testid="plan-cancel"
-            class="text-sm text-gray-500 hover:text-gray-700 underline"
-            onclick="handleCancel(event, '/admin/plans')"
-          >
-            Annuler
-          </a>
-        </div>
-
-        <p id="plan-form-error" class="text-sm text-red-500 hidden" data-testid="form-error"></p>
-      </form>
-    </div>
-
-    <!-- ================================================================== -->
-    <!-- Override Form                                                      -->
-    <!-- ================================================================== -->
-    <div id="override-form-section" class="form-section" data-testid="override-form-section">
-      <form id="override-form" class="max-w-lg space-y-6" novalidate>
-        <!-- Scope -->
-        <div class="space-y-2">
-          <label for="override-scope-select" class="text-sm font-medium leading-none" data-testid="override-scope-label">Portée</label>
-          <select
-            id="override-scope-select"
-            name="scope"
-            data-testid="override-scope-select"
-            class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-          >
-            <option value="ORG">Organisation</option>
-            <option value="USER">Utilisateur</option>
-          </select>
-        </div>
-
-        <!-- Scope ID -->
-        <div class="space-y-2">
-          <label for="override-scope-id" class="text-sm font-medium leading-none" data-testid="override-scope-id-label">ID de portée</label>
-          <input
-            type="text"
-            id="override-scope-id"
-            name="scopeId"
-            data-testid="override-scope-id"
-            placeholder="org-xxx ou user-xxx"
-            class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            required
-          />
-          <p id="override-scope-id-error" class="text-sm text-red-500 hidden" data-testid="override-scope-id-error"></p>
-        </div>
-
-        <!-- Feature Key -->
-        <div class="space-y-2">
-          <label for="override-feature-key" class="text-sm font-medium leading-none" data-testid="override-feature-key-label">Clé de fonctionnalité</label>
-          <input
-            type="text"
-            id="override-feature-key"
-            name="featureKey"
-            data-testid="override-feature-key"
-            placeholder="MA_FONCTIONNALITÉ"
-            class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            required
-          />
-          <p id="override-feature-key-error" class="text-sm text-red-500 hidden" data-testid="override-feature-key-error"></p>
-        </div>
-
-        <!-- Reason -->
-        <div class="space-y-2">
-          <label for="override-reason" class="text-sm font-medium leading-none" data-testid="override-reason-label">Raison</label>
-          <textarea
-            id="override-reason"
-            name="reason"
-            data-testid="override-reason"
-            placeholder="Pourquoi ce dépassement ?"
-            rows="3"
-            class="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            required
-          ></textarea>
-          <p id="override-reason-error" class="text-sm text-red-500 hidden" data-testid="override-reason-error"></p>
-        </div>
-
-        <div class="flex items-center gap-4">
-          <button
-            type="submit"
-            id="override-submit"
-            data-testid="override-submit"
-            class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-9 px-4"
-          >
-            Créer le dépassement
-          </button>
-          <button
-            type="reset"
-            data-testid="override-reset"
-            class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 bg-gray-200 text-gray-700 hover:bg-gray-300 h-9 px-4"
-          >
-            Réinitialiser
-          </button>
-          <a
-            href="/admin/overrides"
-            data-testid="override-cancel"
-            class="text-sm text-gray-500 hover:text-gray-700 underline"
-            onclick="handleCancel(event, '/admin/overrides')"
-          >
-            Annuler
-          </a>
-        </div>
-
-        <p id="override-form-error" class="text-sm text-red-500 hidden" data-testid="form-error"></p>
-      </form>
-    </div>
-  </div>
-
-  <script>
-    // ─── Globals ────────────────────────────────────────────────────────
-    window.__submittedData = null;
-    window.__redirectedTo = null;
-    window.__submitCount = 0;
-    window.__submitting = false;
-
-    // ─── Tab switching ──────────────────────────────────────────────────
-    function switchTab(tabName) {
-      // Hide all sections
-      document.querySelectorAll('.form-section').forEach(function(section) {
-        section.classList.remove('active');
-      });
-
-      // Show target section
-      var target = document.getElementById(tabName + '-form-section');
-      if (target) target.classList.add('active');
-
-      // Update tab styles
-      document.querySelectorAll('[data-testid^="tab-"]').forEach(function(btn) {
-        btn.classList.remove('tab-active');
-        btn.classList.add('tab-inactive');
-      });
-
-      var activeTab = document.querySelector('[data-testid="tab-' + tabName + '"]');
-      if (activeTab) {
-        activeTab.classList.remove('tab-inactive');
-        activeTab.classList.add('tab-active');
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin — Création (Feature / Plan / Override)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .tab-active {
+        background-color: #1d4ed8;
+        color: white;
       }
-    }
-
-    // ─── Cancel handler ─────────────────────────────────────────────────
-    function handleCancel(event, url) {
-      event.preventDefault();
-      window.__redirectedTo = url;
-      document.body.innerHTML = '<div class="p-8 text-center text-gray-600" data-testid="redirect-message">Redirection vers ' + url + '...</div>';
-    }
-
-    // ─── Show error helper ──────────────────────────────────────────────
-    function showError(elementId, message) {
-      var el = document.getElementById(elementId);
-      if (el) {
-        el.textContent = message;
-        el.classList.remove('hidden');
+      .tab-inactive {
+        background-color: #e5e7eb;
+        color: #374151;
       }
-    }
+      .form-section {
+        display: none;
+      }
+      .form-section.active {
+        display: block;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 text-gray-900 min-h-screen">
+    <div id="app" class="max-w-2xl mx-auto p-8">
+      <!-- Page Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Création</h1>
+        <p class="text-sm text-gray-500 mt-1">
+          Créer une fonctionnalité, un plan ou un dépassement
+        </p>
+      </div>
 
-    function hideErrors() {
-      document.querySelectorAll('[id$="-error"]').forEach(function(el) {
-        el.classList.add('hidden');
-        el.textContent = '';
-      });
-    }
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-8 border-b border-gray-200 pb-2" data-testid="form-tabs">
+        <button
+          data-testid="tab-feature"
+          data-form="feature"
+          class="tab-active px-4 py-2 text-sm font-medium rounded-t-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onclick="switchTab('feature')"
+        >
+          Fonctionnalité
+        </button>
+        <button
+          data-testid="tab-plan"
+          data-form="plan"
+          class="tab-inactive px-4 py-2 text-sm font-medium rounded-t-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onclick="switchTab('plan')"
+        >
+          Plan
+        </button>
+        <button
+          data-testid="tab-override"
+          data-form="override"
+          class="tab-inactive px-4 py-2 text-sm font-medium rounded-t-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onclick="switchTab('override')"
+        >
+          Dépassement
+        </button>
+      </div>
 
-    // ─── Validation ─────────────────────────────────────────────────────
-    window.__validate = function(form) {
-      var errors = {};
+      <!-- ================================================================== -->
+      <!-- Feature Form                                                       -->
+      <!-- ================================================================== -->
+      <div id="feature-form-section" class="form-section active" data-testid="feature-form-section">
+        <form id="feature-form" class="max-w-lg space-y-6" novalidate>
+          <!-- Key -->
+          <div class="space-y-2">
+            <label
+              for="feature-key"
+              class="text-sm font-medium leading-none"
+              data-testid="feature-key-label"
+              >Clé</label
+            >
+            <input
+              type="text"
+              id="feature-key"
+              name="key"
+              data-testid="feature-key"
+              placeholder="ex. MA_FONCTIONNALITÉ"
+              class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              required
+            />
+            <p
+              id="feature-key-error"
+              class="text-sm text-red-500 hidden"
+              data-testid="feature-key-error"
+            ></p>
+          </div>
 
-      if (form.id === 'feature-form') {
-        var key = document.getElementById('feature-key').value;
-        var name = document.getElementById('feature-name').value;
+          <!-- Name -->
+          <div class="space-y-2">
+            <label
+              for="feature-name"
+              class="text-sm font-medium leading-none"
+              data-testid="feature-name-label"
+              >Nom</label
+            >
+            <input
+              type="text"
+              id="feature-name"
+              name="name"
+              data-testid="feature-name"
+              placeholder="ex. Ma fonctionnalité"
+              class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              required
+            />
+            <p
+              id="feature-name-error"
+              class="text-sm text-red-500 hidden"
+              data-testid="feature-name-error"
+            ></p>
+          </div>
 
-        if (!key || key.trim() === '') {
-          errors.key = 'La clé est requise';
-        } else if (!/^[A-Z][A-Z0-9_]*$/.test(key.trim())) {
-          errors.key = 'La clé doit être en MAJUSCULES sans espaces';
-        }
+          <div class="flex items-center gap-4">
+            <button
+              type="submit"
+              id="feature-submit"
+              data-testid="feature-submit"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-9 px-4"
+            >
+              Créer la fonctionnalité
+            </button>
+            <button
+              type="reset"
+              data-testid="feature-reset"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 bg-gray-200 text-gray-700 hover:bg-gray-300 h-9 px-4"
+            >
+              Réinitialiser
+            </button>
+            <a
+              href="/admin/features"
+              data-testid="feature-cancel"
+              class="text-sm text-gray-500 hover:text-gray-700 underline"
+              onclick="handleCancel(event, '/admin/features')"
+            >
+              Annuler
+            </a>
+          </div>
 
-        if (!name || name.trim() === '') {
-          errors.name = 'Le nom est requis';
-        }
+          <p
+            id="feature-form-error"
+            class="text-sm text-red-500 hidden"
+            data-testid="form-error"
+          ></p>
+        </form>
+      </div>
 
-      } else if (form.id === 'plan-form') {
-        var key = document.getElementById('plan-key').value;
-        var name = document.getElementById('plan-name').value;
-        var priceMonthly = parseFloat(document.getElementById('plan-price-monthly').value);
+      <!-- ================================================================== -->
+      <!-- Plan Form                                                          -->
+      <!-- ================================================================== -->
+      <div id="plan-form-section" class="form-section" data-testid="plan-form-section">
+        <form id="plan-form" class="max-w-lg space-y-6" novalidate>
+          <!-- Key -->
+          <div class="space-y-2">
+            <label
+              for="plan-key"
+              class="text-sm font-medium leading-none"
+              data-testid="plan-key-label"
+              >Clé</label
+            >
+            <input
+              type="text"
+              id="plan-key"
+              name="key"
+              data-testid="plan-key"
+              placeholder="ex. pro"
+              class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              required
+            />
+            <p
+              id="plan-key-error"
+              class="text-sm text-red-500 hidden"
+              data-testid="plan-key-error"
+            ></p>
+          </div>
 
-        if (!key || key.trim() === '') {
-          errors.key = 'La clé est requise';
-        }
+          <!-- Name -->
+          <div class="space-y-2">
+            <label
+              for="plan-name"
+              class="text-sm font-medium leading-none"
+              data-testid="plan-name-label"
+              >Nom</label
+            >
+            <input
+              type="text"
+              id="plan-name"
+              name="name"
+              data-testid="plan-name"
+              placeholder="ex. Pro"
+              class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              required
+            />
+            <p
+              id="plan-name-error"
+              class="text-sm text-red-500 hidden"
+              data-testid="plan-name-error"
+            ></p>
+          </div>
 
-        if (!name || name.trim() === '') {
-          errors.name = 'Le nom est requis';
-        }
+          <!-- Price Monthly -->
+          <div class="space-y-2">
+            <label
+              for="plan-price-monthly"
+              class="text-sm font-medium leading-none"
+              data-testid="plan-price-monthly-label"
+              >Prix mensuel</label
+            >
+            <input
+              type="number"
+              step="0.01"
+              id="plan-price-monthly"
+              name="priceMonthly"
+              data-testid="plan-price-monthly"
+              placeholder="0.00"
+              class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            />
+            <p
+              id="plan-price-error"
+              class="text-sm text-red-500 hidden"
+              data-testid="plan-price-error"
+            ></p>
+          </div>
 
-        if (isNaN(priceMonthly) || priceMonthly < 0) {
-          errors.price = 'Le prix mensuel doit être supérieur ou égal à 0';
-        }
+          <!-- Price Yearly -->
+          <div class="space-y-2">
+            <label
+              for="plan-price-yearly"
+              class="text-sm font-medium leading-none"
+              data-testid="plan-price-yearly-label"
+              >Prix annuel</label
+            >
+            <input
+              type="number"
+              step="0.01"
+              id="plan-price-yearly"
+              name="priceYearly"
+              data-testid="plan-price-yearly"
+              placeholder="0.00"
+              class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            />
+          </div>
 
-      } else if (form.id === 'override-form') {
-        var scopeId = document.getElementById('override-scope-id').value;
-        var featureKey = document.getElementById('override-feature-key').value;
-        var reason = document.getElementById('override-reason').value;
+          <div class="flex items-center gap-4">
+            <button
+              type="submit"
+              id="plan-submit"
+              data-testid="plan-submit"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-9 px-4"
+            >
+              Créer le plan
+            </button>
+            <button
+              type="reset"
+              data-testid="plan-reset"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 bg-gray-200 text-gray-700 hover:bg-gray-300 h-9 px-4"
+            >
+              Réinitialiser
+            </button>
+            <a
+              href="/admin/plans"
+              data-testid="plan-cancel"
+              class="text-sm text-gray-500 hover:text-gray-700 underline"
+              onclick="handleCancel(event, '/admin/plans')"
+            >
+              Annuler
+            </a>
+          </div>
 
-        if (!scopeId || scopeId.trim() === '') {
-          errors.scopeId = "L'ID de portée est requis";
-        }
+          <p id="plan-form-error" class="text-sm text-red-500 hidden" data-testid="form-error"></p>
+        </form>
+      </div>
 
-        if (!featureKey || featureKey.trim() === '') {
-          errors.featureKey = 'La clé de fonctionnalité est requise';
-        }
+      <!-- ================================================================== -->
+      <!-- Override Form                                                      -->
+      <!-- ================================================================== -->
+      <div id="override-form-section" class="form-section" data-testid="override-form-section">
+        <form id="override-form" class="max-w-lg space-y-6" novalidate>
+          <!-- Scope -->
+          <div class="space-y-2">
+            <label
+              for="override-scope-select"
+              class="text-sm font-medium leading-none"
+              data-testid="override-scope-label"
+              >Portée</label
+            >
+            <select
+              id="override-scope-select"
+              name="scope"
+              data-testid="override-scope-select"
+              class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            >
+              <option value="ORG">Organisation</option>
+              <option value="USER">Utilisateur</option>
+            </select>
+          </div>
 
-        if (!reason || reason.trim() === '') {
-          errors.reason = 'La raison est requise';
-        } else if (reason.length > 500) {
-          errors.reason = 'La raison ne doit pas dépasser 500 caractères';
+          <!-- Scope ID -->
+          <div class="space-y-2">
+            <label
+              for="override-scope-id"
+              class="text-sm font-medium leading-none"
+              data-testid="override-scope-id-label"
+              >ID de portée</label
+            >
+            <input
+              type="text"
+              id="override-scope-id"
+              name="scopeId"
+              data-testid="override-scope-id"
+              placeholder="org-xxx ou user-xxx"
+              class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              required
+            />
+            <p
+              id="override-scope-id-error"
+              class="text-sm text-red-500 hidden"
+              data-testid="override-scope-id-error"
+            ></p>
+          </div>
+
+          <!-- Feature Key -->
+          <div class="space-y-2">
+            <label
+              for="override-feature-key"
+              class="text-sm font-medium leading-none"
+              data-testid="override-feature-key-label"
+              >Clé de fonctionnalité</label
+            >
+            <input
+              type="text"
+              id="override-feature-key"
+              name="featureKey"
+              data-testid="override-feature-key"
+              placeholder="MA_FONCTIONNALITÉ"
+              class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              required
+            />
+            <p
+              id="override-feature-key-error"
+              class="text-sm text-red-500 hidden"
+              data-testid="override-feature-key-error"
+            ></p>
+          </div>
+
+          <!-- Reason -->
+          <div class="space-y-2">
+            <label
+              for="override-reason"
+              class="text-sm font-medium leading-none"
+              data-testid="override-reason-label"
+              >Raison</label
+            >
+            <textarea
+              id="override-reason"
+              name="reason"
+              data-testid="override-reason"
+              placeholder="Pourquoi ce dépassement ?"
+              rows="3"
+              class="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              required
+            ></textarea>
+            <p
+              id="override-reason-error"
+              class="text-sm text-red-500 hidden"
+              data-testid="override-reason-error"
+            ></p>
+          </div>
+
+          <div class="flex items-center gap-4">
+            <button
+              type="submit"
+              id="override-submit"
+              data-testid="override-submit"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-9 px-4"
+            >
+              Créer le dépassement
+            </button>
+            <button
+              type="reset"
+              data-testid="override-reset"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 bg-gray-200 text-gray-700 hover:bg-gray-300 h-9 px-4"
+            >
+              Réinitialiser
+            </button>
+            <a
+              href="/admin/overrides"
+              data-testid="override-cancel"
+              class="text-sm text-gray-500 hover:text-gray-700 underline"
+              onclick="handleCancel(event, '/admin/overrides')"
+            >
+              Annuler
+            </a>
+          </div>
+
+          <p
+            id="override-form-error"
+            class="text-sm text-red-500 hidden"
+            data-testid="form-error"
+          ></p>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      // ─── Globals ────────────────────────────────────────────────────────
+      window.__submittedData = null
+      window.__redirectedTo = null
+      window.__submitCount = 0
+      window.__submitting = false
+
+      // ─── Tab switching ──────────────────────────────────────────────────
+      function switchTab(tabName) {
+        // Hide all sections
+        document.querySelectorAll('.form-section').forEach(function (section) {
+          section.classList.remove('active')
+        })
+
+        // Show target section
+        var target = document.getElementById(tabName + '-form-section')
+        if (target) target.classList.add('active')
+
+        // Update tab styles
+        document.querySelectorAll('[data-testid^="tab-"]').forEach(function (btn) {
+          btn.classList.remove('tab-active')
+          btn.classList.add('tab-inactive')
+        })
+
+        var activeTab = document.querySelector('[data-testid="tab-' + tabName + '"]')
+        if (activeTab) {
+          activeTab.classList.remove('tab-inactive')
+          activeTab.classList.add('tab-active')
         }
       }
 
-      return errors;
-    };
-
-    // ─── Submit helper ──────────────────────────────────────────────────
-    function handleSubmit(form, submitBtnId, successData, redirectUrl) {
-      // Prevent double submit
-      if (window.__submitting) return;
-      window.__submitting = true;
-
-      // Show loading state
-      var btn = document.getElementById(submitBtnId);
-      var originalText = btn.textContent;
-      btn.textContent = 'Création en cours...';
-      btn.disabled = true;
-
-      // Clear previous errors
-      hideErrors();
-      var formErrorId = form.id + '-error';
-      var formError = document.getElementById(formErrorId);
-      if (formError) {
-        formError.classList.add('hidden');
-        formError.textContent = '';
+      // ─── Cancel handler ─────────────────────────────────────────────────
+      function handleCancel(event, url) {
+        event.preventDefault()
+        window.__redirectedTo = url
+        document.body.innerHTML =
+          '<div class="p-8 text-center text-gray-600" data-testid="redirect-message">Redirection vers ' +
+          url +
+          '...</div>'
       }
 
-      // Validate
-      var errors = window.__validate(form);
+      // ─── Show error helper ──────────────────────────────────────────────
+      function showError(elementId, message) {
+        var el = document.getElementById(elementId)
+        if (el) {
+          el.textContent = message
+          el.classList.remove('hidden')
+        }
+      }
 
-      if (Object.keys(errors).length > 0) {
-        // Show validation errors
+      function hideErrors() {
+        document.querySelectorAll('[id$="-error"]').forEach(function (el) {
+          el.classList.add('hidden')
+          el.textContent = ''
+        })
+      }
+
+      // ─── Validation ─────────────────────────────────────────────────────
+      window.__validate = function (form) {
+        var errors = {}
+
         if (form.id === 'feature-form') {
-          if (errors.key) showError('feature-key-error', errors.key);
-          if (errors.name) showError('feature-name-error', errors.name);
+          var key = document.getElementById('feature-key').value
+          var name = document.getElementById('feature-name').value
+
+          if (!key || key.trim() === '') {
+            errors.key = 'La clé est requise'
+          } else if (!/^[A-Z][A-Z0-9_]*$/.test(key.trim())) {
+            errors.key = 'La clé doit être en MAJUSCULES sans espaces'
+          }
+
+          if (!name || name.trim() === '') {
+            errors.name = 'Le nom est requis'
+          }
         } else if (form.id === 'plan-form') {
-          if (errors.key) showError('plan-key-error', errors.key);
-          if (errors.name) showError('plan-name-error', errors.name);
-          if (errors.price) showError('plan-price-error', errors.price);
+          var key = document.getElementById('plan-key').value
+          var name = document.getElementById('plan-name').value
+          var priceMonthly = parseFloat(document.getElementById('plan-price-monthly').value)
+
+          if (!key || key.trim() === '') {
+            errors.key = 'La clé est requise'
+          }
+
+          if (!name || name.trim() === '') {
+            errors.name = 'Le nom est requis'
+          }
+
+          if (isNaN(priceMonthly) || priceMonthly < 0) {
+            errors.price = 'Le prix mensuel doit être supérieur ou égal à 0'
+          }
         } else if (form.id === 'override-form') {
-          if (errors.scopeId) showError('override-scope-id-error', errors.scopeId);
-          if (errors.featureKey) showError('override-feature-key-error', errors.featureKey);
-          if (errors.reason) showError('override-reason-error', errors.reason);
+          var scopeId = document.getElementById('override-scope-id').value
+          var featureKey = document.getElementById('override-feature-key').value
+          var reason = document.getElementById('override-reason').value
+
+          if (!scopeId || scopeId.trim() === '') {
+            errors.scopeId = "L'ID de portée est requis"
+          }
+
+          if (!featureKey || featureKey.trim() === '') {
+            errors.featureKey = 'La clé de fonctionnalité est requise'
+          }
+
+          if (!reason || reason.trim() === '') {
+            errors.reason = 'La raison est requise'
+          } else if (reason.length > 500) {
+            errors.reason = 'La raison ne doit pas dépasser 500 caractères'
+          }
         }
 
-        // Reset submitting state
-        window.__submitting = false;
-        btn.textContent = originalText;
-        btn.disabled = false;
-        return;
+        return errors
       }
 
-      // Success
-      window.__submitCount++;
-      window.__submittedData = successData;
-      window.__redirectedTo = redirectUrl;
+      // ─── Submit helper ──────────────────────────────────────────────────
+      function handleSubmit(form, submitBtnId, successData, redirectUrl) {
+        // Prevent double submit
+        if (window.__submitting) return
+        window.__submitting = true
 
-      // Show success — small delay allows testing double-click prevention
-      if (formError) {
-        formError.classList.add('hidden');
-        formError.textContent = '';
+        // Show loading state
+        var btn = document.getElementById(submitBtnId)
+        var originalText = btn.textContent
+        btn.textContent = 'Création en cours...'
+        btn.disabled = true
+
+        // Clear previous errors
+        hideErrors()
+        var formErrorId = form.id + '-error'
+        var formError = document.getElementById(formErrorId)
+        if (formError) {
+          formError.classList.add('hidden')
+          formError.textContent = ''
+        }
+
+        // Validate
+        var errors = window.__validate(form)
+
+        if (Object.keys(errors).length > 0) {
+          // Show validation errors
+          if (form.id === 'feature-form') {
+            if (errors.key) showError('feature-key-error', errors.key)
+            if (errors.name) showError('feature-name-error', errors.name)
+          } else if (form.id === 'plan-form') {
+            if (errors.key) showError('plan-key-error', errors.key)
+            if (errors.name) showError('plan-name-error', errors.name)
+            if (errors.price) showError('plan-price-error', errors.price)
+          } else if (form.id === 'override-form') {
+            if (errors.scopeId) showError('override-scope-id-error', errors.scopeId)
+            if (errors.featureKey) showError('override-feature-key-error', errors.featureKey)
+            if (errors.reason) showError('override-reason-error', errors.reason)
+          }
+
+          // Reset submitting state
+          window.__submitting = false
+          btn.textContent = originalText
+          btn.disabled = false
+          return
+        }
+
+        // Success
+        window.__submitCount++
+        window.__submittedData = successData
+        window.__redirectedTo = redirectUrl
+
+        // Show success — small delay allows testing double-click prevention
+        if (formError) {
+          formError.classList.add('hidden')
+          formError.textContent = ''
+        }
+
+        var self = this
+        setTimeout(function () {
+          document.body.innerHTML =
+            '<div class="p-8 text-center text-green-600" data-testid="success-message">Création réussie ! Redirection vers la liste.</div>'
+        }, 300)
       }
 
-      var self = this;
-      setTimeout(function() {
-        document.body.innerHTML = '<div class="p-8 text-center text-green-600" data-testid="success-message">Création réussie ! Redirection vers la liste.</div>';
-      }, 300);
-    }
+      // ─── Feature form submit ────────────────────────────────────────────
+      document.getElementById('feature-form').addEventListener('submit', function (e) {
+        e.preventDefault()
+        var key = document.getElementById('feature-key').value.trim()
+        var name = document.getElementById('feature-name').value.trim()
+        handleSubmit(this, 'feature-submit', { key: key, name: name }, '/admin/features')
+      })
 
-    // ─── Feature form submit ────────────────────────────────────────────
-    document.getElementById('feature-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      var key = document.getElementById('feature-key').value.trim();
-      var name = document.getElementById('feature-name').value.trim();
-      handleSubmit(this, 'feature-submit', { key: key, name: name }, '/admin/features');
-    });
+      // ─── Plan form submit ───────────────────────────────────────────────
+      document.getElementById('plan-form').addEventListener('submit', function (e) {
+        e.preventDefault()
+        var key = document.getElementById('plan-key').value.trim()
+        var name = document.getElementById('plan-name').value.trim()
+        var priceMonthly = parseFloat(document.getElementById('plan-price-monthly').value) || 0
+        var priceYearly = parseFloat(document.getElementById('plan-price-yearly').value) || 0
+        handleSubmit(
+          this,
+          'plan-submit',
+          { key: key, name: name, priceMonthly: priceMonthly, priceYearly: priceYearly },
+          '/admin/plans'
+        )
+      })
 
-    // ─── Plan form submit ───────────────────────────────────────────────
-    document.getElementById('plan-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      var key = document.getElementById('plan-key').value.trim();
-      var name = document.getElementById('plan-name').value.trim();
-      var priceMonthly = parseFloat(document.getElementById('plan-price-monthly').value) || 0;
-      var priceYearly = parseFloat(document.getElementById('plan-price-yearly').value) || 0;
-      handleSubmit(this, 'plan-submit', { key: key, name: name, priceMonthly: priceMonthly, priceYearly: priceYearly }, '/admin/plans');
-    });
+      // ─── Override form submit ───────────────────────────────────────────
+      document.getElementById('override-form').addEventListener('submit', function (e) {
+        e.preventDefault()
+        var scope = document.getElementById('override-scope-select').value
+        var scopeId = document.getElementById('override-scope-id').value.trim()
+        var featureKey = document.getElementById('override-feature-key').value.trim()
+        var reason = document.getElementById('override-reason').value.trim()
+        handleSubmit(
+          this,
+          'override-submit',
+          { scope: scope, scopeId: scopeId, featureKey: featureKey, reason: reason },
+          '/admin/overrides'
+        )
+      })
 
-    // ─── Override form submit ───────────────────────────────────────────
-    document.getElementById('override-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      var scope = document.getElementById('override-scope-select').value;
-      var scopeId = document.getElementById('override-scope-id').value.trim();
-      var featureKey = document.getElementById('override-feature-key').value.trim();
-      var reason = document.getElementById('override-reason').value.trim();
-      handleSubmit(this, 'override-submit', { scope: scope, scopeId: scopeId, featureKey: featureKey, reason: reason }, '/admin/overrides');
-    });
+      // ─── Reset handlers ─────────────────────────────────────────────────
+      document.getElementById('feature-form').addEventListener('reset', function () {
+        // Small delay to let native reset apply
+        setTimeout(function () {
+          hideErrors()
+        }, 0)
+      })
 
-    // ─── Reset handlers ─────────────────────────────────────────────────
-    document.getElementById('feature-form').addEventListener('reset', function() {
-      // Small delay to let native reset apply
-      setTimeout(function() {
-        hideErrors();
-      }, 0);
-    });
+      document.getElementById('plan-form').addEventListener('reset', function () {
+        setTimeout(function () {
+          hideErrors()
+        }, 0)
+      })
 
-    document.getElementById('plan-form').addEventListener('reset', function() {
-      setTimeout(function() {
-        hideErrors();
-      }, 0);
-    });
-
-    document.getElementById('override-form').addEventListener('reset', function() {
-      setTimeout(function() {
-        hideErrors();
-      }, 0);
-    });
-  </script>
-</body>
+      document.getElementById('override-form').addEventListener('reset', function () {
+        setTimeout(function () {
+          hideErrors()
+        }, 0)
+      })
+    </script>
+  </body>
 </html>

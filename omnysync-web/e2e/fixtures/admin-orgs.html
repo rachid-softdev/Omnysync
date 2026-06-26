@@ -1,160 +1,258 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Organisations — Omnysync</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-background text-foreground">
-  <div class="p-8" id="app">
-    <!-- AdminPageHeader -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-      <div class="space-y-1">
-        <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Organisations</h1>
-        <p class="text-sm text-muted-foreground" data-testid="page-description">3 organisations sur la plateforme</p>
-      </div>
-    </div>
-
-    <!-- Search bar -->
-    <div class="relative mb-6 max-w-sm">
-      <input
-        type="text"
-        id="search-input"
-        placeholder="Rechercher par nom ou slug…"
-        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        data-testid="search-input"
-      />
-      <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-      </svg>
-    </div>
-
-    <!-- Error state -->
-    <div id="error-banner" class="hidden items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm" data-testid="error-banner">
-      <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-      </svg>
-      <span id="error-message" data-testid="error-message"></span>
-    </div>
-
-    <!-- Table -->
-    <div class="space-y-4">
-      <div class="relative w-full overflow-auto rounded-md border">
-        <table class="w-full caption-bottom text-sm">
-          <thead class="[&_tr]:border-b">
-            <tr class="border-b transition-colors hover:bg-muted/50">
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Nom</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Slug</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Plan</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Créé le</th>
-            </tr>
-          </thead>
-          <tbody id="table-body" class="[&_tr:last-child]:border-0" data-testid="table-body">
-          </tbody>
-        </table>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Organisations — Omnysync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-background text-foreground">
+    <div class="p-8" id="app">
+      <!-- AdminPageHeader -->
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+        <div class="space-y-1">
+          <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Organisations</h1>
+          <p class="text-sm text-muted-foreground" data-testid="page-description">
+            3 organisations sur la plateforme
+          </p>
+        </div>
       </div>
 
-      <!-- Pagination -->
-      <div id="pagination" class="hidden flex items-center justify-between text-sm text-muted-foreground" data-testid="pagination">
-        <p id="pagination-info" data-testid="pagination-info"></p>
-        <div class="flex items-center gap-2">
-          <button
-            id="prev-btn"
-            class="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 h-8 gap-1.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
-            aria-label="Page précédente"
-            data-testid="prev-page"
-          >
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 18l-6-6 6-6"/></svg>
-          </button>
-          <span id="page-indicator" class="min-w-[4rem] text-center font-medium" data-testid="page-indicator">Page 1 / 1</span>
-          <button
-            id="next-btn"
-            class="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 h-8 gap-1.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
-            aria-label="Page suivante"
-            data-testid="next-page"
-          >
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-          </button>
+      <!-- Search bar -->
+      <div class="relative mb-6 max-w-sm">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Rechercher par nom ou slug…"
+          class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          data-testid="search-input"
+        />
+        <svg
+          class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
+        </svg>
+      </div>
+
+      <!-- Error state -->
+      <div
+        id="error-banner"
+        class="hidden items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm"
+        data-testid="error-banner"
+      >
+        <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+          />
+        </svg>
+        <span id="error-message" data-testid="error-message"></span>
+      </div>
+
+      <!-- Table -->
+      <div class="space-y-4">
+        <div class="relative w-full overflow-auto rounded-md border">
+          <table class="w-full caption-bottom text-sm">
+            <thead class="[&_tr]:border-b">
+              <tr class="border-b transition-colors hover:bg-muted/50">
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Nom
+                </th>
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Slug
+                </th>
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Plan
+                </th>
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Créé le
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id="table-body"
+              class="[&_tr:last-child]:border-0"
+              data-testid="table-body"
+            ></tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div
+          id="pagination"
+          class="hidden flex items-center justify-between text-sm text-muted-foreground"
+          data-testid="pagination"
+        >
+          <p id="pagination-info" data-testid="pagination-info"></p>
+          <div class="flex items-center gap-2">
+            <button
+              id="prev-btn"
+              class="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 h-8 gap-1.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+              aria-label="Page précédente"
+              data-testid="prev-page"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 18l-6-6 6-6"
+                />
+              </svg>
+            </button>
+            <span
+              id="page-indicator"
+              class="min-w-[4rem] text-center font-medium"
+              data-testid="page-indicator"
+              >Page 1 / 1</span
+            >
+            <button
+              id="next-btn"
+              class="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 h-8 gap-1.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+              aria-label="Page suivante"
+              data-testid="next-page"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <script>
-    // ── Mock Data (mirrors the test mock) ──
-    const MOCK_ORGS = [
-      { id: '1', name: 'Acme Inc', slug: 'acme', createdAt: '2026-01-10T00:00:00.000Z', subscriptions: [{ planKey: 'pro', status: 'ACTIVE' }] },
-      { id: '2', name: 'Globex Corp', slug: 'globex', createdAt: '2026-02-20T00:00:00.000Z', subscriptions: [{ planKey: 'free', status: 'ACTIVE' }] },
-      { id: '3', name: 'Stark Industries', slug: 'stark', createdAt: '2026-03-15T00:00:00.000Z', subscriptions: [{ planKey: 'enterprise', status: 'TRIALING' }] },
-    ];
+    <script>
+      // ── Mock Data (mirrors the test mock) ──
+      const MOCK_ORGS = [
+        {
+          id: '1',
+          name: 'Acme Inc',
+          slug: 'acme',
+          createdAt: '2026-01-10T00:00:00.000Z',
+          subscriptions: [{ planKey: 'pro', status: 'ACTIVE' }],
+        },
+        {
+          id: '2',
+          name: 'Globex Corp',
+          slug: 'globex',
+          createdAt: '2026-02-20T00:00:00.000Z',
+          subscriptions: [{ planKey: 'free', status: 'ACTIVE' }],
+        },
+        {
+          id: '3',
+          name: 'Stark Industries',
+          slug: 'stark',
+          createdAt: '2026-03-15T00:00:00.000Z',
+          subscriptions: [{ planKey: 'enterprise', status: 'TRIALING' }],
+        },
+      ]
 
-    // Extra orgs for pagination test
-    function generateExtraOrgs(count) {
-      const plans = ['free', 'pro', 'business', 'enterprise'];
-      const statuses = ['ACTIVE', 'TRIALING', 'CANCELED'];
-      const names = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Iota', 'Kappa', 'Lambda', 'Mu', 'Nu', 'Xi', 'Omicron'];
-      const extras = [];
-      for (let i = 0; i < count; i++) {
-        const idx = i + 4;
-        extras.push({
-          id: String(idx),
-          name: names[i % names.length] + ' ' + String.fromCharCode(65 + Math.floor(i / names.length)),
-          slug: names[i % names.length].toLowerCase() + idx,
-          createdAt: new Date(2026, 0, idx).toISOString(),
-          subscriptions: [{ planKey: plans[i % plans.length], status: statuses[i % statuses.length] }],
-        });
+      // Extra orgs for pagination test
+      function generateExtraOrgs(count) {
+        const plans = ['free', 'pro', 'business', 'enterprise']
+        const statuses = ['ACTIVE', 'TRIALING', 'CANCELED']
+        const names = [
+          'Alpha',
+          'Beta',
+          'Gamma',
+          'Delta',
+          'Epsilon',
+          'Zeta',
+          'Eta',
+          'Theta',
+          'Iota',
+          'Kappa',
+          'Lambda',
+          'Mu',
+          'Nu',
+          'Xi',
+          'Omicron',
+        ]
+        const extras = []
+        for (let i = 0; i < count; i++) {
+          const idx = i + 4
+          extras.push({
+            id: String(idx),
+            name:
+              names[i % names.length] +
+              ' ' +
+              String.fromCharCode(65 + Math.floor(i / names.length)),
+            slug: names[i % names.length].toLowerCase() + idx,
+            createdAt: new Date(2026, 0, idx).toISOString(),
+            subscriptions: [
+              { planKey: plans[i % plans.length], status: statuses[i % statuses.length] },
+            ],
+          })
+        }
+        return extras
       }
-      return extras;
-    }
 
-    let orgs = [...MOCK_ORGS];
-    const PAGE_SIZE = 10;
-    let currentPage = 1;
+      let orgs = [...MOCK_ORGS]
+      const PAGE_SIZE = 10
+      let currentPage = 1
 
-    // ── Plan badge colors matching AdminStatusBadge ──
-    const planStatusMap = {
-      free: 'inactive',
-      pro: 'active',
-      business: 'active',
-      enterprise: 'active',
-    };
+      // ── Plan badge colors matching AdminStatusBadge ──
+      const planStatusMap = {
+        free: 'inactive',
+        pro: 'active',
+        business: 'active',
+        enterprise: 'active',
+      }
 
-    function getBadgeVariant(status) {
-      if (status === 'TRIALING') return 'trialing';
-      if (status === 'CANCELED') return 'expired';
-      if (status === 'ACTIVE') return 'active';
-      return 'inactive';
-    }
+      function getBadgeVariant(status) {
+        if (status === 'TRIALING') return 'trialing'
+        if (status === 'CANCELED') return 'expired'
+        if (status === 'ACTIVE') return 'active'
+        return 'inactive'
+      }
 
-    const badgeStyles = {
-      active: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800',
-      inactive: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800',
-      trialing: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800',
-      expired: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800',
-    };
+      const badgeStyles = {
+        active:
+          'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800',
+        inactive:
+          'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800',
+        trialing:
+          'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+        expired:
+          'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800',
+      }
 
-    const badgeLabels = {
-      active: 'Actif',
-      inactive: 'Inactif',
-      trialing: 'Essai',
-      expired: 'Expiré',
-    };
+      const badgeLabels = {
+        active: 'Actif',
+        inactive: 'Inactif',
+        trialing: 'Essai',
+        expired: 'Expiré',
+      }
 
-    function formatDate(iso) {
-      const d = new Date(iso);
-      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-    }
+      function formatDate(iso) {
+        const d = new Date(iso)
+        return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+      }
 
-    function renderOrgRow(org) {
-      const sub = org.subscriptions && org.subscriptions[0];
-      const planLabel = sub ? sub.planKey.charAt(0).toUpperCase() + sub.planKey.slice(1) : '—';
-      const badgeVariant = sub ? getBadgeVariant(sub.status) : 'inactive';
-      const badgeStyle = badgeStyles[badgeVariant] || badgeStyles.inactive;
-      const badgeLabel = badgeLabels[badgeVariant] || sub?.status || 'Inactif';
-      const slugDisplay = org.slug ? '/' + org.slug : '\u2014';
+      function renderOrgRow(org) {
+        const sub = org.subscriptions && org.subscriptions[0]
+        const planLabel = sub ? sub.planKey.charAt(0).toUpperCase() + sub.planKey.slice(1) : '—'
+        const badgeVariant = sub ? getBadgeVariant(sub.status) : 'inactive'
+        const badgeStyle = badgeStyles[badgeVariant] || badgeStyles.inactive
+        const badgeLabel = badgeLabels[badgeVariant] || sub?.status || 'Inactif'
+        const slugDisplay = org.slug ? '/' + org.slug : '\u2014'
 
-      return `
+        return `
         <tr class="border-b transition-colors hover:bg-muted/50" data-testid="org-row-${org.id}">
           <td class="p-4 align-middle">
             <a href="/admin/orgs/${org.id}" class="font-medium hover:text-primary transition-colors" data-testid="org-name-${org.id}">
@@ -165,37 +263,45 @@
             <span class="text-muted-foreground" data-testid="org-slug-${org.id}">${slugDisplay}</span>
           </td>
           <td class="p-4 align-middle">
-            ${sub ? `
+            ${
+              sub
+                ? `
               <div class="flex items-center gap-2">
                 <span class="font-medium">${planLabel}</span>
                 <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors ${badgeStyle}" data-testid="org-badge-${org.id}">
                   ${badgeLabel}
                 </span>
               </div>
-            ` : '<span class="text-muted-foreground">\u2014</span>'}
+            `
+                : '<span class="text-muted-foreground">\u2014</span>'
+            }
           </td>
           <td class="p-4 align-middle">
             <span class="text-muted-foreground">${formatDate(org.createdAt)}</span>
           </td>
         </tr>
-      `;
-    }
+      `
+      }
 
-    function render() {
-      const search = (document.getElementById('search-input').value || '').toLowerCase().trim();
-      const filtered = search
-        ? orgs.filter(o => o.name.toLowerCase().includes(search) || (o.slug && o.slug.toLowerCase().includes(search)))
-        : orgs;
+      function render() {
+        const search = (document.getElementById('search-input').value || '').toLowerCase().trim()
+        const filtered = search
+          ? orgs.filter(
+              (o) =>
+                o.name.toLowerCase().includes(search) ||
+                (o.slug && o.slug.toLowerCase().includes(search))
+            )
+          : orgs
 
-      const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-      if (currentPage > totalPages) currentPage = totalPages;
-      const start = (currentPage - 1) * PAGE_SIZE;
-      const paginated = filtered.slice(start, start + PAGE_SIZE);
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+        if (currentPage > totalPages) currentPage = totalPages
+        const start = (currentPage - 1) * PAGE_SIZE
+        const paginated = filtered.slice(start, start + PAGE_SIZE)
 
-      const tbody = document.getElementById('table-body');
+        const tbody = document.getElementById('table-body')
 
-      if (filtered.length === 0) {
-        tbody.innerHTML = `
+        if (filtered.length === 0) {
+          tbody.innerHTML = `
           <tr>
             <td colspan="4" class="p-4 text-center">
               <div class="flex flex-col items-center justify-center py-12 text-muted-foreground" data-testid="empty-state">
@@ -207,88 +313,102 @@
               </div>
             </td>
           </tr>
-        `;
-      } else {
-        tbody.innerHTML = paginated.map(renderOrgRow).join('');
+        `
+        } else {
+          tbody.innerHTML = paginated.map(renderOrgRow).join('')
+        }
+
+        // Pagination
+        const pagination = document.getElementById('pagination')
+        if (totalPages > 1 || filtered.length === 0) {
+          pagination.classList.remove('hidden')
+        } else {
+          pagination.classList.add('hidden')
+        }
+
+        document.getElementById('pagination-info').textContent =
+          filtered.length === 1
+            ? '1 élément'
+            : `${start + 1}\u2013${Math.min(start + PAGE_SIZE, filtered.length)} sur ${filtered.length}`
+
+        document.getElementById('page-indicator').textContent =
+          `Page ${currentPage} / ${totalPages}`
+        document.getElementById('prev-btn').disabled = currentPage <= 1
+        document.getElementById('next-btn').disabled = currentPage >= totalPages
+
+        // Update description with count
+        const desc = document.querySelector('[data-testid="page-description"]')
+        if (desc)
+          desc.textContent = `${orgs.length} organisation${orgs.length > 1 ? 's' : ''} sur la plateforme`
       }
 
-      // Pagination
-      const pagination = document.getElementById('pagination');
-      if (totalPages > 1 || filtered.length === 0) {
-        pagination.classList.remove('hidden');
-      } else {
-        pagination.classList.add('hidden');
+      // ── Event Listeners ──
+      document.getElementById('search-input').addEventListener('input', function () {
+        currentPage = 1
+        render()
+      })
+
+      document.getElementById('prev-btn').addEventListener('click', function () {
+        if (currentPage > 1) {
+          currentPage--
+          render()
+        }
+      })
+
+      document.getElementById('next-btn').addEventListener('click', function () {
+        const totalPages = Math.max(1, Math.ceil(orgs.length / PAGE_SIZE))
+        if (currentPage < totalPages) {
+          currentPage++
+          render()
+        }
+      })
+
+      // ── Error simulation helper ──
+      window.__showError = function (message) {
+        const banner = document.getElementById('error-banner')
+        banner.classList.remove('hidden')
+        document.getElementById('error-message').textContent = message
+        const tbody = document.getElementById('table-body')
+        tbody.innerHTML = ''
+        document.getElementById('pagination').classList.add('hidden')
       }
 
-      document.getElementById('pagination-info').textContent =
-        filtered.length === 1
-          ? '1 élément'
-          : `${start + 1}\u2013${Math.min(start + PAGE_SIZE, filtered.length)} sur ${filtered.length}`;
+      window.__clearError = function () {
+        document.getElementById('error-banner').classList.add('hidden')
+      }
 
-      document.getElementById('page-indicator').textContent = `Page ${currentPage} / ${totalPages}`;
-      document.getElementById('prev-btn').disabled = currentPage <= 1;
-      document.getElementById('next-btn').disabled = currentPage >= totalPages;
+      window.__setOrgs = function (newOrgs) {
+        orgs = newOrgs
+        currentPage = 1
+        window.__clearError()
+        render()
+      }
 
-      // Update description with count
-      const desc = document.querySelector('[data-testid="page-description"]');
-      if (desc) desc.textContent = `${orgs.length} organisation${orgs.length > 1 ? 's' : ''} sur la plateforme`;
-    }
-
-    // ── Event Listeners ──
-    document.getElementById('search-input').addEventListener('input', function() {
-      currentPage = 1;
-      render();
-    });
-
-    document.getElementById('prev-btn').addEventListener('click', function() {
-      if (currentPage > 1) { currentPage--; render(); }
-    });
-
-    document.getElementById('next-btn').addEventListener('click', function() {
-      const totalPages = Math.max(1, Math.ceil(orgs.length / PAGE_SIZE));
-      if (currentPage < totalPages) { currentPage++; render(); }
-    });
-
-    // ── Error simulation helper ──
-    window.__showError = function(message) {
-      const banner = document.getElementById('error-banner');
-      banner.classList.remove('hidden');
-      document.getElementById('error-message').textContent = message;
-      const tbody = document.getElementById('table-body');
-      tbody.innerHTML = '';
-      document.getElementById('pagination').classList.add('hidden');
-    };
-
-    window.__clearError = function() {
-      document.getElementById('error-banner').classList.add('hidden');
-    };
-
-    window.__setOrgs = function(newOrgs) {
-      orgs = newOrgs;
-      currentPage = 1;
-      window.__clearError();
-      render();
-    };
-
-    window.__setOrgsWithDelay = function(newOrgs, delayMs) {
-      const tbody = document.getElementById('table-body');
-      tbody.innerHTML = '';
-      for (let i = 0; i < 5; i++) {
-        tbody.innerHTML += `
+      window.__setOrgsWithDelay = function (newOrgs, delayMs) {
+        const tbody = document.getElementById('table-body')
+        tbody.innerHTML = ''
+        for (let i = 0; i < 5; i++) {
+          tbody.innerHTML += `
           <tr class="border-b transition-colors hover:bg-muted/50">
-            ${Array(4).fill('').map(() => `<td class="p-4 align-middle"><div class="animate-pulse rounded-md bg-gray-200 h-5 w-full max-w-[180px]"></div></td>`).join('')}
+            ${Array(4)
+              .fill('')
+              .map(
+                () =>
+                  `<td class="p-4 align-middle"><div class="animate-pulse rounded-md bg-gray-200 h-5 w-full max-w-[180px]"></div></td>`
+              )
+              .join('')}
           </tr>
-        `;
+        `
+        }
+        setTimeout(() => {
+          orgs = newOrgs
+          currentPage = 1
+          render()
+        }, delayMs)
       }
-      setTimeout(() => {
-        orgs = newOrgs;
-        currentPage = 1;
-        render();
-      }, delayMs);
-    };
 
-    // Initial render
-    render();
-  </script>
-</body>
+      // Initial render
+      render()
+    </script>
+  </body>
 </html>

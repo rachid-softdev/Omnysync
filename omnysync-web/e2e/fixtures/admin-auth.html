@@ -1,309 +1,311 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Administration — Omnysync</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            background: '#ffffff',
-            foreground: '#1a1a2e',
-            card: '#ffffff',
-            'card-foreground': '#1a1a2e',
-            primary: '#3b82f6',
-            'primary-foreground': '#ffffff',
-            accent: '#f1f5f9',
-            'accent-foreground': '#1a1a2e',
-            muted: '#f8fafc',
-            'muted-foreground': '#64748b',
-            border: '#e2e8f0',
-            ring: '#3b82f6',
-            destructive: '#ef4444',
-            'destructive-foreground': '#ffffff',
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Administration — Omnysync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              background: '#ffffff',
+              foreground: '#1a1a2e',
+              card: '#ffffff',
+              'card-foreground': '#1a1a2e',
+              primary: '#3b82f6',
+              'primary-foreground': '#ffffff',
+              accent: '#f1f5f9',
+              'accent-foreground': '#1a1a2e',
+              muted: '#f8fafc',
+              'muted-foreground': '#64748b',
+              border: '#e2e8f0',
+              ring: '#3b82f6',
+              destructive: '#ef4444',
+              'destructive-foreground': '#ffffff',
+            },
           },
         },
-      },
-    }
-  </script>
-</head>
-<body class="bg-background text-foreground min-h-screen">
-  <div id="app-root"></div>
-
-  <script>
-    // ============================================================
-    // Admin Auth & Session — Test Fixture
-    // ============================================================
-    // Simulates session states: null (missing), 'user', 'admin', 'expired'
-    // Persists via localStorage for cross-tab / refresh scenarios.
-    // ============================================================
-
-    var STORAGE_KEY = 'omnysync_session_test'
-
-    // --- Session state (init from localStorage) ---
-    var __sessionState = localStorage.getItem(STORAGE_KEY) || null
-
-    // --- Public API (exposed on window) ---
-
-    /**
-     * Set the session state and re-render the UI.
-     * @param {string|null} state - 'admin' | 'user' | 'expired' | null
-     */
-    window.__setSession = function(state) {
-      __sessionState = state
-      if (state === null || state === 'missing') {
-        localStorage.removeItem(STORAGE_KEY)
-      } else {
-        localStorage.setItem(STORAGE_KEY, state)
       }
-      render()
-    }
+    </script>
+  </head>
+  <body class="bg-background text-foreground min-h-screen">
+    <div id="app-root"></div>
 
-    /**
-     * Return the current session state.
-     * @returns {string|null}
-     */
-    window.__checkSession = function() {
-      return __sessionState
-    }
+    <script>
+      // ============================================================
+      // Admin Auth & Session — Test Fixture
+      // ============================================================
+      // Simulates session states: null (missing), 'user', 'admin', 'expired'
+      // Persists via localStorage for cross-tab / refresh scenarios.
+      // ============================================================
 
-    /**
-     * Simulate navigating to the /admin page (triggers requireAdmin-like check).
-     * - admin → shows dashboard
-     * - user  → shows access denied error
-     * - null  → shows login form
-     * - expired → shows expired + login form
-     */
-    window.__attemptAdminAccess = function() {
-      if (__sessionState === 'user') {
-        renderAccessDenied()
-      } else if (__sessionState === null || __sessionState === 'missing') {
-        renderLogin()
-      } else if (__sessionState === 'expired') {
-        renderLoginExpired()
-      } else {
-        // admin → current view is fine (dashboard)
+      var STORAGE_KEY = 'omnysync_session_test'
+
+      // --- Session state (init from localStorage) ---
+      var __sessionState = localStorage.getItem(STORAGE_KEY) || null
+
+      // --- Public API (exposed on window) ---
+
+      /**
+       * Set the session state and re-render the UI.
+       * @param {string|null} state - 'admin' | 'user' | 'expired' | null
+       */
+      window.__setSession = function (state) {
+        __sessionState = state
+        if (state === null || state === 'missing') {
+          localStorage.removeItem(STORAGE_KEY)
+        } else {
+          localStorage.setItem(STORAGE_KEY, state)
+        }
         render()
       }
-    }
 
-    /**
-     * Simulate an inactivity timeout that expires the session.
-     */
-    window.__simulateInactivityTimeout = function() {
-      window.__setSession('expired')
-    }
-
-    /**
-     * Simulate a successful reconnection (retry login after expiry).
-     */
-    window.__simulateReconnect = function() {
-      window.__setSession('admin')
-    }
-
-    // --- Cross-tab session synchronisation ---
-    window.addEventListener('storage', function(e) {
-      if (e.key === STORAGE_KEY) {
-        __sessionState = e.newValue
-        render()
+      /**
+       * Return the current session state.
+       * @returns {string|null}
+       */
+      window.__checkSession = function () {
+        return __sessionState
       }
-    })
 
-    // ============================================================
-    // Render functions
-    // ============================================================
-
-    function render() {
-      if (__sessionState === null || __sessionState === 'missing') {
-        renderLogin()
-      } else if (__sessionState === 'expired') {
-        renderLoginExpired()
-      } else if (__sessionState === 'user') {
-        renderDashboard(false)
-      } else if (__sessionState === 'admin') {
-        renderDashboard(true)
-      } else {
-        renderLogin()
+      /**
+       * Simulate navigating to the /admin page (triggers requireAdmin-like check).
+       * - admin → shows dashboard
+       * - user  → shows access denied error
+       * - null  → shows login form
+       * - expired → shows expired + login form
+       */
+      window.__attemptAdminAccess = function () {
+        if (__sessionState === 'user') {
+          renderAccessDenied()
+        } else if (__sessionState === null || __sessionState === 'missing') {
+          renderLogin()
+        } else if (__sessionState === 'expired') {
+          renderLoginExpired()
+        } else {
+          // admin → current view is fine (dashboard)
+          render()
+        }
       }
-    }
 
-    function renderLogin() {
-      document.getElementById('app-root').innerHTML =
-        '<div class="min-h-screen flex items-center justify-center">' +
-        '  <div class="w-full max-w-md p-8">' +
-        '    <div data-testid="login-form">' +
-        '      <h1 class="text-2xl font-bold mb-2">Connexion</h1>' +
-        '      <p class="text-muted-foreground mb-6">Connectez-vous pour accéder à l\'administration</p>' +
-        '      <form onsubmit="event.preventDefault(); window.__setSession(\'admin\')">' +
-        '        <div class="space-y-4">' +
-        '          <div>' +
-        '            <label class="block text-sm font-medium mb-1">Email</label>' +
-        '            <input type="email" class="w-full px-3 py-2 border rounded-lg bg-background text-foreground" placeholder="email@example.com" />' +
-        '          </div>' +
-        '          <div>' +
-        '            <label class="block text-sm font-medium mb-1">Mot de passe</label>' +
-        '            <input type="password" class="w-full px-3 py-2 border rounded-lg bg-background text-foreground" placeholder="••••••••" />' +
-        '          </div>' +
-        '          <button type="submit" class="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors" data-testid="login-submit-btn">' +
-        '            Se connecter' +
-        '          </button>' +
-        '        </div>' +
-        '      </form>' +
-        '    </div>' +
-        '  </div>' +
-        '</div>'
-    }
+      /**
+       * Simulate an inactivity timeout that expires the session.
+       */
+      window.__simulateInactivityTimeout = function () {
+        window.__setSession('expired')
+      }
 
-    function renderLoginExpired() {
-      document.getElementById('app-root').innerHTML =
-        '<div class="min-h-screen flex items-center justify-center">' +
-        '  <div class="w-full max-w-md p-8">' +
-        '    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6" data-testid="session-expired-banner">' +
-        '      <div class="flex items-center gap-2">' +
-        '        <svg class="w-5 h-5 text-yellow-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-        '          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>' +
-        '        </svg>' +
-        '        <p class="text-yellow-800 font-medium">Session expirée</p>' +
-        '      </div>' +
-        '      <p class="text-yellow-600 text-sm mt-1">Veuillez vous reconnecter pour continuer</p>' +
-        '    </div>' +
-        '    <div data-testid="login-form">' +
-        '      <h1 class="text-2xl font-bold mb-6">Connexion</h1>' +
-        '      <form onsubmit="event.preventDefault(); window.__simulateReconnect()">' +
-        '        <div class="space-y-4">' +
-        '          <div>' +
-        '            <label class="block text-sm font-medium mb-1">Email</label>' +
-        '            <input type="email" class="w-full px-3 py-2 border rounded-lg bg-background text-foreground" placeholder="email@example.com" />' +
-        '          </div>' +
-        '          <div>' +
-        '            <label class="block text-sm font-medium mb-1">Mot de passe</label>' +
-        '            <input type="password" class="w-full px-3 py-2 border rounded-lg bg-background text-foreground" placeholder="••••••••" />' +
-        '          </div>' +
-        '          <button type="submit" class="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors" data-testid="retry-login-btn">' +
-        '            Se reconnecter' +
-        '          </button>' +
-        '        </div>' +
-        '      </form>' +
-        '    </div>' +
-        '  </div>' +
-        '</div>'
-    }
+      /**
+       * Simulate a successful reconnection (retry login after expiry).
+       */
+      window.__simulateReconnect = function () {
+        window.__setSession('admin')
+      }
 
-    function renderAccessDenied() {
-      document.getElementById('app-root').innerHTML =
-        '<div class="min-h-screen flex items-center justify-center">' +
-        '  <div class="max-w-md p-8 text-center">' +
-        '    <div class="bg-red-50 border border-red-200 rounded-lg p-8" data-testid="error-message">' +
-        '      <svg class="w-12 h-12 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-        '        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m9.364-7.364A9 9 0 1112 3a9 9 0 017.364 4.636z"/>' +
-        '      </svg>' +
-        '      <h2 class="text-xl font-bold text-red-800 mb-2">Accès non autorisé</h2>' +
-        '      <p class="text-red-600">Rôle administrateur requis</p>' +
-        '      <p class="text-red-500 text-sm mt-2">Vous êtes connecté avec un compte utilisateur standard.</p>' +
-        '    </div>' +
-        '  </div>' +
-        '</div>'
-    }
+      // --- Cross-tab session synchronisation ---
+      window.addEventListener('storage', function (e) {
+        if (e.key === STORAGE_KEY) {
+          __sessionState = e.newValue
+          render()
+        }
+      })
 
-    function renderDashboard(isAdmin) {
-      var navItems = ''
+      // ============================================================
+      // Render functions
+      // ============================================================
 
-      // Dashboard link
-      navItems += '' +
-        '<li>' +
-        '  <a href="/dashboard" class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors">' +
-        '    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-        '      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>' +
-        '    </svg>' +
-        '    Dashboard' +
-        '  </a>' +
-        '</li>' +
-        '<li>' +
-        '  <a href="/dashboard/documents" class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors">' +
-        '    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-        '      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>' +
-        '    </svg>' +
-        '    Documents' +
-        '  </a>' +
-        '</li>' +
-        '<li>' +
-        '  <a href="/dashboard/connectors" class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors">' +
-        '    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-        '      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>' +
-        '    </svg>' +
-        '    Connecteurs' +
-        '  </a>' +
-        '</li>'
+      function render() {
+        if (__sessionState === null || __sessionState === 'missing') {
+          renderLogin()
+        } else if (__sessionState === 'expired') {
+          renderLoginExpired()
+        } else if (__sessionState === 'user') {
+          renderDashboard(false)
+        } else if (__sessionState === 'admin') {
+          renderDashboard(true)
+        } else {
+          renderLogin()
+        }
+      }
 
-      // Admin link (only for ADMIN role)
-      if (isAdmin) {
-        navItems += '' +
+      function renderLogin() {
+        document.getElementById('app-root').innerHTML =
+          '<div class="min-h-screen flex items-center justify-center">' +
+          '  <div class="w-full max-w-md p-8">' +
+          '    <div data-testid="login-form">' +
+          '      <h1 class="text-2xl font-bold mb-2">Connexion</h1>' +
+          '      <p class="text-muted-foreground mb-6">Connectez-vous pour accéder à l\'administration</p>' +
+          '      <form onsubmit="event.preventDefault(); window.__setSession(\'admin\')">' +
+          '        <div class="space-y-4">' +
+          '          <div>' +
+          '            <label class="block text-sm font-medium mb-1">Email</label>' +
+          '            <input type="email" class="w-full px-3 py-2 border rounded-lg bg-background text-foreground" placeholder="email@example.com" />' +
+          '          </div>' +
+          '          <div>' +
+          '            <label class="block text-sm font-medium mb-1">Mot de passe</label>' +
+          '            <input type="password" class="w-full px-3 py-2 border rounded-lg bg-background text-foreground" placeholder="••••••••" />' +
+          '          </div>' +
+          '          <button type="submit" class="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors" data-testid="login-submit-btn">' +
+          '            Se connecter' +
+          '          </button>' +
+          '        </div>' +
+          '      </form>' +
+          '    </div>' +
+          '  </div>' +
+          '</div>'
+      }
+
+      function renderLoginExpired() {
+        document.getElementById('app-root').innerHTML =
+          '<div class="min-h-screen flex items-center justify-center">' +
+          '  <div class="w-full max-w-md p-8">' +
+          '    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6" data-testid="session-expired-banner">' +
+          '      <div class="flex items-center gap-2">' +
+          '        <svg class="w-5 h-5 text-yellow-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+          '          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>' +
+          '        </svg>' +
+          '        <p class="text-yellow-800 font-medium">Session expirée</p>' +
+          '      </div>' +
+          '      <p class="text-yellow-600 text-sm mt-1">Veuillez vous reconnecter pour continuer</p>' +
+          '    </div>' +
+          '    <div data-testid="login-form">' +
+          '      <h1 class="text-2xl font-bold mb-6">Connexion</h1>' +
+          '      <form onsubmit="event.preventDefault(); window.__simulateReconnect()">' +
+          '        <div class="space-y-4">' +
+          '          <div>' +
+          '            <label class="block text-sm font-medium mb-1">Email</label>' +
+          '            <input type="email" class="w-full px-3 py-2 border rounded-lg bg-background text-foreground" placeholder="email@example.com" />' +
+          '          </div>' +
+          '          <div>' +
+          '            <label class="block text-sm font-medium mb-1">Mot de passe</label>' +
+          '            <input type="password" class="w-full px-3 py-2 border rounded-lg bg-background text-foreground" placeholder="••••••••" />' +
+          '          </div>' +
+          '          <button type="submit" class="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors" data-testid="retry-login-btn">' +
+          '            Se reconnecter' +
+          '          </button>' +
+          '        </div>' +
+          '      </form>' +
+          '    </div>' +
+          '  </div>' +
+          '</div>'
+      }
+
+      function renderAccessDenied() {
+        document.getElementById('app-root').innerHTML =
+          '<div class="min-h-screen flex items-center justify-center">' +
+          '  <div class="max-w-md p-8 text-center">' +
+          '    <div class="bg-red-50 border border-red-200 rounded-lg p-8" data-testid="error-message">' +
+          '      <svg class="w-12 h-12 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+          '        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m9.364-7.364A9 9 0 1112 3a9 9 0 017.364 4.636z"/>' +
+          '      </svg>' +
+          '      <h2 class="text-xl font-bold text-red-800 mb-2">Accès non autorisé</h2>' +
+          '      <p class="text-red-600">Rôle administrateur requis</p>' +
+          '      <p class="text-red-500 text-sm mt-2">Vous êtes connecté avec un compte utilisateur standard.</p>' +
+          '    </div>' +
+          '  </div>' +
+          '</div>'
+      }
+
+      function renderDashboard(isAdmin) {
+        var navItems = ''
+
+        // Dashboard link
+        navItems +=
+          '' +
           '<li>' +
-          '  <a href="/admin" class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors" data-testid="sidebar-admin-link">' +
+          '  <a href="/dashboard" class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors">' +
           '    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-          '      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>' +
+          '      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>' +
           '    </svg>' +
-          '    Admin' +
+          '    Dashboard' +
+          '  </a>' +
+          '</li>' +
+          '<li>' +
+          '  <a href="/dashboard/documents" class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors">' +
+          '    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+          '      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>' +
+          '    </svg>' +
+          '    Documents' +
+          '  </a>' +
+          '</li>' +
+          '<li>' +
+          '  <a href="/dashboard/connectors" class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors">' +
+          '    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+          '      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>' +
+          '    </svg>' +
+          '    Connecteurs' +
           '  </a>' +
           '</li>'
+
+        // Admin link (only for ADMIN role)
+        if (isAdmin) {
+          navItems +=
+            '' +
+            '<li>' +
+            '  <a href="/admin" class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors" data-testid="sidebar-admin-link">' +
+            '    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+            '      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>' +
+            '    </svg>' +
+            '    Admin' +
+            '  </a>' +
+            '</li>'
+        }
+
+        document.getElementById('app-root').innerHTML =
+          '<div class="min-h-screen flex">' +
+          '  <!-- Sidebar -->' +
+          '  <aside class="hidden md:flex w-64 bg-card border-r border-border flex-col">' +
+          '    <div class="p-6 border-b border-border">' +
+          '      <h1 class="text-xl font-bold">Omnysync</h1>' +
+          '    </div>' +
+          '    <nav class="flex-1 p-4">' +
+          '      <ul class="space-y-2">' +
+          navItems +
+          '      </ul>' +
+          '    </nav>' +
+          '    <div class="p-4 border-t border-border">' +
+          '      <div class="flex items-center gap-3 mb-4">' +
+          '        <div class="flex-1 min-w-0">' +
+          '          <p class="text-sm font-medium truncate" data-testid="user-name">Jean Dupont</p>' +
+          '          <p class="text-xs text-muted-foreground truncate" data-testid="user-email">jean@example.com</p>' +
+          '        </div>' +
+          '        <span class="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium" data-testid="user-role">' +
+          (isAdmin ? 'ADMIN' : 'USER') +
+          '        </span>' +
+          '      </div>' +
+          '    </div>' +
+          '  </aside>' +
+          '  <main id="main-content" class="flex-1 bg-background p-8">' +
+          '    <div class="space-y-1 mb-8">' +
+          '      <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Administration</h1>' +
+          '      <p class="text-sm text-muted-foreground" data-testid="page-description">Vue d\'ensemble de la plateforme Omnysync</p>' +
+          '    </div>' +
+          '    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">' +
+          '      <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">' +
+          '        <p class="text-2xl font-bold">142</p>' +
+          '        <p class="text-sm text-muted-foreground">Utilisateurs</p>' +
+          '      </div>' +
+          '      <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">' +
+          '        <p class="text-2xl font-bold">23</p>' +
+          '        <p class="text-sm text-muted-foreground">Organisations</p>' +
+          '      </div>' +
+          '      <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">' +
+          '        <p class="text-2xl font-bold">4</p>' +
+          '        <p class="text-sm text-muted-foreground">Plans actifs</p>' +
+          '      </div>' +
+          '      <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">' +
+          '        <p class="text-2xl font-bold">36</p>' +
+          '        <p class="text-sm text-muted-foreground">Features</p>' +
+          '      </div>' +
+          '    </div>' +
+          '  </main>' +
+          '</div>'
       }
 
-      document.getElementById('app-root').innerHTML =
-        '<div class="min-h-screen flex">' +
-        '  <!-- Sidebar -->' +
-        '  <aside class="hidden md:flex w-64 bg-card border-r border-border flex-col">' +
-        '    <div class="p-6 border-b border-border">' +
-        '      <h1 class="text-xl font-bold">Omnysync</h1>' +
-        '    </div>' +
-        '    <nav class="flex-1 p-4">' +
-        '      <ul class="space-y-2">' +
-        navItems +
-        '      </ul>' +
-        '    </nav>' +
-        '    <div class="p-4 border-t border-border">' +
-        '      <div class="flex items-center gap-3 mb-4">' +
-        '        <div class="flex-1 min-w-0">' +
-        '          <p class="text-sm font-medium truncate" data-testid="user-name">Jean Dupont</p>' +
-        '          <p class="text-xs text-muted-foreground truncate" data-testid="user-email">jean@example.com</p>' +
-        '        </div>' +
-        '        <span class="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium" data-testid="user-role">' +
-        (isAdmin ? 'ADMIN' : 'USER') +
-        '        </span>' +
-        '      </div>' +
-        '    </div>' +
-        '  </aside>' +
-        '  <main id="main-content" class="flex-1 bg-background p-8">' +
-        '    <div class="space-y-1 mb-8">' +
-        '      <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Administration</h1>' +
-        '      <p class="text-sm text-muted-foreground" data-testid="page-description">Vue d\'ensemble de la plateforme Omnysync</p>' +
-        '    </div>' +
-        '    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">' +
-        '      <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">' +
-        '        <p class="text-2xl font-bold">142</p>' +
-        '        <p class="text-sm text-muted-foreground">Utilisateurs</p>' +
-        '      </div>' +
-        '      <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">' +
-        '        <p class="text-2xl font-bold">23</p>' +
-        '        <p class="text-sm text-muted-foreground">Organisations</p>' +
-        '      </div>' +
-        '      <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">' +
-        '        <p class="text-2xl font-bold">4</p>' +
-        '        <p class="text-sm text-muted-foreground">Plans actifs</p>' +
-        '      </div>' +
-        '      <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">' +
-        '        <p class="text-2xl font-bold">36</p>' +
-        '        <p class="text-sm text-muted-foreground">Features</p>' +
-        '      </div>' +
-        '    </div>' +
-        '  </main>' +
-        '</div>'
-    }
-
-    // --- Initial render ---
-    render()
-  </script>
-</body>
+      // --- Initial render ---
+      render()
+    </script>
+  </body>
 </html>

@@ -199,7 +199,9 @@ export default function TeamSettingsPage() {
                   type="email"
                   placeholder="email@example.com"
                   value={inviteEmail}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteEmail(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setInviteEmail(e.target.value)
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -254,7 +256,9 @@ export default function TeamSettingsPage() {
                   <div className="flex items-center gap-4">
                     <Avatar>
                       <AvatarImage src={member.image || undefined} />
-                      <AvatarFallback>{member.name?.charAt(0) || member.email.charAt(0).toUpperCase()}</AvatarFallback>
+                      <AvatarFallback>
+                        {member.name?.charAt(0) || member.email.charAt(0).toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="font-medium">{member.name || 'No name'}</p>

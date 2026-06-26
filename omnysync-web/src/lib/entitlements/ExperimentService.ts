@@ -189,7 +189,18 @@ export class ExperimentService {
    */
   async getExperimentConfig(experimentKey: string): Promise<ExperimentConfig | null> {
     const repo = getEntitlementRepository()
-    const feature = await (repo as unknown as { getFeature(featureKey: string): Promise<{ type?: string; defaultConfig?: unknown; enabled?: boolean; limit?: number } | null> }).getFeature(experimentKey)
+    const feature = await (
+      repo as unknown as {
+        getFeature(
+          featureKey: string
+        ): Promise<{
+          type?: string
+          defaultConfig?: unknown
+          enabled?: boolean
+          limit?: number
+        } | null>
+      }
+    ).getFeature(experimentKey)
 
     if (!feature || feature.type !== 'EXPERIMENT') {
       return null
@@ -209,7 +220,18 @@ export class ExperimentService {
    */
   async isExperimentFeature(featureKey: string): Promise<boolean> {
     const repo = getEntitlementRepository()
-    const feature = await (repo as unknown as { getFeature(featureKey: string): Promise<{ type?: string; defaultConfig?: unknown; enabled?: boolean; limit?: number } | null> }).getFeature(featureKey)
+    const feature = await (
+      repo as unknown as {
+        getFeature(
+          featureKey: string
+        ): Promise<{
+          type?: string
+          defaultConfig?: unknown
+          enabled?: boolean
+          limit?: number
+        } | null>
+      }
+    ).getFeature(featureKey)
     return feature?.type === 'EXPERIMENT'
   }
 

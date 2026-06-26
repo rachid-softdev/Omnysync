@@ -1,636 +1,731 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Détail — Edge Cases — Omnysync</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .tab-btn { @apply px-4 py-2 rounded-t-lg text-sm font-medium transition-colors border-b-2 border-transparent hover:text-foreground; }
-    .tab-btn.active { @apply border-primary text-primary; }
-    .tab-btn:not(.active) { @apply text-muted-foreground; }
-    .skeleton-pulse { @apply animate-pulse rounded bg-gray-200; }
-    .truncate-text { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  </style>
-</head>
-<body class="bg-gray-50 text-gray-900 min-h-screen">
-  <div class="p-4 sm:p-8 max-w-6xl mx-auto" id="app">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Détail — Edge Cases — Omnysync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .tab-btn {
+        @apply px-4 py-2 rounded-t-lg text-sm font-medium transition-colors border-b-2 border-transparent hover:text-foreground;
+      }
+      .tab-btn.active {
+        @apply border-primary text-primary;
+      }
+      .tab-btn:not(.active) {
+        @apply text-muted-foreground;
+      }
+      .skeleton-pulse {
+        @apply animate-pulse rounded bg-gray-200;
+      }
+      .truncate-text {
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 text-gray-900 min-h-screen">
+    <div class="p-4 sm:p-8 max-w-6xl mx-auto" id="app">
+      <!-- Tab Navigation -->
+      <div class="flex gap-1 mb-8 border-b border-gray-200" data-testid="tab-bar">
+        <button class="tab-btn active" data-testid="tab-user" onclick="switchTab('user')">
+          Détail Utilisateur
+        </button>
+        <button class="tab-btn" data-testid="tab-org" onclick="switchTab('org')">
+          Détail Organisation
+        </button>
+      </div>
 
-    <!-- Tab Navigation -->
-    <div class="flex gap-1 mb-8 border-b border-gray-200" data-testid="tab-bar">
-      <button class="tab-btn active" data-testid="tab-user" onclick="switchTab('user')">
-        Détail Utilisateur
-      </button>
-      <button class="tab-btn" data-testid="tab-org" onclick="switchTab('org')">
-        Détail Organisation
-      </button>
-    </div>
+      <!-- ── TAB: User Detail ──────────────────────────────────────────────── -->
+      <div id="tab-user-content" class="tab-content"></div>
 
-    <!-- ── TAB: User Detail ──────────────────────────────────────────────── -->
-    <div id="tab-user-content" class="tab-content"></div>
+      <!-- ── TAB: Org Detail ───────────────────────────────────────────────── -->
+      <div id="tab-org-content" class="tab-content hidden"></div>
 
-    <!-- ── TAB: Org Detail ───────────────────────────────────────────────── -->
-    <div id="tab-org-content" class="tab-content hidden"></div>
+      <!-- ── Delete Confirmation Modal ────────────────────────────────────── -->
+      <div
+        id="delete-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+        data-testid="user-delete-modal"
+      >
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+          <h3 class="text-lg font-semibold mb-2">Confirmer la suppression</h3>
+          <p class="text-sm text-gray-600 mb-6">
+            Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.
+          </p>
+          <div class="flex justify-end gap-3">
+            <button
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-white hover:bg-gray-50 h-9 px-4"
+              data-testid="user-delete-cancel-btn"
+              onclick="window.__cancelDelete()"
+            >
+              Annuler
+            </button>
+            <button
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 h-9 px-4"
+              data-testid="user-delete-confirm-btn"
+              onclick="window.__confirmDelete()"
+            >
+              Confirmer
+            </button>
+          </div>
+        </div>
+      </div>
 
-    <!-- ── Delete Confirmation Modal ────────────────────────────────────── -->
-    <div id="delete-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40" data-testid="user-delete-modal">
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-        <h3 class="text-lg font-semibold mb-2">Confirmer la suppression</h3>
-        <p class="text-sm text-gray-600 mb-6">
-          Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.
-        </p>
-        <div class="flex justify-end gap-3">
-          <button
-            class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-white hover:bg-gray-50 h-9 px-4"
-            data-testid="user-delete-cancel-btn"
-            onclick="window.__cancelDelete()"
-          >
-            Annuler
-          </button>
-          <button
-            class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 h-9 px-4"
-            data-testid="user-delete-confirm-btn"
-            onclick="window.__confirmDelete()"
-          >
-            Confirmer
-          </button>
+      <!-- ── Success Toast ────────────────────────────────────────────────── -->
+      <div
+        id="delete-success"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+        data-testid="user-delete-success"
+      >
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6 text-center">
+          <p class="text-green-600 text-lg font-semibold" data-testid="user-delete-success-text">
+            Utilisateur supprimé. Redirection vers la liste.
+          </p>
         </div>
       </div>
     </div>
 
-    <!-- ── Success Toast ────────────────────────────────────────────────── -->
-    <div id="delete-success" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40" data-testid="user-delete-success">
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6 text-center">
-        <p class="text-green-600 text-lg font-semibold" data-testid="user-delete-success-text">
-          Utilisateur supprimé. Redirection vers la liste.
-        </p>
-      </div>
-    </div>
+    <script>
+      // ═══════════════════════════════════════════════════════════════════════
+      // Default data
+      // ═══════════════════════════════════════════════════════════════════════
 
-  </div>
+      var DEFAULT_USER = {
+        id: 'usr_1a2b3c',
+        name: 'Alice Dupont',
+        email: 'alice@example.com',
+        role: 'USER',
+        status: 'ACTIVE',
+        createdAt: '2026-06-01T00:00:00.000Z',
+        lastLogin: '2026-06-15T14:32:00.000Z',
+        org: { id: '1', name: 'Acme Inc' },
+        twoFactorEnabled: true,
+        emailVerified: true,
+      }
 
-  <script>
-    // ═══════════════════════════════════════════════════════════════════════
-    // Default data
-    // ═══════════════════════════════════════════════════════════════════════
+      var DEFAULT_ORG = {
+        id: 'org_1a2b3c',
+        name: 'Acme Inc',
+        slug: 'acme',
+        owner: { id: '1', name: 'Alice Dupont' },
+        membersCount: 12,
+        subscription: { planKey: 'Pro', status: 'ACTIVE' },
+        createdAt: '2026-01-10T00:00:00.000Z',
+      }
 
-    var DEFAULT_USER = {
-      id: 'usr_1a2b3c',
-      name: 'Alice Dupont',
-      email: 'alice@example.com',
-      role: 'USER',
-      status: 'ACTIVE',
-      createdAt: '2026-06-01T00:00:00.000Z',
-      lastLogin: '2026-06-15T14:32:00.000Z',
-      org: { id: '1', name: 'Acme Inc' },
-      twoFactorEnabled: true,
-      emailVerified: true
-    };
+      // ═══════════════════════════════════════════════════════════════════════
+      // State
+      // ═══════════════════════════════════════════════════════════════════════
 
-    var DEFAULT_ORG = {
-      id: 'org_1a2b3c',
-      name: 'Acme Inc',
-      slug: 'acme',
-      owner: { id: '1', name: 'Alice Dupont' },
-      membersCount: 12,
-      subscription: { planKey: 'Pro', status: 'ACTIVE' },
-      createdAt: '2026-01-10T00:00:00.000Z'
-    };
+      var currentUser = JSON.parse(JSON.stringify(DEFAULT_USER))
+      var currentOrg = JSON.parse(JSON.stringify(DEFAULT_ORG))
+      window.__deleteShouldFail = false
+      window.__changePlanShouldFail = false
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // State
-    // ═══════════════════════════════════════════════════════════════════════
+      // ═══════════════════════════════════════════════════════════════════════
+      // Formatting helpers
+      // ═══════════════════════════════════════════════════════════════════════
 
-    var currentUser = JSON.parse(JSON.stringify(DEFAULT_USER));
-    var currentOrg = JSON.parse(JSON.stringify(DEFAULT_ORG));
-    window.__deleteShouldFail = false;
-    window.__changePlanShouldFail = false;
+      function formatDate(iso) {
+        if (!iso) return '—'
+        var d = new Date(iso)
+        return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+      }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Formatting helpers
-    // ═══════════════════════════════════════════════════════════════════════
+      function formatDateTime(iso) {
+        if (!iso) return '—'
+        var d = new Date(iso)
+        var date = d.toLocaleDateString('fr-FR', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+        var time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        return date + ' à ' + time
+      }
 
-    function formatDate(iso) {
-      if (!iso) return '—';
-      var d = new Date(iso);
-      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-    }
+      function getRoleBadgeClass(role) {
+        if (role === 'ADMIN') return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+        if (role === 'VIEWER') return 'bg-purple-100 text-purple-800 border-purple-200'
+        return 'bg-gray-100 text-gray-800 border-gray-200' // USER default
+      }
 
-    function formatDateTime(iso) {
-      if (!iso) return '—';
-      var d = new Date(iso);
-      var date = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-      var time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      return date + ' à ' + time;
-    }
+      function getRoleLabel(role) {
+        if (role === 'ADMIN') return 'Administrateur'
+        if (role === 'VIEWER') return 'Observateur'
+        return 'Utilisateur'
+      }
 
-    function getRoleBadgeClass(role) {
-      if (role === 'ADMIN') return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      if (role === 'VIEWER') return 'bg-purple-100 text-purple-800 border-purple-200';
-      return 'bg-gray-100 text-gray-800 border-gray-200'; // USER default
-    }
+      function getStatusBadgeClass(status) {
+        if (status === 'ACTIVE') return 'bg-green-100 text-green-800 border-green-200'
+        return 'bg-gray-100 text-gray-800 border-gray-200'
+      }
 
-    function getRoleLabel(role) {
-      if (role === 'ADMIN') return 'Administrateur';
-      if (role === 'VIEWER') return 'Observateur';
-      return 'Utilisateur';
-    }
+      function getStatusLabel(status) {
+        if (status === 'ACTIVE') return 'Actif'
+        return 'Inactif'
+      }
 
-    function getStatusBadgeClass(status) {
-      if (status === 'ACTIVE') return 'bg-green-100 text-green-800 border-green-200';
-      return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
+      function getPlanBadgeClass(sub) {
+        if (!sub || sub.status === 'INACTIVE') return 'bg-gray-100 text-gray-800 border-gray-200'
+        if (sub.status === 'TRIALING') return 'bg-blue-100 text-blue-800 border-blue-200'
+        if (sub.status === 'CANCELED' || sub.status === 'EXPIRED')
+          return 'bg-red-100 text-red-800 border-red-200'
+        return 'bg-green-100 text-green-800 border-green-200' // ACTIVE
+      }
 
-    function getStatusLabel(status) {
-      if (status === 'ACTIVE') return 'Actif';
-      return 'Inactif';
-    }
+      function getPlanBadgeLabel(status) {
+        if (status === 'TRIALING') return 'Essai'
+        if (status === 'CANCELED') return 'Annulé'
+        if (status === 'EXPIRED') return 'Expiré'
+        if (status === 'ACTIVE') return 'Actif'
+        return 'Inactif'
+      }
 
-    function getPlanBadgeClass(sub) {
-      if (!sub || sub.status === 'INACTIVE') return 'bg-gray-100 text-gray-800 border-gray-200';
-      if (sub.status === 'TRIALING') return 'bg-blue-100 text-blue-800 border-blue-200';
-      if (sub.status === 'CANCELED' || sub.status === 'EXPIRED') return 'bg-red-100 text-red-800 border-red-200';
-      return 'bg-green-100 text-green-800 border-green-200'; // ACTIVE
-    }
+      // ═══════════════════════════════════════════════════════════════════════
+      // Render functions
+      // ═══════════════════════════════════════════════════════════════════════
 
-    function getPlanBadgeLabel(status) {
-      if (status === 'TRIALING') return 'Essai';
-      if (status === 'CANCELED') return 'Annulé';
-      if (status === 'EXPIRED') return 'Expiré';
-      if (status === 'ACTIVE') return 'Actif';
-      return 'Inactif';
-    }
+      function renderUserDetail(data) {
+        if (!data) data = currentUser
+        else currentUser = data
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Render functions
-    // ═══════════════════════════════════════════════════════════════════════
+        var roleBadgeClass = getRoleBadgeClass(data.role)
+        var roleLabel = getRoleLabel(data.role)
+        var statusBadgeClass = getStatusBadgeClass(data.status)
+        var statusLabel = getStatusLabel(data.status)
 
-    function renderUserDetail(data) {
-      if (!data) data = currentUser;
-      else currentUser = data;
+        var initials = data.name
+          ? data.name
+              .split(' ')
+              .map(function (s) {
+                return s.charAt(0)
+              })
+              .join('')
+              .toUpperCase()
+              .slice(0, 2)
+          : '—'
 
-      var roleBadgeClass = getRoleBadgeClass(data.role);
-      var roleLabel = getRoleLabel(data.role);
-      var statusBadgeClass = getStatusBadgeClass(data.status);
-      var statusLabel = getStatusLabel(data.status);
+        var nameDisplay = data.name || '\u2014'
+        var orgDisplay = data.org ? data.org.name : 'Aucune organisation'
+        var orgHref = data.org ? '/admin/orgs/' + data.org.id : ''
 
-      var initials = data.name
-        ? data.name.split(' ').map(function(s) { return s.charAt(0); }).join('').toUpperCase().slice(0, 2)
-        : '—';
-
-      var nameDisplay = data.name || '\u2014';
-      var orgDisplay = data.org ? data.org.name : 'Aucune organisation';
-      var orgHref = data.org ? '/admin/orgs/' + data.org.id : '';
-
-      var html = '' +
-        // Back link
-        '<div class="mb-6">' +
+        var html =
+          '' +
+          // Back link
+          '<div class="mb-6">' +
           '<a href="/admin/users" class="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 transition-colors" data-testid="user-back-link">' +
-            '<svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m7-7l-7 7 7 7"/></svg>' +
-            'Retour aux utilisateurs' +
+          '<svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m7-7l-7 7 7 7"/></svg>' +
+          'Retour aux utilisateurs' +
           '</a>' +
-        '</div>' +
-
-        // Error banner
-        '<div id="user-error-banner" class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm" data-testid="user-error-banner">' +
-          '<span id="user-error-message" data-testid="user-error-message"></span>' +
-        '</div>' +
-
-        // Profile card
-        '<div class="rounded-lg border bg-white shadow-sm mb-8" data-testid="user-profile-card">' +
-          '<div class="flex items-center gap-6 p-6">' +
-            '<div class="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl font-bold" data-testid="user-avatar">' + initials + '</div>' +
-            '<div class="space-y-1 min-w-0">' +
-              '<h1 class="text-2xl font-bold tracking-tight truncate" data-testid="user-page-title">' + nameDisplay + '</h1>' +
-              '<h2 class="text-sm text-gray-500" data-testid="user-name">' + nameDisplay + '</h2>' +
-              '<p class="text-sm text-gray-500 truncate-text" data-testid="user-email"' +
-                (data.email.length > 30 ? ' title="' + data.email.replace(/"/g, '&quot;') + '"' : '') + '>' +
-                data.email +
-              '</p>' +
-              '<div class="flex items-center gap-2 pt-1">' +
-                '<span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ' + roleBadgeClass + '" data-testid="user-role-badge">' + data.role + '</span>' +
-                '<span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ' + statusBadgeClass + '" data-testid="user-status-badge">' + statusLabel + '</span>' +
-              '</div>' +
-            '</div>' +
           '</div>' +
-        '</div>' +
-
-        // Info + Security grid
-        '<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">' +
+          // Error banner
+          '<div id="user-error-banner" class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm" data-testid="user-error-banner">' +
+          '<span id="user-error-message" data-testid="user-error-message"></span>' +
+          '</div>' +
+          // Profile card
+          '<div class="rounded-lg border bg-white shadow-sm mb-8" data-testid="user-profile-card">' +
+          '<div class="flex items-center gap-6 p-6">' +
+          '<div class="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl font-bold" data-testid="user-avatar">' +
+          initials +
+          '</div>' +
+          '<div class="space-y-1 min-w-0">' +
+          '<h1 class="text-2xl font-bold tracking-tight truncate" data-testid="user-page-title">' +
+          nameDisplay +
+          '</h1>' +
+          '<h2 class="text-sm text-gray-500" data-testid="user-name">' +
+          nameDisplay +
+          '</h2>' +
+          '<p class="text-sm text-gray-500 truncate-text" data-testid="user-email"' +
+          (data.email.length > 30 ? ' title="' + data.email.replace(/"/g, '&quot;') + '"' : '') +
+          '>' +
+          data.email +
+          '</p>' +
+          '<div class="flex items-center gap-2 pt-1">' +
+          '<span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ' +
+          roleBadgeClass +
+          '" data-testid="user-role-badge">' +
+          data.role +
+          '</span>' +
+          '<span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ' +
+          statusBadgeClass +
+          '" data-testid="user-status-badge">' +
+          statusLabel +
+          '</span>' +
+          '</div>' +
+          '</div>' +
+          '</div>' +
+          '</div>' +
+          // Info + Security grid
+          '<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">' +
           // Info card
           '<div class="rounded-lg border bg-white shadow-sm" data-testid="user-info-card">' +
-            '<div class="flex flex-col space-y-1.5 p-6 pb-2">' +
-              '<h3 class="text-lg font-semibold leading-none tracking-tight">Informations</h3>' +
-            '</div>' +
-            '<div class="p-6 pt-3 space-y-4">' +
-              '<div class="flex justify-between">' +
-                '<span class="text-sm text-gray-500">ID</span>' +
-                '<span class="text-sm font-mono" data-testid="user-info-id">' + (data.id || '\u2014') + '</span>' +
-              '</div>' +
-              '<div class="flex justify-between">' +
-                '<span class="text-sm text-gray-500">Créé le</span>' +
-                '<span class="text-sm" data-testid="user-info-created">' + formatDate(data.createdAt) + '</span>' +
-              '</div>' +
-              '<div class="flex justify-between">' +
-                '<span class="text-sm text-gray-500">Dernière connexion</span>' +
-                '<span class="text-sm" data-testid="user-info-last-login">' + (data.lastLogin ? formatDateTime(data.lastLogin) : '\u2014') + '</span>' +
-              '</div>' +
-              '<div class="flex justify-between">' +
-                '<span class="text-sm text-gray-500">Organisation</span>' +
-                (data.org
-                  ? '<a href="/admin/orgs/' + data.org.id + '" class="text-sm font-medium text-blue-600 hover:underline" data-testid="user-info-org">' + orgDisplay + '</a>'
-                  : '<span class="text-sm text-gray-400" data-testid="user-info-org">' + orgDisplay + '</span>'
-                ) +
-              '</div>' +
-            '</div>' +
+          '<div class="flex flex-col space-y-1.5 p-6 pb-2">' +
+          '<h3 class="text-lg font-semibold leading-none tracking-tight">Informations</h3>' +
+          '</div>' +
+          '<div class="p-6 pt-3 space-y-4">' +
+          '<div class="flex justify-between">' +
+          '<span class="text-sm text-gray-500">ID</span>' +
+          '<span class="text-sm font-mono" data-testid="user-info-id">' +
+          (data.id || '\u2014') +
+          '</span>' +
+          '</div>' +
+          '<div class="flex justify-between">' +
+          '<span class="text-sm text-gray-500">Créé le</span>' +
+          '<span class="text-sm" data-testid="user-info-created">' +
+          formatDate(data.createdAt) +
+          '</span>' +
+          '</div>' +
+          '<div class="flex justify-between">' +
+          '<span class="text-sm text-gray-500">Dernière connexion</span>' +
+          '<span class="text-sm" data-testid="user-info-last-login">' +
+          (data.lastLogin ? formatDateTime(data.lastLogin) : '\u2014') +
+          '</span>' +
+          '</div>' +
+          '<div class="flex justify-between">' +
+          '<span class="text-sm text-gray-500">Organisation</span>' +
+          (data.org
+            ? '<a href="/admin/orgs/' +
+              data.org.id +
+              '" class="text-sm font-medium text-blue-600 hover:underline" data-testid="user-info-org">' +
+              orgDisplay +
+              '</a>'
+            : '<span class="text-sm text-gray-400" data-testid="user-info-org">' +
+              orgDisplay +
+              '</span>') +
+          '</div>' +
+          '</div>' +
           '</div>' +
           // Security card
           '<div class="rounded-lg border bg-white shadow-sm" data-testid="user-security-card">' +
-            '<div class="flex flex-col space-y-1.5 p-6 pb-2">' +
-              '<h3 class="text-lg font-semibold leading-none tracking-tight">Sécurité</h3>' +
-            '</div>' +
-            '<div class="p-6 pt-3 space-y-4">' +
-              '<div class="flex justify-between">' +
-                '<span class="text-sm text-gray-500">2FA</span>' +
-                '<span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ' +
-                  (data.twoFactorEnabled ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200') +
-                  '" data-testid="user-security-2fa">' +
-                  (data.twoFactorEnabled ? 'Activé' : 'Désactivé') +
-                '</span>' +
-              '</div>' +
-              '<div class="flex justify-between">' +
-                '<span class="text-sm text-gray-500">Email vérifié</span>' +
-                '<span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ' +
-                  (data.emailVerified ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200') +
-                  '" data-testid="user-security-email">' +
-                  (data.emailVerified ? 'Oui' : 'Non') +
-                '</span>' +
-              '</div>' +
-              '<div class="flex justify-between">' +
-                '<span class="text-sm text-gray-500">Rôle</span>' +
-                '<span class="text-sm font-medium" data-testid="user-security-role">' + roleLabel + '</span>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-
-        // Danger zone
-        '<div class="rounded-lg border border-red-200 bg-white shadow-sm" data-testid="user-danger-zone-card">' +
           '<div class="flex flex-col space-y-1.5 p-6 pb-2">' +
-            '<h3 class="text-lg font-semibold leading-none tracking-tight text-red-600">Zone de danger</h3>' +
+          '<h3 class="text-lg font-semibold leading-none tracking-tight">Sécurité</h3>' +
+          '</div>' +
+          '<div class="p-6 pt-3 space-y-4">' +
+          '<div class="flex justify-between">' +
+          '<span class="text-sm text-gray-500">2FA</span>' +
+          '<span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ' +
+          (data.twoFactorEnabled
+            ? 'bg-green-100 text-green-800 border-green-200'
+            : 'bg-gray-100 text-gray-800 border-gray-200') +
+          '" data-testid="user-security-2fa">' +
+          (data.twoFactorEnabled ? 'Activé' : 'Désactivé') +
+          '</span>' +
+          '</div>' +
+          '<div class="flex justify-between">' +
+          '<span class="text-sm text-gray-500">Email vérifié</span>' +
+          '<span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ' +
+          (data.emailVerified
+            ? 'bg-green-100 text-green-800 border-green-200'
+            : 'bg-gray-100 text-gray-800 border-gray-200') +
+          '" data-testid="user-security-email">' +
+          (data.emailVerified ? 'Oui' : 'Non') +
+          '</span>' +
+          '</div>' +
+          '<div class="flex justify-between">' +
+          '<span class="text-sm text-gray-500">Rôle</span>' +
+          '<span class="text-sm font-medium" data-testid="user-security-role">' +
+          roleLabel +
+          '</span>' +
+          '</div>' +
+          '</div>' +
+          '</div>' +
+          '</div>' +
+          // Danger zone
+          '<div class="rounded-lg border border-red-200 bg-white shadow-sm" data-testid="user-danger-zone-card">' +
+          '<div class="flex flex-col space-y-1.5 p-6 pb-2">' +
+          '<h3 class="text-lg font-semibold leading-none tracking-tight text-red-600">Zone de danger</h3>' +
           '</div>' +
           '<div class="p-6 pt-3 flex items-center justify-between">' +
-            '<div>' +
-              '<p class="text-sm font-medium">Supprimer cet utilisateur</p>' +
-              '<p class="text-sm text-gray-500">Cette action est irréversible</p>' +
-            '</div>' +
-            '<button class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-red-500 text-red-600 hover:bg-red-50 h-9 px-3" data-testid="user-delete-btn" onclick="window.__showDeleteModal()">' +
-              'Supprimer' +
-            '</button>' +
+          '<div>' +
+          '<p class="text-sm font-medium">Supprimer cet utilisateur</p>' +
+          '<p class="text-sm text-gray-500">Cette action est irréversible</p>' +
           '</div>' +
-        '</div>';
+          '<button class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-red-500 text-red-600 hover:bg-red-50 h-9 px-3" data-testid="user-delete-btn" onclick="window.__showDeleteModal()">' +
+          'Supprimer' +
+          '</button>' +
+          '</div>' +
+          '</div>'
 
-      var container = document.getElementById('tab-user-content');
-      container.innerHTML = html;
-      container.classList.remove('hidden');
-    }
+        var container = document.getElementById('tab-user-content')
+        container.innerHTML = html
+        container.classList.remove('hidden')
+      }
 
-    function renderOrgDetail(data) {
-      if (!data) data = currentOrg;
-      else currentOrg = data;
+      function renderOrgDetail(data) {
+        if (!data) data = currentOrg
+        else currentOrg = data
 
-      var sub = data.subscription;
-      var planBadgeClass = getPlanBadgeClass(sub);
-      var planBadgeLabel = getPlanBadgeLabel(sub ? sub.status : null);
-      var planName = sub ? sub.planKey : '\u2014';
+        var sub = data.subscription
+        var planBadgeClass = getPlanBadgeClass(sub)
+        var planBadgeLabel = getPlanBadgeLabel(sub ? sub.status : null)
+        var planName = sub ? sub.planKey : '\u2014'
 
-      var ownerDisplay = data.owner ? data.owner.name : 'Aucun propriétaire';
-      var ownerHref = data.owner ? '/admin/users/' + data.owner.id : '';
+        var ownerDisplay = data.owner ? data.owner.name : 'Aucun propriétaire'
+        var ownerHref = data.owner ? '/admin/users/' + data.owner.id : ''
 
-      var html = '' +
-        // Back link
-        '<div class="mb-6">' +
+        var html =
+          '' +
+          // Back link
+          '<div class="mb-6">' +
           '<a href="/admin/orgs" class="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 transition-colors" data-testid="org-back-link">' +
-            '<svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m7-7l-7 7 7 7"/></svg>' +
-            'Retour aux organisations' +
+          '<svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m7-7l-7 7 7 7"/></svg>' +
+          'Retour aux organisations' +
           '</a>' +
-        '</div>' +
-
-        // Error banner
-        '<div id="org-error-banner" class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm" data-testid="org-error-banner">' +
-          '<span id="org-error-message" data-testid="org-error-message"></span>' +
-        '</div>' +
-
-        // Change plan error
-        '<div id="org-change-plan-error" class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-orange-500/50 bg-orange-50 text-orange-700 text-sm" data-testid="org-change-plan-error">' +
-          '<span id="org-change-plan-error-message" data-testid="org-change-plan-error-message"></span>' +
-        '</div>' +
-
-        // Org header
-        '<div class="rounded-lg border bg-white shadow-sm mb-8" data-testid="org-header-card">' +
-          '<div class="flex items-center justify-between p-6">' +
-            '<div class="space-y-1 min-w-0">' +
-              '<h1 class="text-2xl font-bold tracking-tight truncate-text" data-testid="org-page-title"' +
-                (data.name.length > 30 ? ' title="' + data.name.replace(/"/g, '&quot;') + '"' : '') + '>' +
-                data.name +
-              '</h1>' +
-              '<h2 class="text-sm text-gray-500 truncate-text" data-testid="org-name"' +
-                (data.name.length > 30 ? ' title="' + data.name.replace(/"/g, '&quot;') + '"' : '') + '>' +
-                data.name +
-              '</h2>' +
-              '<p class="text-sm text-gray-500 truncate-text" data-testid="org-slug"' +
-                (data.slug.length > 30 ? ' title="/' + data.slug.replace(/"/g, '&quot;') + '"' : '') + '>' +
-                '/' + data.slug +
-              '</p>' +
-            '</div>' +
-            '<div class="flex items-center gap-3 flex-shrink-0">' +
-              '<a href="/admin/orgs/' + data.id + '/downgrade" class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-white hover:bg-gray-50 h-9 px-3" data-testid="org-downgrade-link">' +
-                'Changer de plan' +
-              '</a>' +
-            '</div>' +
           '</div>' +
-        '</div>' +
-
-        // Stats grid
-        '<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">' +
+          // Error banner
+          '<div id="org-error-banner" class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm" data-testid="org-error-banner">' +
+          '<span id="org-error-message" data-testid="org-error-message"></span>' +
+          '</div>' +
+          // Change plan error
+          '<div id="org-change-plan-error" class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-orange-500/50 bg-orange-50 text-orange-700 text-sm" data-testid="org-change-plan-error">' +
+          '<span id="org-change-plan-error-message" data-testid="org-change-plan-error-message"></span>' +
+          '</div>' +
+          // Org header
+          '<div class="rounded-lg border bg-white shadow-sm mb-8" data-testid="org-header-card">' +
+          '<div class="flex items-center justify-between p-6">' +
+          '<div class="space-y-1 min-w-0">' +
+          '<h1 class="text-2xl font-bold tracking-tight truncate-text" data-testid="org-page-title"' +
+          (data.name.length > 30 ? ' title="' + data.name.replace(/"/g, '&quot;') + '"' : '') +
+          '>' +
+          data.name +
+          '</h1>' +
+          '<h2 class="text-sm text-gray-500 truncate-text" data-testid="org-name"' +
+          (data.name.length > 30 ? ' title="' + data.name.replace(/"/g, '&quot;') + '"' : '') +
+          '>' +
+          data.name +
+          '</h2>' +
+          '<p class="text-sm text-gray-500 truncate-text" data-testid="org-slug"' +
+          (data.slug.length > 30 ? ' title="/' + data.slug.replace(/"/g, '&quot;') + '"' : '') +
+          '>' +
+          '/' +
+          data.slug +
+          '</p>' +
+          '</div>' +
+          '<div class="flex items-center gap-3 flex-shrink-0">' +
+          '<a href="/admin/orgs/' +
+          data.id +
+          '/downgrade" class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-white hover:bg-gray-50 h-9 px-3" data-testid="org-downgrade-link">' +
+          'Changer de plan' +
+          '</a>' +
+          '</div>' +
+          '</div>' +
+          '</div>' +
+          // Stats grid
+          '<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">' +
           '<div class="rounded-lg border bg-white shadow-sm p-6" data-testid="org-stat-members">' +
-            '<p class="text-sm text-gray-500">Membres</p>' +
-            '<p class="text-2xl font-bold" data-testid="org-stat-members-value">' + data.membersCount + '</p>' +
+          '<p class="text-sm text-gray-500">Membres</p>' +
+          '<p class="text-2xl font-bold" data-testid="org-stat-members-value">' +
+          data.membersCount +
+          '</p>' +
           '</div>' +
           '<div class="rounded-lg border bg-white shadow-sm p-6" data-testid="org-stat-subscription">' +
-            '<p class="text-sm text-gray-500">Plan</p>' +
-            '<p class="text-2xl font-bold" data-testid="org-stat-plan-value">' + planName + '</p>' +
-            '<span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ' + planBadgeClass + ' mt-1" data-testid="org-stat-plan-status">' + planBadgeLabel + '</span>' +
+          '<p class="text-sm text-gray-500">Plan</p>' +
+          '<p class="text-2xl font-bold" data-testid="org-stat-plan-value">' +
+          planName +
+          '</p>' +
+          '<span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ' +
+          planBadgeClass +
+          ' mt-1" data-testid="org-stat-plan-status">' +
+          planBadgeLabel +
+          '</span>' +
           '</div>' +
           '<div class="rounded-lg border bg-white shadow-sm p-6" data-testid="org-stat-created">' +
-            '<p class="text-sm text-gray-500">Créée le</p>' +
-            '<p class="text-2xl font-bold" data-testid="org-stat-created-value">' + formatDate(data.createdAt) + '</p>' +
+          '<p class="text-sm text-gray-500">Créée le</p>' +
+          '<p class="text-2xl font-bold" data-testid="org-stat-created-value">' +
+          formatDate(data.createdAt) +
+          '</p>' +
           '</div>' +
-        '</div>' +
-
-        // Info + Actions grid
-        '<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">' +
+          '</div>' +
+          // Info + Actions grid
+          '<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">' +
           // Info card
           '<div class="rounded-lg border bg-white shadow-sm" data-testid="org-info-card">' +
-            '<div class="flex flex-col space-y-1.5 p-6 pb-2">' +
-              '<h3 class="text-lg font-semibold leading-none tracking-tight">Détails</h3>' +
-            '</div>' +
-            '<div class="p-6 pt-3 space-y-4">' +
-              '<div class="flex justify-between">' +
-                '<span class="text-sm text-gray-500">ID</span>' +
-                '<span class="text-sm font-mono" data-testid="org-detail-id">' + (data.id || '\u2014') + '</span>' +
-              '</div>' +
-              '<div class="flex justify-between">' +
-                '<span class="text-sm text-gray-500">Slug</span>' +
-                '<span class="text-sm font-mono truncate-text" data-testid="org-detail-slug"' +
-                  (data.slug.length > 25 ? ' title="' + data.slug.replace(/"/g, '&quot;') + '"' : '') + '>' +
-                  data.slug +
-                '</span>' +
-              '</div>' +
-              '<div class="flex justify-between">' +
-                '<span class="text-sm text-gray-500">Propriétaire</span>' +
-                (data.owner
-                  ? '<a href="/admin/users/' + data.owner.id + '" class="text-sm font-medium text-blue-600 hover:underline" data-testid="org-detail-owner">' + ownerDisplay + '</a>'
-                  : '<span class="text-sm text-gray-400" data-testid="org-detail-owner">' + ownerDisplay + '</span>'
-                ) +
-              '</div>' +
-            '</div>' +
+          '<div class="flex flex-col space-y-1.5 p-6 pb-2">' +
+          '<h3 class="text-lg font-semibold leading-none tracking-tight">Détails</h3>' +
+          '</div>' +
+          '<div class="p-6 pt-3 space-y-4">' +
+          '<div class="flex justify-between">' +
+          '<span class="text-sm text-gray-500">ID</span>' +
+          '<span class="text-sm font-mono" data-testid="org-detail-id">' +
+          (data.id || '\u2014') +
+          '</span>' +
+          '</div>' +
+          '<div class="flex justify-between">' +
+          '<span class="text-sm text-gray-500">Slug</span>' +
+          '<span class="text-sm font-mono truncate-text" data-testid="org-detail-slug"' +
+          (data.slug.length > 25 ? ' title="' + data.slug.replace(/"/g, '&quot;') + '"' : '') +
+          '>' +
+          data.slug +
+          '</span>' +
+          '</div>' +
+          '<div class="flex justify-between">' +
+          '<span class="text-sm text-gray-500">Propriétaire</span>' +
+          (data.owner
+            ? '<a href="/admin/users/' +
+              data.owner.id +
+              '" class="text-sm font-medium text-blue-600 hover:underline" data-testid="org-detail-owner">' +
+              ownerDisplay +
+              '</a>'
+            : '<span class="text-sm text-gray-400" data-testid="org-detail-owner">' +
+              ownerDisplay +
+              '</span>') +
+          '</div>' +
+          '</div>' +
           '</div>' +
           // Actions card
           '<div class="rounded-lg border bg-white shadow-sm" data-testid="org-actions-card">' +
-            '<div class="flex flex-col space-y-1.5 p-6 pb-2">' +
-              '<h3 class="text-lg font-semibold leading-none tracking-tight">Actions rapides</h3>' +
-            '</div>' +
-            '<div class="p-6 pt-3 space-y-3">' +
-              '<a href="/admin/users?orgId=' + data.id + '" class="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors" data-testid="org-action-users">' +
-                '<span class="text-sm font-medium">Voir les membres</span>' +
-              '</a>' +
-              '<a href="/admin/overrides?orgId=' + data.id + '" class="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors" data-testid="org-action-overrides">' +
-                '<span class="text-sm font-medium">Voir les overrides</span>' +
-              '</a>' +
-              '<a href="/admin/orgs/' + data.id + '/downgrade" class="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors" data-testid="org-action-downgrade">' +
-                '<span class="text-sm font-medium">Changer de plan</span>' +
-              '</a>' +
-              '<button class="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors w-full text-left" data-testid="org-change-plan-btn" onclick="window.__changePlan()">' +
-                '<span class="text-sm font-medium text-orange-600">Simuler erreur changement de plan</span>' +
-              '</button>' +
-            '</div>' +
+          '<div class="flex flex-col space-y-1.5 p-6 pb-2">' +
+          '<h3 class="text-lg font-semibold leading-none tracking-tight">Actions rapides</h3>' +
           '</div>' +
-        '</div>';
+          '<div class="p-6 pt-3 space-y-3">' +
+          '<a href="/admin/users?orgId=' +
+          data.id +
+          '" class="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors" data-testid="org-action-users">' +
+          '<span class="text-sm font-medium">Voir les membres</span>' +
+          '</a>' +
+          '<a href="/admin/overrides?orgId=' +
+          data.id +
+          '" class="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors" data-testid="org-action-overrides">' +
+          '<span class="text-sm font-medium">Voir les overrides</span>' +
+          '</a>' +
+          '<a href="/admin/orgs/' +
+          data.id +
+          '/downgrade" class="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors" data-testid="org-action-downgrade">' +
+          '<span class="text-sm font-medium">Changer de plan</span>' +
+          '</a>' +
+          '<button class="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors w-full text-left" data-testid="org-change-plan-btn" onclick="window.__changePlan()">' +
+          '<span class="text-sm font-medium text-orange-600">Simuler erreur changement de plan</span>' +
+          '</button>' +
+          '</div>' +
+          '</div>' +
+          '</div>'
 
-      var container = document.getElementById('tab-org-content');
-      container.innerHTML = html;
-      container.classList.remove('hidden');
-    }
+        var container = document.getElementById('tab-org-content')
+        container.innerHTML = html
+        container.classList.remove('hidden')
+      }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Loading skeleton
-    // ═══════════════════════════════════════════════════════════════════════
+      // ═══════════════════════════════════════════════════════════════════════
+      // Loading skeleton
+      // ═══════════════════════════════════════════════════════════════════════
 
-    function showUserSkeleton() {
-      var html = '' +
-        '<div class="mb-6">' +
+      function showUserSkeleton() {
+        var html =
+          '' +
+          '<div class="mb-6">' +
           '<div class="skeleton-pulse h-5 w-40 mb-6"></div>' +
-        '</div>' +
-        '<div class="rounded-lg border bg-white shadow-sm mb-8 p-6" data-testid="user-loading-skeleton">' +
-          '<div class="flex items-center gap-6">' +
-            '<div class="skeleton-pulse h-16 w-16 rounded-full"></div>' +
-            '<div class="space-y-3 flex-1">' +
-              '<div class="skeleton-pulse h-6 w-48"></div>' +
-              '<div class="skeleton-pulse h-4 w-32"></div>' +
-              '<div class="skeleton-pulse h-4 w-56"></div>' +
-              '<div class="flex gap-2"><div class="skeleton-pulse h-5 w-16 rounded-full"></div><div class="skeleton-pulse h-5 w-12 rounded-full"></div></div>' +
-            '</div>' +
           '</div>' +
-        '</div>' +
-        '<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">' +
+          '<div class="rounded-lg border bg-white shadow-sm mb-8 p-6" data-testid="user-loading-skeleton">' +
+          '<div class="flex items-center gap-6">' +
+          '<div class="skeleton-pulse h-16 w-16 rounded-full"></div>' +
+          '<div class="space-y-3 flex-1">' +
+          '<div class="skeleton-pulse h-6 w-48"></div>' +
+          '<div class="skeleton-pulse h-4 w-32"></div>' +
+          '<div class="skeleton-pulse h-4 w-56"></div>' +
+          '<div class="flex gap-2"><div class="skeleton-pulse h-5 w-16 rounded-full"></div><div class="skeleton-pulse h-5 w-12 rounded-full"></div></div>' +
+          '</div>' +
+          '</div>' +
+          '</div>' +
+          '<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">' +
           '<div class="rounded-lg border bg-white shadow-sm p-6"><div class="skeleton-pulse h-5 w-24 mb-4"></div><div class="space-y-3"><div class="skeleton-pulse h-4 w-full"></div><div class="skeleton-pulse h-4 w-3/4"></div><div class="skeleton-pulse h-4 w-5/6"></div><div class="skeleton-pulse h-4 w-2/3"></div></div></div>' +
           '<div class="rounded-lg border bg-white shadow-sm p-6"><div class="skeleton-pulse h-5 w-20 mb-4"></div><div class="space-y-3"><div class="skeleton-pulse h-4 w-full"></div><div class="skeleton-pulse h-4 w-3/4"></div><div class="skeleton-pulse h-4 w-2/3"></div></div></div>' +
-        '</div>';
+          '</div>'
 
-      var container = document.getElementById('tab-user-content');
-      container.innerHTML = html;
-      container.classList.remove('hidden');
-    }
+        var container = document.getElementById('tab-user-content')
+        container.innerHTML = html
+        container.classList.remove('hidden')
+      }
 
-    function showOrgSkeleton() {
-      var html = '' +
-        '<div class="mb-6">' +
+      function showOrgSkeleton() {
+        var html =
+          '' +
+          '<div class="mb-6">' +
           '<div class="skeleton-pulse h-5 w-44 mb-6"></div>' +
-        '</div>' +
-        '<div class="rounded-lg border bg-white shadow-sm mb-8 p-6" data-testid="org-loading-skeleton">' +
-          '<div class="flex items-center justify-between">' +
-            '<div class="space-y-3 flex-1">' +
-              '<div class="skeleton-pulse h-6 w-48"></div>' +
-              '<div class="skeleton-pulse h-4 w-32"></div>' +
-              '<div class="skeleton-pulse h-4 w-24"></div>' +
-            '</div>' +
-            '<div class="skeleton-pulse h-9 w-36 rounded-md"></div>' +
           '</div>' +
-        '</div>' +
-        '<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">' +
+          '<div class="rounded-lg border bg-white shadow-sm mb-8 p-6" data-testid="org-loading-skeleton">' +
+          '<div class="flex items-center justify-between">' +
+          '<div class="space-y-3 flex-1">' +
+          '<div class="skeleton-pulse h-6 w-48"></div>' +
+          '<div class="skeleton-pulse h-4 w-32"></div>' +
+          '<div class="skeleton-pulse h-4 w-24"></div>' +
+          '</div>' +
+          '<div class="skeleton-pulse h-9 w-36 rounded-md"></div>' +
+          '</div>' +
+          '</div>' +
+          '<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">' +
           '<div class="rounded-lg border bg-white shadow-sm p-6"><div class="skeleton-pulse h-4 w-16 mb-2"></div><div class="skeleton-pulse h-7 w-12"></div></div>' +
           '<div class="rounded-lg border bg-white shadow-sm p-6"><div class="skeleton-pulse h-4 w-12 mb-2"></div><div class="skeleton-pulse h-7 w-16"></div><div class="skeleton-pulse h-5 w-14 rounded-full mt-2"></div></div>' +
           '<div class="rounded-lg border bg-white shadow-sm p-6"><div class="skeleton-pulse h-4 w-16 mb-2"></div><div class="skeleton-pulse h-7 w-28"></div></div>' +
-        '</div>';
+          '</div>'
 
-      var container = document.getElementById('tab-org-content');
-      container.innerHTML = html;
-      container.classList.remove('hidden');
-    }
+        var container = document.getElementById('tab-org-content')
+        container.innerHTML = html
+        container.classList.remove('hidden')
+      }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Tab switching
-    // ═══════════════════════════════════════════════════════════════════════
+      // ═══════════════════════════════════════════════════════════════════════
+      // Tab switching
+      // ═══════════════════════════════════════════════════════════════════════
 
-    function switchTab(tab) {
-      document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.add('hidden'); });
-      document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+      function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(function (el) {
+          el.classList.add('hidden')
+        })
+        document.querySelectorAll('.tab-btn').forEach(function (el) {
+          el.classList.remove('active')
+        })
 
-      var contentId = 'tab-' + tab + '-content';
-      var content = document.getElementById(contentId);
-      if (content) content.classList.remove('hidden');
+        var contentId = 'tab-' + tab + '-content'
+        var content = document.getElementById(contentId)
+        if (content) content.classList.remove('hidden')
 
-      var tabBtn = document.querySelector('[data-testid="tab-' + tab + '"]');
-      if (tabBtn) tabBtn.classList.add('active');
-    }
+        var tabBtn = document.querySelector('[data-testid="tab-' + tab + '"]')
+        if (tabBtn) tabBtn.classList.add('active')
+      }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Global helpers (for tests)
-    // ═══════════════════════════════════════════════════════════════════════
+      // ═══════════════════════════════════════════════════════════════════════
+      // Global helpers (for tests)
+      // ═══════════════════════════════════════════════════════════════════════
 
-    // ── User helpers ──
+      // ── User helpers ──
 
-    window.__setUserData = function(data) {
-      window.__clearUserError();
-      // Merge with defaults
-      var merged = JSON.parse(JSON.stringify(DEFAULT_USER));
-      if (data) {
-        for (var key in data) {
-          if (data.hasOwnProperty(key)) {
-            merged[key] = data[key];
+      window.__setUserData = function (data) {
+        window.__clearUserError()
+        // Merge with defaults
+        var merged = JSON.parse(JSON.stringify(DEFAULT_USER))
+        if (data) {
+          for (var key in data) {
+            if (data.hasOwnProperty(key)) {
+              merged[key] = data[key]
+            }
           }
         }
-      }
-      renderUserDetail(merged);
-    };
-
-    window.__showUserError = function(message) {
-      var banner = document.getElementById('user-error-banner');
-      if (!banner) return;
-      banner.classList.remove('hidden');
-      var msg = document.getElementById('user-error-message');
-      if (msg) msg.textContent = message;
-    };
-
-    window.__clearUserError = function() {
-      var banner = document.getElementById('user-error-banner');
-      if (banner) banner.classList.add('hidden');
-    };
-
-    window.__showUserSkeleton = function() {
-      showUserSkeleton();
-    };
-
-    // ── Delete helpers ──
-
-    window.__showDeleteModal = function() {
-      var modal = document.getElementById('delete-modal');
-      if (modal) modal.classList.remove('hidden');
-    };
-
-    window.__cancelDelete = function() {
-      var modal = document.getElementById('delete-modal');
-      if (modal) modal.classList.add('hidden');
-    };
-
-    window.__confirmDelete = function() {
-      var modal = document.getElementById('delete-modal');
-      if (modal) modal.classList.add('hidden');
-
-      if (window.__deleteShouldFail) {
-        window.__showUserError('Erreur lors de la suppression de l\'utilisateur. Veuillez réessayer.');
-        return;
+        renderUserDetail(merged)
       }
 
-      // Success
-      var success = document.getElementById('delete-success');
-      if (success) success.classList.remove('hidden');
-    };
+      window.__showUserError = function (message) {
+        var banner = document.getElementById('user-error-banner')
+        if (!banner) return
+        banner.classList.remove('hidden')
+        var msg = document.getElementById('user-error-message')
+        if (msg) msg.textContent = message
+      }
 
-    // ── Org helpers ──
+      window.__clearUserError = function () {
+        var banner = document.getElementById('user-error-banner')
+        if (banner) banner.classList.add('hidden')
+      }
 
-    window.__setOrgData = function(data) {
-      window.__clearOrgError();
-      // Merge with defaults
-      var merged = JSON.parse(JSON.stringify(DEFAULT_ORG));
-      if (data) {
-        for (var key in data) {
-          if (data.hasOwnProperty(key)) {
-            merged[key] = data[key];
+      window.__showUserSkeleton = function () {
+        showUserSkeleton()
+      }
+
+      // ── Delete helpers ──
+
+      window.__showDeleteModal = function () {
+        var modal = document.getElementById('delete-modal')
+        if (modal) modal.classList.remove('hidden')
+      }
+
+      window.__cancelDelete = function () {
+        var modal = document.getElementById('delete-modal')
+        if (modal) modal.classList.add('hidden')
+      }
+
+      window.__confirmDelete = function () {
+        var modal = document.getElementById('delete-modal')
+        if (modal) modal.classList.add('hidden')
+
+        if (window.__deleteShouldFail) {
+          window.__showUserError(
+            "Erreur lors de la suppression de l'utilisateur. Veuillez réessayer."
+          )
+          return
+        }
+
+        // Success
+        var success = document.getElementById('delete-success')
+        if (success) success.classList.remove('hidden')
+      }
+
+      // ── Org helpers ──
+
+      window.__setOrgData = function (data) {
+        window.__clearOrgError()
+        // Merge with defaults
+        var merged = JSON.parse(JSON.stringify(DEFAULT_ORG))
+        if (data) {
+          for (var key in data) {
+            if (data.hasOwnProperty(key)) {
+              merged[key] = data[key]
+            }
           }
         }
+        renderOrgDetail(merged)
       }
-      renderOrgDetail(merged);
-    };
 
-    window.__showOrgError = function(message) {
-      var banner = document.getElementById('org-error-banner');
-      if (!banner) return;
-      banner.classList.remove('hidden');
-      var msg = document.getElementById('org-error-message');
-      if (msg) msg.textContent = message;
-    };
-
-    window.__clearOrgError = function() {
-      var banner = document.getElementById('org-error-banner');
-      if (banner) banner.classList.add('hidden');
-    };
-
-    window.__showOrgSkeleton = function() {
-      showOrgSkeleton();
-    };
-
-    window.__changePlan = function() {
-      var errorBanner = document.getElementById('org-change-plan-error');
-      var errorMsg = document.getElementById('org-change-plan-error-message');
-      if (errorBanner && errorMsg) {
-        errorBanner.classList.remove('hidden');
-        errorMsg.textContent = 'Erreur API : Impossible de changer de plan. Le service est temporairement indisponible.';
+      window.__showOrgError = function (message) {
+        var banner = document.getElementById('org-error-banner')
+        if (!banner) return
+        banner.classList.remove('hidden')
+        var msg = document.getElementById('org-error-message')
+        if (msg) msg.textContent = message
       }
-    };
 
-    window.__clearChangePlanError = function() {
-      var banner = document.getElementById('org-change-plan-error');
-      if (banner) banner.classList.add('hidden');
-    };
-
-    // ── Shared helpers ──
-
-    window.__showError = function(message) {
-      // Determine which tab is active
-      var userContent = document.getElementById('tab-user-content');
-      var orgContent = document.getElementById('tab-org-content');
-      if (userContent && !userContent.classList.contains('hidden')) {
-        window.__showUserError(message);
-      } else if (orgContent && !orgContent.classList.contains('hidden')) {
-        window.__showOrgError(message);
+      window.__clearOrgError = function () {
+        var banner = document.getElementById('org-error-banner')
+        if (banner) banner.classList.add('hidden')
       }
-    };
 
-    window.__clearError = function() {
-      window.__clearUserError();
-      window.__clearOrgError();
-    };
+      window.__showOrgSkeleton = function () {
+        showOrgSkeleton()
+      }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Initial render
-    // ═══════════════════════════════════════════════════════════════════════
+      window.__changePlan = function () {
+        var errorBanner = document.getElementById('org-change-plan-error')
+        var errorMsg = document.getElementById('org-change-plan-error-message')
+        if (errorBanner && errorMsg) {
+          errorBanner.classList.remove('hidden')
+          errorMsg.textContent =
+            'Erreur API : Impossible de changer de plan. Le service est temporairement indisponible.'
+        }
+      }
 
-    renderUserDetail(DEFAULT_USER);
-    renderOrgDetail(DEFAULT_ORG);
-    // Ensure org tab starts hidden
-    document.getElementById('tab-org-content').classList.add('hidden');
-  </script>
-</body>
+      window.__clearChangePlanError = function () {
+        var banner = document.getElementById('org-change-plan-error')
+        if (banner) banner.classList.add('hidden')
+      }
+
+      // ── Shared helpers ──
+
+      window.__showError = function (message) {
+        // Determine which tab is active
+        var userContent = document.getElementById('tab-user-content')
+        var orgContent = document.getElementById('tab-org-content')
+        if (userContent && !userContent.classList.contains('hidden')) {
+          window.__showUserError(message)
+        } else if (orgContent && !orgContent.classList.contains('hidden')) {
+          window.__showOrgError(message)
+        }
+      }
+
+      window.__clearError = function () {
+        window.__clearUserError()
+        window.__clearOrgError()
+      }
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // Initial render
+      // ═══════════════════════════════════════════════════════════════════════
+
+      renderUserDetail(DEFAULT_USER)
+      renderOrgDetail(DEFAULT_ORG)
+      // Ensure org tab starts hidden
+      document.getElementById('tab-org-content').classList.add('hidden')
+    </script>
+  </body>
 </html>

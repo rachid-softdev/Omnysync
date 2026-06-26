@@ -58,7 +58,12 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
       >
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h1 className="text-xl font-bold">Omnysync</h1>
-          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Close menu">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsOpen(false)}
+            aria-label="Close menu"
+          >
             <X className="w-5 h-5" />
           </Button>
         </div>

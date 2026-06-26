@@ -16,14 +16,19 @@ export function withOAuthEncryption(adapter: Adapter): Adapter {
     ...adapter,
 
     async linkAccount(data: Record<string, unknown>) {
-      (encryptData as (data: string) => string)(data)
+      ;(encryptData as (data: string) => string)(data)
       return (adapter.linkAccount as (data: Record<string, unknown>) => Promise<unknown>)(data)
     },
 
     async getAccount(providerAccountId: string, provider: string) {
-      const account = await (adapter.getAccount as (providerAccountId: string, provider: string) => Promise<Record<string, unknown> | null>)(providerAccountId, provider)
+      const account = await (
+        adapter.getAccount as (
+          providerAccountId: string,
+          provider: string
+        ) => Promise<Record<string, unknown> | null>
+      )(providerAccountId, provider)
       if (account) {
-        (decryptResult as (data: string) => string)(account)
+        ;(decryptResult as (data: string) => string)(account)
       }
       return account
     },
