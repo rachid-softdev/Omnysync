@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'next-env.d.ts',
+    // Node.js scripts (CommonJS) — tsconfig.json already excludes these
+    'scripts/**',
   ]),
   // Relax rules for E2E test files (Playwright evaluates in browser context where types are dynamic)
   {

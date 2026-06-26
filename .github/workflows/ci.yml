@@ -50,7 +50,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Type check
-        run: pnpm tsc --noEmit
+        # Why: turbo run typecheck delegates to each workspace's own tsconfig.json
+        run: pnpm run typecheck
 
   test:
     runs-on: ubuntu-latest
@@ -85,7 +86,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma Client
-        run: pnpm prisma generate
+        # Why: prisma CLI is a devDependency of @omnysync/core, schema lives in omnysync-web
+        run: pnpm --filter @omnysync/core exec prisma generate --schema=../../omnysync-web/prisma/schema.prisma
 
       - name: Run tests with coverage
         run: pnpm vitest run --coverage
