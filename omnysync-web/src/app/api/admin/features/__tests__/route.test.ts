@@ -184,7 +184,7 @@ describe('GET /api/admin/features', () => {
     expect(body.pagination.page).toBe(99)
   })
 
-  it('handles negative page number gracefully', async () => {
+  it('normalizes negative page number to 1', async () => {
     mockAuthFn.mockResolvedValue(mockAdminSession())
     mockGetAllFeaturesWithPlans.mockResolvedValue([feature()])
 
@@ -193,8 +193,7 @@ describe('GET /api/admin/features', () => {
     const body = await res.json()
 
     expect(res.status).toBe(200)
-    // parseInt(-1) = -1, slice start = (-1-1)*20 = -40, slice(-40) works in JS
-    expect(body.pagination.page).toBe(-1)
+    expect(body.pagination.page).toBe(1)
   })
 
   it('sorts by name:desc when specified', async () => {

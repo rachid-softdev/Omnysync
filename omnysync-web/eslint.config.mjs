@@ -13,6 +13,13 @@ const eslintConfig = defineConfig([
     'build/**',
     'next-env.d.ts',
   ]),
+  // Relax rules for E2E test files (Playwright evaluates in browser context where types are dynamic)
+  {
+    files: ['e2e/**/*.ts', 'e2e/**/*.tsx', 'e2e/**/*.js', 'e2e/**/*.jsx'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 ])
 
 export default eslintConfig

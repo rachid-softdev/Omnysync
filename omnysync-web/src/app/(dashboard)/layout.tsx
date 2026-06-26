@@ -15,6 +15,7 @@ import {
   Webhook,
   FileCheck,
   Zap,
+  Shield,
 } from 'lucide-react'
 import { logoutAction } from '@/lib/actions'
 import { MobileNav } from '@/components/mobile-nav'
@@ -47,6 +48,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     },
     { href: '/dashboard/usage', icon: Zap, label: trans('UI_USAGE') },
     { href: '/dashboard/settings', icon: Settings, label: trans('UI_SETTINGS') },
+    ...(user.role === 'ADMIN' ? [{ href: '/admin', icon: Shield, label: 'Admin' }] : []),
   ]
 
   return (

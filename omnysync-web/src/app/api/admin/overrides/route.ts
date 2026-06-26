@@ -14,6 +14,11 @@ import { requireAdmin, AuthError } from '@/lib/auth/require-admin'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+function safeParseInt(value: string | null, defaultValue: number): number {
+  const parsed = parseInt(value ?? '', 10)
+  return isNaN(parsed) ? defaultValue : Math.max(1, parsed)
+}
+
 // ============================================================================
 // GET /admin/overrides
 // ============================================================================
@@ -24,9 +29,9 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const orgId = searchParams.get('orgId')
-    const page = parseInt(searchParams.get('page') || '1')
+    const page = safeParseInt(searchParams.get('page'), 1)
     const limit = Math.min(
-      parseInt(searchParams.get('limit') || '20'),
+      safeParseInt(searchParams.get('limit'), 20),
       PAGINATION_DEFAULTS.MAX_LIMIT
     )
 

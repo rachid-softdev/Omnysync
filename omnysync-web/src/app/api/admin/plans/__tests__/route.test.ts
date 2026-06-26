@@ -359,7 +359,7 @@ describe('POST /api/admin/plans', () => {
     })
   })
 
-  it('handles non-numeric priceMonthly as NaN (truthy string bypasses null fallback)', async () => {
+  it('handles non-numeric priceMonthly string as NaN via parseFloat', async () => {
     mockAuthFn.mockResolvedValue(mockAdminSession())
     mockPrismaFindUnique.mockResolvedValue(null)
     mockPrismaCreate.mockResolvedValue({
@@ -376,15 +376,97 @@ describe('POST /api/admin/plans', () => {
     const res = await POST(
       mockRequest({ body: { key: 'test', name: 'Test', priceMonthly: 'free' } })
     )
-    const body = await res.json()
-
-    // 'free' is truthy → parseFloat('free') returns NaN
-    // Source: priceMonthly: priceMonthly ? parseFloat(priceMonthly) : null
-    // Since 'free' is truthy, parseFloat runs and produces NaN
+    // Source: priceMonthly: priceMonthly !== undefined && priceMonthly !== null
+    //            ? parseFloat(String(priceMonthly)) : null
+    // 'free' passes the defined/null check, so parseFloat('free') produces NaN
     expect(res.status).toBe(201)
     expect(mockPrismaCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         priceMonthly: NaN,
+      }),
+    })
+  })
+
+  it('handles priceMonthly of 0 correctly (no longer falsy-coerced to null)', async () => {
+    mockAuthFn.mockResolvedValue(mockAdminSession())
+    mockPrismaFindUnique.mockResolvedValue(null)
+    mockPrismaCreate.mockResolvedValue({
+      id: 'new',
+      key: 'free-plan',
+      name: 'Free Plan',
+      priceMonthly: 0,
+      priceYearly: null,
+      isActive: true,
+      sortOrder: 0,
+    })
+
+    const { POST } = await import('../route')
+    const res = await POST(
+      mockRequest({ body: { key: 'free-plan', name: 'Free Plan', priceMonthly: 0 } })
+    )
+    const body = await res.json()
+
+    // With the old falsy check (priceMonthly ? ... : null), 0 would become null.
+    // The new explicit undefined/null check preserves 0.
+    expect(res.status).toBe(201)
+    expect(body.priceMonthly).toBe(0)
+    expect(mockPrismaCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        priceMonthly: 0,
+      }),
+    })
+  })
+
+  it('sets priceMonthly to null when explicitly null', async () => {
+    mockAuthFn.mockResolvedValue(mockAdminSession())
+    mockPrismaFindUnique.mockResolvedValue(null)
+    mockPrismaCreate.mockResolvedValue({
+      id: 'new',
+      key: 'null-price',
+      name: 'Null Price',
+      priceMonthly: null,
+      priceYearly: null,
+      isActive: true,
+      sortOrder: 0,
+    })
+
+    const { POST } = await import('../route')
+    const res = await POST(
+      mockRequest({ body: { key: 'null-price', name: 'Null Price', priceMonthly: null } })
+    )
+    const body = await res.json()
+
+    expect(res.status).toBe(201)
+    expect(body.priceMonthly).toBeNull()
+    expect(mockPrismaCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        priceMonthly: null,
+      }),
+    })
+  })
+
+  it('sets priceMonthly to null when undefined (not sent)', async () => {
+    mockAuthFn.mockResolvedValue(mockAdminSession())
+    mockPrismaFindUnique.mockResolvedValue(null)
+    mockPrismaCreate.mockResolvedValue({
+      id: 'new',
+      key: 'no-price',
+      name: 'No Price',
+      priceMonthly: null,
+      priceYearly: null,
+      isActive: true,
+      sortOrder: 0,
+    })
+
+    const { POST } = await import('../route')
+    const res = await POST(mockRequest({ body: { key: 'no-price', name: 'No Price' } }))
+    const body = await res.json()
+
+    expect(res.status).toBe(201)
+    expect(body.priceMonthly).toBeNull()
+    expect(mockPrismaCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        priceMonthly: null,
       }),
     })
   })

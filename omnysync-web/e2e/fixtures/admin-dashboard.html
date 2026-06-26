@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administration — Omnysync</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-background text-foreground">
+  <div class="p-8">
+    <!-- AdminPageHeader -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+      <div class="space-y-1">
+        <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Administration</h1>
+        <p class="text-sm text-muted-foreground" data-testid="page-description">Vue d'ensemble de la plateforme Omnysync</p>
+      </div>
+    </div>
+
+    <!-- Stats cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" data-testid="stats-grid">
+      <!-- Users card -->
+      <a href="/admin/users" data-testid="stat-card-utilisateurs">
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm hover:bg-accent/50 transition-colors cursor-pointer">
+          <div class="flex items-center gap-4 p-6">
+            <div class="p-3 rounded-lg bg-accent text-primary">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/></svg>
+            </div>
+            <div>
+              <p class="text-2xl font-bold" data-testid="stat-value-utilisateurs">142</p>
+              <p class="text-sm text-muted-foreground">Utilisateurs</p>
+            </div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Orgs card -->
+      <a href="/admin/orgs" data-testid="stat-card-organisations">
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm hover:bg-accent/50 transition-colors cursor-pointer">
+          <div class="flex items-center gap-4 p-6">
+            <div class="p-3 rounded-lg bg-accent text-primary">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            </div>
+            <div>
+              <p class="text-2xl font-bold" data-testid="stat-value-organisations">23</p>
+              <p class="text-sm text-muted-foreground">Organisations</p>
+            </div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Plans card -->
+      <a href="/admin/plans" data-testid="stat-card-plans">
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm hover:bg-accent/50 transition-colors cursor-pointer">
+          <div class="flex items-center gap-4 p-6">
+            <div class="p-3 rounded-lg bg-accent text-primary">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            </div>
+            <div>
+              <p class="text-2xl font-bold" data-testid="stat-value-plans">4</p>
+              <p class="text-sm text-muted-foreground">Plans actifs</p>
+            </div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Features card -->
+      <a href="/admin/features" data-testid="stat-card-features">
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm hover:bg-accent/50 transition-colors cursor-pointer">
+          <div class="flex items-center gap-4 p-6">
+            <div class="p-3 rounded-lg bg-accent text-primary">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
+            </div>
+            <div>
+              <p class="text-2xl font-bold" data-testid="stat-value-features">36</p>
+              <p class="text-sm text-muted-foreground">Features</p>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Recent activity -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Recent users -->
+      <div class="rounded-lg border bg-card text-card-foreground shadow-sm" data-testid="recent-users-card">
+        <div class="flex flex-row items-center justify-between p-6 pb-2">
+          <div>
+            <h3 class="text-lg font-semibold leading-none tracking-tight">Derniers utilisateurs</h3>
+            <p class="text-sm text-muted-foreground mt-1">Les 5 derniers comptes créés</p>
+          </div>
+          <a href="/admin/users" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring h-8 px-3 hover:bg-accent hover:text-accent-foreground">
+            Voir tout
+            <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+        <div class="p-6 pt-3">
+          <div class="space-y-3" data-testid="recent-users-list">
+            <a href="/admin/users/u1" class="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors" data-testid="recent-user-u1">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Jean Dupont</p>
+                <p class="text-xs text-muted-foreground truncate">jean@example.com</p>
+              </div>
+              <div class="flex items-center gap-2 ml-4">
+                <span class="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">ADMIN</span>
+                <span class="text-xs text-muted-foreground whitespace-nowrap">26/06/2026</span>
+              </div>
+            </a>
+            <a href="/admin/users/u2" class="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors" data-testid="recent-user-u2">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Marie Curie</p>
+                <p class="text-xs text-muted-foreground truncate">marie@example.com</p>
+              </div>
+              <div class="flex items-center gap-2 ml-4">
+                <span class="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">USER</span>
+                <span class="text-xs text-muted-foreground whitespace-nowrap">25/06/2026</span>
+              </div>
+            </a>
+            <a href="/admin/users/u3" class="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors" data-testid="recent-user-u3">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Alan Turing</p>
+                <p class="text-xs text-muted-foreground truncate">alan@example.com</p>
+              </div>
+              <div class="flex items-center gap-2 ml-4">
+                <span class="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">USER</span>
+                <span class="text-xs text-muted-foreground whitespace-nowrap">24/06/2026</span>
+              </div>
+            </a>
+            <a href="/admin/users/u4" class="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors" data-testid="recent-user-u4">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Sans nom</p>
+                <p class="text-xs text-muted-foreground truncate">grace@example.com</p>
+              </div>
+              <div class="flex items-center gap-2 ml-4">
+                <span class="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">USER</span>
+                <span class="text-xs text-muted-foreground whitespace-nowrap">23/06/2026</span>
+              </div>
+            </a>
+            <a href="/admin/users/u5" class="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors" data-testid="recent-user-u5">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Ada Lovelace</p>
+                <p class="text-xs text-muted-foreground truncate">ada@example.com</p>
+              </div>
+              <div class="flex items-center gap-2 ml-4">
+                <span class="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">ADMIN</span>
+                <span class="text-xs text-muted-foreground whitespace-nowrap">22/06/2026</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent organizations -->
+      <div class="rounded-lg border bg-card text-card-foreground shadow-sm" data-testid="recent-orgs-card">
+        <div class="flex flex-row items-center justify-between p-6 pb-2">
+          <div>
+            <h3 class="text-lg font-semibold leading-none tracking-tight">Dernières organisations</h3>
+            <p class="text-sm text-muted-foreground mt-1">Les 5 dernières organisations créées</p>
+          </div>
+          <a href="/admin/orgs" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring h-8 px-3 hover:bg-accent hover:text-accent-foreground">
+            Voir tout
+            <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+        <div class="p-6 pt-3">
+          <div class="space-y-3" data-testid="recent-orgs-list">
+            <a href="/admin/orgs/o1" class="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors" data-testid="recent-org-o1">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Acme Inc</p>
+                <p class="text-xs text-muted-foreground truncate">/acme</p>
+              </div>
+              <span class="text-xs text-muted-foreground whitespace-nowrap ml-4">26/06/2026</span>
+            </a>
+            <a href="/admin/orgs/o2" class="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors" data-testid="recent-org-o2">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Globex Corp</p>
+                <p class="text-xs text-muted-foreground truncate">/globex</p>
+              </div>
+              <span class="text-xs text-muted-foreground whitespace-nowrap ml-4">25/06/2026</span>
+            </a>
+            <a href="/admin/orgs/o3" class="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors" data-testid="recent-org-o3">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Stark Industries</p>
+                <p class="text-xs text-muted-foreground truncate">/stark</p>
+              </div>
+              <span class="text-xs text-muted-foreground whitespace-nowrap ml-4">24/06/2026</span>
+            </a>
+            <a href="/admin/orgs/o4" class="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors" data-testid="recent-org-o4">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Initech</p>
+                <p class="text-xs text-muted-foreground truncate">/initech</p>
+              </div>
+              <span class="text-xs text-muted-foreground whitespace-nowrap ml-4">23/06/2026</span>
+            </a>
+            <a href="/admin/orgs/o5" class="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors" data-testid="recent-org-o5">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">Umbrella Corp</p>
+                <p class="text-xs text-muted-foreground truncate">/umbrella</p>
+              </div>
+              <span class="text-xs text-muted-foreground whitespace-nowrap ml-4">22/06/2026</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
