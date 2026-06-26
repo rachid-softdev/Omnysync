@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
     const limit = Math.min(
       Math.max(1, parseInt(searchParams.get('limit') || '20', 10) || 20),
-      PAGINATION_DEFAULTS.MAX_LIMIT
+      PAGINATION_DEFAULTS.MAX_LIMIT as number
     )
     const sort = searchParams.get('sort') || 'key:asc'
 

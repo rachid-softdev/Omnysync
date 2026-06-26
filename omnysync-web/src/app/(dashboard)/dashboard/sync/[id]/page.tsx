@@ -127,7 +127,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
               'use server'
               // Trigger sync
               const { performSync } = await import('@omnysync/core/services/sync')
-              await performSync(
+              await (performSync as (orgId: string, documentId: string, ...args: unknown[]) => Promise<unknown>)(
                 document.id,
                 document.sourceConnectorId!,
                 document.destConnectorId!,

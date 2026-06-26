@@ -287,10 +287,16 @@ export class CacheService {
     if (!this.redis || this.subscribed) return;
 
     try {
-      this.subscriber = this.redis.duplicate();
-      await this.subscriber.subscribe(CACHE_CONFIG.INVALIDATION_CHANNEL);
+      // NOTE: Upstash Redis (HTTP-based) ne supporte pas Pub/Sub natif.
+      // Utilisation de `as any` car le type @upstash/redis n'expose pas .duplicate() / .on().
+      // En production, utiliser un client ioredis dédié pour le pub/sub si nécessaire.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.subscriber = (this.redis as any).duplicate();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (this.subscriber as any).subscribe(CACHE_CONFIG.INVALIDATION_CHANNEL);
 
-      this.subscriber.on("message", (_channel, message) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (this.subscriber as any).on("message", (_channel: string, message: string) => {
         try {
           const data = JSON.parse(message) as InvalidationMessage;
           if (data.type === "invalidate") {
@@ -333,12 +339,12 @@ export class CacheService {
         let cursor = 0;
         const pattern = `${CACHE_CONFIG.KEY_PREFIX}*`;
         do {
-          const result = await this.redis.scan(cursor, {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const [cursorStr, keys] = await (this.redis.scan as any)(cursor, {
             match: pattern,
             count: 100,
           });
-          cursor = result[0];
-          const keys = result[1];
+          cursor = parseInt(cursorStr as string, 10);
           if (keys.length > 0) {
             await this.redis.del(...keys);
           }

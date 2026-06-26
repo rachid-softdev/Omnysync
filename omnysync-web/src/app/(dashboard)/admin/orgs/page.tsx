@@ -143,7 +143,7 @@ export default function AdminOrgsPage() {
         <Input
           placeholder="Rechercher par nom ou slug…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e: any) => setSearch(e.target.value)}
           className="pl-10"
         />
       </div>

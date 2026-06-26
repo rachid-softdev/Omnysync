@@ -27,7 +27,7 @@ export async function GET() {
     },
   })
 
-  const members = memberships.map((m) => ({
+  const members = memberships.map((m: Record<string, unknown>) => ({
     id: m.user.id,
     name: m.user.name,
     email: m.user.email,

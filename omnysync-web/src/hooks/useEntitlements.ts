@@ -29,12 +29,12 @@ export function useEntitlements(): {
   isLoading: boolean
   error: Error | null
 } {
-  const result = useCoreEntitlements()
+  const result = useCoreEntitlements() as { data: Record<string, unknown>; isLoading: boolean; error: Error | null; refetch: () => void }
 
   return {
     entitlements: result.data as EntitlementsResponse | null,
     isLoading: result.isLoading,
-    error: result.error,
+    error: result.error as Error | null,
   }
 }
 
@@ -47,7 +47,7 @@ export function useFeatureQuota(featureKey: string): {
   limit: number
   remaining: number
 } | null {
-  const { limit, used, remaining } = useLimit(featureKey)
+  const { limit, used, remaining } = useLimit(featureKey) as { limit: number | null; used: number; remaining: number; isLoading: boolean }
 
   return {
     used,

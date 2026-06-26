@@ -66,7 +66,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   }
 
   // Disable scheduled sync first
-  await disableScheduledSync(id)
+  await (disableScheduledSync as (orgId: string, connectorId: string) => Promise<void>)(id)
 
   // Delete the document
   await prisma.document.delete({
@@ -126,7 +126,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     })
 
     if (document.sourceConnectorId && document.destConnectorId) {
-      const result = await performSync(
+      const result = await (performSync as (orgId: string, documentId: string, ...args: unknown[]) => Promise<unknown>)(
         id,
         document.sourceConnectorId,
         document.destConnectorId,
@@ -149,7 +149,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       )
     }
 
-    const result = await scheduleSync(id, frequency)
+    const result = await (scheduleSync as (orgId: string, connectorId: string, interval: string) => Promise<void>)(id, frequency)
 
     if (!result.success) {
       return NextResponse.json(
@@ -168,7 +168,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   // Action: Disable scheduled sync
   if (action === 'disable_schedule') {
-    await disableScheduledSync(id)
+    await (disableScheduledSync as (orgId: string, connectorId: string) => Promise<void>)(id)
     return NextResponse.json({
       success: true,
       autoSyncEnabled: false,

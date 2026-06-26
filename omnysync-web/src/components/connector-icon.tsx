@@ -1,25 +1,24 @@
 import {
   FileText,
   StickyNote,
-  Database,
-  Layout,
+  PanelLeft,
   Globe,
-  ShoppingCart,
-  Table,
-  Box,
-  Newspaper,
+  ShoppingBag,
+  TableIcon,
+  Package,
+  NewspaperIcon,
 } from 'lucide-react'
 
 const iconMap: Record<string, { icon: typeof FileText; color: string; bg: string }> = {
   GOOGLE_DOCS: { icon: FileText, color: '#4285F4', bg: '#E8F0FE' },
   NOTION: { icon: StickyNote, color: '#000000', bg: '#F0F0F0' },
   WORDPRESS: { icon: Globe, color: '#21759B', bg: '#E8F0F8' },
-  GHOST: { icon: Layout, color: '#15171A', bg: '#F0F0F0' },
+  GHOST: { icon: PanelLeft, color: '#15171A', bg: '#F0F0F0' },
   WEBFLOW: { icon: Globe, color: '#4353FF', bg: '#EDEFFF' },
-  SHOPIFY: { icon: ShoppingCart, color: '#96BF48', bg: '#F4F9ED' },
-  AIRTABLE: { icon: Table, color: '#FF4F00', bg: '#FFF0E6' },
-  CONTENTFUL: { icon: Box, color: '#FFB000', bg: '#FFF7E6' },
-  MEDIUM: { icon: Newspaper, color: '#00AB6C', bg: '#E6F9F1' },
+  SHOPIFY: { icon: ShoppingBag, color: '#96BF48', bg: '#F4F9ED' },
+  AIRTABLE: { icon: TableIcon, color: '#FF4F00', bg: '#FFF0E6' },
+  CONTENTFUL: { icon: Package, color: '#FFB000', bg: '#FFF7E6' },
+  MEDIUM: { icon: NewspaperIcon, color: '#00AB6C', bg: '#E6F9F1' },
 }
 
 export function ConnectorIcon({

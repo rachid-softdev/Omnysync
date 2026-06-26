@@ -37,7 +37,7 @@ export async function GET() {
     }
 
     // Générer un nouveau secret
-    const { secret, otpauthUrl } = generateTotpSecret()
+    const { secret, otpauthUrl } = await generateTotpSecret(session.user.id)
 
     return NextResponse.json({
       enabled: false,
@@ -85,10 +85,10 @@ export async function POST(request: NextRequest) {
 
     if (action === 'initiate') {
       // Générer le secret pour l'initiation
-      const { secret, otpauthUrl } = generateTotpSecret()
+      const { secret, otpauthUrl } = await generateTotpSecret(session.user.id)
 
       // Stocker le secret temporairement (expire dans 10 minutes)
-      pendingSecrets.set(session.user.id, {
+      ;(pendingSecrets as any).set(session.user.id, {
         secret,
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       })
@@ -112,7 +112,8 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      if (pending.expiresAt < new Date()) {
+      const pendingData = pending as any
+      if (pendingData.expiresAt < new Date()) {
         pendingSecrets.delete(session.user.id)
         return NextResponse.json(
           {
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
 
       // Vérifier le code TOTP avec le secret stocké
       const totp = new OTPAuth.TOTP({
-        secret: OTPAuth.Secret.fromBase32(pending.secret),
+        secret: OTPAuth.Secret.fromBase32(pendingData.secret),
         issuer: 'Omnysync',
         label: 'Omnysync',
       })
@@ -136,7 +137,7 @@ export async function POST(request: NextRequest) {
 
       // Configurer le 2FA avec le vrai secret vérifié
       // Le nettoyage de pendingSecrets est géré par setupTwoFactor (finally)
-      const result = await setupTwoFactor(session.user.id, pending.secret)
+      const result = await setupTwoFactor(session.user.id, pendingData.secret)
 
       if (!result.success) {
         return NextResponse.json({ error: result.error }, { status: 500 })

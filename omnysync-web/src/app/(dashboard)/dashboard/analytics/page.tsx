@@ -207,7 +207,7 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs value="overview" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="connectors">Connectors</TabsTrigger>

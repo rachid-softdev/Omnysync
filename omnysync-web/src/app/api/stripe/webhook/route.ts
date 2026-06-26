@@ -19,7 +19,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
@@ -429,7 +428,7 @@ export async function POST(req: NextRequest) {
       data: { eventId, eventType },
     })
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+    if ((err as { code?: string }).code === 'P2002') {
       // Event already claimed — skip silently
       return NextResponse.json({ received: true, skipped: true })
     }

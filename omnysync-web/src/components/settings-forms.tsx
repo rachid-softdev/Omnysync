@@ -167,32 +167,29 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="current-password">Mot de passe actuel</Label>
+            <Label>Mot de passe actuel</Label>
             <Input
-              id="current-password"
               type="password"
               value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentPassword(e.target.value)}
               placeholder="••••••••"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="new-password">Nouveau mot de passe</Label>
+            <Label>Nouveau mot de passe</Label>
             <Input
-              id="new-password"
               type="password"
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)}
               placeholder="••••••••"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirmer le mot de passe</Label>
+            <Label>Confirmer le mot de passe</Label>
             <Input
-              id="confirm-password"
               type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
             />
           </div>
@@ -221,12 +218,7 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
                     <p className="font-medium">{key.name}</p>
                     <p className="text-sm text-muted-foreground">{key.prefix}...</p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive"
-                    onClick={() => handleDeleteApiKey(key.id)}
-                  >
+                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteApiKey(key.id)}>
                     Supprimer
                   </Button>
                 </div>
@@ -234,12 +226,12 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
             </div>
           )}
           <div className="flex gap-2">
-            <Input
-              placeholder="Nom de la clé"
-              value={newKeyName}
-              onChange={(e) => setNewKeyName(e.target.value)}
-            />
-            <Button onClick={handleCreateApiKey} disabled={keyLoading || !newKeyName.trim()}>
+          <Input
+            placeholder="Nom de la clé"
+            value={newKeyName}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewKeyName(e.target.value)}
+          />
+          <Button onClick={handleCreateApiKey} disabled={keyLoading || !newKeyName.trim()}>
               {keyLoading ? 'Création...' : 'Générer'}
             </Button>
           </div>
@@ -272,7 +264,7 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
           </AlertDialogHeader>
           <Input
             value={deleteConfirmText}
-            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeleteConfirmText(e.target.value)}
             placeholder="Tapez SUPPRIMER"
             className="my-4"
           />
@@ -290,7 +282,7 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
       </AlertDialog>
 
       {/* New API Key Dialog - Show the key once */}
-      <AlertDialog open={!!newKeyValue} onOpenChange={() => !newKeyValue && setNewKeyValue('')}>
+      <AlertDialog open={!!newKeyValue} onOpenChange={() => { if (!newKeyValue) setNewKeyValue('') }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Clé API créée!</AlertDialogTitle>

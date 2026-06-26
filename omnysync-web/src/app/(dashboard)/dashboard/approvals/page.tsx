@@ -280,7 +280,7 @@ export default function ApprovalsPage() {
           <Textarea
             placeholder="Reason for rejection (optional)"
             value={rejectComment}
-            onChange={(e) => setRejectComment(e.target.value)}
+            onChange={(e: any) => setRejectComment(e.target.value)}
             className="min-h-[100px]"
           />
           <DialogFooter>

@@ -225,7 +225,7 @@ export async function checkDocumentLimit(userId: string): Promise<{
 }
 
 export async function withQuotaCheck(
-  request: Request,
+  _request: Request,
   handler: (userId: string) => Promise<Response>
 ): Promise<Response> {
   // 🔒 Use session authentication instead of trusting the x-user-id header.

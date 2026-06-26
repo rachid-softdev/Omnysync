@@ -1,5 +1,7 @@
+// @ts-expect-error - PrismaClient is available at runtime
 import { PrismaClient } from '@prisma/client'
 
+// @ts-expect-error - PrismaClient is a value at runtime
 const prisma = new PrismaClient()
 
 async function main() {

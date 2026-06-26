@@ -231,7 +231,7 @@ export default function WebhooksPage() {
                 <Input
                   placeholder="https://your-site.com/webhook"
                   value={newWebhook.url}
-                  onChange={(e) => setNewWebhook({ ...newWebhook, url: e.target.value })}
+                  onChange={(e: any) => setNewWebhook({ ...newWebhook, url: e.target.value })}
                 />
               </div>
             </div>

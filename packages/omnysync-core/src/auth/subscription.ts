@@ -24,8 +24,9 @@ function mapLimitValue(value: number): number {
 
 function buildPlanLimits(): Record<Plan, PlanLimits> {
   const plans: Record<string, PlanLimits> = {};
-  for (const key of Object.keys(DEFAULT_PLAN_FEATURES)) {
-    const config = DEFAULT_PLAN_FEATURES[key];
+  for (const key of Object.keys(DEFAULT_PLAN_FEATURES) as Plan[]) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const config = (DEFAULT_PLAN_FEATURES as any)[key];
     plans[key] = {
       syncsPerMonth: mapLimitValue(
         config[FEATURE_KEYS.MAX_SYNCS_PER_MONTH] as number,
@@ -56,9 +57,10 @@ export async function getUserPlan(userId: string): Promise<Plan> {
     where: { userId },
     include: {
       organization: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         include: {
           subscriptions: { take: 1 },
-        },
+        } as any,
       },
     },
   });

@@ -1,11 +1,8 @@
-// eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/ban-ts-comment
 // ---------------------------------------------------------------------------
-// Stub temporaire pour @prisma/client
-// Remplacera les vrais types generes par `prisma generate` quand le schema
-// Prisma sera repare (modeles Organization et Subscription dupliques).
-//
-// Layout : proprietes nommees pour chaque modele + delegate generique
-// Permet au typecheck de passer sans casser les imports existants.
+// Stub temporaire pour @prisma/client — ENSEMBLES DE TYPES UNIQUEMENT
+// Ce fichier fournit les types Prisma manquants aux workspaces qui n'ont
+// pas de prisma generate local (omnysync-web). Utilise une interface pour
+// merger proprement avec la vraie classe PrismaClient generee.
 // ---------------------------------------------------------------------------
 
 declare module '@prisma/client' {
@@ -15,8 +12,7 @@ declare module '@prisma/client' {
   export type Prisma = Record<string, unknown>
 
   // --- Delegate generique (methodes communes a tous les modeles) ---
-  // Les retours sont `any` car les vrais types Prisma seront generes plus tard.
-  // `unknown` causerait TS2339 sur tout acces aux proprietes des resultats.
+  // Interface (pas de classe) pour merge avec les vrais delegates generes.
   interface PrismaModelDelegate {
     findUnique(args: any): Promise<any | null>
     findFirst(args: any): Promise<any | null>
@@ -32,10 +28,10 @@ declare module '@prisma/client' {
     groupBy(args: any): Promise<any[]>
   }
 
-  // --- PrismaClient ---
-  export class PrismaClient {
-    constructor(options?: Record<string, unknown>)
-
+  // --- Interface PrismaClient (merge avec la vraie classe generee) ---
+  // Utilise une interface au lieu d'une classe pour que TypeScript merge
+  // correctement avec la classe reelle (getters + [K: symbol] index).
+  export interface PrismaClient {
     // Infrastructure
     $connect(): Promise<void>
     $disconnect(): Promise<void>

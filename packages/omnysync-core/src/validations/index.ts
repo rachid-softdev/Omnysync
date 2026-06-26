@@ -332,8 +332,10 @@ export function withValidation<T>(
     const validation = validate(schema, body);
 
     if (!validation.success) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = (validation as any).error as string;
       return Response.json(
-        { error: "Validation failed", details: validation.error },
+        { error: "Validation failed", details: err },
         { status: 400 },
       );
     }

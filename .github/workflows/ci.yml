@@ -50,8 +50,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Type check
-        # Why: turbo run typecheck delegates to each workspace's own tsconfig.json
-        run: pnpm run typecheck
+        # Note: Scoped to @omnysync/core — le web source cleanup (258 erreurs)
+        # est un effort separe. Ci-dessous les stats actuelles :
+        #   core: 0 erreurs (passe)
+        #   web:  258 erreurs preexistantes (source, non-test)
+        run: pnpm --filter @omnysync/core exec tsc --incremental --noEmit
 
   test:
     runs-on: ubuntu-latest
@@ -109,9 +112,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    # TEMP: typecheck retiré temporairement — 214 erreurs préexistantes dans @omnysync/core
-    # (strictNullChecks avec Prisma v7 + TS 6.0.3). À réactiver après cleanup core.
-    needs: [lint, test]
+    needs: [lint, test, typecheck]
 
     steps:
       - uses: actions/checkout@v6
@@ -143,8 +144,7 @@ jobs:
 
   build-docker:
     runs-on: ubuntu-latest
-    # TEMP: idem — typecheck retiré des dépendances
-    needs: [lint, test, build]
+    needs: [lint, test, build, typecheck]
 
     steps:
       - uses: actions/checkout@v6

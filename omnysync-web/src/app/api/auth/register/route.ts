@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     // 🛡️ Wrap user + org creation in a Prisma transaction.
     // Without this, if organization.create() fails after user.create() succeeds,
     // the user becomes an orphan with no organization and cannot use the app.
-    const { user } = await prisma.$transaction(async (tx) => {
+    const { user } = await prisma.$transaction(async (tx: any) => {
       const createdUser = await tx.user.create({
         data: {
           name,

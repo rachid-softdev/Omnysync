@@ -64,7 +64,7 @@ export default function TwoFactorVerifyPage() {
                 type="text"
                 placeholder="000000"
                 value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 className="text-center text-2xl tracking-widest font-mono"
                 maxLength={6}
                 required

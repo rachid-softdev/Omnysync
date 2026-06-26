@@ -58,12 +58,7 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
       >
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h1 className="text-xl font-bold">Omnysync</h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsOpen(false)}
-            aria-label="Close menu"
-          >
+          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Close menu">
             <X className="w-5 h-5" />
           </Button>
         </div>
@@ -106,9 +101,9 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
           </div>
           <Button
             variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-foreground"
             size="sm"
             onClick={() => logoutAction()}
+            className="w-full justify-start text-muted-foreground hover:text-foreground"
           >
             <LogOut className="w-4 h-4 mr-2" />
             {t('UI_LOGOUT')}

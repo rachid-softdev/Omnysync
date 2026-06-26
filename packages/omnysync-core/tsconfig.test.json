@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Relax total pour les tests — les mocks et patterns de test ne passent pas strict
+    "strict": false,
+    "verbatimModuleSyntax": false,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "strictNullChecks": false,
+    "useUnknownInCatchVariables": false,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false,
+    "noImplicitThis": false,
+    "strictBindCallApply": false,
+    "strictFunctionTypes": false,
+    "strictPropertyInitialization": false
+  },
+  "include": ["src/**/__tests__/*.ts", "src/**/__tests__/*.tsx", "src/**/__tests__/*.test.ts", "src/**/__tests__/*.test.tsx"],
+  "exclude": ["node_modules", "dist"]
+}

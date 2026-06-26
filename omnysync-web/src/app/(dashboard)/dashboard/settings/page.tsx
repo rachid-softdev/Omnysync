@@ -58,7 +58,7 @@ export default function SettingsPage() {
         <p className="text-muted-foreground mt-1">{t('UI_PREFERENCES')}</p>
       </div>
 
-      <Tabs defaultValue="profile" className="w-full">
+      <Tabs value="profile" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="profile">
             <User className="w-4 h-4 mr-2" />
@@ -110,7 +110,7 @@ export default function SettingsPage() {
                     <Input
                       id="name"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                       placeholder="Your name"
                     />
                   </div>

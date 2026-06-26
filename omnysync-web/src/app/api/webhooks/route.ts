@@ -43,7 +43,7 @@ export async function GET() {
     })
 
     return NextResponse.json({
-      webhooks: webhooks.map((w) => ({
+      webhooks: webhooks.map((w: Record<string, unknown>) => ({
         id: w.id,
         connectorId: w.connectorId,
         connectorName: w.connector?.name,

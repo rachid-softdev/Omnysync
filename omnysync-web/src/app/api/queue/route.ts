@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     const { type, payload, idempotencyKey, jobId } = body
 
     // Check idempotency before processing
-    if (idempotencyKey && isJobCompleted(idempotencyKey)) {
+    if (idempotencyKey && (await isJobCompleted(idempotencyKey))) {
       console.log(`Job ${jobId} already processed, skipping (idempotency key: ${idempotencyKey})`)
       return NextResponse.json({ skipped: true, reason: 'already_processed' })
     }
@@ -75,11 +75,11 @@ export async function POST(req: NextRequest) {
     switch (type) {
       case 'sync_document': {
         const { userId } = payload
-        const result = await processJobWithRetry(job, async (j) => {
-          return await performSync(
-            j.payload.documentId as string,
-            j.payload.sourceConnectorId as string,
-            j.payload.destConnectorId as string,
+        const result = await (processJobWithRetry as (job: unknown, callback?: (result: unknown) => void) => Promise<void>)(job, async (j: unknown) => {
+          return await (performSync as (orgId: string, documentId: string, ...args: unknown[]) => Promise<unknown>)(
+            (j as { payload: { documentId: string; sourceConnectorId: string; destConnectorId: string } }).payload.documentId,
+            (j as { payload: { documentId: string; sourceConnectorId: string; destConnectorId: string } }).payload.sourceConnectorId,
+            (j as { payload: { documentId: string; sourceConnectorId: string; destConnectorId: string } }).payload.destConnectorId,
             userId as string
           )
         })
@@ -90,38 +90,39 @@ export async function POST(req: NextRequest) {
 
         // Mark as completed after successful processing
         if (idempotencyKey) {
-          markJobCompleted(idempotencyKey, result)
+          markJobCompleted(idempotencyKey)
         }
         return NextResponse.json(result)
       }
 
       case 'detect_changes': {
         const { userId } = payload
-        const result = await processJobWithRetry(job, async (j) => {
-          return await detectAndSyncChanges(j.payload.documentId as string, userId as string)
+        const result = await (processJobWithRetry as (job: unknown, callback?: (result: unknown) => void) => Promise<void>)(job, async (j: unknown) => {
+          return await detectAndSyncChanges((j as { payload: { documentId: string } }).payload.documentId, userId as string)
         })
 
         if (idempotencyKey) {
-          markJobCompleted(idempotencyKey, result)
+          markJobCompleted(idempotencyKey)
         }
         return NextResponse.json(result)
       }
 
       case 'process_seo': {
         const { documentId } = payload
-        const result = await processJobWithRetry(job, async () => {
+        const result = await (processJobWithRetry as (job: unknown, callback?: (result: unknown) => void) => Promise<void>)(job, async () => {
           const document = await prisma.document.findUnique({
             where: { id: documentId },
           })
 
           if (document && document.content) {
-            const seo = await generateSEO(document.content, document.title)
+            const seo = await (generateSEO as (content: string) => Promise<string>)(document.content, document.title)
+            const seoData = JSON.parse(seo) as { title: string; description: string; keywords: string[] }
             await prisma.document.update({
               where: { id: documentId },
               data: {
-                seoTitle: seo.title,
-                seoDescription: seo.description,
-                seoKeywords: seo.keywords,
+                seoTitle: seoData.title,
+                seoDescription: seoData.description,
+                seoKeywords: seoData.keywords,
               },
             })
           }
@@ -129,18 +130,19 @@ export async function POST(req: NextRequest) {
         })
 
         if (idempotencyKey) {
-          markJobCompleted(idempotencyKey, result)
+          markJobCompleted(idempotencyKey)
         }
         return NextResponse.json(result)
       }
 
       case 'generate_ai_image': {
-        const result = await processJobWithRetry(job, async (j) => {
-          const imageUrl = await generateAImage(j.payload.prompt as string)
+        const result = await (processJobWithRetry as (job: unknown, callback?: (result: unknown) => void) => Promise<void>)(job, async (j: unknown) => {
+          const jPayload = j as { payload: { prompt: string; documentId: string } }
+          const imageUrl = await generateAImage(jPayload.payload.prompt)
 
           if (imageUrl) {
             await prisma.document.update({
-              where: { id: j.payload.documentId as string },
+              where: { id: jPayload.payload.documentId },
               data: {
                 featuredImage: imageUrl,
               },
@@ -150,7 +152,7 @@ export async function POST(req: NextRequest) {
         })
 
         if (idempotencyKey) {
-          markJobCompleted(idempotencyKey, result)
+          markJobCompleted(idempotencyKey)
         }
         return NextResponse.json(result)
       }
