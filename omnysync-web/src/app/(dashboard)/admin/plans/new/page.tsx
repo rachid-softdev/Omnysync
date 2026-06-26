@@ -145,7 +145,7 @@ export default function NewPlanPage() {
                 id="key"
                 placeholder="pro"
                 value={key}
-                onChange={(e) => setKey(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setKey(e.target.value)}
                 className={errors.key ? 'border-destructive' : ''}
               />
               {errors.key && <p className="text-sm text-destructive">{errors.key}</p>}
@@ -165,7 +165,7 @@ export default function NewPlanPage() {
                 id="name"
                 placeholder="Pro Plan"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                 className={errors.name ? 'border-destructive' : ''}
               />
               {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
@@ -184,7 +184,9 @@ export default function NewPlanPage() {
                   min="0"
                   placeholder="29.00"
                   value={priceMonthly}
-                  onChange={(e) => setPriceMonthly(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setPriceMonthly(e.target.value)
+                  }
                   className={errors.priceMonthly ? 'border-destructive' : ''}
                 />
                 {errors.priceMonthly && (
@@ -200,7 +202,9 @@ export default function NewPlanPage() {
                   min="0"
                   placeholder="290.00"
                   value={priceYearly}
-                  onChange={(e) => setPriceYearly(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setPriceYearly(e.target.value)
+                  }
                   className={errors.priceYearly ? 'border-destructive' : ''}
                 />
                 {errors.priceYearly && (
@@ -233,7 +237,7 @@ export default function NewPlanPage() {
                 min="0"
                 placeholder="0"
                 value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSortOrder(e.target.value)}
                 className={`max-w-[120px] ${errors.sortOrder ? 'border-destructive' : ''}`}
               />
               {errors.sortOrder && <p className="text-sm text-destructive">{errors.sortOrder}</p>}

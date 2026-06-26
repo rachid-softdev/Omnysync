@@ -20,7 +20,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  await enqueueChangeDetection(id, session.user.id)
+  await enqueueChangeDetection(id)
 
   return NextResponse.json({ success: true, message: 'Change detection queued' })
 }

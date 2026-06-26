@@ -1,282 +1,460 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Administration Responsive — Omnysync</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 text-gray-900 antialiased">
-  <div class="flex min-h-screen" data-testid="app-layout">
-    <!-- ============================================================
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Administration Responsive — Omnysync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50 text-gray-900 antialiased">
+    <div class="flex min-h-screen" data-testid="app-layout">
+      <!-- ============================================================
          SIDEBAR
          ============================================================ -->
-    <aside
-      data-testid="sidebar"
-      class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 lg:static lg:inset-auto"
-      id="sidebar"
-    >
-      <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-        <span class="text-lg font-bold" data-testid="sidebar-brand">Omnysync</span>
-        <button
-          data-testid="sidebar-close-btn"
-          class="lg:hidden p-2 rounded-md hover:bg-gray-100"
-          id="sidebar-close-btn"
-          aria-label="Fermer le menu"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      <nav class="px-4 py-4 space-y-1" data-testid="sidebar-nav">
-        <a href="/admin" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-100 text-gray-900 font-medium" data-testid="nav-dashboard">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-          <span>Dashboard</span>
-        </a>
-        <a href="/admin/users" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900" data-testid="nav-users">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/></svg>
-          <span>Utilisateurs</span>
-        </a>
-        <a href="/admin/orgs" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900" data-testid="nav-orgs">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-          <span>Organisations</span>
-        </a>
-        <a href="/admin/features" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900" data-testid="nav-features">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
-          <span>Features</span>
-        </a>
-        <a href="/admin/plans" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900" data-testid="nav-plans">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-          <span>Plans</span>
-        </a>
-        <a href="/admin/overrides" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900" data-testid="nav-overrides">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <span>Overrides</span>
-        </a>
-      </nav>
-    </aside>
-
-    <!-- Overlay for mobile sidebar -->
-    <div
-      data-testid="sidebar-overlay"
-      class="fixed inset-0 z-30 bg-black/50 hidden lg:hidden"
-      id="sidebar-overlay"
-    ></div>
-
-    <!-- ============================================================
-         MAIN CONTENT
-         ============================================================ -->
-    <div class="flex-1 flex flex-col min-w-0" data-testid="main-content">
-      <!-- Top bar -->
-      <header class="sticky top-0 z-20 bg-white border-b border-gray-200" data-testid="topbar">
-        <div class="flex items-center justify-between h-16 px-4 sm:px-6">
-          <div class="flex items-center gap-3">
-            <!-- Hamburger (mobile only) -->
-            <button
-              data-testid="sidebar-toggle"
-              class="lg:hidden p-2 rounded-md hover:bg-gray-100"
-              id="sidebar-toggle"
-              aria-label="Ouvrir le menu"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <h1 class="text-lg sm:text-xl font-semibold" data-testid="page-title">Dashboard</h1>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs sm:text-sm text-gray-500" data-testid="user-badge">Admin</span>
-          </div>
-        </div>
-      </header>
-
-      <!-- Page content -->
-      <main class="flex-1 p-4 sm:p-6 lg:p-8" data-testid="page-content">
-        <!-- Page header with action button -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6" data-testid="page-header">
-          <div class="space-y-1">
-            <h2 class="text-2xl sm:text-3xl font-bold tracking-tight" data-testid="page-heading">Vue d'ensemble</h2>
-            <p class="text-sm text-gray-500" data-testid="page-description">Statistiques et gestion de la plateforme</p>
-          </div>
+      <aside
+        data-testid="sidebar"
+        class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 lg:static lg:inset-auto"
+        id="sidebar"
+      >
+        <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+          <span class="text-lg font-bold" data-testid="sidebar-brand">Omnysync</span>
           <button
-            data-testid="action-btn"
-            class="w-full sm:w-auto inline-flex items-center justify-center rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 h-11 min-h-[44px] px-4"
+            data-testid="sidebar-close-btn"
+            class="lg:hidden p-2 rounded-md hover:bg-gray-100"
+            id="sidebar-close-btn"
+            aria-label="Fermer le menu"
           >
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Nouvel élément
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
           </button>
         </div>
-
-        <!-- Stats cards grid -->
-        <div
-          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
-          data-testid="stats-grid"
-        >
-          <div class="rounded-lg border bg-white p-4 sm:p-6 shadow-sm" data-testid="stat-card-users">
-            <p class="text-xs sm:text-sm text-gray-500 mb-1">Utilisateurs</p>
-            <p class="text-2xl sm:text-3xl font-bold" data-testid="stat-value-users">142</p>
-          </div>
-          <div class="rounded-lg border bg-white p-4 sm:p-6 shadow-sm" data-testid="stat-card-orgs">
-            <p class="text-xs sm:text-sm text-gray-500 mb-1">Organisations</p>
-            <p class="text-2xl sm:text-3xl font-bold" data-testid="stat-value-orgs">23</p>
-          </div>
-          <div class="rounded-lg border bg-white p-4 sm:p-6 shadow-sm" data-testid="stat-card-plans">
-            <p class="text-xs sm:text-sm text-gray-500 mb-1">Plans</p>
-            <p class="text-2xl sm:text-3xl font-bold" data-testid="stat-value-plans">4</p>
-          </div>
-          <div class="rounded-lg border bg-white p-4 sm:p-6 shadow-sm" data-testid="stat-card-features">
-            <p class="text-xs sm:text-sm text-gray-500 mb-1">Features</p>
-            <p class="text-2xl sm:text-3xl font-bold" data-testid="stat-value-features">36</p>
-          </div>
-        </div>
-
-        <!-- Search bar -->
-        <div class="mb-6" data-testid="search-section">
-          <div class="relative w-full sm:max-w-sm">
-            <input
-              type="text"
-              data-testid="search-input"
-              placeholder="Rechercher..."
-              class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 pl-10 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        <nav class="px-4 py-4 space-y-1" data-testid="sidebar-nav">
+          <a
+            href="/admin"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-100 text-gray-900 font-medium"
+            data-testid="nav-dashboard"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+              />
             </svg>
-          </div>
-        </div>
+            <span>Dashboard</span>
+          </a>
+          <a
+            href="/admin/users"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+            data-testid="nav-users"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+              />
+            </svg>
+            <span>Utilisateurs</span>
+          </a>
+          <a
+            href="/admin/orgs"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+            data-testid="nav-orgs"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+            <span>Organisations</span>
+          </a>
+          <a
+            href="/admin/features"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+            data-testid="nav-features"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"
+              />
+            </svg>
+            <span>Features</span>
+          </a>
+          <a
+            href="/admin/plans"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+            data-testid="nav-plans"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+              />
+            </svg>
+            <span>Plans</span>
+          </a>
+          <a
+            href="/admin/overrides"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+            data-testid="nav-overrides"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>Overrides</span>
+          </a>
+        </nav>
+      </aside>
 
-        <!-- Table with horizontal scroll -->
-        <div class="rounded-lg border bg-white shadow-sm mb-8" data-testid="table-section">
-          <div class="overflow-x-auto" data-testid="table-wrapper">
-            <table class="w-full text-sm" data-testid="data-table">
-              <thead>
-                <tr class="border-b border-gray-200 bg-gray-50">
-                  <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Nom</th>
-                  <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Email</th>
-                  <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Rôle</th>
-                  <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Organisation</th>
-                  <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Statut</th>
-                  <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Créé le</th>
-                  <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Actions</th>
-                </tr>
-              </thead>
-              <tbody data-testid="table-body">
-                <tr class="border-b border-gray-100 hover:bg-gray-50" data-testid="table-row-1">
-                  <td class="px-4 py-3 whitespace-nowrap">Alice Dupont</td>
-                  <td class="px-4 py-3 whitespace-nowrap text-gray-500">alice@example.com</td>
-                  <td class="px-4 py-3 whitespace-nowrap">
-                    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-purple-50 text-purple-700 border-purple-200">ADMIN</span>
-                  </td>
-                  <td class="px-4 py-3 whitespace-nowrap text-gray-500">Acme Inc</td>
-                  <td class="px-4 py-3 whitespace-nowrap">
-                    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 border-green-200">Actif</span>
-                  </td>
-                  <td class="px-4 py-3 whitespace-nowrap text-gray-500">01/06/2026</td>
-                  <td class="px-4 py-3 whitespace-nowrap">
-                    <a href="/admin/users/1" class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 h-9 min-h-[44px] px-3 min-w-[44px]" data-testid="view-link-1">
-                      Voir
-                    </a>
-                  </td>
-                </tr>
-                <tr class="border-b border-gray-100 hover:bg-gray-50" data-testid="table-row-2">
-                  <td class="px-4 py-3 whitespace-nowrap">Bob Martin</td>
-                  <td class="px-4 py-3 whitespace-nowrap text-gray-500">bob@example.com</td>
-                  <td class="px-4 py-3 whitespace-nowrap">
-                    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-yellow-50 text-yellow-700 border-yellow-200">USER</span>
-                  </td>
-                  <td class="px-4 py-3 whitespace-nowrap text-gray-500">Globex Corp</td>
-                  <td class="px-4 py-3 whitespace-nowrap">
-                    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 border-green-200">Actif</span>
-                  </td>
-                  <td class="px-4 py-3 whitespace-nowrap text-gray-500">15/05/2026</td>
-                  <td class="px-4 py-3 whitespace-nowrap">
-                    <a href="/admin/users/2" class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 h-9 min-h-[44px] px-3 min-w-[44px]" data-testid="view-link-2">
-                      Voir
-                    </a>
-                  </td>
-                </tr>
-                <tr class="border-b border-gray-100 hover:bg-gray-50" data-testid="table-row-3">
-                  <td class="px-4 py-3 whitespace-nowrap">Charlie Martin</td>
-                  <td class="px-4 py-3 whitespace-nowrap text-gray-500">charlie@example.com</td>
-                  <td class="px-4 py-3 whitespace-nowrap">
-                    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-yellow-50 text-yellow-700 border-yellow-200">USER</span>
-                  </td>
-                  <td class="px-4 py-3 whitespace-nowrap text-gray-500">Stark Industries</td>
-                  <td class="px-4 py-3 whitespace-nowrap">
-                    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-red-50 text-red-700 border-red-200">Inactif</span>
-                  </td>
-                  <td class="px-4 py-3 whitespace-nowrap text-gray-500">10/04/2026</td>
-                  <td class="px-4 py-3 whitespace-nowrap">
-                    <a href="/admin/users/3" class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 h-9 min-h-[44px] px-3 min-w-[44px]" data-testid="view-link-3">
-                      Voir
-                    </a>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+      <!-- Overlay for mobile sidebar -->
+      <div
+        data-testid="sidebar-overlay"
+        class="fixed inset-0 z-30 bg-black/50 hidden lg:hidden"
+        id="sidebar-overlay"
+      ></div>
 
-        <!-- Form section (to test form responsiveness) -->
-        <div class="rounded-lg border bg-white shadow-sm p-4 sm:p-6" data-testid="form-section">
-          <h3 class="text-lg font-semibold mb-4">Formulaire de test</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1" for="form-nom">Nom</label>
-              <input id="form-nom" type="text" class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Votre nom" data-testid="form-input-nom" />
+      <!-- ============================================================
+         MAIN CONTENT
+         ============================================================ -->
+      <div class="flex-1 flex flex-col min-w-0" data-testid="main-content">
+        <!-- Top bar -->
+        <header class="sticky top-0 z-20 bg-white border-b border-gray-200" data-testid="topbar">
+          <div class="flex items-center justify-between h-16 px-4 sm:px-6">
+            <div class="flex items-center gap-3">
+              <!-- Hamburger (mobile only) -->
+              <button
+                data-testid="sidebar-toggle"
+                class="lg:hidden p-2 rounded-md hover:bg-gray-100"
+                id="sidebar-toggle"
+                aria-label="Ouvrir le menu"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
+              <h1 class="text-lg sm:text-xl font-semibold" data-testid="page-title">Dashboard</h1>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1" for="form-email">Email</label>
-              <input id="form-email" type="email" class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Votre email" data-testid="form-input-email" />
+            <div class="flex items-center gap-2">
+              <span class="text-xs sm:text-sm text-gray-500" data-testid="user-badge">Admin</span>
             </div>
           </div>
-          <div class="mt-4 flex flex-col sm:flex-row gap-3">
-            <button data-testid="form-submit" class="w-full sm:w-auto inline-flex items-center justify-center rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 h-11 min-h-[44px] px-6">
-              Enregistrer
-            </button>
-            <button data-testid="form-cancel" class="w-full sm:w-auto inline-flex items-center justify-center rounded-md text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 h-11 min-h-[44px] px-6">
-              Annuler
+        </header>
+
+        <!-- Page content -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8" data-testid="page-content">
+          <!-- Page header with action button -->
+          <div
+            class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
+            data-testid="page-header"
+          >
+            <div class="space-y-1">
+              <h2 class="text-2xl sm:text-3xl font-bold tracking-tight" data-testid="page-heading">
+                Vue d'ensemble
+              </h2>
+              <p class="text-sm text-gray-500" data-testid="page-description">
+                Statistiques et gestion de la plateforme
+              </p>
+            </div>
+            <button
+              data-testid="action-btn"
+              class="w-full sm:w-auto inline-flex items-center justify-center rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 h-11 min-h-[44px] px-4"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Nouvel élément
             </button>
           </div>
-        </div>
-      </main>
+
+          <!-- Stats cards grid -->
+          <div
+            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+            data-testid="stats-grid"
+          >
+            <div
+              class="rounded-lg border bg-white p-4 sm:p-6 shadow-sm"
+              data-testid="stat-card-users"
+            >
+              <p class="text-xs sm:text-sm text-gray-500 mb-1">Utilisateurs</p>
+              <p class="text-2xl sm:text-3xl font-bold" data-testid="stat-value-users">142</p>
+            </div>
+            <div
+              class="rounded-lg border bg-white p-4 sm:p-6 shadow-sm"
+              data-testid="stat-card-orgs"
+            >
+              <p class="text-xs sm:text-sm text-gray-500 mb-1">Organisations</p>
+              <p class="text-2xl sm:text-3xl font-bold" data-testid="stat-value-orgs">23</p>
+            </div>
+            <div
+              class="rounded-lg border bg-white p-4 sm:p-6 shadow-sm"
+              data-testid="stat-card-plans"
+            >
+              <p class="text-xs sm:text-sm text-gray-500 mb-1">Plans</p>
+              <p class="text-2xl sm:text-3xl font-bold" data-testid="stat-value-plans">4</p>
+            </div>
+            <div
+              class="rounded-lg border bg-white p-4 sm:p-6 shadow-sm"
+              data-testid="stat-card-features"
+            >
+              <p class="text-xs sm:text-sm text-gray-500 mb-1">Features</p>
+              <p class="text-2xl sm:text-3xl font-bold" data-testid="stat-value-features">36</p>
+            </div>
+          </div>
+
+          <!-- Search bar -->
+          <div class="mb-6" data-testid="search-section">
+            <div class="relative w-full sm:max-w-sm">
+              <input
+                type="text"
+                data-testid="search-input"
+                placeholder="Rechercher..."
+                class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 pl-10 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <svg
+                class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Table with horizontal scroll -->
+          <div class="rounded-lg border bg-white shadow-sm mb-8" data-testid="table-section">
+            <div class="overflow-x-auto" data-testid="table-wrapper">
+              <table class="w-full text-sm" data-testid="data-table">
+                <thead>
+                  <tr class="border-b border-gray-200 bg-gray-50">
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">
+                      Nom
+                    </th>
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">
+                      Email
+                    </th>
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">
+                      Rôle
+                    </th>
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">
+                      Organisation
+                    </th>
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">
+                      Statut
+                    </th>
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">
+                      Créé le
+                    </th>
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody data-testid="table-body">
+                  <tr class="border-b border-gray-100 hover:bg-gray-50" data-testid="table-row-1">
+                    <td class="px-4 py-3 whitespace-nowrap">Alice Dupont</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-500">alice@example.com</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <span
+                        class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-purple-50 text-purple-700 border-purple-200"
+                        >ADMIN</span
+                      >
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-500">Acme Inc</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <span
+                        class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 border-green-200"
+                        >Actif</span
+                      >
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-500">01/06/2026</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <a
+                        href="/admin/users/1"
+                        class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 h-9 min-h-[44px] px-3 min-w-[44px]"
+                        data-testid="view-link-1"
+                      >
+                        Voir
+                      </a>
+                    </td>
+                  </tr>
+                  <tr class="border-b border-gray-100 hover:bg-gray-50" data-testid="table-row-2">
+                    <td class="px-4 py-3 whitespace-nowrap">Bob Martin</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-500">bob@example.com</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <span
+                        class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-yellow-50 text-yellow-700 border-yellow-200"
+                        >USER</span
+                      >
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-500">Globex Corp</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <span
+                        class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 border-green-200"
+                        >Actif</span
+                      >
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-500">15/05/2026</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <a
+                        href="/admin/users/2"
+                        class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 h-9 min-h-[44px] px-3 min-w-[44px]"
+                        data-testid="view-link-2"
+                      >
+                        Voir
+                      </a>
+                    </td>
+                  </tr>
+                  <tr class="border-b border-gray-100 hover:bg-gray-50" data-testid="table-row-3">
+                    <td class="px-4 py-3 whitespace-nowrap">Charlie Martin</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-500">charlie@example.com</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <span
+                        class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-yellow-50 text-yellow-700 border-yellow-200"
+                        >USER</span
+                      >
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-500">Stark Industries</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <span
+                        class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-red-50 text-red-700 border-red-200"
+                        >Inactif</span
+                      >
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-500">10/04/2026</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <a
+                        href="/admin/users/3"
+                        class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 h-9 min-h-[44px] px-3 min-w-[44px]"
+                        data-testid="view-link-3"
+                      >
+                        Voir
+                      </a>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Form section (to test form responsiveness) -->
+          <div class="rounded-lg border bg-white shadow-sm p-4 sm:p-6" data-testid="form-section">
+            <h3 class="text-lg font-semibold mb-4">Formulaire de test</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="form-nom"
+                  >Nom</label
+                >
+                <input
+                  id="form-nom"
+                  type="text"
+                  class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Votre nom"
+                  data-testid="form-input-nom"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="form-email"
+                  >Email</label
+                >
+                <input
+                  id="form-email"
+                  type="email"
+                  class="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Votre email"
+                  data-testid="form-input-email"
+                />
+              </div>
+            </div>
+            <div class="mt-4 flex flex-col sm:flex-row gap-3">
+              <button
+                data-testid="form-submit"
+                class="w-full sm:w-auto inline-flex items-center justify-center rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 h-11 min-h-[44px] px-6"
+              >
+                Enregistrer
+              </button>
+              <button
+                data-testid="form-cancel"
+                class="w-full sm:w-auto inline-flex items-center justify-center rounded-md text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 h-11 min-h-[44px] px-6"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
-  </div>
 
-  <script>
-    // ── Mobile sidebar toggle ──────────────────────────────
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    const toggleBtn = document.getElementById('sidebar-toggle');
-    const closeBtn = document.getElementById('sidebar-close-btn');
+    <script>
+      // ── Mobile sidebar toggle ──────────────────────────────
+      const sidebar = document.getElementById('sidebar')
+      const overlay = document.getElementById('sidebar-overlay')
+      const toggleBtn = document.getElementById('sidebar-toggle')
+      const closeBtn = document.getElementById('sidebar-close-btn')
 
-    function openSidebar() {
-      sidebar.classList.remove('-translate-x-full');
-      overlay.classList.remove('hidden');
-    }
+      function openSidebar() {
+        sidebar.classList.remove('-translate-x-full')
+        overlay.classList.remove('hidden')
+      }
 
-    function closeSidebar() {
-      sidebar.classList.add('-translate-x-full');
-      overlay.classList.add('hidden');
-    }
+      function closeSidebar() {
+        sidebar.classList.add('-translate-x-full')
+        overlay.classList.add('hidden')
+      }
 
-    if (toggleBtn) {
-      toggleBtn.addEventListener('click', openSidebar);
-    }
-    if (closeBtn) {
-      closeBtn.addEventListener('click', closeSidebar);
-    }
-    if (overlay) {
-      overlay.addEventListener('click', closeSidebar);
-    }
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', openSidebar)
+      }
+      if (closeBtn) {
+        closeBtn.addEventListener('click', closeSidebar)
+      }
+      if (overlay) {
+        overlay.addEventListener('click', closeSidebar)
+      }
 
-    // ── Expose helpers for tests ───────────────────────────
-    window.__getComputedStyle = function(selector, prop) {
-      const el = document.querySelector(selector);
-      if (!el) return null;
-      return window.getComputedStyle(el)[prop];
-    };
-  </script>
-</body>
+      // ── Expose helpers for tests ───────────────────────────
+      window.__getComputedStyle = function (selector, prop) {
+        const el = document.querySelector(selector)
+        if (!el) return null
+        return window.getComputedStyle(el)[prop]
+      }
+    </script>
+  </body>
 </html>

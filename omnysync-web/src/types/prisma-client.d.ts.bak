@@ -23,7 +23,7 @@ declare module '@prisma/client' {
     delete(args: any): Promise<any>
     deleteMany(args: any): Promise<{ count: number }>
     updateMany(args: any): Promise<{ count: number }>
-    count(args?: any): Promise<number>
+    count(args: any): Promise<number>
     aggregate(args: any): Promise<any>
     groupBy(args: any): Promise<any[]>
   }

@@ -77,8 +77,8 @@ export class ErrorBoundary extends Component<Props, State> {
               <div className="flex gap-2">
                 <Button
                   onClick={this.handleReset}
-                  className="flex-1"
                   aria-label={translate('error.retry', locale)}
+                  className="flex-1"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" aria-hidden="true" />
                   {translate('error.retry', locale)}

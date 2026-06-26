@@ -168,7 +168,7 @@ export default function NewOverridePage() {
                 id="scopeId"
                 placeholder={scope === 'ORG' ? 'org_abc123' : 'user_xyz789'}
                 value={scopeId}
-                onChange={(e) => setScopeId(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setScopeId(e.target.value)}
                 className={errors.scopeId ? 'border-destructive' : ''}
               />
               {errors.scopeId && <p className="text-sm text-destructive">{errors.scopeId}</p>}
@@ -185,7 +185,7 @@ export default function NewOverridePage() {
                 id="featureKey"
                 placeholder="EXPORT_PDF"
                 value={featureKey}
-                onChange={(e) => setFeatureKey(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFeatureKey(e.target.value)}
                 className={errors.featureKey ? 'border-destructive' : ''}
               />
               {errors.featureKey && <p className="text-sm text-destructive">{errors.featureKey}</p>}
@@ -218,7 +218,7 @@ export default function NewOverridePage() {
                 min="0"
                 placeholder="100"
                 value={limitValue}
-                onChange={(e) => setLimitValue(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLimitValue(e.target.value)}
                 className={`max-w-[160px] ${errors.limitValue ? 'border-destructive' : ''}`}
               />
               {errors.limitValue && <p className="text-sm text-destructive">{errors.limitValue}</p>}
@@ -236,7 +236,7 @@ export default function NewOverridePage() {
                 id="expiresAt"
                 type="datetime-local"
                 value={expiresAt}
-                onChange={(e) => setExpiresAt(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExpiresAt(e.target.value)}
                 className="max-w-[260px]"
               />
               <p className="text-xs text-muted-foreground">
@@ -255,7 +255,7 @@ export default function NewOverridePage() {
                 id="reason"
                 placeholder="Why is this override being created? (required for audit)"
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}
                 rows={3}
                 className={errors.reason ? 'border-destructive' : ''}
               />

@@ -1,96 +1,128 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>New Plan — Omnysync</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-background text-foreground">
-  <div class="p-8" id="app">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-      <div class="space-y-1">
-        <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">New Plan</h1>
-        <p class="text-sm text-muted-foreground">Create a new subscription plan</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Plan — Omnysync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-background text-foreground">
+    <div class="p-8" id="app">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+        <div class="space-y-1">
+          <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">New Plan</h1>
+          <p class="text-sm text-muted-foreground">Create a new subscription plan</p>
+        </div>
       </div>
+
+      <form id="plan-form" class="max-w-lg space-y-6" novalidate>
+        <!-- Key -->
+        <div class="space-y-2">
+          <label for="key" class="text-sm font-medium leading-none">Key</label>
+          <input
+            type="text"
+            id="key"
+            name="key"
+            placeholder="e.g. pro"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            required
+          />
+          <p id="key-error" class="text-sm text-red-500 hidden" data-testid="key-error"></p>
+        </div>
+
+        <!-- Name -->
+        <div class="space-y-2">
+          <label for="name" class="text-sm font-medium leading-none">Name</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            placeholder="e.g. Pro"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            required
+          />
+          <p id="name-error" class="text-sm text-red-500 hidden" data-testid="name-error"></p>
+        </div>
+
+        <!-- Price Monthly -->
+        <div class="space-y-2">
+          <label for="priceMonthly" class="text-sm font-medium leading-none">Price Monthly</label>
+          <input
+            type="number"
+            step="0.01"
+            id="priceMonthly"
+            name="priceMonthly"
+            placeholder="0.00"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+        </div>
+
+        <!-- Price Yearly -->
+        <div class="space-y-2">
+          <label for="priceYearly" class="text-sm font-medium leading-none">Price Yearly</label>
+          <input
+            type="number"
+            step="0.01"
+            id="priceYearly"
+            name="priceYearly"
+            placeholder="0.00"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3"
+        >
+          Create Plan
+        </button>
+
+        <p id="form-error" class="text-sm text-red-500 hidden" data-testid="form-error"></p>
+      </form>
     </div>
 
-    <form id="plan-form" class="max-w-lg space-y-6" novalidate>
-      <!-- Key -->
-      <div class="space-y-2">
-        <label for="key" class="text-sm font-medium leading-none">Key</label>
-        <input type="text" id="key" name="key" placeholder="e.g. pro" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" required />
-        <p id="key-error" class="text-sm text-red-500 hidden" data-testid="key-error"></p>
-      </div>
+    <script>
+      const form = document.getElementById('plan-form')
 
-      <!-- Name -->
-      <div class="space-y-2">
-        <label for="name" class="text-sm font-medium leading-none">Name</label>
-        <input type="text" id="name" name="name" placeholder="e.g. Pro" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" required />
-        <p id="name-error" class="text-sm text-red-500 hidden" data-testid="name-error"></p>
-      </div>
+      window.__submittedData = null
+      window.__redirectedTo = null
 
-      <!-- Price Monthly -->
-      <div class="space-y-2">
-        <label for="priceMonthly" class="text-sm font-medium leading-none">Price Monthly</label>
-        <input type="number" step="0.01" id="priceMonthly" name="priceMonthly" placeholder="0.00" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
-      </div>
+      form.addEventListener('submit', function (e) {
+        e.preventDefault()
 
-      <!-- Price Yearly -->
-      <div class="space-y-2">
-        <label for="priceYearly" class="text-sm font-medium leading-none">Price Yearly</label>
-        <input type="number" step="0.01" id="priceYearly" name="priceYearly" placeholder="0.00" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
-      </div>
+        const key = document.getElementById('key').value.trim()
+        const name = document.getElementById('name').value.trim()
+        const priceMonthly = parseFloat(document.getElementById('priceMonthly').value) || 0
+        const priceYearly = parseFloat(document.getElementById('priceYearly').value) || 0
 
-      <button type="submit" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3">
-        Create Plan
-      </button>
+        // Validation
+        let valid = true
+        const keyError = document.getElementById('key-error')
+        keyError.classList.add('hidden')
 
-      <p id="form-error" class="text-sm text-red-500 hidden" data-testid="form-error"></p>
-    </form>
-  </div>
+        if (!key) {
+          keyError.textContent = 'Key is required'
+          keyError.classList.remove('hidden')
+          valid = false
+        }
 
-  <script>
-    const form = document.getElementById('plan-form');
+        if (!valid) return
 
-    window.__submittedData = null;
-    window.__redirectedTo = null;
+        // Check duplicate
+        if (key === 'pro') {
+          document.getElementById('form-error').textContent = "Plan 'pro' already exists"
+          document.getElementById('form-error').classList.remove('hidden')
+          return
+        }
 
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
+        // Success
+        window.__submittedData = { key, name, priceMonthly, priceYearly }
+        window.__redirectedTo = '/admin/plans'
 
-      const key = document.getElementById('key').value.trim();
-      const name = document.getElementById('name').value.trim();
-      const priceMonthly = parseFloat(document.getElementById('priceMonthly').value) || 0;
-      const priceYearly = parseFloat(document.getElementById('priceYearly').value) || 0;
-
-      // Validation
-      let valid = true;
-      const keyError = document.getElementById('key-error');
-      keyError.classList.add('hidden');
-
-      if (!key) {
-        keyError.textContent = 'Key is required';
-        keyError.classList.remove('hidden');
-        valid = false;
-      }
-
-      if (!valid) return;
-
-      // Check duplicate
-      if (key === 'pro') {
-        document.getElementById('form-error').textContent = "Plan 'pro' already exists";
-        document.getElementById('form-error').classList.remove('hidden');
-        return;
-      }
-
-      // Success
-      window.__submittedData = { key, name, priceMonthly, priceYearly };
-      window.__redirectedTo = '/admin/plans';
-
-      document.getElementById('form-error').classList.add('hidden');
-      document.body.innerHTML = '<div class="p-8 text-center text-green-600" data-testid="success-message">Plan created! Redirected to list.</div>';
-    });
-  </script>
-</body>
+        document.getElementById('form-error').classList.add('hidden')
+        document.body.innerHTML =
+          '<div class="p-8 text-center text-green-600" data-testid="success-message">Plan created! Redirected to list.</div>'
+      })
+    </script>
+  </body>
 </html>

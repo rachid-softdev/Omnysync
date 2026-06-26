@@ -1,98 +1,180 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Utilisateurs — Omnysync</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-background text-foreground">
-  <div class="p-8" id="app">
-    <!-- AdminPageHeader -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-      <div class="space-y-1">
-        <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Utilisateurs</h1>
-        <p class="text-sm text-muted-foreground" data-testid="page-description">3 utilisateurs sur la plateforme</p>
-      </div>
-    </div>
-
-    <!-- Search bar -->
-    <div class="relative mb-6 max-w-sm">
-      <input
-        type="text"
-        id="search-input"
-        placeholder="Rechercher par email ou nom"
-        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        data-testid="search-input"
-      />
-      <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-      </svg>
-    </div>
-
-    <!-- Error banner -->
-    <div id="error-banner" class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm" data-testid="error-banner">
-      <span id="error-message" data-testid="error-message"></span>
-    </div>
-
-    <!-- Table -->
-    <div class="space-y-4">
-      <div class="relative w-full overflow-auto rounded-md border">
-        <table class="w-full caption-bottom text-sm">
-          <thead class="[&_tr]:border-b">
-            <tr class="border-b transition-colors hover:bg-muted/50">
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Nom</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Email</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Rôle</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Créé le</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="table-body" class="[&_tr:last-child]:border-0" data-testid="table-body"></tbody>
-        </table>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Utilisateurs — Omnysync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-background text-foreground">
+    <div class="p-8" id="app">
+      <!-- AdminPageHeader -->
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+        <div class="space-y-1">
+          <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Utilisateurs</h1>
+          <p class="text-sm text-muted-foreground" data-testid="page-description">
+            3 utilisateurs sur la plateforme
+          </p>
+        </div>
       </div>
 
-      <!-- Pagination -->
-      <div id="pagination" class="hidden flex items-center justify-between text-sm text-muted-foreground" data-testid="pagination">
-        <p id="pagination-info" data-testid="pagination-info"></p>
-        <div class="flex items-center gap-2">
-          <button id="prev-btn" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 h-8 gap-1.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50" aria-label="Page précédente" data-testid="prev-page">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 18l-6-6 6-6"/></svg>
-          </button>
-            <span id="page-indicator" class="min-w-[4rem] text-center font-medium" data-testid="page-indicator">Page 1 / 1</span>
-          <button id="next-btn" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 h-8 gap-1.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50" aria-label="Page suivante" data-testid="next-page">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-          </button>
+      <!-- Search bar -->
+      <div class="relative mb-6 max-w-sm">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Rechercher par email ou nom"
+          class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          data-testid="search-input"
+        />
+        <svg
+          class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
+        </svg>
+      </div>
+
+      <!-- Error banner -->
+      <div
+        id="error-banner"
+        class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm"
+        data-testid="error-banner"
+      >
+        <span id="error-message" data-testid="error-message"></span>
+      </div>
+
+      <!-- Table -->
+      <div class="space-y-4">
+        <div class="relative w-full overflow-auto rounded-md border">
+          <table class="w-full caption-bottom text-sm">
+            <thead class="[&_tr]:border-b">
+              <tr class="border-b transition-colors hover:bg-muted/50">
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Nom
+                </th>
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Email
+                </th>
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Rôle
+                </th>
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Créé le
+                </th>
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id="table-body"
+              class="[&_tr:last-child]:border-0"
+              data-testid="table-body"
+            ></tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div
+          id="pagination"
+          class="hidden flex items-center justify-between text-sm text-muted-foreground"
+          data-testid="pagination"
+        >
+          <p id="pagination-info" data-testid="pagination-info"></p>
+          <div class="flex items-center gap-2">
+            <button
+              id="prev-btn"
+              class="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 h-8 gap-1.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+              aria-label="Page précédente"
+              data-testid="prev-page"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 18l-6-6 6-6"
+                />
+              </svg>
+            </button>
+            <span
+              id="page-indicator"
+              class="min-w-[4rem] text-center font-medium"
+              data-testid="page-indicator"
+              >Page 1 / 1</span
+            >
+            <button
+              id="next-btn"
+              class="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 h-8 gap-1.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+              aria-label="Page suivante"
+              data-testid="next-page"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <script>
-    const MOCK_USERS = [
-      { id: '1', email: 'alice@example.com', name: 'Alice Dupont', role: 'USER', createdAt: '2026-06-01T00:00:00.000Z' },
-      { id: '2', email: 'bob@example.com', name: 'Bob Martin', role: 'ADMIN', createdAt: '2026-05-15T00:00:00.000Z' },
-      { id: '3', email: 'charlie@example.com', name: null, role: 'USER', createdAt: '2026-04-10T00:00:00.000Z' },
-    ];
+    <script>
+      const MOCK_USERS = [
+        {
+          id: '1',
+          email: 'alice@example.com',
+          name: 'Alice Dupont',
+          role: 'USER',
+          createdAt: '2026-06-01T00:00:00.000Z',
+        },
+        {
+          id: '2',
+          email: 'bob@example.com',
+          name: 'Bob Martin',
+          role: 'ADMIN',
+          createdAt: '2026-05-15T00:00:00.000Z',
+        },
+        {
+          id: '3',
+          email: 'charlie@example.com',
+          name: null,
+          role: 'USER',
+          createdAt: '2026-04-10T00:00:00.000Z',
+        },
+      ]
 
-    let users = [...MOCK_USERS];
-    const PAGE_SIZE = 10;
-    let currentPage = 1;
+      let users = [...MOCK_USERS]
+      const PAGE_SIZE = 10
+      let currentPage = 1
 
-    const badgeStyles = {
-      ADMIN: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
-      USER: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800',
-    };
+      const badgeStyles = {
+        ADMIN:
+          'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
+        USER: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800',
+      }
 
-    function formatDate(iso) {
-      const d = new Date(iso);
-      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-    }
+      function formatDate(iso) {
+        const d = new Date(iso)
+        return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+      }
 
-    function renderUserRow(u) {
-      const nameDisplay = u.name || '\u2014';
-      const badgeStyle = badgeStyles[u.role] || badgeStyles.USER;
-      return `
+      function renderUserRow(u) {
+        const nameDisplay = u.name || '\u2014'
+        const badgeStyle = badgeStyles[u.role] || badgeStyles.USER
+        return `
         <tr class="border-b transition-colors hover:bg-muted/50" data-testid="user-row-${u.id}">
           <td class="p-4 align-middle">${nameDisplay}</td>
           <td class="p-4 align-middle text-muted-foreground">${u.email}</td>
@@ -106,24 +188,28 @@
             </a>
           </td>
         </tr>
-      `;
-    }
+      `
+      }
 
-    function render() {
-      const search = (document.getElementById('search-input').value || '').toLowerCase().trim();
-      const filtered = search
-        ? users.filter(u => (u.name && u.name.toLowerCase().includes(search)) || u.email.toLowerCase().includes(search))
-        : users;
+      function render() {
+        const search = (document.getElementById('search-input').value || '').toLowerCase().trim()
+        const filtered = search
+          ? users.filter(
+              (u) =>
+                (u.name && u.name.toLowerCase().includes(search)) ||
+                u.email.toLowerCase().includes(search)
+            )
+          : users
 
-      const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-      if (currentPage > totalPages) currentPage = totalPages;
-      const start = (currentPage - 1) * PAGE_SIZE;
-      const paginated = filtered.slice(start, start + PAGE_SIZE);
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+        if (currentPage > totalPages) currentPage = totalPages
+        const start = (currentPage - 1) * PAGE_SIZE
+        const paginated = filtered.slice(start, start + PAGE_SIZE)
 
-      const tbody = document.getElementById('table-body');
+        const tbody = document.getElementById('table-body')
 
-      if (filtered.length === 0) {
-        tbody.innerHTML = `
+        if (filtered.length === 0) {
+          tbody.innerHTML = `
           <tr>
             <td colspan="5" class="p-4 text-center">
               <div class="flex flex-col items-center justify-center py-12 text-muted-foreground" data-testid="empty-state">
@@ -132,66 +218,73 @@
               </div>
             </td>
           </tr>
-        `;
-      } else {
-        tbody.innerHTML = paginated.map(renderUserRow).join('');
+        `
+        } else {
+          tbody.innerHTML = paginated.map(renderUserRow).join('')
+        }
+
+        const pagination = document.getElementById('pagination')
+        if (totalPages > 1) {
+          pagination.classList.remove('hidden')
+        } else {
+          pagination.classList.add('hidden')
+        }
+
+        document.getElementById('page-indicator').textContent =
+          `Page ${currentPage} / ${totalPages}`
+        document.getElementById('prev-btn').disabled = currentPage <= 1
+        document.getElementById('next-btn').disabled = currentPage >= totalPages
+
+        const desc = document.querySelector('[data-testid="page-description"]')
+        if (desc) {
+          const count = users.length
+          desc.textContent = `${count} utilisateur${count > 1 ? 's' : ''} sur la plateforme`
+        }
       }
 
-      const pagination = document.getElementById('pagination');
-      if (totalPages > 1) {
-        pagination.classList.remove('hidden');
-      } else {
-        pagination.classList.add('hidden');
+      // Event Listeners
+      document.getElementById('search-input').addEventListener('input', function () {
+        currentPage = 1
+        render()
+      })
+
+      document.getElementById('prev-btn').addEventListener('click', function () {
+        if (currentPage > 1) {
+          currentPage--
+          render()
+        }
+      })
+
+      document.getElementById('next-btn').addEventListener('click', function () {
+        const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE))
+        if (currentPage < totalPages) {
+          currentPage++
+          render()
+        }
+      })
+
+      // Global helpers for test scenarios
+      window.__showError = function (message) {
+        const banner = document.getElementById('error-banner')
+        banner.classList.remove('hidden')
+        document.getElementById('error-message').textContent = message
+        document.getElementById('table-body').innerHTML = ''
+        document.getElementById('pagination').classList.add('hidden')
       }
 
-      document.getElementById('page-indicator').textContent = `Page ${currentPage} / ${totalPages}`;
-      document.getElementById('prev-btn').disabled = currentPage <= 1;
-      document.getElementById('next-btn').disabled = currentPage >= totalPages;
-
-      const desc = document.querySelector('[data-testid="page-description"]');
-      if (desc) {
-        const count = users.length;
-        desc.textContent = `${count} utilisateur${count > 1 ? 's' : ''} sur la plateforme`;
+      window.__clearError = function () {
+        document.getElementById('error-banner').classList.add('hidden')
       }
-    }
 
-    // Event Listeners
-    document.getElementById('search-input').addEventListener('input', function() {
-      currentPage = 1;
-      render();
-    });
+      window.__setUsers = function (newUsers) {
+        users = newUsers
+        currentPage = 1
+        window.__clearError()
+        render()
+      }
 
-    document.getElementById('prev-btn').addEventListener('click', function() {
-      if (currentPage > 1) { currentPage--; render(); }
-    });
-
-    document.getElementById('next-btn').addEventListener('click', function() {
-      const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
-      if (currentPage < totalPages) { currentPage++; render(); }
-    });
-
-    // Global helpers for test scenarios
-    window.__showError = function(message) {
-      const banner = document.getElementById('error-banner');
-      banner.classList.remove('hidden');
-      document.getElementById('error-message').textContent = message;
-      document.getElementById('table-body').innerHTML = '';
-      document.getElementById('pagination').classList.add('hidden');
-    };
-
-    window.__clearError = function() {
-      document.getElementById('error-banner').classList.add('hidden');
-    };
-
-    window.__setUsers = function(newUsers) {
-      users = newUsers;
-      currentPage = 1;
-      window.__clearError();
-      render();
-    };
-
-    // Initial render
-    render();
-  </script>
-</body>
+      // Initial render
+      render()
+    </script>
+  </body>
 </html>

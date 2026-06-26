@@ -214,7 +214,7 @@ export default function AdminOverridesPage() {
         <Input
           placeholder="Filter by Organization ID..."
           value={orgFilter}
-          onChange={(e) => {
+          onChange={(e: any) => {
             setOrgFilter(e.target.value)
             setPage(1)
           }}

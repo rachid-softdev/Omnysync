@@ -219,7 +219,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
       </Card>
 
       {/* Tabs */}
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs value="overview" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
@@ -336,8 +336,15 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 <p className="text-muted-foreground text-center py-8">No history available</p>
               ) : (
                 <div className="space-y-3">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {document.syncLogs.map((log: any) => (
+                  {(
+                    document.syncLogs as Array<{
+                      id: string
+                      status: string
+                      action: string
+                      message: string | null
+                      createdAt: Date
+                    }>
+                  ).map((log) => (
                     <div
                       key={log.id}
                       className="flex items-center justify-between p-3 rounded-lg border"

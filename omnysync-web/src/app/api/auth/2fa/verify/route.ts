@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update session (mark as verified)
-    await session.update({ twoFactorVerified: true })
+    await (session as any).update({ twoFactorVerified: true })
 
     return NextResponse.json({
       success: true,

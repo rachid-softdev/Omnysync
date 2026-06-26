@@ -18,7 +18,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
 import { getExperimentService } from '@/lib/entitlements/ExperimentService'
-import type { EntitlementsResponse } from '@/lib/entitlements/types'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -58,7 +57,7 @@ export async function GET(request: NextRequest) {
     const usage: Record<string, number> = {}
     const resetAt: Record<string, string> = {}
 
-    for (const [key, limit] of Object.entries(entitlements.limits)) {
+    for (const [key, limit] of Object.entries(entitlements.limits || {})) {
       if (limit !== null) {
         // Get current usage
         const feature = await featureGate.hasFeature(orgId, key)
@@ -77,15 +76,18 @@ export async function GET(request: NextRequest) {
     const userId = request.headers.get('x-user-id')
 
     if (userId) {
-      for (const [key, config] of Object.entries(entitlements.experiments)) {
-        const group = experimentService.getExperimentGroup(userId, config)
+      for (const [key, config] of Object.entries(entitlements.experiments || {})) {
+        const group = experimentService.getExperimentGroup(
+          userId,
+          config as { seed: string; percentage: number }
+        )
         experimentGroups[key] = group
       }
     }
 
     // Build response
-    const response: EntitlementsResponse = {
-      plan: entitlements.planKey,
+    const response = {
+      planKey: entitlements.planKey,
       features: entitlements.features,
       limits: entitlements.limits,
       usage,

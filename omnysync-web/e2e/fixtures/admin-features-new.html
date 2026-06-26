@@ -1,123 +1,153 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>New Feature — Omnysync</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-background text-foreground">
-  <div class="p-8" id="app">
-    <!-- AdminPageHeader -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-      <div class="space-y-1">
-        <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">New Feature</h1>
-        <p class="text-sm text-muted-foreground">Create a new feature flag or entitlement</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Feature — Omnysync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-background text-foreground">
+    <div class="p-8" id="app">
+      <!-- AdminPageHeader -->
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+        <div class="space-y-1">
+          <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">New Feature</h1>
+          <p class="text-sm text-muted-foreground">Create a new feature flag or entitlement</p>
+        </div>
       </div>
+
+      <!-- Form -->
+      <form id="feature-form" class="max-w-lg space-y-6" novalidate>
+        <!-- Key -->
+        <div class="space-y-2">
+          <label for="key" class="text-sm font-medium leading-none">Key</label>
+          <input
+            type="text"
+            id="key"
+            name="key"
+            placeholder="e.g. MY_FEATURE"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            required
+          />
+          <p id="key-error" class="text-sm text-red-500 hidden" data-testid="key-error"></p>
+        </div>
+
+        <!-- Name -->
+        <div class="space-y-2">
+          <label for="name" class="text-sm font-medium leading-none">Name</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            placeholder="e.g. My Feature"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            required
+          />
+          <p id="name-error" class="text-sm text-red-500 hidden" data-testid="name-error"></p>
+        </div>
+
+        <!-- Type -->
+        <div class="space-y-2">
+          <label for="type-select" class="text-sm font-medium leading-none">Type</label>
+          <select
+            id="type-select"
+            name="type"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <option value="BOOLEAN">BOOLEAN</option>
+            <option value="LIMIT">LIMIT</option>
+            <option value="EXPERIMENT">EXPERIMENT</option>
+          </select>
+        </div>
+
+        <!-- Default Config -->
+        <div class="space-y-2">
+          <label for="defaultConfig" class="text-sm font-medium leading-none"
+            >Default Config (JSON)</label
+          >
+          <textarea
+            id="defaultConfig"
+            name="defaultConfig"
+            rows="3"
+            placeholder='{"key": "value"}'
+            class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          ></textarea>
+        </div>
+
+        <button
+          type="submit"
+          class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3"
+        >
+          Create Feature
+        </button>
+
+        <p id="form-error" class="text-sm text-red-500 hidden" data-testid="form-error"></p>
+      </form>
     </div>
 
-    <!-- Form -->
-    <form id="feature-form" class="max-w-lg space-y-6" novalidate>
-      <!-- Key -->
-      <div class="space-y-2">
-        <label for="key" class="text-sm font-medium leading-none">Key</label>
-        <input type="text" id="key" name="key" placeholder="e.g. MY_FEATURE" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" required />
-        <p id="key-error" class="text-sm text-red-500 hidden" data-testid="key-error"></p>
-      </div>
+    <script>
+      const form = document.getElementById('feature-form')
 
-      <!-- Name -->
-      <div class="space-y-2">
-        <label for="name" class="text-sm font-medium leading-none">Name</label>
-        <input type="text" id="name" name="name" placeholder="e.g. My Feature" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" required />
-        <p id="name-error" class="text-sm text-red-500 hidden" data-testid="name-error"></p>
-      </div>
+      window.__submittedData = null
+      window.__redirectedTo = null
 
-      <!-- Type -->
-      <div class="space-y-2">
-        <label for="type-select" class="text-sm font-medium leading-none">Type</label>
-        <select id="type-select" name="type" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-          <option value="BOOLEAN">BOOLEAN</option>
-          <option value="LIMIT">LIMIT</option>
-          <option value="EXPERIMENT">EXPERIMENT</option>
-        </select>
-      </div>
+      form.addEventListener('submit', function (e) {
+        e.preventDefault()
 
-      <!-- Default Config -->
-      <div class="space-y-2">
-        <label for="defaultConfig" class="text-sm font-medium leading-none">Default Config (JSON)</label>
-        <textarea id="defaultConfig" name="defaultConfig" rows="3" placeholder='{"key": "value"}' class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"></textarea>
-      </div>
+        const key = document.getElementById('key').value.trim()
+        const name = document.getElementById('name').value.trim()
+        const type = document.getElementById('type-select').value
+        const defaultConfigRaw = document.getElementById('defaultConfig').value.trim()
 
-      <button type="submit" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3">
-        Create Feature
-      </button>
+        // Validation
+        let valid = true
+        const keyError = document.getElementById('key-error')
+        const nameError = document.getElementById('name-error')
+        keyError.classList.add('hidden')
+        nameError.classList.add('hidden')
 
-      <p id="form-error" class="text-sm text-red-500 hidden" data-testid="form-error"></p>
-    </form>
-  </div>
-
-  <script>
-    const form = document.getElementById('feature-form');
-
-    window.__submittedData = null;
-    window.__redirectedTo = null;
-
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-
-      const key = document.getElementById('key').value.trim();
-      const name = document.getElementById('name').value.trim();
-      const type = document.getElementById('type-select').value;
-      const defaultConfigRaw = document.getElementById('defaultConfig').value.trim();
-
-      // Validation
-      let valid = true;
-      const keyError = document.getElementById('key-error');
-      const nameError = document.getElementById('name-error');
-      keyError.classList.add('hidden');
-      nameError.classList.add('hidden');
-
-      if (!key) {
-        keyError.textContent = 'Key is required';
-        keyError.classList.remove('hidden');
-        valid = false;
-      }
-      if (!name) {
-        nameError.textContent = 'Name is required';
-        nameError.classList.remove('hidden');
-        valid = false;
-      }
-
-      if (!valid) return;
-
-      // Parse defaultConfig if provided
-      let defaultConfig = null;
-      if (defaultConfigRaw) {
-        try {
-          defaultConfig = JSON.parse(defaultConfigRaw);
-        } catch (e) {
-          document.getElementById('form-error').textContent = 'Invalid JSON in Default Config';
-          document.getElementById('form-error').classList.remove('hidden');
-          return;
+        if (!key) {
+          keyError.textContent = 'Key is required'
+          keyError.classList.remove('hidden')
+          valid = false
         }
-      }
+        if (!name) {
+          nameError.textContent = 'Name is required'
+          nameError.classList.remove('hidden')
+          valid = false
+        }
 
-      // Check duplicate
-      if (key === 'DUPLICATE') {
-        document.getElementById('form-error').textContent = 'Feature already exists';
-        document.getElementById('form-error').classList.remove('hidden');
-        return;
-      }
+        if (!valid) return
 
-      // Success
-      window.__submittedData = { key, name, type, defaultConfig };
-      window.__redirectedTo = '/admin/features';
+        // Parse defaultConfig if provided
+        let defaultConfig = null
+        if (defaultConfigRaw) {
+          try {
+            defaultConfig = JSON.parse(defaultConfigRaw)
+          } catch (e) {
+            document.getElementById('form-error').textContent = 'Invalid JSON in Default Config'
+            document.getElementById('form-error').classList.remove('hidden')
+            return
+          }
+        }
 
-      // Show success and simulate redirect
-      document.getElementById('form-error').classList.add('hidden');
-      document.getElementById('form-error').textContent = '';
-      document.body.innerHTML = '<div class="p-8 text-center text-green-600" data-testid="success-message">Feature created! Redirected to list.</div>';
-    });
-  </script>
-</body>
+        // Check duplicate
+        if (key === 'DUPLICATE') {
+          document.getElementById('form-error').textContent = 'Feature already exists'
+          document.getElementById('form-error').classList.remove('hidden')
+          return
+        }
+
+        // Success
+        window.__submittedData = { key, name, type, defaultConfig }
+        window.__redirectedTo = '/admin/features'
+
+        // Show success and simulate redirect
+        document.getElementById('form-error').classList.add('hidden')
+        document.getElementById('form-error').textContent = ''
+        document.body.innerHTML =
+          '<div class="p-8 text-center text-green-600" data-testid="success-message">Feature created! Redirected to list.</div>'
+      })
+    </script>
+  </body>
 </html>

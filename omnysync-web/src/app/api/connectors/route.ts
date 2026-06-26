@@ -70,20 +70,23 @@ export async function POST(req: NextRequest) {
 
   switch (type) {
     case 'WORDPRESS':
-      testResult = await testWordPressConnection(
-        config.siteUrl,
-        credentials.username,
-        credentials.password
-      )
+      testResult = {
+        success: await testWordPressConnection(config.siteUrl, {
+          username: credentials.username,
+          password: credentials.password,
+        }),
+      }
       break
     case 'GHOST':
-      testResult = await testGhostConnection(config.siteUrl, credentials.adminApiKey)
+      testResult = { success: await testGhostConnection(config.siteUrl, credentials.adminApiKey) }
       break
     case 'WEBFLOW':
-      testResult = await testWebflowConnection(credentials.accessToken, config.siteId)
+      testResult = { success: await testWebflowConnection(credentials.accessToken) }
       break
     case 'SHOPIFY':
-      testResult = await testShopifyConnection(config.shopDomain, credentials.accessToken)
+      testResult = {
+        success: await testShopifyConnection(config.shopDomain, credentials.accessToken),
+      }
       break
     case 'GOOGLE_DOCS':
       // Google Docs doesn't have a test connection unless we try listing docs
@@ -94,13 +97,15 @@ export async function POST(req: NextRequest) {
       testResult = { success: true, error: '' }
       break
     case 'MEDIUM':
-      testResult = await testMediumConnection(credentials.accessToken)
+      testResult = { success: await testMediumConnection(credentials.accessToken) }
       break
     case 'AIRTABLE':
-      testResult = await testAirtableConnection(credentials.apiKey)
+      testResult = { success: await testAirtableConnection(credentials.apiKey) }
       break
     case 'CONTENTFUL':
-      testResult = await testContentfulConnection(credentials.accessToken)
+      testResult = {
+        success: await testContentfulConnection(config.spaceId, credentials.accessToken),
+      }
       break
   }
 
@@ -118,49 +123,30 @@ export async function POST(req: NextRequest) {
   switch (type) {
     case 'WORDPRESS': {
       const { saveWordPressConnector } = await import('@omnysync/core/services/wordpress')
-      connector = await saveWordPressConnector(
-        session.user.id,
-        orgId,
-        config.siteUrl,
-        credentials.username,
-        credentials.password
-      )
+      connector = await saveWordPressConnector(orgId, config.siteUrl, {
+        username: credentials.username,
+        password: credentials.password,
+      })
       break
     }
     case 'GHOST': {
       const { saveGhostConnector } = await import('@omnysync/core/services/ghost')
-      connector = await saveGhostConnector(
-        session.user.id,
-        orgId,
-        config.siteUrl,
-        credentials.adminApiKey
-      )
+      connector = await saveGhostConnector(orgId, config.siteUrl, credentials.adminApiKey)
       break
     }
     case 'WEBFLOW': {
       const { saveWebflowConnector } = await import('@omnysync/core/services/webflow')
-      connector = await saveWebflowConnector(
-        session.user.id,
-        orgId,
-        config.siteId,
-        credentials.accessToken
-      )
+      connector = await saveWebflowConnector(orgId, credentials.accessToken, config.siteId)
       break
     }
     case 'SHOPIFY': {
       const { saveShopifyConnector } = await import('@omnysync/core/services/shopify')
-      connector = await saveShopifyConnector(
-        session.user.id,
-        orgId,
-        config.shopDomain,
-        credentials.accessToken
-      )
+      connector = await saveShopifyConnector(orgId, config.shopDomain, credentials.accessToken)
       break
     }
     case 'GOOGLE_DOCS': {
       const { saveGoogleDocsConnector } = await import('@omnysync/core/services/google-docs')
       connector = await saveGoogleDocsConnector(
-        session.user.id,
         orgId,
         credentials.accessToken,
         credentials.refreshToken ?? ''
@@ -169,33 +155,22 @@ export async function POST(req: NextRequest) {
     }
     case 'NOTION': {
       const { saveNotionConnector } = await import('@omnysync/core/services/notion')
-      connector = await saveNotionConnector(session.user.id, orgId, credentials.accessToken)
+      connector = await saveNotionConnector(orgId, credentials.accessToken)
       break
     }
     case 'MEDIUM': {
       const { saveMediumConnector } = await import('@omnysync/core/services/medium')
-      connector = await saveMediumConnector(
-        session.user.id,
-        orgId,
-        credentials.accessToken,
-        config.publicationId ? { publicationId: config.publicationId } : {}
-      )
+      connector = await saveMediumConnector(orgId, credentials.accessToken)
       break
     }
     case 'AIRTABLE': {
       const { saveAirtableConnector } = await import('@omnysync/core/services/airtable')
-      connector = await saveAirtableConnector(session.user.id, orgId, credentials.apiKey, {
-        baseId: config.baseId,
-        tableId: config.tableId,
-      })
+      connector = await saveAirtableConnector(orgId, credentials.apiKey)
       break
     }
     case 'CONTENTFUL': {
       const { saveContentfulConnector } = await import('@omnysync/core/services/contentful')
-      connector = await saveContentfulConnector(session.user.id, orgId, credentials.accessToken, {
-        spaceId: config.spaceId,
-        contentTypeId: config.contentTypeId,
-      })
+      connector = await saveContentfulConnector(orgId, config.spaceId, credentials.accessToken)
       break
     }
     default:

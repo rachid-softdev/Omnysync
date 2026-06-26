@@ -127,7 +127,7 @@ export default function AdminUsersPage() {
         <Input
           placeholder="Rechercher par email ou nom…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e: any) => setSearch(e.target.value)}
           className="pl-10"
         />
       </div>

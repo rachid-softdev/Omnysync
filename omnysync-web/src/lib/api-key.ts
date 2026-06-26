@@ -73,7 +73,7 @@ export async function validateApiKey(request: NextRequest): Promise<ApiKeyAuth |
       where: { keyHash },
       data: { lastUsedAt: new Date() },
     })
-    .catch((err) => {
+    .catch((err: Error) => {
       console.warn('[API-KEY] Échec mise à jour lastUsedAt:', err)
     })
 

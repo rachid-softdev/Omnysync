@@ -106,9 +106,9 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
           </div>
           <Button
             variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-foreground"
             size="sm"
             onClick={() => logoutAction()}
+            className="w-full justify-start text-muted-foreground hover:text-foreground"
           >
             <LogOut className="w-4 h-4 mr-2" />
             {t('UI_LOGOUT')}

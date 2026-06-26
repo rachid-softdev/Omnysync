@@ -226,7 +226,7 @@ export async function publishToMedium(
     content: document.htmlContent || document.content || "",
     publishStatus: "public" as const,
     tags: document.tags,
-    canonicalUrl: undefined,
+    canonicalUrl: undefined as string | undefined,
   };
 
   let result: MediumPost;

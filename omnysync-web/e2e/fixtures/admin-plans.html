@@ -1,74 +1,145 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Plans — Omnysync</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-background text-foreground">
-  <div class="p-8" id="app">
-    <!-- AdminPageHeader -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-      <div class="space-y-1">
-        <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Plans</h1>
-        <p class="text-sm text-muted-foreground" data-testid="page-description">4 plans</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plans — Omnysync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-background text-foreground">
+    <div class="p-8" id="app">
+      <!-- AdminPageHeader -->
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+        <div class="space-y-1">
+          <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Plans</h1>
+          <p class="text-sm text-muted-foreground" data-testid="page-description">4 plans</p>
+        </div>
+        <a
+          href="/admin/plans/new"
+          class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3"
+          data-testid="new-plan-link"
+        >
+          New Plan
+        </a>
       </div>
-      <a href="/admin/plans/new" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3" data-testid="new-plan-link">
-        New Plan
-      </a>
-    </div>
 
-    <!-- Error banner -->
-    <div id="error-banner" class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm" data-testid="error-banner">
-      <span id="error-message" data-testid="error-message"></span>
-      <button id="retry-btn" class="ml-auto text-sm font-medium underline hover:no-underline" data-testid="retry-btn">Retry</button>
-    </div>
+      <!-- Error banner -->
+      <div
+        id="error-banner"
+        class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm"
+        data-testid="error-banner"
+      >
+        <span id="error-message" data-testid="error-message"></span>
+        <button
+          id="retry-btn"
+          class="ml-auto text-sm font-medium underline hover:no-underline"
+          data-testid="retry-btn"
+        >
+          Retry
+        </button>
+      </div>
 
-    <!-- Table -->
-    <div class="space-y-4">
-      <div class="relative w-full overflow-auto rounded-md border">
-        <table class="w-full caption-bottom text-sm">
-          <thead class="[&_tr]:border-b">
-            <tr class="border-b transition-colors hover:bg-muted/50">
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Key</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Monthly</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Yearly</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
-              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Features</th>
-            </tr>
-          </thead>
-          <tbody id="table-body" class="[&_tr:last-child]:border-0" data-testid="table-body"></tbody>
-        </table>
+      <!-- Table -->
+      <div class="space-y-4">
+        <div class="relative w-full overflow-auto rounded-md border">
+          <table class="w-full caption-bottom text-sm">
+            <thead class="[&_tr]:border-b">
+              <tr class="border-b transition-colors hover:bg-muted/50">
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Key
+                </th>
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Name
+                </th>
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Monthly
+                </th>
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Yearly
+                </th>
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Status
+                </th>
+                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Features
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id="table-body"
+              class="[&_tr:last-child]:border-0"
+              data-testid="table-body"
+            ></tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
 
-  <script>
-    const MOCK_PLANS = [
-      { id: '1', key: 'free', name: 'Free', priceMonthly: 0, priceYearly: 0, isActive: true, sortOrder: 1, features: [] },
-      { id: '2', key: 'pro', name: 'Pro', priceMonthly: 29, priceYearly: 290, isActive: true, sortOrder: 2, features: [{ featureId: 'f1' }] },
-      { id: '3', key: 'enterprise', name: 'Enterprise', priceMonthly: 99, priceYearly: 990, isActive: true, sortOrder: 3, features: [{ featureId: 'f1' }, { featureId: 'f2' }] },
-      { id: '4', key: 'legacy', name: 'Legacy Plan', priceMonthly: null, priceYearly: null, isActive: false, sortOrder: 0, features: [] },
-    ];
+    <script>
+      const MOCK_PLANS = [
+        {
+          id: '1',
+          key: 'free',
+          name: 'Free',
+          priceMonthly: 0,
+          priceYearly: 0,
+          isActive: true,
+          sortOrder: 1,
+          features: [],
+        },
+        {
+          id: '2',
+          key: 'pro',
+          name: 'Pro',
+          priceMonthly: 29,
+          priceYearly: 290,
+          isActive: true,
+          sortOrder: 2,
+          features: [{ featureId: 'f1' }],
+        },
+        {
+          id: '3',
+          key: 'enterprise',
+          name: 'Enterprise',
+          priceMonthly: 99,
+          priceYearly: 990,
+          isActive: true,
+          sortOrder: 3,
+          features: [{ featureId: 'f1' }, { featureId: 'f2' }],
+        },
+        {
+          id: '4',
+          key: 'legacy',
+          name: 'Legacy Plan',
+          priceMonthly: null,
+          priceYearly: null,
+          isActive: false,
+          sortOrder: 0,
+          features: [],
+        },
+      ]
 
-    let plans = [...MOCK_PLANS];
+      let plans = [...MOCK_PLANS]
 
-    function formatPrice(val) {
-      if (val === null || val === undefined) return '\u2014';
-      return '$' + val.toFixed(2);
-    }
+      function formatPrice(val) {
+        if (val === null || val === undefined) return '\u2014'
+        return '$' + val.toFixed(2)
+      }
 
-    function renderPlanRow(p) {
-      const statusBadge = p.isActive
-        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800'
-        : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800';
-      const statusLabel = p.isActive ? 'Actif' : 'Inactif';
-      const featuresCount = p.features ? p.features.length : 0;
-      const featureLabel = featuresCount === 0 ? '0 features' : featuresCount === 1 ? '1 feature' : featuresCount + ' features';
+      function renderPlanRow(p) {
+        const statusBadge = p.isActive
+          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800'
+          : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800'
+        const statusLabel = p.isActive ? 'Actif' : 'Inactif'
+        const featuresCount = p.features ? p.features.length : 0
+        const featureLabel =
+          featuresCount === 0
+            ? '0 features'
+            : featuresCount === 1
+              ? '1 feature'
+              : featuresCount + ' features'
 
-      return `
+        return `
         <tr class="border-b transition-colors hover:bg-muted/50" data-testid="plan-row-${p.id}">
           <td class="p-4 align-middle"><span class="font-mono text-sm">${p.key}</span></td>
           <td class="p-4 align-middle font-medium" data-testid="plan-name-${p.id}">${p.name}</td>
@@ -79,13 +150,13 @@
           </td>
           <td class="p-4 align-middle text-muted-foreground">${featureLabel}</td>
         </tr>
-      `;
-    }
+      `
+      }
 
-    function render() {
-      const tbody = document.getElementById('table-body');
-      if (plans.length === 0) {
-        tbody.innerHTML = `
+      function render() {
+        const tbody = document.getElementById('table-body')
+        if (plans.length === 0) {
+          tbody.innerHTML = `
           <tr>
             <td colspan="6" class="p-4 text-center">
               <div class="flex flex-col items-center justify-center py-12 text-muted-foreground" data-testid="empty-state">
@@ -94,32 +165,32 @@
               </div>
             </td>
           </tr>
-        `;
-      } else {
-        tbody.innerHTML = plans.map(renderPlanRow).join('');
+        `
+        } else {
+          tbody.innerHTML = plans.map(renderPlanRow).join('')
+        }
       }
-    }
 
-    // Global helpers
-    window.__showError = function(message) {
-      const banner = document.getElementById('error-banner');
-      banner.classList.remove('hidden');
-      document.getElementById('error-message').textContent = message;
-      document.getElementById('table-body').innerHTML = '';
-    };
+      // Global helpers
+      window.__showError = function (message) {
+        const banner = document.getElementById('error-banner')
+        banner.classList.remove('hidden')
+        document.getElementById('error-message').textContent = message
+        document.getElementById('table-body').innerHTML = ''
+      }
 
-    window.__clearError = function() {
-      document.getElementById('error-banner').classList.add('hidden');
-    };
+      window.__clearError = function () {
+        document.getElementById('error-banner').classList.add('hidden')
+      }
 
-    window.__setPlans = function(newPlans) {
-      plans = newPlans;
-      window.__clearError();
-      render();
-    };
+      window.__setPlans = function (newPlans) {
+        plans = newPlans
+        window.__clearError()
+        render()
+      }
 
-    // Initial render
-    render();
-  </script>
-</body>
+      // Initial render
+      render()
+    </script>
+  </body>
 </html>

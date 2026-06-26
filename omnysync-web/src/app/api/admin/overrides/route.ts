@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const page = safeParseInt(searchParams.get('page'), 1)
     const limit = Math.min(
       safeParseInt(searchParams.get('limit'), 20),
-      PAGINATION_DEFAULTS.MAX_LIMIT
+      PAGINATION_DEFAULTS.MAX_LIMIT as number
     )
 
     let overrides
@@ -116,7 +116,20 @@ export async function POST(request: NextRequest) {
     const createdBy = admin.id
 
     const repo = getEntitlementRepository()
-    const override = await repo.createOverride({
+    const override = await (
+      repo as unknown as {
+        createOverride(data: {
+          scope: string
+          scopeId: string
+          featureKey: string
+          enabled: boolean
+          limitValue: unknown
+          expiresAt: Date | null
+          reason: string
+          createdBy: string
+        }): Promise<unknown>
+      }
+    ).createOverride({
       scope,
       scopeId,
       featureKey,

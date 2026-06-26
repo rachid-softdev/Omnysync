@@ -207,7 +207,7 @@ export default function AdminFeaturesPage() {
         <Input
           placeholder="Search features..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e: any) => setSearch(e.target.value)}
           className="max-w-sm"
         />
       </div>

@@ -3,7 +3,6 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { apiError } from '@/lib/api-error'
-import { Prisma } from '@prisma/client'
 
 export async function DELETE(
   _request: NextRequest,
@@ -35,13 +34,11 @@ export async function DELETE(
       where: { id },
     })
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === 'P2003') {
-        return apiError(
-          'Cannot delete connector: it has linked documents. Remove document associations first.',
-          400
-        )
-      }
+    if ((error as { code?: string }).code === 'P2003') {
+      return apiError(
+        'Cannot delete connector: it has linked documents. Remove document associations first.',
+        400
+      )
     }
     throw error
   }

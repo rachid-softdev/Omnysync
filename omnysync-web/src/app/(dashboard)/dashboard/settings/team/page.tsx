@@ -199,7 +199,9 @@ export default function TeamSettingsPage() {
                   type="email"
                   placeholder="email@example.com"
                   value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setInviteEmail(e.target.value)
+                  }
                 />
               </div>
               <div className="space-y-2">

@@ -147,7 +147,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
               <p className="text-sm text-muted-foreground text-center py-8">Aucune organisation</p>
             ) : (
               <div className="space-y-3">
-                {user.organizations.map(({ organization, role }) => (
+                {user.organizations.map(({ organization, role }: any) => (
                   <Link
                     key={organization.id}
                     href={`/admin/orgs/${organization.id}`}

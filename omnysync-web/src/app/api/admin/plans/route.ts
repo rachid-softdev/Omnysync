@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const page = safeParseInt(searchParams.get('page'), 1)
     const limit = Math.min(
       safeParseInt(searchParams.get('limit'), 20),
-      PAGINATION_DEFAULTS.MAX_LIMIT
+      PAGINATION_DEFAULTS.MAX_LIMIT as number
     )
 
     const repo = getEntitlementRepository()

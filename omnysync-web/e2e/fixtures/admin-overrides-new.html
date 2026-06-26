@@ -1,147 +1,214 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>New Override — Omnysync</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-background text-foreground">
-  <div class="p-8" id="app">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-      <div class="space-y-1">
-        <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">New Override</h1>
-        <p class="text-sm text-muted-foreground">Create a feature override for an organization or user</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Override — Omnysync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-background text-foreground">
+    <div class="p-8" id="app">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+        <div class="space-y-1">
+          <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">New Override</h1>
+          <p class="text-sm text-muted-foreground">
+            Create a feature override for an organization or user
+          </p>
+        </div>
       </div>
+
+      <form id="override-form" class="max-w-lg space-y-6" novalidate>
+        <!-- Scope -->
+        <div class="space-y-2">
+          <label for="scope-select" class="text-sm font-medium leading-none">Scope</label>
+          <select
+            id="scope-select"
+            name="scope"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            data-testid="scope-select"
+            role="combobox"
+          >
+            <option value="ORG">Organization</option>
+            <option value="USER">User</option>
+          </select>
+        </div>
+
+        <!-- Scope ID -->
+        <div class="space-y-2">
+          <label for="scopeId" class="text-sm font-medium leading-none">Scope ID</label>
+          <input
+            type="text"
+            id="scopeId"
+            name="scopeId"
+            placeholder="org-xxx or user-xxx"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            required
+          />
+          <p id="scopeId-error" class="text-sm text-red-500 hidden" data-testid="scopeId-error"></p>
+        </div>
+
+        <!-- Feature Key -->
+        <div class="space-y-2">
+          <label for="featureKey" class="text-sm font-medium leading-none">Feature Key</label>
+          <input
+            type="text"
+            id="featureKey"
+            name="featureKey"
+            placeholder="MY_FEATURE"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            required
+          />
+          <p
+            id="featureKey-error"
+            class="text-sm text-red-500 hidden"
+            data-testid="featureKey-error"
+          ></p>
+        </div>
+
+        <!-- Enabled (Switch) -->
+        <div class="flex items-center gap-3">
+          <label class="text-sm font-medium leading-none" for="enabled-switch">Enabled</label>
+          <button
+            type="button"
+            id="enabled-switch"
+            role="switch"
+            aria-checked="true"
+            data-testid="enabled-switch"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary"
+            onclick="toggleSwitch()"
+          >
+            <span
+              id="switch-thumb"
+              class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform translate-x-0.5"
+            ></span>
+          </button>
+        </div>
+
+        <!-- Limit Value -->
+        <div class="space-y-2">
+          <label for="limitValue" class="text-sm font-medium leading-none">Limit Value</label>
+          <input
+            type="number"
+            id="limitValue"
+            name="limitValue"
+            placeholder="e.g. 100"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+        </div>
+
+        <!-- Expires At -->
+        <div class="space-y-2">
+          <label for="expiresAt" class="text-sm font-medium leading-none">Expires At</label>
+          <input
+            type="datetime-local"
+            id="expiresAt"
+            name="expiresAt"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+        </div>
+
+        <!-- Reason -->
+        <div class="space-y-2">
+          <label for="reason" class="text-sm font-medium leading-none">Reason</label>
+          <input
+            type="text"
+            id="reason"
+            name="reason"
+            placeholder="Why this override?"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            required
+          />
+          <p id="reason-error" class="text-sm text-red-500 hidden" data-testid="reason-error"></p>
+        </div>
+
+        <button
+          type="submit"
+          class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3"
+        >
+          Create Override
+        </button>
+
+        <p id="form-error" class="text-sm text-red-500 hidden" data-testid="form-error"></p>
+      </form>
     </div>
 
-    <form id="override-form" class="max-w-lg space-y-6" novalidate>
-      <!-- Scope -->
-      <div class="space-y-2">
-        <label for="scope-select" class="text-sm font-medium leading-none">Scope</label>
-        <select id="scope-select" name="scope" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" data-testid="scope-select" role="combobox">
-          <option value="ORG">Organization</option>
-          <option value="USER">User</option>
-        </select>
-      </div>
+    <script>
+      let enabledState = true
 
-      <!-- Scope ID -->
-      <div class="space-y-2">
-        <label for="scopeId" class="text-sm font-medium leading-none">Scope ID</label>
-        <input type="text" id="scopeId" name="scopeId" placeholder="org-xxx or user-xxx" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" required />
-        <p id="scopeId-error" class="text-sm text-red-500 hidden" data-testid="scopeId-error"></p>
-      </div>
-
-      <!-- Feature Key -->
-      <div class="space-y-2">
-        <label for="featureKey" class="text-sm font-medium leading-none">Feature Key</label>
-        <input type="text" id="featureKey" name="featureKey" placeholder="MY_FEATURE" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" required />
-        <p id="featureKey-error" class="text-sm text-red-500 hidden" data-testid="featureKey-error"></p>
-      </div>
-
-      <!-- Enabled (Switch) -->
-      <div class="flex items-center gap-3">
-        <label class="text-sm font-medium leading-none" for="enabled-switch">Enabled</label>
-        <button type="button" id="enabled-switch" role="switch" aria-checked="true" data-testid="enabled-switch" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary" onclick="toggleSwitch()">
-          <span id="switch-thumb" class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform translate-x-0.5"></span>
-        </button>
-      </div>
-
-      <!-- Limit Value -->
-      <div class="space-y-2">
-        <label for="limitValue" class="text-sm font-medium leading-none">Limit Value</label>
-        <input type="number" id="limitValue" name="limitValue" placeholder="e.g. 100" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
-      </div>
-
-      <!-- Expires At -->
-      <div class="space-y-2">
-        <label for="expiresAt" class="text-sm font-medium leading-none">Expires At</label>
-        <input type="datetime-local" id="expiresAt" name="expiresAt" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
-      </div>
-
-      <!-- Reason -->
-      <div class="space-y-2">
-        <label for="reason" class="text-sm font-medium leading-none">Reason</label>
-        <input type="text" id="reason" name="reason" placeholder="Why this override?" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" required />
-        <p id="reason-error" class="text-sm text-red-500 hidden" data-testid="reason-error"></p>
-      </div>
-
-      <button type="submit" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3">
-        Create Override
-      </button>
-
-      <p id="form-error" class="text-sm text-red-500 hidden" data-testid="form-error"></p>
-    </form>
-  </div>
-
-  <script>
-    let enabledState = true;
-
-    function toggleSwitch() {
-      enabledState = !enabledState;
-      const sw = document.getElementById('enabled-switch');
-      const thumb = document.getElementById('switch-thumb');
-      sw.setAttribute('aria-checked', enabledState);
-      if (enabledState) {
-        sw.classList.add('bg-primary');
-        sw.classList.remove('bg-gray-300');
-        thumb.style.transform = 'translateX(0.5px)';
-      } else {
-        sw.classList.remove('bg-primary');
-        sw.classList.add('bg-gray-300');
-        thumb.style.transform = 'translateX(22px)';
-      }
-    }
-
-    const form = document.getElementById('override-form');
-
-    window.__submittedData = null;
-    window.__redirectedTo = null;
-
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-
-      const scope = document.getElementById('scope-select').value;
-      const scopeId = document.getElementById('scopeId').value.trim();
-      const featureKey = document.getElementById('featureKey').value.trim();
-      const limitValueRaw = document.getElementById('limitValue').value;
-      const limitValue = limitValueRaw !== '' ? parseInt(limitValueRaw) : null;
-      const expiresAt = document.getElementById('expiresAt').value || null;
-      const reason = document.getElementById('reason').value.trim();
-
-      // Validation
-      let valid = true;
-      const scopeIdError = document.getElementById('scopeId-error');
-      const featureKeyError = document.getElementById('featureKey-error');
-      const reasonError = document.getElementById('reason-error');
-
-      [scopeIdError, featureKeyError, reasonError].forEach(el => el.classList.add('hidden'));
-
-      if (!scopeId) {
-        scopeIdError.textContent = 'Scope ID is required';
-        scopeIdError.classList.remove('hidden');
-        valid = false;
-      }
-      if (!featureKey) {
-        featureKeyError.textContent = 'Feature Key is required';
-        featureKeyError.classList.remove('hidden');
-        valid = false;
-      }
-      if (!reason) {
-        reasonError.textContent = 'Reason is required';
-        reasonError.classList.remove('hidden');
-        valid = false;
+      function toggleSwitch() {
+        enabledState = !enabledState
+        const sw = document.getElementById('enabled-switch')
+        const thumb = document.getElementById('switch-thumb')
+        sw.setAttribute('aria-checked', enabledState)
+        if (enabledState) {
+          sw.classList.add('bg-primary')
+          sw.classList.remove('bg-gray-300')
+          thumb.style.transform = 'translateX(0.5px)'
+        } else {
+          sw.classList.remove('bg-primary')
+          sw.classList.add('bg-gray-300')
+          thumb.style.transform = 'translateX(22px)'
+        }
       }
 
-      if (!valid) return;
+      const form = document.getElementById('override-form')
 
-      // Success
-      window.__submittedData = { scope, scopeId, featureKey, enabled: enabledState, limitValue, expiresAt, reason };
-      window.__redirectedTo = '/admin/overrides';
+      window.__submittedData = null
+      window.__redirectedTo = null
 
-      document.getElementById('form-error').classList.add('hidden');
-      document.body.innerHTML = '<div class="p-8 text-center text-green-600" data-testid="success-message">Override created! Redirected to list.</div>';
-    });
-  </script>
-</body>
+      form.addEventListener('submit', function (e) {
+        e.preventDefault()
+
+        const scope = document.getElementById('scope-select').value
+        const scopeId = document.getElementById('scopeId').value.trim()
+        const featureKey = document.getElementById('featureKey').value.trim()
+        const limitValueRaw = document.getElementById('limitValue').value
+        const limitValue = limitValueRaw !== '' ? parseInt(limitValueRaw) : null
+        const expiresAt = document.getElementById('expiresAt').value || null
+        const reason = document.getElementById('reason').value.trim()
+
+        // Validation
+        let valid = true
+        const scopeIdError = document.getElementById('scopeId-error')
+        const featureKeyError = document.getElementById('featureKey-error')
+        const reasonError = document.getElementById('reason-error')
+
+        ;[scopeIdError, featureKeyError, reasonError].forEach((el) => el.classList.add('hidden'))
+
+        if (!scopeId) {
+          scopeIdError.textContent = 'Scope ID is required'
+          scopeIdError.classList.remove('hidden')
+          valid = false
+        }
+        if (!featureKey) {
+          featureKeyError.textContent = 'Feature Key is required'
+          featureKeyError.classList.remove('hidden')
+          valid = false
+        }
+        if (!reason) {
+          reasonError.textContent = 'Reason is required'
+          reasonError.classList.remove('hidden')
+          valid = false
+        }
+
+        if (!valid) return
+
+        // Success
+        window.__submittedData = {
+          scope,
+          scopeId,
+          featureKey,
+          enabled: enabledState,
+          limitValue,
+          expiresAt,
+          reason,
+        }
+        window.__redirectedTo = '/admin/overrides'
+
+        document.getElementById('form-error').classList.add('hidden')
+        document.body.innerHTML =
+          '<div class="p-8 text-center text-green-600" data-testid="success-message">Override created! Redirected to list.</div>'
+      })
+    </script>
+  </body>
 </html>

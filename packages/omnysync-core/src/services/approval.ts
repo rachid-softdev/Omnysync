@@ -239,7 +239,8 @@ export async function cancelApprovalRequest(
       return { success: false, error: "Approval request is not pending" };
     }
 
-    await prisma.approvalRequest.update({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (prisma.approvalRequest.update as any)({
       where: { id: approvalId },
       data: { status: "CANCELLED" },
     });
