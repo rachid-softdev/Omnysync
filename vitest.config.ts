@@ -86,6 +86,27 @@ export default defineConfig({
         __dirname,
         "omnysync-web/node_modules/react-dom/server.js",
       ),
+      // Resolve pnpm-hoisted dependencies (isolated node-linker doesn't hoist to workspace)
+      zod: path.resolve(
+        __dirname,
+        "node_modules/.pnpm/zod@4.4.3/node_modules/zod",
+      ),
+      "server-only": path.resolve(
+        __dirname,
+        "omnysync-web/src/__tests__/__mocks__/server-only.ts",
+      ),
+      resend: path.resolve(
+        __dirname,
+        "omnysync-web/src/__tests__/__mocks__/resend.ts",
+      ),
+      "lucide-react": path.resolve(
+        __dirname,
+        "node_modules/.pnpm/lucide-react@1.18.0_react@19.2.7/node_modules/lucide-react",
+      ),
+      "@upstash/redis": path.resolve(
+        __dirname,
+        "node_modules/.pnpm/@upstash+redis@1.38.0/node_modules/@upstash/redis",
+      ),
     },
   },
 });

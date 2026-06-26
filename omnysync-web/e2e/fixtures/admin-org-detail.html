@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acme Inc — Omnysync</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-background text-foreground">
+  <div class="p-8" id="app">
+    <!-- Back link -->
+    <div class="mb-6">
+      <a href="/admin/orgs" class="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="back-link">
+        <svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m7-7l-7 7 7 7"/></svg>
+        Retour aux organisations
+      </a>
+    </div>
+
+    <!-- Org header -->
+    <div class="rounded-lg border bg-card text-card-foreground shadow-sm mb-8" data-testid="org-header-card">
+      <div class="flex items-center justify-between p-6">
+        <div class="space-y-1">
+          <h1 class="text-2xl font-bold tracking-tight" data-testid="page-title">Acme Inc</h1>
+          <h2 class="text-sm text-muted-foreground" data-testid="org-name">Acme Inc</h2>
+          <p class="text-sm text-muted-foreground" data-testid="org-slug">/acme</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="/admin/orgs/1/downgrade" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3" data-testid="downgrade-link">
+            Changer de plan
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6" data-testid="stat-members">
+        <p class="text-sm text-muted-foreground">Membres</p>
+        <p class="text-2xl font-bold" data-testid="stat-members-value">12</p>
+      </div>
+      <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6" data-testid="stat-subscription">
+        <p class="text-sm text-muted-foreground">Plan</p>
+        <p class="text-2xl font-bold" data-testid="stat-plan-value">Pro</p>
+        <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors bg-green-100 text-green-800 border-green-200 mt-1" data-testid="stat-plan-status">Actif</span>
+      </div>
+      <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6" data-testid="stat-created">
+        <p class="text-sm text-muted-foreground">Créée le</p>
+        <p class="text-2xl font-bold" data-testid="stat-created-value">10 janv. 2026</p>
+      </div>
+    </div>
+
+    <!-- Info + Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div class="rounded-lg border bg-card text-card-foreground shadow-sm" data-testid="org-info-card">
+        <div class="flex flex-col space-y-1.5 p-6 pb-2">
+          <h3 class="text-lg font-semibold leading-none tracking-tight">Détails</h3>
+        </div>
+        <div class="p-6 pt-3 space-y-4">
+          <div class="flex justify-between">
+            <span class="text-sm text-muted-foreground">ID</span>
+            <span class="text-sm font-mono" data-testid="detail-id">org_1a2b3c</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-muted-foreground">Slug</span>
+            <span class="text-sm font-mono" data-testid="detail-slug">acme</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-muted-foreground">Propriétaire</span>
+            <a href="/admin/users/1" class="text-sm font-medium text-primary hover:underline" data-testid="detail-owner">Alice Dupont</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-lg border bg-card text-card-foreground shadow-sm" data-testid="org-actions-card">
+        <div class="flex flex-col space-y-1.5 p-6 pb-2">
+          <h3 class="text-lg font-semibold leading-none tracking-tight">Actions rapides</h3>
+        </div>
+        <div class="p-6 pt-3 space-y-3">
+          <a href="/admin/users?orgId=1" class="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors" data-testid="action-users">
+            <span class="text-sm font-medium">Voir les membres</span>
+          </a>
+          <a href="/admin/overrides?orgId=1" class="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors" data-testid="action-overrides">
+            <span class="text-sm font-medium">Voir les overrides</span>
+          </a>
+          <a href="/admin/orgs/1/downgrade" class="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors" data-testid="action-downgrade">
+            <span class="text-sm font-medium">Changer de plan</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error banner -->
+    <div id="error-banner" class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm" data-testid="error-banner">
+      <span id="error-message" data-testid="error-message"></span>
+    </div>
+  </div>
+
+  <script>
+    window.__showError = function(message) {
+      const banner = document.getElementById('error-banner');
+      banner.classList.remove('hidden');
+      document.getElementById('error-message').textContent = message;
+    };
+
+    window.__clearError = function() {
+      document.getElementById('error-banner').classList.add('hidden');
+    };
+  </script>
+</body>
+</html>

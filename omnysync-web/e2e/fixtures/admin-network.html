@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Réseau — Tests Omnysync</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans antialiased">
+  <div class="p-8 max-w-7xl mx-auto" id="app">
+
+    <!-- ═══ Offline Banner ═══ -->
+    <div id="offline-banner" class="hidden bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg mb-6 flex items-center gap-3 text-sm" data-testid="offline-banner" role="alert">
+      <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m-2.829-2.829a5 5 0 000-7.07m-4.243 4.243a1 1 0 010-1.414M12 12h.01"/></svg>
+      <span class="font-semibold">Vous êtes hors ligne</span>
+      <span>Vérifiez votre connexion réseau.</span>
+    </div>
+
+    <!-- ═══ Page Header ═══ -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+      <div class="space-y-1">
+        <h1 class="text-3xl font-bold tracking-tight">Administration Réseau</h1>
+        <p class="text-sm text-gray-500" data-testid="delay-indicator">Délai : 0 ms</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="status-badge" class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-green-100 text-green-700" data-testid="status-badge">En ligne</span>
+      </div>
+    </div>
+
+    <!-- ═══ Global Error Banner ═══ -->
+    <div id="error-banner" class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm" data-testid="error-banner" role="alert">
+      <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span id="error-message" data-testid="error-message" class="flex-1"></span>
+      <button id="retry-btn" class="ml-auto shrink-0 px-3 py-1.5 rounded-md bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-red-400" data-testid="retry-btn">Réessayer</button>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- ═══  PANEL 1 — Main Data Section  ═══ -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <section class="mb-8">
+      <div class="flex items-center gap-3 mb-4">
+        <h2 class="text-lg font-semibold">Données principales</h2>
+      </div>
+
+      <!-- Loading Spinner -->
+      <div id="loading-spinner" class="hidden flex flex-col items-center justify-center py-20 rounded-xl border border-gray-200 bg-white shadow-sm" data-testid="loading-spinner" role="status" aria-label="Chargement des données principales">
+        <svg class="animate-spin h-10 w-10 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <p class="text-sm text-gray-500">Chargement en cours…</p>
+        <p class="text-xs text-gray-400 mt-1" data-testid="loading-delay-info">Délai : <span id="loading-delay-value">0</span> ms</p>
+      </div>
+
+      <!-- Data Table -->
+      <div id="data-table" class="hidden rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden" data-testid="data-table">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+          <h3 class="font-semibold text-gray-800">Données chargées</h3>
+          <span class="text-xs text-gray-500">✓ Chargement réussi</span>
+        </div>
+        <div class="divide-y divide-gray-100" id="data-items-1"></div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- ═══  PANELS A / B / C — Parallel Load Sections  ═══ -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 pt-8 border-t border-gray-200">
+      <!-- Section A -->
+      <section>
+        <h3 class="font-semibold text-sm text-gray-700 mb-3">Section A</h3>
+        <div id="loading-spinner-a" class="hidden flex flex-col items-center justify-center py-12 rounded-xl border border-gray-200 bg-white" data-testid="loading-spinner-a" role="status" aria-label="Chargement section A">
+          <svg class="animate-spin h-8 w-8 text-blue-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <p class="text-xs text-gray-400">Chargement A…</p>
+        </div>
+        <div id="data-table-a" class="hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm" data-testid="data-table-a">
+          <p class="text-sm font-semibold text-gray-800">Section A chargée</p>
+          <p class="text-xs text-gray-500 mt-1" id="data-a-content">Contenu de la section A</p>
+        </div>
+      </section>
+
+      <!-- Section B -->
+      <section>
+        <h3 class="font-semibold text-sm text-gray-700 mb-3">Section B</h3>
+        <div id="loading-spinner-b" class="hidden flex flex-col items-center justify-center py-12 rounded-xl border border-gray-200 bg-white" data-testid="loading-spinner-b" role="status" aria-label="Chargement section B">
+          <svg class="animate-spin h-8 w-8 text-blue-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <p class="text-xs text-gray-400">Chargement B…</p>
+        </div>
+        <div id="data-table-b" class="hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm" data-testid="data-table-b">
+          <p class="text-sm font-semibold text-gray-800">Section B chargée</p>
+          <p class="text-xs text-gray-500 mt-1" id="data-b-content">Contenu de la section B</p>
+        </div>
+      </section>
+
+      <!-- Section C -->
+      <section>
+        <h3 class="font-semibold text-sm text-gray-700 mb-3">Section C</h3>
+        <div id="loading-spinner-c" class="hidden flex flex-col items-center justify-center py-12 rounded-xl border border-gray-200 bg-white" data-testid="loading-spinner-c" role="status" aria-label="Chargement section C">
+          <svg class="animate-spin h-8 w-8 text-blue-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <p class="text-xs text-gray-400">Chargement C…</p>
+        </div>
+        <div id="data-table-c" class="hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm" data-testid="data-table-c">
+          <p class="text-sm font-semibold text-gray-800">Section C chargée</p>
+          <p class="text-xs text-gray-500 mt-1" id="data-c-content">Contenu de la section C</p>
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+  <script>
+    // ─────────────────────────────────────────────────────────────────────────
+    //  State
+    // ─────────────────────────────────────────────────────────────────────────
+
+    var currentDelay = 0;
+    var isOnline = true;
+    var panel1Timer = null;
+    var abcTimer = null;
+
+    var MOCK_DATA = [
+      { id: 1, label: 'Projet Alpha',  status: 'Actif',    value: '42' },
+      { id: 2, label: 'Projet Beta',   status: 'En pause', value: '17' },
+      { id: 3, label: 'Projet Gamma',  status: 'Terminé',  value: '89' },
+    ];
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  DOM Helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function hideEl(id) { document.getElementById(id).classList.add('hidden'); }
+    function showEl(id) { document.getElementById(id).classList.remove('hidden'); }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Online / Offline UI
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function updateOnlineUI() {
+      var badge = document.getElementById('status-badge');
+      if (isOnline) {
+        hideEl('offline-banner');
+        badge.textContent = 'En ligne';
+        badge.className = 'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-green-100 text-green-700';
+      } else {
+        showEl('offline-banner');
+        badge.textContent = 'Hors ligne';
+        badge.className = 'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-red-100 text-red-700';
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Delay indicator
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function updateDelayUI() {
+      document.querySelector('[data-testid="delay-indicator"]').textContent = 'Délai : ' + currentDelay + ' ms';
+      document.getElementById('loading-delay-value').textContent = currentDelay;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Panel 1 — Main data load
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function loadPanel1() {
+      if (panel1Timer) { clearTimeout(panel1Timer); panel1Timer = null; }
+
+      hideEl('error-banner');
+
+      if (currentDelay === 0 && isOnline) {
+        showEl('data-table');
+        hideEl('loading-spinner');
+        return;
+      }
+
+      showEl('loading-spinner');
+      hideEl('data-table');
+
+      panel1Timer = setTimeout(function () {
+        panel1Timer = null;
+        hideEl('loading-spinner');
+
+        if (isOnline) {
+          renderData1();
+          showEl('data-table');
+        } else {
+          document.getElementById('error-message').textContent = 'Échec de la connexion réseau';
+          showEl('error-banner');
+        }
+      }, currentDelay);
+    }
+
+    function renderData1() {
+      var container = document.getElementById('data-items-1');
+      container.innerHTML = MOCK_DATA.map(function (item) {
+        return '<div class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors" data-testid="data-item-' + item.id + '">' +
+          '<div>' +
+            '<p class="font-medium text-gray-900">' + item.label + '</p>' +
+            '<p class="text-sm text-gray-500">Statut : ' + item.status + '</p>' +
+          '</div>' +
+          '<span class="inline-flex items-center rounded-full bg-blue-100 text-blue-700 px-3 py-1 text-sm font-medium">' + item.value + '</span>' +
+        '</div>';
+      }).join('');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Panels A / B / C — Parallel load
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function loadAbcPanels() {
+      if (abcTimer) { clearTimeout(abcTimer); abcTimer = null; }
+
+      var suffixes = ['-a', '-b', '-c'];
+
+      if (currentDelay === 0 && isOnline) {
+        suffixes.forEach(function (s) {
+          hideEl('loading-spinner' + s);
+          showEl('data-table' + s);
+        });
+        return;
+      }
+
+      suffixes.forEach(function (s) {
+        showEl('loading-spinner' + s);
+        hideEl('data-table' + s);
+      });
+
+      abcTimer = setTimeout(function () {
+        abcTimer = null;
+        suffixes.forEach(function (s) {
+          hideEl('loading-spinner' + s);
+          if (isOnline) {
+            showEl('data-table' + s);
+          }
+        });
+      }, currentDelay);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Trigger load — called from tests
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function triggerLoad() {
+      loadPanel1();
+      loadAbcPanels();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Retry handler
+    // ─────────────────────────────────────────────────────────────────────────
+
+    document.getElementById('retry-btn').addEventListener('click', function () {
+      triggerLoad();
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Global helpers for tests
+    // ─────────────────────────────────────────────────────────────────────────
+
+    window.__setDelay = function (ms) {
+      currentDelay = ms;
+      updateDelayUI();
+    };
+
+    window.__setOnline = function (online) {
+      isOnline = online;
+      updateOnlineUI();
+    };
+
+    window.__triggerLoad = function () {
+      triggerLoad();
+    };
+
+    window.__clearError = function () {
+      hideEl('error-banner');
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Initial render — auto-load on page ready
+    // ─────────────────────────────────────────────────────────────────────────
+
+    updateOnlineUI();
+    updateDelayUI();
+    triggerLoad();
+  </script>
+</body>
+</html>

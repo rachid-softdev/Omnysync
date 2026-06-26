@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Downgrade Preview — Omnysync</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-background text-foreground">
+  <div class="p-8" id="app">
+    <!-- Back link -->
+    <div class="mb-6">
+      <a href="/admin/orgs/org-1" class="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="back-link">
+        <svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m7-7l-7 7 7 7"/></svg>
+        Retour à l'organisation
+      </a>
+    </div>
+
+    <!-- AdminPageHeader -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+      <div class="space-y-1">
+        <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Downgrade Preview</h1>
+        <p class="text-sm text-muted-foreground" data-testid="page-description">Prévisualisez l'impact d'un changement de plan avant de l'appliquer</p>
+      </div>
+    </div>
+
+    <!-- Plan selector -->
+    <div class="rounded-lg border bg-card text-card-foreground shadow-sm mb-6" data-testid="plan-selector-card">
+      <div class="flex flex-col space-y-1.5 p-6 pb-2">
+        <h3 class="text-lg font-semibold leading-none tracking-tight">Sélectionner un plan cible</h3>
+        <p class="text-sm text-muted-foreground">Choisissez le plan vers lequel downgrader pour voir les features affectées</p>
+      </div>
+      <div class="p-6 pt-3">
+        <select
+          id="plan-select"
+          class="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          data-testid="plan-select"
+        >
+          <option value="" disabled selected>Sélectionner un plan…</option>
+          <option value="free" data-testid="plan-option-free">Free</option>
+          <option value="pro" data-testid="plan-option-pro">Pro</option>
+          <option value="business" data-testid="plan-option-business">Business</option>
+          <option value="enterprise" data-testid="plan-option-enterprise">Enterprise</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading-state" class="hidden flex items-center justify-center py-16" data-testid="loading-state">
+      <div class="flex flex-col items-center gap-3">
+        <svg class="h-8 w-8 animate-spin text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <p class="text-sm text-muted-foreground">Génération de la preview…</p>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div id="error-banner" class="hidden items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm" data-testid="error-banner">
+      <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+      <span id="error-message" data-testid="error-message"></span>
+    </div>
+
+    <!-- Preview results container -->
+    <div id="preview-results" class="hidden">
+      <!-- Can proceed banner -->
+      <div id="can-proceed-banner" class="rounded-lg border bg-card text-card-foreground shadow-sm mb-6" data-testid="can-proceed-banner">
+        <div class="flex items-center gap-3 p-4">
+          <div id="proceed-icon" data-testid="proceed-icon"></div>
+          <div>
+            <p id="proceed-title" data-testid="proceed-title"></p>
+            <p id="proceed-description" class="text-sm text-muted-foreground" data-testid="proceed-description"></p>
+          </div>
+          <div class="ml-auto">
+            <span id="strategy-badge" class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors" data-testid="strategy-badge"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Warnings -->
+      <div id="warnings-card" class="hidden rounded-lg border border-orange-200 bg-card text-card-foreground shadow-sm mb-6" data-testid="warnings-card">
+        <div class="flex flex-col space-y-1.5 p-6 pb-2">
+          <h3 class="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight text-orange-600">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+            Avertissements
+          </h3>
+        </div>
+        <div class="p-6 pt-3">
+          <ul id="warnings-list" class="space-y-2" data-testid="warnings-list"></ul>
+        </div>
+      </div>
+
+      <!-- Affected features -->
+      <div class="rounded-lg border bg-card text-card-foreground shadow-sm mb-6" data-testid="affected-features-card">
+        <div class="flex flex-col space-y-1.5 p-6 pb-2">
+          <h3 class="text-lg font-semibold leading-none tracking-tight" id="affected-features-title" data-testid="affected-features-title">Features affectées (0)</h3>
+          <p class="text-sm text-muted-foreground">Ces features seront modifiées après le downgrade</p>
+        </div>
+        <div class="p-6 pt-3">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b">
+                  <th class="text-left py-3 px-4 font-medium text-muted-foreground">Feature</th>
+                  <th class="text-left py-3 px-4 font-medium text-muted-foreground">Valeur actuelle</th>
+                  <th class="text-left py-3 px-4 font-medium text-muted-foreground">Nouvelle valeur</th>
+                  <th class="text-left py-3 px-4 font-medium text-muted-foreground">Stratégie</th>
+                  <th class="text-left py-3 px-4 font-medium text-muted-foreground">Usage actif</th>
+                </tr>
+              </thead>
+              <tbody id="affected-features-body" data-testid="affected-features-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="flex flex-col items-center justify-center py-16 text-muted-foreground" data-testid="empty-state">
+      <svg class="h-12 w-12 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      <p class="text-lg font-medium">Sélectionnez un plan</p>
+      <p class="text-sm mt-1">Choisissez un plan cible pour voir l'impact du downgrade</p>
+    </div>
+  </div>
+
+  <script>
+    // ── Mock Preview Data ──
+
+    const MOCK_PREVIEWS = {
+      free: {
+        orgId: 'org-1',
+        targetPlan: 'free',
+        preview: {
+          features: [
+            {
+              featureKey: 'sync-connectors',
+              featureName: 'Connecteurs de synchronisation',
+              currentPlanValue: true,
+              targetPlanValue: false,
+              currentLimit: null,
+              targetLimit: null,
+              downgradeStrategy: 'GRACEFUL',
+              willBeAffected: true,
+              hasActiveUsage: true,
+            },
+            {
+              featureKey: 'api-access',
+              featureName: 'Accès API',
+              currentPlanValue: true,
+              targetPlanValue: true,
+              currentLimit: null,
+              targetLimit: null,
+              downgradeStrategy: 'NONE',
+              willBeAffected: false,
+              hasActiveUsage: false,
+            },
+            {
+              featureKey: 'storage-limit',
+              featureName: 'Stockage',
+              currentPlanValue: null,
+              targetPlanValue: null,
+              currentLimit: 100,
+              targetLimit: 10,
+              downgradeStrategy: 'FREEZE',
+              willBeAffected: true,
+              hasActiveUsage: true,
+            },
+          ],
+          recommendedStrategy: 'GRACEFUL',
+        },
+        canProceed: false,
+        warnings: [
+          'Le plan Free ne supporte pas les connecteurs de synchronisation',
+          'Le stockage sera réduit de 100GB à 10GB',
+        ],
+        affectedFeaturesCount: 2,
+        recommendedStrategy: 'GRACEFUL',
+      },
+      pro: {
+        orgId: 'org-1',
+        targetPlan: 'pro',
+        preview: {
+          features: [
+            {
+              featureKey: 'sync-connectors',
+              featureName: 'Connecteurs de synchronisation',
+              currentPlanValue: true,
+              targetPlanValue: true,
+              currentLimit: null,
+              targetLimit: null,
+              downgradeStrategy: 'NONE',
+              willBeAffected: false,
+              hasActiveUsage: false,
+            },
+            {
+              featureKey: 'api-access',
+              featureName: 'Accès API',
+              currentPlanValue: true,
+              targetPlanValue: true,
+              currentLimit: null,
+              targetLimit: null,
+              downgradeStrategy: 'NONE',
+              willBeAffected: false,
+              hasActiveUsage: false,
+            },
+            {
+              featureKey: 'storage-limit',
+              featureName: 'Stockage',
+              currentPlanValue: null,
+              targetPlanValue: null,
+              currentLimit: 100,
+              targetLimit: 50,
+              downgradeStrategy: 'GRACEFUL',
+              willBeAffected: true,
+              hasActiveUsage: false,
+            },
+          ],
+          recommendedStrategy: 'GRACEFUL',
+        },
+        canProceed: true,
+        warnings: [],
+        affectedFeaturesCount: 1,
+        recommendedStrategy: 'GRACEFUL',
+      },
+      business: {
+        orgId: 'org-1',
+        targetPlan: 'business',
+        preview: {
+          features: [
+            {
+              featureKey: 'sync-connectors',
+              featureName: 'Connecteurs de synchronisation',
+              currentPlanValue: true,
+              targetPlanValue: true,
+              currentLimit: null,
+              targetLimit: null,
+              downgradeStrategy: 'NONE',
+              willBeAffected: false,
+              hasActiveUsage: false,
+            },
+            {
+              featureKey: 'api-access',
+              featureName: 'Accès API',
+              currentPlanValue: true,
+              targetPlanValue: true,
+              currentLimit: null,
+              targetLimit: null,
+              downgradeStrategy: 'NONE',
+              willBeAffected: false,
+              hasActiveUsage: false,
+            },
+          ],
+          recommendedStrategy: 'GRACEFUL',
+        },
+        canProceed: true,
+        warnings: [],
+        affectedFeaturesCount: 0,
+        recommendedStrategy: 'GRACEFUL',
+      },
+    };
+
+    const strategyColors = {
+      GRACEFUL: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+      IMMEDIATE: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800',
+      FREEZE: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
+    };
+
+    const strategyLabels = { GRACEFUL: 'Progressif', IMMEDIATE: 'Immédiat', FREEZE: 'Gel' };
+
+    function formatFeatureValue(value, limit) {
+      if (typeof value === 'boolean') {
+        return value
+          ? '<span class="text-green-600 font-medium">Activé</span>'
+          : '<span class="text-muted-foreground">Désactivé</span>';
+      }
+      if (limit === null) return '<span class="font-medium">Illimité</span>';
+      return '<span class="font-medium">' + limit + '</span>';
+    }
+
+    function renderPreview(data) {
+      const container = document.getElementById('preview-results');
+      container.classList.remove('hidden');
+      document.getElementById('empty-state').classList.add('hidden');
+      document.getElementById('loading-state').classList.add('hidden');
+
+      // Can proceed banner
+      const banner = document.getElementById('can-proceed-banner');
+      if (data.canProceed) {
+        banner.className = 'rounded-lg border border-green-200 bg-card text-card-foreground shadow-sm mb-6';
+        document.getElementById('proceed-icon').innerHTML = '<svg class="h-6 w-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+        document.getElementById('proceed-title').innerHTML = '<p class="font-medium text-green-700">Downgrade possible</p>';
+        document.getElementById('proceed-description').textContent =
+          data.affectedFeaturesCount > 0
+            ? data.affectedFeaturesCount + ' feature' + (data.affectedFeaturesCount > 1 ? 's seront' : ' sera') + ' affectée' + (data.affectedFeaturesCount > 1 ? 's' : '')
+            : 'Aucune feature ne sera affectée';
+      } else {
+        banner.className = 'rounded-lg border border-red-500/50 bg-card text-card-foreground shadow-sm mb-6';
+        document.getElementById('proceed-icon').innerHTML = '<svg class="h-6 w-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+        document.getElementById('proceed-title').innerHTML = '<p class="font-medium text-red-600">Downgrade non recommandé</p>';
+        document.getElementById('proceed-description').textContent = 'Des features critiques seraient affectées';
+      }
+
+      // Strategy badge
+      const badge = document.getElementById('strategy-badge');
+      badge.className = 'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors ' + (strategyColors[data.recommendedStrategy] || 'bg-gray-100 text-gray-800');
+      badge.textContent = strategyLabels[data.recommendedStrategy] || data.recommendedStrategy;
+
+      // Warnings
+      const warningsCard = document.getElementById('warnings-card');
+      const warningsList = document.getElementById('warnings-list');
+      if (data.warnings && data.warnings.length > 0) {
+        warningsCard.classList.remove('hidden');
+        warningsList.innerHTML = data.warnings.map((w, i) =>
+          '<li class="flex items-start gap-2 text-sm" data-testid="warning-item-' + i + '">' +
+          '<svg class="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
+          '<span data-testid="warning-text-' + i + '">' + w + '</span>' +
+          '</li>'
+        ).join('');
+      } else {
+        warningsCard.classList.add('hidden');
+      }
+
+      // Affected features
+      const affected = data.preview.features.filter(f => f.willBeAffected);
+      document.getElementById('affected-features-title').textContent = 'Features affectées (' + affected.length + ')';
+
+      const affectedBody = document.getElementById('affected-features-body');
+      if (affected.length > 0) {
+        affectedBody.innerHTML = affected.map(f =>
+          '<tr class="border-b last:border-0 hover:bg-accent/50" data-testid="affected-feature-row">' +
+          '<td class="py-3 px-4 font-medium" data-testid="affected-feature-key">' + (f.featureName || f.featureKey) + '</td>' +
+          '<td class="py-3 px-4">' + formatFeatureValue(f.currentPlanValue, f.currentLimit) + '</td>' +
+          '<td class="py-3 px-4">' + formatFeatureValue(f.targetPlanValue, f.targetLimit) + '</td>' +
+          '<td class="py-3 px-4">' +
+          '<span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors ' + (strategyColors[f.downgradeStrategy] || 'bg-gray-100 text-gray-800') + '">' +
+          (strategyLabels[f.downgradeStrategy] || f.downgradeStrategy) +
+          '</span></td>' +
+          '<td class="py-3 px-4">' +
+          (f.hasActiveUsage
+            ? '<span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors bg-green-100 text-green-800 border-green-200">En cours</span>'
+            : '<span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors bg-gray-100 text-gray-800 border-gray-200">Aucun</span>') +
+          '</td>' +
+          '</tr>'
+        ).join('');
+      } else {
+        affectedBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-muted-foreground">Aucune feature affectée</td></tr>';
+      }
+    }
+
+    // ── Event Listeners ──
+    document.getElementById('plan-select').addEventListener('change', function(e) {
+      const plan = e.target.value;
+      if (!plan) return;
+
+      // Show loading
+      document.getElementById('loading-state').classList.remove('hidden');
+      document.getElementById('preview-results').classList.add('hidden');
+      document.getElementById('error-banner').classList.add('hidden');
+      document.getElementById('empty-state').classList.add('hidden');
+
+      // Simulate network delay
+      setTimeout(() => {
+        const data = MOCK_PREVIEWS[plan];
+        if (data) {
+          renderPreview(data);
+        } else {
+          const banner = document.getElementById('error-banner');
+          banner.classList.remove('hidden');
+          document.getElementById('error-message').textContent = 'Erreur lors de la génération de la preview';
+          document.getElementById('loading-state').classList.add('hidden');
+        }
+      }, 200);
+    });
+
+    // ── Error simulation ──
+    window.__showError = function(message) {
+      document.getElementById('loading-state').classList.add('hidden');
+      document.getElementById('preview-results').classList.add('hidden');
+      document.getElementById('empty-state').classList.add('hidden');
+      const banner = document.getElementById('error-banner');
+      banner.classList.remove('hidden');
+      document.getElementById('error-message').textContent = message;
+    };
+  </script>
+</body>
+</html>

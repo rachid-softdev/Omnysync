@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Utilisateur — Alice Dupont — Omnysync</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-background text-foreground">
+  <div class="p-8" id="app">
+    <!-- Back link -->
+    <div class="mb-6">
+      <a href="/admin/users" class="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="back-link">
+        <svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H5m7-7l-7 7 7 7"/></svg>
+        Retour aux utilisateurs
+      </a>
+    </div>
+
+    <!-- User profile card -->
+    <div class="rounded-lg border bg-card text-card-foreground shadow-sm mb-8" data-testid="user-profile-card">
+      <div class="flex items-center gap-6 p-6">
+        <!-- Avatar placeholder -->
+        <div class="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold" data-testid="user-avatar">AD</div>
+        <div class="space-y-1">
+          <h1 class="text-2xl font-bold tracking-tight" data-testid="page-title">Alice Dupont</h1>
+          <h2 class="text-sm text-muted-foreground" data-testid="user-name">Alice Dupont</h2>
+          <p class="text-sm text-muted-foreground" data-testid="user-email">alice@example.com</p>
+          <div class="flex items-center gap-2 pt-1">
+            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800" data-testid="user-role-badge">USER</span>
+            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800" data-testid="user-status-badge">Actif</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div class="rounded-lg border bg-card text-card-foreground shadow-sm" data-testid="info-card">
+        <div class="flex flex-col space-y-1.5 p-6 pb-2">
+          <h3 class="text-lg font-semibold leading-none tracking-tight">Informations</h3>
+        </div>
+        <div class="p-6 pt-3 space-y-4">
+          <div class="flex justify-between">
+            <span class="text-sm text-muted-foreground">ID</span>
+            <span class="text-sm font-mono" data-testid="info-id">usr_1a2b3c</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-muted-foreground">Créé le</span>
+            <span class="text-sm" data-testid="info-created">1 juin 2026</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-muted-foreground">Dernière connexion</span>
+            <span class="text-sm" data-testid="info-last-login">15 juin 2026 à 14:32</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-muted-foreground">Organisation</span>
+            <a href="/admin/orgs/1" class="text-sm font-medium text-primary hover:underline" data-testid="info-org">Acme Inc</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-lg border bg-card text-card-foreground shadow-sm" data-testid="security-card">
+        <div class="flex flex-col space-y-1.5 p-6 pb-2">
+          <h3 class="text-lg font-semibold leading-none tracking-tight">Sécurité</h3>
+        </div>
+        <div class="p-6 pt-3 space-y-4">
+          <div class="flex justify-between">
+            <span class="text-sm text-muted-foreground">2FA</span>
+            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors bg-green-100 text-green-800 border-green-200" data-testid="security-2fa">Activé</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-muted-foreground">Email vérifié</span>
+            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors bg-green-100 text-green-800 border-green-200" data-testid="security-email">Oui</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-sm text-muted-foreground">Rôle</span>
+            <span class="text-sm font-medium" data-testid="security-role">Utilisateur</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error banner -->
+    <div id="error-banner" class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm" data-testid="error-banner">
+      <span id="error-message" data-testid="error-message"></span>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="rounded-lg border border-red-200 bg-card text-card-foreground shadow-sm" data-testid="danger-zone-card">
+      <div class="flex flex-col space-y-1.5 p-6 pb-2">
+        <h3 class="text-lg font-semibold leading-none tracking-tight text-red-600">Zone de danger</h3>
+      </div>
+      <div class="p-6 pt-3 flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium">Supprimer cet utilisateur</p>
+          <p class="text-sm text-muted-foreground">Cette action est irréversible</p>
+        </div>
+        <button class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-red-500 text-red-600 hover:bg-red-50 h-9 px-3" data-testid="delete-user-btn" onclick="window.__deleteUser()">
+          Supprimer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.__showError = function(message) {
+      const banner = document.getElementById('error-banner');
+      banner.classList.remove('hidden');
+      document.getElementById('error-message').textContent = message;
+    };
+
+    window.__clearError = function() {
+      document.getElementById('error-banner').classList.add('hidden');
+    };
+
+    window.__deleteUser = function() {
+      document.body.innerHTML = '<div class="p-8 text-center text-green-600" data-testid="delete-success">Utilisateur supprimé. Redirection vers la liste.</div>';
+    };
+  </script>
+</body>
+</html>

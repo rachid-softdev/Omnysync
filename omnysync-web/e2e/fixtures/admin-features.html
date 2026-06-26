@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Features — Omnysync</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-background text-foreground">
+  <div class="p-8" id="app">
+    <!-- AdminPageHeader -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+      <div class="space-y-1">
+        <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Features</h1>
+        <p class="text-sm text-muted-foreground" data-testid="page-description">Manage feature flags and entitlements</p>
+      </div>
+      <a href="/admin/features/new" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3" data-testid="new-feature-link">
+        New Feature
+      </a>
+    </div>
+
+    <!-- Search bar -->
+    <div class="relative mb-6 max-w-sm">
+      <input type="text" id="search-input" placeholder="Search features..." class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" data-testid="search-input" />
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    </div>
+
+    <!-- Error banner -->
+    <div id="error-banner" class="hidden flex items-center gap-3 p-4 mb-6 rounded-lg border border-red-500/50 bg-red-50 text-red-600 text-sm" data-testid="error-banner">
+      <span id="error-message" data-testid="error-message"></span>
+      <button id="retry-btn" class="ml-auto text-sm font-medium underline hover:no-underline" data-testid="retry-btn">Retry</button>
+    </div>
+
+    <!-- Table -->
+    <div class="space-y-4">
+      <div class="relative w-full overflow-auto rounded-md border">
+        <table class="w-full caption-bottom text-sm">
+          <thead class="[&_tr]:border-b">
+            <tr class="border-b transition-colors hover:bg-muted/50">
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-column="key" data-testid="col-header-key" aria-sort="ascending">Key</th>
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground" data-column="name" data-testid="col-header-name">Name</th>
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Type</th>
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Plans</th>
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Default Config</th>
+            </tr>
+          </thead>
+          <tbody id="table-body" class="[&_tr:last-child]:border-0" data-testid="table-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div id="pagination" class="hidden flex items-center justify-between text-sm text-muted-foreground" data-testid="pagination">
+        <p id="pagination-info" data-testid="pagination-info"></p>
+        <div class="flex items-center gap-2">
+          <button id="prev-btn" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 h-8 gap-1.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50" aria-label="Page précédente" data-testid="prev-page"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 18l-6-6 6-6"/></svg></button>
+          <span id="page-indicator" class="min-w-[4rem] text-center font-medium" data-testid="page-indicator">Page 1 / 1</span>
+          <button id="next-btn" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-background px-2.5 h-8 gap-1.5 text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50" aria-label="Page suivante" data-testid="next-page"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MOCK_FEATURES = [
+      { id: '1', key: 'EXPORT_PDF', name: 'Export PDF', type: 'BOOLEAN', defaultConfig: null, plans: [{ planId: 'p1' }, { planId: 'p2' }] },
+      { id: '2', key: 'MAX_CONNECTORS', name: 'Max Connectors', type: 'LIMIT', defaultConfig: 10, plans: [{ planId: 'p1' }] },
+      { id: '3', key: 'A_B_TEST', name: 'A/B Test', type: 'EXPERIMENT', defaultConfig: { percentage: 50 }, plans: [] },
+    ];
+
+    let features = [...MOCK_FEATURES];
+    let currentSort = { column: 'key', direction: 'asc' };
+    let searchQuery = '';
+
+    const typeBadgeStyles = {
+      BOOLEAN: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800',
+      LIMIT: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+      EXPERIMENT: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800',
+    };
+
+    function renderFeatureRow(f) {
+      const defaultConfigStr = f.defaultConfig !== null && f.defaultConfig !== undefined
+        ? JSON.stringify(f.defaultConfig)
+        : '';
+      const typeStyle = typeBadgeStyles[f.type] || typeBadgeStyles.BOOLEAN;
+      const plansCount = f.plans ? f.plans.length : 0;
+      const plansLabel = plansCount === 0 ? '0 plans' : plansCount === 1 ? '1 plan' : plansCount + ' plans';
+      return `
+        <tr class="border-b transition-colors hover:bg-muted/50" data-testid="feature-row-${f.id}">
+          <td class="p-4 align-middle"><span class="font-mono text-sm" data-testid="feature-key-${f.id}">${f.key}</span></td>
+          <td class="p-4 align-middle" data-testid="feature-name-${f.id}">${f.name}</td>
+          <td class="p-4 align-middle">
+            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors ${typeStyle}" data-testid="feature-type-${f.id}">${f.type}</span>
+          </td>
+          <td class="p-4 align-middle text-muted-foreground" data-testid="feature-plans-${f.id}">${plansLabel}</td>
+          <td class="p-4 align-middle">
+            ${defaultConfigStr ? `<code class="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">${defaultConfigStr}</code>` : '<span class="text-muted-foreground">\u2014</span>'}
+          </td>
+        </tr>
+      `;
+    }
+
+    function render() {
+      // Filter
+      let filtered = features;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(f =>
+          f.key.toLowerCase().includes(q) || f.name.toLowerCase().includes(q)
+        );
+      }
+
+      // Sort
+      const col = currentSort.column;
+      const dir = currentSort.direction;
+      filtered = [...filtered].sort((a, b) => {
+        let va = a[col], vb = b[col];
+        if (typeof va === 'string') va = va.toLowerCase();
+        if (typeof vb === 'string') vb = vb.toLowerCase();
+        if (va < vb) return dir === 'asc' ? -1 : 1;
+        if (va > vb) return dir === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      const tbody = document.getElementById('table-body');
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="p-4 text-center">
+              <div class="flex flex-col items-center justify-center py-12 text-muted-foreground" data-testid="empty-state">
+                <p class="text-lg font-medium" data-testid="empty-title">No features</p>
+                <p class="text-sm mt-1">Create your first feature flag</p>
+              </div>
+            </td>
+          </tr>
+        `;
+      } else {
+        tbody.innerHTML = filtered.map(renderFeatureRow).join('');
+      }
+
+      // Update column header aria-sort
+      document.querySelectorAll('th[data-column]').forEach(th => {
+        const col = th.getAttribute('data-column');
+        if (col === currentSort.column) {
+          th.setAttribute('aria-sort', currentSort.direction === 'asc' ? 'ascending' : 'descending');
+        } else {
+          th.removeAttribute('aria-sort');
+        }
+      });
+    }
+
+    // Search
+    document.getElementById('search-input').addEventListener('input', function() {
+      searchQuery = this.value;
+      render();
+    });
+
+    // Sort clicks
+    document.querySelectorAll('th[data-column]').forEach(th => {
+      th.addEventListener('click', function() {
+        const col = this.getAttribute('data-column');
+        if (currentSort.column === col) {
+          currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+          currentSort.column = col;
+          currentSort.direction = 'asc';
+        }
+        render();
+      });
+    });
+
+    // Global helpers
+    window.__features = features;
+
+    window.__showError = function(message) {
+      const banner = document.getElementById('error-banner');
+      banner.classList.remove('hidden');
+      document.getElementById('error-message').textContent = message;
+      document.getElementById('table-body').innerHTML = '';
+      document.getElementById('pagination').classList.add('hidden');
+    };
+
+    window.__clearError = function() {
+      document.getElementById('error-banner').classList.add('hidden');
+    };
+
+    window.__setFeatures = function(newFeatures) {
+      features = newFeatures;
+      render();
+    };
+
+    window.__triggerSort = function(column) {
+      const th = document.querySelector(`th[data-column="${column}"]`);
+      if (th) th.click();
+    };
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>

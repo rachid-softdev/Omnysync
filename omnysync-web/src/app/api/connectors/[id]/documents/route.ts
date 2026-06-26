@@ -29,6 +29,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     if (connector.type === 'NOTION') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const config = (connector.config || {}) as Record<string, any>
       const pages = await listNotionPages(config.accessToken || '')
       return NextResponse.json(pages)

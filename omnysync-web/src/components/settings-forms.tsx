@@ -267,7 +267,7 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer votre compte?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Tapez "SUPPRIMER" pour confirmer.
+              Cette action est irréversible. Tapez &quot;SUPPRIMER&quot; pour confirmer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Input
@@ -305,7 +305,9 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
             </Button>
           </div>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setNewKeyValue('')}>J'ai copié</AlertDialogAction>
+            <AlertDialogAction onClick={() => setNewKeyValue('')}>
+              J&apos;ai copié
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

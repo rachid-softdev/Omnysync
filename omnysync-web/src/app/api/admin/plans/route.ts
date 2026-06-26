@@ -10,6 +10,11 @@ import { prisma } from '@/lib/prisma'
 import { PAGINATION_DEFAULTS } from '@/lib/entitlements/constants'
 import { requireAdmin, AuthError } from '@/lib/auth/require-admin'
 
+function safeParseInt(value: string | null, defaultValue: number): number {
+  const parsed = parseInt(value ?? '', 10)
+  return isNaN(parsed) ? defaultValue : Math.max(1, parsed)
+}
+
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
@@ -22,9 +27,9 @@ export async function GET(request: NextRequest) {
     await requireAdmin()
 
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
+    const page = safeParseInt(searchParams.get('page'), 1)
     const limit = Math.min(
-      parseInt(searchParams.get('limit') || '20'),
+      safeParseInt(searchParams.get('limit'), 20),
       PAGINATION_DEFAULTS.MAX_LIMIT
     )
 
@@ -90,8 +95,14 @@ export async function POST(request: NextRequest) {
       data: {
         key,
         name,
-        priceMonthly: priceMonthly ? parseFloat(priceMonthly) : null,
-        priceYearly: priceYearly ? parseFloat(priceYearly) : null,
+        priceMonthly:
+          priceMonthly !== undefined && priceMonthly !== null
+            ? parseFloat(String(priceMonthly))
+            : null,
+        priceYearly:
+          priceYearly !== undefined && priceYearly !== null
+            ? parseFloat(String(priceYearly))
+            : null,
         isActive: isActive ?? true,
         sortOrder: sortOrder ?? 0,
       },

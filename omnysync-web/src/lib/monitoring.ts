@@ -106,6 +106,7 @@ export async function withMonitoring<T>(
 
   try {
     const result = await fn()
+
     span.setStatus('ok' as any)
     return result
   } catch (error) {

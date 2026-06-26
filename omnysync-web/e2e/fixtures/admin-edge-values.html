@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Valeurs limites — Omnysync</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-background text-foreground">
+  <div class="p-8" id="app">
+    <!-- AdminPageHeader -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+      <div class="space-y-1">
+        <h1 class="text-3xl font-bold tracking-tight" data-testid="page-title">Valeurs limites</h1>
+        <p class="text-sm text-muted-foreground" data-testid="page-description">Cas de bord dates et nombres</p>
+      </div>
+    </div>
+
+    <!-- ─── Dates ──────────────────────────────────────────────────────── -->
+    <section class="mb-10">
+      <h2 class="text-xl font-semibold mb-4">Dates</h2>
+      <div class="relative w-full overflow-auto rounded-md border">
+        <table class="w-full caption-bottom text-sm">
+          <thead class="[&_tr]:border-b">
+            <tr class="border-b transition-colors hover:bg-muted/50">
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Test</th>
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Valeur brute</th>
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Affichage</th>
+            </tr>
+          </thead>
+          <tbody id="dates-body" class="[&_tr:last-child]:border-0" data-testid="dates-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── Prices ─────────────────────────────────────────────────────── -->
+    <section class="mb-10">
+      <h2 class="text-xl font-semibold mb-4">Prix</h2>
+      <div class="relative w-full overflow-auto rounded-md border">
+        <table class="w-full caption-bottom text-sm">
+          <thead class="[&_tr]:border-b">
+            <tr class="border-b transition-colors hover:bg-muted/50">
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Test</th>
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Valeur brute</th>
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Affichage</th>
+            </tr>
+          </thead>
+          <tbody id="prices-body" class="[&_tr:last-child]:border-0" data-testid="prices-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── Limits ─────────────────────────────────────────────────────── -->
+    <section class="mb-10">
+      <h2 class="text-xl font-semibold mb-4">Limites</h2>
+      <div class="relative w-full overflow-auto rounded-md border">
+        <table class="w-full caption-bottom text-sm">
+          <thead class="[&_tr]:border-b">
+            <tr class="border-b transition-colors hover:bg-muted/50">
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Test</th>
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Valeur brute</th>
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Affichage</th>
+            </tr>
+          </thead>
+          <tbody id="limits-body" class="[&_tr:last-child]:border-0" data-testid="limits-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── Pourcentages ─────────────────────────────────────────────── -->
+    <section class="mb-10">
+      <h2 class="text-xl font-semibold mb-4">Pourcentages</h2>
+      <div class="relative w-full overflow-auto rounded-md border">
+        <table class="w-full caption-bottom text-sm">
+          <thead class="[&_tr]:border-b">
+            <tr class="border-b transition-colors hover:bg-muted/50">
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Test</th>
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Valeur brute</th>
+              <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Affichage</th>
+            </tr>
+          </thead>
+          <tbody id="percentages-body" class="[&_tr:last-child]:border-0" data-testid="percentages-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ─── Helper ──────────────────────────────────────────────────────────
+    // Use UTC for deterministic date rendering regardless of browser TZ
+    function formatDateUTC(iso) {
+      if (iso === null || iso === undefined) return '\u2014';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '\u2014';
+      return d.toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      });
+    }
+
+    function formatPrice(val) {
+      if (val === null || val === undefined) return '\u2014';
+      return '$' + Number(val).toFixed(2);
+    }
+
+    function formatLimit(val) {
+      if (val === null || val === undefined) return '\u2014';
+      return String(val);
+    }
+
+    function formatPct(val) {
+      if (val === null || val === undefined) return '\u2014';
+      return val + '%';
+    }
+
+    function displayRaw(val) {
+      if (val === null) return 'null';
+      if (val === undefined) return 'undefined';
+      return String(val);
+    }
+
+    // ─── Data ────────────────────────────────────────────────────────────
+
+    const DATE_CASES = [
+      {
+        id: 'epoch',
+        label: 'Unix epoch (1970-01-01)',
+        raw: '1970-01-01T00:00:00.000Z',
+      },
+      {
+        id: 'y2038',
+        label: 'Year 2038 (2038-01-19)',
+        raw: '2038-01-19T00:00:00.000Z',
+      },
+      {
+        id: 'leap',
+        label: 'Année bissextile (2024-02-29)',
+        raw: '2024-02-29T00:00:00.000Z',
+      },
+      {
+        id: 'non-leap',
+        label: 'Année non bissextile (2025-02-28)',
+        raw: '2025-02-28T00:00:00.000Z',
+      },
+      {
+        id: 'year-end',
+        label: 'Fin d\'année (2026-12-31)',
+        raw: '2026-12-31T00:00:00.000Z',
+      },
+      {
+        id: 'year-start',
+        label: 'Début d\'année (2027-01-01)',
+        raw: '2027-01-01T00:00:00.000Z',
+      },
+      {
+        id: 'month-end',
+        label: 'Fin de mois (2026-01-31)',
+        raw: '2026-01-31T00:00:00.000Z',
+      },
+      {
+        id: 'month-start',
+        label: 'Début de mois (2026-02-01)',
+        raw: '2026-02-01T00:00:00.000Z',
+      },
+      {
+        id: 'tz-midnight',
+        label: 'Minuit UTC (2026-06-15T00:00:00Z)',
+        raw: '2026-06-15T00:00:00.000Z',
+      },
+      {
+        id: 'tz-midnight-2359',
+        label: '23:59:59 UTC (2026-06-15T23:59:59Z)',
+        raw: '2026-06-15T23:59:59.000Z',
+      },
+      {
+        id: 'null',
+        label: 'Date nulle',
+        raw: null,
+      },
+      {
+        id: 'year-9999',
+        label: 'Année 9999 (9999-12-31)',
+        raw: '9999-12-31T00:00:00.000Z',
+      },
+    ];
+
+    const PRICE_CASES = [
+      { id: 'zero', label: 'Prix 0 (gratuit)', raw: 0 },
+      { id: 'small', label: 'Prix 0.01', raw: 0.01 },
+      { id: 'large', label: 'Prix 999999.99', raw: 999999.99 },
+      { id: 'null', label: 'Prix null', raw: null },
+      { id: 'undefined', label: 'Prix undefined', raw: undefined },
+    ];
+
+    const LIMIT_CASES = [
+      { id: 'zero', label: 'limitValue = 0', raw: 0 },
+      { id: 'one', label: 'limitValue = 1', raw: 1 },
+      { id: 'large', label: 'limitValue = 999999999', raw: 999999999 },
+      { id: 'null', label: 'limitValue null', raw: null },
+      { id: 'neg-one', label: 'limitValue = -1', raw: -1 },
+      { id: 'neg-hundred', label: 'limitValue = -100', raw: -100 },
+    ];
+
+    const PCT_CASES = [
+      { id: 'zero', label: 'Pourcentage 0', raw: 0 },
+      { id: 'half', label: 'Pourcentage 0.5', raw: 0.5 },
+      { id: 'hundred', label: 'Pourcentage 100', raw: 100 },
+      { id: 'null', label: 'Pourcentage null', raw: null },
+    ];
+
+    // ─── Render ──────────────────────────────────────────────────────────
+
+    function renderRows(bodyId, cases, formatFn, prefix) {
+      const tbody = document.getElementById(bodyId);
+      tbody.innerHTML = cases
+        .map((c) => {
+          const formatted = formatFn(c.raw);
+          return `
+            <tr class="border-b transition-colors hover:bg-muted/50" data-testid="${prefix}-row-${c.id}">
+              <td class="p-4 align-middle font-medium">${c.label}</td>
+              <td class="p-4 align-middle font-mono text-xs text-muted-foreground">${displayRaw(c.raw)}</td>
+              <td class="p-4 align-middle" data-testid="${prefix}-value-${c.id}">${formatted}</td>
+            </tr>
+          `;
+        })
+        .join('');
+    }
+
+    renderRows('dates-body', DATE_CASES, formatDateUTC, 'date');
+    renderRows('prices-body', PRICE_CASES, formatPrice, 'price');
+    renderRows('limits-body', LIMIT_CASES, formatLimit, 'limit');
+    renderRows('percentages-body', PCT_CASES, formatPct, 'pct');
+  </script>
+</body>
+</html>

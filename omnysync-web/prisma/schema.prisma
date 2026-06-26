@@ -110,8 +110,9 @@ model Connector {
 
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sourceDocuments Document[]   @relation("SourceConnector")
-  destDocuments   Document[]   @relation("DestConnector")
+  sourceDocuments  Document[]        @relation("SourceConnector")
+  destDocuments    Document[]        @relation("DestConnector")
+  webhookEndpoints WebhookEndpoint[]
 }
 
 enum ConnectorType {
@@ -519,13 +520,14 @@ model EntitlementOverride {
   id          String       @id @default(cuid())
   scope       OverrideScope // "org" or "user"
   scopeId     String       // orgId or userId
-  featureKey  String
-  enabled     Boolean      @default(true)
-  limitValue  Int?
-  expiresAt   DateTime?   // If set, override expires at this time
-  reason      String?      // Reason for the override (required for audit)
-  feature     Feature      @relation(fields: [featureKey], references: [key])
-  organization Organization? @relation(fields: [organizationId], references: [id])
+  featureKey      String
+  enabled         Boolean      @default(true)
+  limitValue      Int?
+  expiresAt       DateTime?   // If set, override expires at this time
+  reason          String?      // Reason for the override (required for audit)
+  feature         Feature      @relation(fields: [featureKey], references: [key])
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   createdBy   String?      // userId who created the override

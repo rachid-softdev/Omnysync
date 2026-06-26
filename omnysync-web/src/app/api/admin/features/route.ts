@@ -23,9 +23,9 @@ export async function GET(request: NextRequest) {
     await requireAdmin()
 
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
     const limit = Math.min(
-      parseInt(searchParams.get('limit') || '20'),
+      Math.max(1, parseInt(searchParams.get('limit') || '20', 10) || 20),
       PAGINATION_DEFAULTS.MAX_LIMIT
     )
     const sort = searchParams.get('sort') || 'key:asc'

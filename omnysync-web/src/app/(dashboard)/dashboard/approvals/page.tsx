@@ -38,10 +38,6 @@ export default function ApprovalsPage() {
   const [rejectComment, setRejectComment] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchApprovals()
-  }, [])
-
   const fetchApprovals = async () => {
     try {
       const res = await fetch('/api/approvals')
@@ -55,6 +51,10 @@ export default function ApprovalsPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchApprovals()
+  }, [])
 
   const approveRequest = async (id: string) => {
     setActionLoading(id)
