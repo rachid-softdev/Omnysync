@@ -19,5 +19,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   }
 
-  return (handleScheduledSyncRun as (orgId: string, connectorId: string) => Promise<void>)(id)
+  return handleScheduledSyncRun(id)
 }

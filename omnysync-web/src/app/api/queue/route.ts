@@ -75,34 +75,14 @@ export async function POST(req: NextRequest) {
     switch (type) {
       case 'sync_document': {
         const { userId } = payload
-        const result = await (
-          processJobWithRetry as (
-            job: unknown,
-            callback?: (result: unknown) => void
-          ) => Promise<void>
-        )(job, async (j: unknown) => {
-          return await (
-            performSync as (
-              orgId: string,
-              documentId: string,
-              ...args: unknown[]
-            ) => Promise<unknown>
-          )(
-            (
-              j as {
-                payload: { documentId: string; sourceConnectorId: string; destConnectorId: string }
-              }
-            ).payload.documentId,
-            (
-              j as {
-                payload: { documentId: string; sourceConnectorId: string; destConnectorId: string }
-              }
-            ).payload.sourceConnectorId,
-            (
-              j as {
-                payload: { documentId: string; sourceConnectorId: string; destConnectorId: string }
-              }
-            ).payload.destConnectorId,
+        const result = await processJobWithRetry(job, async (j: unknown) => {
+          const jPayload = j as {
+            payload: { documentId: string; sourceConnectorId: string; destConnectorId: string }
+          }
+          return performSync(
+            jPayload.payload.documentId,
+            jPayload.payload.sourceConnectorId,
+            jPayload.payload.destConnectorId,
             userId as string
           )
         })
@@ -120,16 +100,9 @@ export async function POST(req: NextRequest) {
 
       case 'detect_changes': {
         const { userId } = payload
-        const result = await (
-          processJobWithRetry as (
-            job: unknown,
-            callback?: (result: unknown) => void
-          ) => Promise<void>
-        )(job, async (j: unknown) => {
-          return await detectAndSyncChanges(
-            (j as { payload: { documentId: string } }).payload.documentId,
-            userId as string
-          )
+        const result = await processJobWithRetry(job, async (j: unknown) => {
+          const jPayload = j as { payload: { documentId: string } }
+          return detectAndSyncChanges(jPayload.payload.documentId, userId as string)
         })
 
         if (idempotencyKey) {
@@ -140,21 +113,13 @@ export async function POST(req: NextRequest) {
 
       case 'process_seo': {
         const { documentId } = payload
-        const result = await (
-          processJobWithRetry as (
-            job: unknown,
-            callback?: (result: unknown) => void
-          ) => Promise<void>
-        )(job, async () => {
+        const result = await processJobWithRetry(job, async () => {
           const document = await prisma.document.findUnique({
             where: { id: documentId },
           })
 
           if (document && document.content) {
-            const seo = await (generateSEO as (content: string) => Promise<string>)(
-              document.content,
-              document.title
-            )
+            const seo = await generateSEO(document.content, document.title)
             const seoData = JSON.parse(seo) as {
               title: string
               description: string
@@ -179,12 +144,7 @@ export async function POST(req: NextRequest) {
       }
 
       case 'generate_ai_image': {
-        const result = await (
-          processJobWithRetry as (
-            job: unknown,
-            callback?: (result: unknown) => void
-          ) => Promise<void>
-        )(job, async (j: unknown) => {
+        const result = await processJobWithRetry(job, async (j: unknown) => {
           const jPayload = j as { payload: { prompt: string; documentId: string } }
           const imageUrl = await generateAImage(jPayload.payload.prompt)
 

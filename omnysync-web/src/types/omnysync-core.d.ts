@@ -17,8 +17,8 @@ declare module '@omnysync/core/prisma' {
   export function getPrisma(): PrismaClient
   export function getPrismaClient(): PrismaClient
   export const prisma: PrismaClient
-  export function encryptData(data: string): string
-  export function decryptResult(data: string): string
+  export function encryptData(data: Record<string, unknown>): string
+  export function decryptResult(data: Record<string, unknown>): string
 }
 
 declare module '@omnysync/core/hooks' {
@@ -160,7 +160,7 @@ declare module '@omnysync/core/ui' {
     type?: string
     placeholder?: string
     value?: string
-    onChange?: (e: unknown) => void
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
     disabled?: boolean
     step?: string | number
     min?: string | number
@@ -250,7 +250,7 @@ declare module '@omnysync/core/ui' {
     rows?: number
     placeholder?: string
     value?: string
-    onChange?: (e: unknown) => void
+    onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
   }>
 }
 
@@ -402,9 +402,12 @@ declare module '@omnysync/core/entitlements/CacheService' {
 declare module '@omnysync/core/entitlements/FeatureGateService' {
   export class FeatureGateService {
     invalidateCache(orgId: string): Promise<void>
-    getAllEntitlements(
-      orgId: string
-    ): Promise<{ planKey: string; limits: Record<string, { enabled: boolean; limit?: number }> }>
+    getAllEntitlements(orgId: string): Promise<{
+      planKey: string
+      features: Record<string, boolean>
+      limits: Record<string, number | null>
+      experiments: Record<string, unknown>
+    }>
     getDebugTrace(orgId: string, featureKey: string): Promise<Record<string, unknown>>
     hasFeature(orgId: string, featureKey: string): Promise<boolean>
     assertFeature(orgId: string, featureKey: string): Promise<void>
@@ -514,7 +517,11 @@ declare module '@omnysync/core/services/types' {
 }
 
 declare module '@omnysync/core/services/sync' {
-  export function performSync(orgId: string, documentId: string): Promise<unknown>
+  export function performSync(
+    orgId: string,
+    documentId: string,
+    ...args: unknown[]
+  ): Promise<unknown>
   export function detectAndSyncChanges(
     orgId: string,
     documentId: string,
@@ -528,7 +535,7 @@ declare module '@omnysync/core/services/two-way-sync' {
 }
 
 declare module '@omnysync/core/services/ai' {
-  export function generateSEO(content: string): Promise<string>
+  export function generateSEO(content: string, title?: string): Promise<string>
   export function generateAImage(prompt: string): Promise<string>
   export function improveContent(content: string): Promise<string>
   export function findInterlinkingOpportunities(content: string): Promise<string[]>
@@ -583,9 +590,18 @@ declare module '@omnysync/core/services/queue' {
   export function isJobCompleted(key: string): Promise<boolean>
   export function markJobCompleted(key: string): Promise<void>
   export function addToDeadLetter(job: unknown, error: unknown): Promise<void>
-  export function processJobWithRetry(job: unknown): Promise<void>
+  export function processJobWithRetry(
+    job: unknown,
+    callback?: (result: unknown) => void
+  ): Promise<void>
   export function enqueueChangeDetection(job: unknown): Promise<void>
-  export function enqueueSyncJob(orgId: string, documentId: string): Promise<void>
+  export function enqueueSyncJob(
+    orgId: string,
+    documentId: string,
+    sourceConnectorId?: string,
+    destConnectorId?: string,
+    userId?: string
+  ): Promise<void>
 }
 
 declare module '@omnysync/core/services/sanitize' {
@@ -594,9 +610,12 @@ declare module '@omnysync/core/services/sanitize' {
 
 declare module '@omnysync/core/services/scheduler' {
   export function calculateNextSync(orgId: string, connectorId: string): Promise<Date>
-  export function scheduleSync(orgId: string, connectorId: string, interval: string): Promise<void>
-  export function disableScheduledSync(orgId: string, connectorId: string): Promise<void>
-  export function handleScheduledSyncRun(orgId: string, connectorId: string): Promise<void>
+  export function scheduleSync(
+    documentId: string,
+    frequency: string
+  ): Promise<{ success: boolean; error?: string; nextSyncAt?: Date }>
+  export function disableScheduledSync(documentId: string): Promise<void>
+  export function handleScheduledSyncRun(documentId: string): Promise<void>
 }
 
 declare module '@omnysync/core/services/google-docs' {

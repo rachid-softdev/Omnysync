@@ -29,7 +29,7 @@ export function useEntitlements(): {
   isLoading: boolean
   error: Error | null
 } {
-  const result = useCoreEntitlements() as {
+  const result = useCoreEntitlements() as unknown as {
     data: Record<string, unknown>
     isLoading: boolean
     error: Error | null
@@ -37,7 +37,7 @@ export function useEntitlements(): {
   }
 
   return {
-    entitlements: result.data as EntitlementsResponse | null,
+    entitlements: result.data as unknown as EntitlementsResponse | null,
     isLoading: result.isLoading,
     error: result.error as Error | null,
   }
@@ -52,7 +52,7 @@ export function useFeatureQuota(featureKey: string): {
   limit: number
   remaining: number
 } | null {
-  const { limit, used, remaining } = useLimit(featureKey) as {
+  const { limit, used, remaining } = useLimit(featureKey) as unknown as {
     limit: number | null
     used: number
     remaining: number

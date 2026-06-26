@@ -27,13 +27,13 @@ export async function GET() {
     },
   })
 
-  const members = memberships.map((m: Record<string, unknown>) => ({
-    id: m.user.id,
-    name: m.user.name,
-    email: m.user.email,
-    image: m.user.image,
+  const members = memberships.map((m) => ({
+    id: (m.user as { id: string }).id,
+    name: (m.user as { name: string | null }).name,
+    email: (m.user as { email: string }).email,
+    image: (m.user as { image: string | null }).image,
     role: m.role,
-    joinedAt: m.user.createdAt.toISOString(),
+    joinedAt: (m.user as { createdAt: { toISOString: () => string } }).createdAt.toISOString(),
   }))
 
   return NextResponse.json(members)

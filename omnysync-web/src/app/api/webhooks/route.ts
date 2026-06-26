@@ -43,15 +43,15 @@ export async function GET() {
     })
 
     return NextResponse.json({
-      webhooks: webhooks.map((w: Record<string, unknown>) => ({
+      webhooks: webhooks.map((w) => ({
         id: w.id,
         connectorId: w.connectorId,
-        connectorName: w.connector?.name,
+        connectorName: (w.connector as { name?: string } | null)?.name,
         type: w.type,
         url: w.url,
         secret: '***',
         isActive: w.isActive,
-        createdAt: w.createdAt.toISOString(),
+        createdAt: (w.createdAt as { toISOString: () => string }).toISOString(),
       })),
     })
   } catch (error) {

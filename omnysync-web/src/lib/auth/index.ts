@@ -8,7 +8,7 @@ import { sendWelcomeEmail } from '@/lib/email'
 import { verifyPassword } from '@/lib/auth/password'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: withOAuthEncryption(PrismaAdapter(prisma)),
+  adapter: withOAuthEncryption(PrismaAdapter(prisma) as unknown as Record<string, unknown>),
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,

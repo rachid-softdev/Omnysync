@@ -336,7 +336,15 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 <p className="text-muted-foreground text-center py-8">No history available</p>
               ) : (
                 <div className="space-y-3">
-                  {document.syncLogs.map((log: Record<string, unknown>) => (
+                  {(
+                    document.syncLogs as Array<{
+                      id: string
+                      status: string
+                      action: string
+                      message: string | null
+                      createdAt: Date
+                    }>
+                  ).map((log) => (
                     <div
                       key={log.id}
                       className="flex items-center justify-between p-3 rounded-lg border"

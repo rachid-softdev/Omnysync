@@ -12,12 +12,6 @@ declare module 'prisma/config' {
   export const defineConfig: (config: unknown) => unknown
 }
 
-declare module '@auth/core/adapters' {
-  export interface Adapter {
-    [key: string]: unknown
-  }
-}
-
 declare module 'tailwindcss' {
   export interface Config {
     darkMode?: string | string[]
