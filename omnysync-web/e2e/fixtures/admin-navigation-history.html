@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administration — Navigation History</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- ── Navigation Header ── -->
+  <header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-1">
+          <span class="text-lg font-bold text-gray-900 mr-6 select-none">Omnysync</span>
+          <a data-testid="nav-link-dashboard" href="#dashboard" data-section="dashboard"
+             class="nav-link px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors">Dashboard</a>
+          <a data-testid="nav-link-users" href="#users" data-section="users"
+             class="nav-link px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors">Utilisateurs</a>
+          <a data-testid="nav-link-features" href="#features" data-section="features"
+             class="nav-link px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors">Features</a>
+          <a data-testid="nav-link-orgs" href="#orgs" data-section="orgs"
+             class="nav-link px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors">Organisations</a>
+          <a data-testid="nav-link-plans" href="#plans" data-section="plans"
+             class="nav-link px-3 py-2 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors">Plans</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- ════════════════════════ DASHBOARD ════════════════════════ -->
+    <div id="page-dashboard" class="section-content" data-testid="page-content-dashboard">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-gray-900" data-testid="page-title-dashboard">Dashboard</h1>
+      </div>
+      <p class="text-gray-600 mb-8">Bienvenue sur l'interface d'administration Omnysync.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+          <p class="text-3xl font-bold text-gray-900">25</p>
+          <p class="text-sm text-gray-500 mt-1">Utilisateurs</p>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+          <p class="text-3xl font-bold text-gray-900">6</p>
+          <p class="text-sm text-gray-500 mt-1">Features</p>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+          <p class="text-3xl font-bold text-gray-900">5</p>
+          <p class="text-sm text-gray-500 mt-1">Organisations</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════ USERS ════════════════════════ -->
+    <div id="page-users" class="section-content hidden" data-testid="page-content-users">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-gray-900" data-testid="page-title-users">Utilisateurs</h1>
+      </div>
+
+      <!-- Search -->
+      <div class="relative mb-4 max-w-sm">
+        <input type="text" id="users-search" placeholder="Rechercher par nom ou email..."
+               class="block w-full rounded-md border border-gray-300 px-3 py-2 pl-10 text-sm shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+               data-testid="search-input" />
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+
+      <!-- State displays -->
+      <div class="flex flex-wrap gap-x-6 gap-y-1 mb-4 text-sm text-gray-600">
+        <span>Recherche : <span data-testid="search-state" class="font-mono text-blue-700 font-medium"></span></span>
+        <span>Tri : <span data-testid="sort-state" class="font-mono text-blue-700 font-medium"></span></span>
+        <span>Page : <span data-testid="pagination-state" class="font-mono text-blue-700 font-medium"></span></span>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" data-column="name" data-testid="col-header-name"
+                  class="sort-header px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                Nom <span class="sort-arrow ml-1 text-gray-400"></span>
+              </th>
+              <th scope="col" data-column="email" data-testid="col-header-email"
+                  class="sort-header px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                Email <span class="sort-arrow ml-1 text-gray-400"></span>
+              </th>
+              <th scope="col" data-column="role" data-testid="col-header-role"
+                  class="sort-header px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                Rôle <span class="sort-arrow ml-1 text-gray-400"></span>
+              </th>
+            </tr>
+          </thead>
+          <tbody data-testid="table-body" class="bg-white divide-y divide-gray-200"></tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between mt-4" data-testid="pagination">
+        <button data-testid="prev-page"
+                class="inline-flex items-center px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                disabled>← Précédent</button>
+        <span data-testid="page-indicator" class="text-sm text-gray-600 font-medium">Page 1 / 1</span>
+        <button data-testid="next-page"
+                class="inline-flex items-center px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Suivant →</button>
+      </div>
+    </div>
+
+    <!-- ════════════════════════ FEATURES ════════════════════════ -->
+    <div id="page-features" class="section-content hidden" data-testid="page-content-features">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-gray-900" data-testid="page-title-features">Features</h1>
+      </div>
+
+      <div class="relative mb-4 max-w-sm">
+        <input type="text" id="features-search" placeholder="Rechercher une feature..."
+               class="block w-full rounded-md border border-gray-300 px-3 py-2 pl-10 text-sm shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+               data-testid="search-input" />
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+
+      <span class="text-sm text-gray-600 mb-4 block">Recherche : <span data-testid="search-state" class="font-mono text-blue-700 font-medium"></span></span>
+
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Key</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+            </tr>
+          </thead>
+          <tbody data-testid="features-tbody" class="bg-white divide-y divide-gray-200"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ════════════════════════ ORGS ════════════════════════ -->
+    <div id="page-orgs" class="section-content hidden" data-testid="page-content-orgs">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-gray-900" data-testid="page-title-orgs">Organisations</h1>
+      </div>
+
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slug</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Créé le</th>
+            </tr>
+          </thead>
+          <tbody data-testid="orgs-tbody" class="bg-white divide-y divide-gray-200"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ════════════════════════ PLANS ════════════════════════ -->
+    <div id="page-plans" class="section-content hidden" data-testid="page-content-plans">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-gray-900" data-testid="page-title-plans">Plans</h1>
+      </div>
+
+      <!-- Formulaire -->
+      <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6 shadow-sm">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Nouveau plan</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="form-name" class="block text-sm font-medium text-gray-700 mb-1">Nom du plan</label>
+            <input type="text" id="form-name" data-testid="form-field-name" placeholder="Ex: Premium"
+                   class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label for="form-email" class="block text-sm font-medium text-gray-700 mb-1">Email contact</label>
+            <input type="text" id="form-email" data-testid="form-field-email" placeholder="contact@example.com"
+                   class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter -->
+      <div class="relative mb-4 max-w-sm">
+        <input type="text" id="plans-filter" placeholder="Filtrer par nom ou key..."
+               class="block w-full rounded-md border border-gray-300 px-3 py-2 pl-10 text-sm shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+               data-testid="filter-input" />
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+
+      <span class="text-sm text-gray-600 mb-4 block">Filtre : <span data-testid="filter-state" class="font-mono text-blue-700 font-medium"></span></span>
+
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Key</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix mensuel</th>
+            </tr>
+          </thead>
+          <tbody data-testid="plans-tbody" class="bg-white divide-y divide-gray-200"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ── Constants ──
+    const SECTIONS = ['dashboard', 'users', 'features', 'orgs', 'plans'];
+    const PAGE_SIZE = 10;
+
+    // ── Mock Data ──
+    const MOCK_USERS = [
+      { id: '1',  name: 'Alice Dupont',   email: 'alice@example.com',   role: 'ADMIN' },
+      { id: '2',  name: 'Bob Martin',     email: 'bob@example.com',     role: 'USER' },
+      { id: '3',  name: 'Charlie Durand', email: 'charlie@example.com', role: 'USER' },
+      { id: '4',  name: 'Diana Prince',   email: 'diana@example.com',   role: 'ADMIN' },
+      { id: '5',  name: 'Eve Torres',     email: 'eve@example.com',     role: 'USER' },
+      { id: '6',  name: 'Frank Herbert',  email: 'frank@example.com',   role: 'USER' },
+      { id: '7',  name: 'Grace Kelly',    email: 'grace@example.com',   role: 'ADMIN' },
+      { id: '8',  name: 'Henry Ford',     email: 'henry@example.com',   role: 'USER' },
+      { id: '9',  name: 'Ivy Chen',       email: 'ivy@example.com',     role: 'USER' },
+      { id: '10', name: 'Jack Sparrow',   email: 'jack@example.com',    role: 'ADMIN' },
+      { id: '11', name: 'Kate Winslet',   email: 'kate@example.com',    role: 'USER' },
+      { id: '12', name: 'Leo Ferrari',    email: 'leo@example.com',     role: 'USER' },
+      { id: '13', name: 'Maria Santos',   email: 'maria@example.com',   role: 'ADMIN' },
+      { id: '14', name: 'Newton Cruz',    email: 'newton@example.com',  role: 'USER' },
+      { id: '15', name: 'Olga Petrov',    email: 'olga@example.com',    role: 'USER' },
+      { id: '16', name: 'Paul McCartney', email: 'paul@example.com',    role: 'ADMIN' },
+      { id: '17', name: 'Quinn Hughes',   email: 'quinn@example.com',   role: 'USER' },
+      { id: '18', name: 'Rachel Green',   email: 'rachel@example.com',  role: 'USER' },
+      { id: '19', name: 'Steve Ballmer',  email: 'steve@example.com',   role: 'ADMIN' },
+      { id: '20', name: 'Tony Robbins',   email: 'tony@example.com',    role: 'USER' },
+      { id: '21', name: 'Uma Thurman',    email: 'uma@example.com',     role: 'USER' },
+      { id: '22', name: 'Victor Hugo',    email: 'victor@example.com',  role: 'ADMIN' },
+      { id: '23', name: 'Walt Disney',    email: 'walt@example.com',    role: 'USER' },
+      { id: '24', name: 'Xena Warrior',   email: 'xena@example.com',    role: 'USER' },
+      { id: '25', name: 'Yann Tiersen',   email: 'yann@example.com',    role: 'ADMIN' },
+    ];
+
+    const MOCK_FEATURES = [
+      { id: '1', key: 'EXPORT_PDF',    name: 'Export PDF',    type: 'BOOLEAN' },
+      { id: '2', key: 'MAX_CONNECTORS',name: 'Max Connectors',type: 'LIMIT' },
+      { id: '3', key: 'A_B_TEST',      name: 'A/B Test',      type: 'EXPERIMENT' },
+      { id: '4', key: 'AI_SUMMARY',    name: 'AI Summary',    type: 'BOOLEAN' },
+      { id: '5', key: 'BULK_IMPORT',   name: 'Bulk Import',   type: 'LIMIT' },
+      { id: '6', key: 'DARK_MODE',     name: 'Dark Mode',     type: 'BOOLEAN' },
+    ];
+
+    const MOCK_ORGS = [
+      { id: '1', name: 'Acme Inc',       slug: 'acme',     createdAt: '15/01/2026' },
+      { id: '2', name: 'Globex Corp',    slug: 'globex',   createdAt: '20/02/2026' },
+      { id: '3', name: 'Stark Industries',slug: 'stark',   createdAt: '15/03/2026' },
+      { id: '4', name: 'Initech',        slug: 'initech',  createdAt: '10/04/2026' },
+      { id: '5', name: 'Umbrella Corp',  slug: 'umbrella', createdAt: '05/05/2026' },
+    ];
+
+    const MOCK_PLANS = [
+      { key: 'free',       name: 'Free',      price: 0 },
+      { key: 'pro',        name: 'Pro',       price: 29 },
+      { key: 'business',   name: 'Business',  price: 79 },
+      { key: 'enterprise', name: 'Enterprise',price: 199 },
+    ];
+
+    // ── State ──
+    let currentSection = 'dashboard';
+
+    const defaultStates = {
+      dashboard: { search: '', sortColumn: '', sortDir: 'asc', page: 1, filter: '' },
+      users:     { search: '', sortColumn: '', sortDir: 'asc', page: 1, filter: '' },
+      features:  { search: '', sortColumn: '', sortDir: 'asc', page: 1, filter: '' },
+      orgs:      { search: '', sortColumn: '', sortDir: 'asc', page: 1, filter: '' },
+      plans:     { search: '', sortColumn: '', sortDir: 'asc', page: 1, filter: '', formName: '', formEmail: '' },
+    };
+
+    function getDefaultState(section) {
+      return JSON.parse(JSON.stringify(defaultStates[section] || defaultStates.dashboard));
+    }
+
+    function loadState(section) {
+      try {
+        const raw = sessionStorage.getItem('nav_state_' + section);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          // Merge with defaults to handle missing keys
+          return { ...getDefaultState(section), ...parsed };
+        }
+      } catch (e) { /* ignore */ }
+      return getDefaultState(section);
+    }
+
+    function saveState(section) {
+      const state = {};
+      const page = document.getElementById('page-' + section);
+      if (!page) return;
+
+      // Determine state based on section
+      if (section === 'users') {
+        state.search = document.getElementById('users-search').value || '';
+        state.sortColumn = page.dataset.sortColumn || '';
+        state.sortDir = page.dataset.sortDir || 'asc';
+        state.page = parseInt(page.dataset.currentPage || '1');
+        state.filter = '';
+      } else if (section === 'features') {
+        state.search = document.getElementById('features-search').value || '';
+        state.sortColumn = '';
+        state.sortDir = 'asc';
+        state.page = 1;
+        state.filter = '';
+      } else if (section === 'plans') {
+        state.search = '';
+        state.sortColumn = '';
+        state.sortDir = 'asc';
+        state.page = 1;
+        state.filter = document.getElementById('plans-filter').value || '';
+        state.formName = document.getElementById('form-name').value || '';
+        state.formEmail = document.getElementById('form-email').value || '';
+      } else {
+        state.search = '';
+        state.sortColumn = '';
+        state.sortDir = 'asc';
+        state.page = 1;
+        state.filter = '';
+      }
+      sessionStorage.setItem('nav_state_' + section, JSON.stringify(state));
+    }
+
+    // ── Routing ──
+    function getSectionFromHash() {
+      const hash = location.hash.replace(/^#/, '') || 'dashboard';
+      return SECTIONS.includes(hash) ? hash : 'dashboard';
+    }
+
+    function showSection(section) {
+      // Hide all
+      document.querySelectorAll('.section-content').forEach(el => el.classList.add('hidden'));
+      // Show target
+      const target = document.getElementById('page-' + section);
+      if (target) {
+        target.classList.remove('hidden');
+        document.title = 'Administration — ' + (section.charAt(0).toUpperCase() + section.slice(1));
+      }
+      currentSection = section;
+    }
+
+    function navigateToSection(section, pushHistory) {
+      if (section === currentSection && !pushHistory) return;
+
+      // Save current state before leaving
+      saveState(currentSection);
+
+      if (pushHistory) {
+        history.pushState({ section: section }, '', '#' + section);
+      }
+
+      showSection(section);
+      restoreSection(section);
+    }
+
+    function restoreSection(section) {
+      const state = loadState(section);
+      const page = document.getElementById('page-' + section);
+      if (!page) return;
+
+      if (section === 'users') {
+        const searchInput = document.getElementById('users-search');
+        searchInput.value = state.search || '';
+        page.dataset.sortColumn = state.sortColumn || '';
+        page.dataset.sortDir = state.sortDir || 'asc';
+        page.dataset.currentPage = String(state.page || 1);
+        renderUsers();
+      } else if (section === 'features') {
+        document.getElementById('features-search').value = state.search || '';
+        renderFeatures();
+      } else if (section === 'orgs') {
+        renderOrgs();
+      } else if (section === 'plans') {
+        document.getElementById('plans-filter').value = state.filter || '';
+        document.getElementById('form-name').value = state.formName || '';
+        document.getElementById('form-email').value = state.formEmail || '';
+        renderPlans();
+      }
+    }
+
+    // ── Event Handlers for Nav Links ──
+    document.querySelectorAll('.nav-link').forEach(function(link) {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const section = this.dataset.section;
+        navigateToSection(section, true);
+      });
+    });
+
+    // ── Popstate ──
+    window.addEventListener('popstate', function(e) {
+      const section = (e.state && e.state.section) || getSectionFromHash();
+      if (section === currentSection) return; // guard against duplicates
+      // Save current state
+      saveState(currentSection);
+      showSection(section);
+      restoreSection(section);
+    });
+
+    // ── Render Functions ──
+    function renderUsers() {
+      const page = document.getElementById('page-users');
+      const search = document.getElementById('users-search').value.toLowerCase().trim();
+      let sortColumn = page.dataset.sortColumn || '';
+      let sortDir = page.dataset.sortDir || 'asc';
+      let currentPage = parseInt(page.dataset.currentPage || '1');
+
+      // Filter
+      let filtered = MOCK_USERS;
+      if (search) {
+        filtered = MOCK_USERS.filter(function(u) {
+          return u.name.toLowerCase().includes(search) || u.email.toLowerCase().includes(search);
+        });
+      }
+
+      // Sort
+      if (sortColumn) {
+        filtered = filtered.slice().sort(function(a, b) {
+          var va = (a[sortColumn] || '').toLowerCase();
+          var vb = (b[sortColumn] || '').toLowerCase();
+          if (va < vb) return sortDir === 'asc' ? -1 : 1;
+          if (va > vb) return sortDir === 'asc' ? 1 : -1;
+          return 0;
+        });
+      }
+
+      // Paginate
+      const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+      if (currentPage > totalPages) currentPage = totalPages;
+      page.dataset.currentPage = String(currentPage);
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const paginated = filtered.slice(start, start + PAGE_SIZE);
+
+      // Render rows
+      var tbody = document.querySelector('#page-users [data-testid="table-body"]');
+      if (paginated.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="px-4 py-8 text-center text-gray-500">Aucun utilisateur trouvé</td></tr>';
+      } else {
+        tbody.innerHTML = paginated.map(function(u) {
+          var badgeClass = u.role === 'ADMIN'
+            ? 'bg-yellow-100 text-yellow-800'
+            : 'bg-gray-100 text-gray-700';
+          return '<tr class="hover:bg-gray-50 transition-colors" data-testid="user-row-' + u.id + '">' +
+            '<td class="px-4 py-3 text-sm font-medium text-gray-900">' + u.name + '</td>' +
+            '<td class="px-4 py-3 text-sm text-gray-600">' + u.email + '</td>' +
+            '<td class="px-4 py-3"><span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ' + badgeClass + '">' + u.role + '</span></td>' +
+            '</tr>';
+        }).join('');
+      }
+
+      // Pagination controls
+      document.querySelector('#page-users [data-testid="page-indicator"]').textContent = 'Page ' + currentPage + ' / ' + totalPages;
+      document.querySelector('#page-users [data-testid="prev-page"]').disabled = currentPage <= 1;
+      document.querySelector('#page-users [data-testid="next-page"]').disabled = currentPage >= totalPages;
+
+      // State displays
+      document.querySelector('#page-users [data-testid="search-state"]').textContent = search || '(aucune)';
+      document.querySelector('#page-users [data-testid="sort-state"]').textContent = sortColumn ? sortColumn + '-' + sortDir : '(aucun)';
+      document.querySelector('#page-users [data-testid="pagination-state"]').textContent = 'page-' + currentPage;
+
+      // Update sort arrows
+      updateSortArrows('page-users', sortColumn, sortDir);
+
+      // Persist state to sessionStorage
+      saveState('users');
+    }
+
+    function updateSortArrows(pageId, sortColumn, sortDir) {
+      document.querySelectorAll('#' + pageId + ' .sort-header .sort-arrow').forEach(function(arrow) {
+        arrow.textContent = '';
+      });
+      if (sortColumn) {
+        var header = document.querySelector('#' + pageId + ' [data-column="' + sortColumn + '"] .sort-arrow');
+        if (header) {
+          header.textContent = sortDir === 'asc' ? '\u25B2' : '\u25BC'; // ▲ or ▼
+        }
+      }
+    }
+
+    function renderFeatures() {
+      var search = document.getElementById('features-search').value.toLowerCase().trim();
+      var filtered = MOCK_FEATURES;
+      if (search) {
+        filtered = MOCK_FEATURES.filter(function(f) {
+          return f.key.toLowerCase().includes(search) || f.name.toLowerCase().includes(search);
+        });
+      }
+      var tbody = document.querySelector('#page-features [data-testid="features-tbody"]');
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="px-4 py-8 text-center text-gray-500">Aucune feature trouvée</td></tr>';
+      } else {
+        var typeStyles = {
+          BOOLEAN: 'bg-purple-100 text-purple-800',
+          LIMIT: 'bg-blue-100 text-blue-800',
+          EXPERIMENT: 'bg-orange-100 text-orange-800',
+        };
+        tbody.innerHTML = filtered.map(function(f) {
+          var badge = typeStyles[f.type] || 'bg-gray-100 text-gray-700';
+          return '<tr class="hover:bg-gray-50 transition-colors" data-testid="feature-row-' + f.id + '">' +
+            '<td class="px-4 py-3 text-sm font-mono text-gray-900">' + f.key + '</td>' +
+            '<td class="px-4 py-3 text-sm text-gray-700">' + f.name + '</td>' +
+            '<td class="px-4 py-3"><span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ' + badge + '">' + f.type + '</span></td>' +
+            '</tr>';
+        }).join('');
+      }
+      document.querySelector('#page-features [data-testid="search-state"]').textContent = search || '(aucune)';
+      saveState('features');
+    }
+
+    function renderOrgs() {
+      var tbody = document.querySelector('#page-orgs [data-testid="orgs-tbody"]');
+      tbody.innerHTML = MOCK_ORGS.map(function(o) {
+        return '<tr class="hover:bg-gray-50 transition-colors" data-testid="org-row-' + o.id + '">' +
+          '<td class="px-4 py-3 text-sm font-medium text-gray-900">' + o.name + '</td>' +
+          '<td class="px-4 py-3 text-sm text-gray-600">/' + o.slug + '</td>' +
+          '<td class="px-4 py-3 text-sm text-gray-500">' + o.createdAt + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function renderPlans() {
+      var filter = document.getElementById('plans-filter').value.toLowerCase().trim();
+      var filtered = MOCK_PLANS;
+      if (filter) {
+        filtered = MOCK_PLANS.filter(function(p) {
+          return p.key.toLowerCase().includes(filter) || p.name.toLowerCase().includes(filter);
+        });
+      }
+      var tbody = document.querySelector('#page-plans [data-testid="plans-tbody"]');
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="px-4 py-8 text-center text-gray-500">Aucun plan trouvé</td></tr>';
+      } else {
+        tbody.innerHTML = filtered.map(function(p) {
+          var priceStr = p.price === 0 ? 'Gratuit' : p.price + '\u00a0$US/mois';
+          return '<tr class="hover:bg-gray-50 transition-colors" data-testid="plan-row-' + p.key + '">' +
+            '<td class="px-4 py-3 text-sm font-mono text-gray-900">' + p.key + '</td>' +
+            '<td class="px-4 py-3 text-sm font-medium text-gray-900">' + p.name + '</td>' +
+            '<td class="px-4 py-3 text-sm text-gray-600">' + priceStr + '</td>' +
+            '</tr>';
+        }).join('');
+      }
+      document.querySelector('#page-plans [data-testid="filter-state"]').textContent = filter || '(aucun)';
+      saveState('plans');
+    }
+
+    // ── Input Event Listeners ──
+    document.getElementById('users-search').addEventListener('input', function() {
+      var page = document.getElementById('page-users');
+      page.dataset.currentPage = '1'; // reset to page 1 on search
+      page.dataset.sortColumn = page.dataset.sortColumn || '';
+      renderUsers();
+    });
+
+    document.querySelectorAll('#page-users .sort-header').forEach(function(th) {
+      th.addEventListener('click', function() {
+        var page = document.getElementById('page-users');
+        var column = this.dataset.column;
+        if (page.dataset.sortColumn === column) {
+          page.dataset.sortDir = page.dataset.sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          page.dataset.sortColumn = column;
+          page.dataset.sortDir = 'asc';
+        }
+        renderUsers();
+      });
+    });
+
+    document.querySelector('#page-users [data-testid="prev-page"]').addEventListener('click', function() {
+      var page = document.getElementById('page-users');
+      var cur = parseInt(page.dataset.currentPage || '1');
+      if (cur > 1) {
+        page.dataset.currentPage = String(cur - 1);
+        renderUsers();
+      }
+    });
+
+    document.querySelector('#page-users [data-testid="next-page"]').addEventListener('click', function() {
+      var page = document.getElementById('page-users');
+      var cur = parseInt(page.dataset.currentPage || '1');
+      var totalPages = Math.max(1, Math.ceil(MOCK_USERS.length / PAGE_SIZE));
+      if (cur < totalPages) {
+        page.dataset.currentPage = String(cur + 1);
+        renderUsers();
+      }
+    });
+
+    document.getElementById('features-search').addEventListener('input', function() {
+      renderFeatures();
+    });
+
+    document.getElementById('plans-filter').addEventListener('input', function() {
+      renderPlans();
+    });
+
+    // ── Form input persistence ──
+    document.getElementById('form-name').addEventListener('input', function() {
+      // Auto-save form data to sessionStorage on change
+      var state = loadState('plans');
+      state.formName = this.value;
+      state.formEmail = document.getElementById('form-email').value;
+      sessionStorage.setItem('nav_state_plans', JSON.stringify(state));
+    });
+
+    document.getElementById('form-email').addEventListener('input', function() {
+      var state = loadState('plans');
+      state.formName = document.getElementById('form-name').value;
+      state.formEmail = this.value;
+      sessionStorage.setItem('nav_state_plans', JSON.stringify(state));
+    });
+
+    // ── Init ──
+    (function init() {
+      var section = getSectionFromHash();
+      showSection(section);
+      restoreSection(section);
+      // Store initial state in history if not already set
+      if (!location.hash) {
+        history.replaceState({ section: 'dashboard' }, '', '#dashboard');
+      } else {
+        history.replaceState({ section: section }, '', location.hash);
+      }
+    })();
+  </script>
+</body>
+</html>

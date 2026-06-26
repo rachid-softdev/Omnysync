@@ -60,5 +60,9 @@ next-env.d.ts
 # biome
 .biome/
 
+# playwright
+**/playwright-report/
+**/test-results/
+
 # husky
 .husky/
