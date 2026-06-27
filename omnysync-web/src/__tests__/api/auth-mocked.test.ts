@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Mock-based unit tests for auth API routes
  * These tests do NOT require a database — all dependencies are mocked.

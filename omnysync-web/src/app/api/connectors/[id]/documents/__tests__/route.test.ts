@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Tests for the Connector Documents API route
  * Covers GET /api/connectors/[id]/documents

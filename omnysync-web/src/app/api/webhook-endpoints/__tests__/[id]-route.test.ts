@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Tests for Webhook Endpoints ID routes
  * Covers GET /api/webhook-endpoints/[id], PATCH /api/webhook-endpoints/[id],

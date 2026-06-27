@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Tests for the Connector [id] API route
  * Covers DELETE /api/connectors/[id]

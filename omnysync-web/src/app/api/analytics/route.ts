@@ -29,8 +29,8 @@ export async function GET(req: NextRequest) {
 
   // Calculate stats
   const totalSyncs = syncLogs.length
-  const successCount = syncLogs.filter((l: any) => l.status === 'SUCCESS').length
-  const failedCount = syncLogs.filter((l: any) => l.status === 'ERROR').length
+  const successCount = syncLogs.filter((l) => l.status === 'SUCCESS').length
+  const failedCount = syncLogs.filter((l) => l.status === 'ERROR').length
   const successRate = totalSyncs > 0 ? Math.round((successCount / totalSyncs) * 100) : 0
 
   // Get documents count
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
   // Group by day
   const syncByDay: Record<string, number> = {}
-  syncLogs.forEach((log: any) => {
+  syncLogs.forEach((log) => {
     const date = log.createdAt.toISOString().split('T')[0]
     syncByDay[date] = (syncByDay[date] || 0) + 1
   })
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
   })
 
   const connectorsUsage: Record<string, number> = {}
-  documents.forEach((doc: any) => {
+  documents.forEach((doc) => {
     if (doc.destConnector?.type) {
       connectorsUsage[doc.destConnector.type] = (connectorsUsage[doc.destConnector.type] || 0) + 1
     }
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
     activeConnectors,
     syncByDay: syncByDayArray,
     connectorsUsage: connectorsUsageArray,
-    recentActivity: syncLogs.slice(0, 10).map((log: any) => ({
+    recentActivity: syncLogs.slice(0, 10).map((log) => ({
       id: log.id,
       action: log.action,
       status: log.status,

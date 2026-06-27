@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { performSync, detectAndSyncChanges } from '../services/sync'
 import { ERR_DOC_NOT_FOUND, ERR_DOC_NOT_PUBLISHED } from '@/lib/errors'

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Tests for Auth Connect API routes
  * Covers GET /api/auth/connect/google, GET /api/auth/connect/google/callback,

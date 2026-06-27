@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Tests for User API routes
  * Covers DELETE /api/user and PUT /api/user/password

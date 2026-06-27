@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Tests for /api/documents/[id] route
  * Couvre GET, PUT, DELETE

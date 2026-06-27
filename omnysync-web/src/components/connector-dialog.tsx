@@ -190,12 +190,14 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
             {platformFields.map((field) => (
               <div key={field.key} className="space-y-1.5">
                 <Label>{field.label}</Label>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {}
                 <Input
                   type={field.type}
                   placeholder={field.placeholder}
                   value={fields[field.key] || ''}
-                  onChange={(e: any) => updateField(field.key, e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    updateField(field.key, e.target.value)
+                  }
                 />
               </div>
             ))}
@@ -211,16 +213,11 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
             )}
 
             <div className="flex gap-2 pt-2">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              <Button variant="outline" className="flex-1" {...({ onClick: onClose } as any)}>
+              <Button variant="outline" className="flex-1" onClick={onClose}>
                 Cancel
               </Button>
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              <Button
-                className="flex-1"
-                {...({ onClick: handleConnect } as any)}
-                disabled={loading}
-              >
+              {}
+              <Button className="flex-1" onClick={handleConnect} disabled={loading}>
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />}
                 Connect
               </Button>
