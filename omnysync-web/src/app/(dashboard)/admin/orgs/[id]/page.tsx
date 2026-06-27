@@ -18,6 +18,7 @@ import {
   ToggleLeft,
   AlertTriangle,
 } from 'lucide-react'
+import { formatDate, detectClientLocale } from '@/lib/format-date'
 
 export const dynamic = 'force-dynamic'
 
@@ -79,6 +80,7 @@ const subscriptionStatusBadge: Record<
 }
 
 export default async function AdminOrgDetailPage({ params }: PageProps) {
+  const locale = detectClientLocale()
   const session = await auth()
   if (!session?.user?.id) return null
   await requireAdmin()
@@ -168,7 +170,7 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
             <div>
               <p className="text-sm text-muted-foreground">Créée le</p>
               <p className="font-medium">
-                {org.createdAt.toLocaleDateString('fr-FR', {
+                {formatDate(org.createdAt, locale, {
                   day: 'numeric',
                   month: 'long',
                   year: 'numeric',
@@ -207,14 +209,11 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
                   <div>
                     <p className="text-sm text-muted-foreground">Fin de période</p>
                     <p className="font-medium text-sm">
-                      {new Date(entitlementsData.subscription.currentPeriodEnd).toLocaleDateString(
-                        'fr-FR',
-                        {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        }
-                      )}
+                      {formatDate(entitlementsData.subscription.currentPeriodEnd, locale, {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
                     </p>
                   </div>
                 )}
@@ -228,14 +227,11 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
                   <div>
                     <p className="text-sm text-muted-foreground">Fin d&apos;essai</p>
                     <p className="font-medium text-sm">
-                      {new Date(entitlementsData.subscription.trialEnd).toLocaleDateString(
-                        'fr-FR',
-                        {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        }
-                      )}
+                      {formatDate(entitlementsData.subscription.trialEnd, locale, {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
                     </p>
                   </div>
                 )}
@@ -394,9 +390,7 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
                         {override.reason || '—'}
                       </td>
                       <td className="py-3 px-4 text-muted-foreground">
-                        {override.expiresAt
-                          ? new Date(override.expiresAt).toLocaleDateString('fr-FR')
-                          : '—'}
+                        {override.expiresAt ? formatDate(override.expiresAt, locale) : '—'}
                       </td>
                     </tr>
                   ))}

@@ -14,6 +14,7 @@ import {
   FileText,
   Plug,
 } from 'lucide-react'
+import { formatDate, formatDateTime, detectClientLocale } from '@/lib/format-date'
 
 interface AnalyticsData {
   totalSyncs: number
@@ -33,6 +34,7 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
+  const locale = detectClientLocale()
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -46,11 +48,21 @@ export default function AnalyticsPage() {
       if (res.ok) {
         const data = await res.json()
         setData(data)
+      } else if (res.status === 404) {
+        setError(
+          'Analytics data is not available yet. Start syncing documents to generate reports.'
+        )
+      } else if (res.status >= 500) {
+        setError(
+          'The analytics server is temporarily unavailable. Please try again in a few minutes.'
+        )
       } else {
-        setError('Error loading analytics data')
+        setError(`Failed to load analytics (${res.status}). If this persists, contact support.`)
       }
     } catch (e) {
-      setError('Unable to load analytics data')
+      setError(
+        'Unable to connect to the analytics service. Check your internet connection and try again.'
+      )
       console.error(e)
     } finally {
       setLoading(false)
@@ -226,14 +238,17 @@ export default function AnalyticsPage() {
                   const maxCount = Math.max(...displayData.syncByDay.map((d) => d.count))
                   const height = (day.count / maxCount) * 100
 
+                  const dayLabel = formatDate(day.date, locale, { weekday: 'short' })
                   return (
                     <div key={index} className="flex-1 flex flex-col items-center gap-2">
                       <div
                         className="w-full bg-primary rounded-t"
                         style={{ height: `${height}%`, minHeight: '4px' }}
+                        role="img"
+                        aria-label={`${day.count} sync${day.count !== 1 ? 's' : ''} on ${dayLabel}`}
                       />
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
+                      <span className="text-xs text-muted-foreground" aria-hidden="true">
+                        {dayLabel}
                       </span>
                     </div>
                   )
@@ -296,7 +311,7 @@ export default function AnalyticsPage() {
                       <span className="text-sm">{activity.action}</span>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(activity.createdAt).toLocaleString('en-US')}
+                      {formatDateTime(activity.createdAt, locale)}
                     </span>
                   </div>
                 ))}

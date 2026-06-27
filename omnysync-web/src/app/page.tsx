@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Zap, Globe, BarChart3, ArrowUpDown, Shield } from 'lucide-react'
+import { ArrowRight, Zap, BarChart3, ArrowUpDown, Shield } from 'lucide-react'
 import { t } from '@/lib/i18n'
 
 export default function Home() {
@@ -52,23 +52,91 @@ export default function Home() {
           <p className="text-center text-sm text-muted-foreground mb-6">{t('hero_platforms')}</p>
           <div className="flex items-center justify-center gap-8 flex-wrap opacity-50">
             <div className="flex items-center gap-2">
-              <Globe className="w-6 h-6" />
+              <svg
+                className="w-6 h-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z" />
+                <path d="M2 12h20" />
+              </svg>
               <span className="font-medium">WordPress</span>
             </div>
             <div className="flex items-center gap-2">
-              <Globe className="w-6 h-6" />
+              <svg
+                className="w-6 h-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="4" />
+                <circle cx="12" cy="12" r="3" />
+                <circle cx="16" cy="8" r="1" fill="currentColor" />
+              </svg>
               <span className="font-medium">Ghost</span>
             </div>
             <div className="flex items-center gap-2">
-              <Globe className="w-6 h-6" />
+              <svg
+                className="w-6 h-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+                <path d="M8 7h8" />
+                <path d="M8 11h6" />
+                <path d="M8 15h4" />
+              </svg>
               <span className="font-medium">Webflow</span>
             </div>
             <div className="flex items-center gap-2">
-              <Globe className="w-6 h-6" />
+              <svg
+                className="w-6 h-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
+                <path d="M8.5 12.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5S7 10.17 7 11s.67 1.5 1.5 1.5z" />
+                <path d="M15.5 12.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5S14 10.17 14 11s.67 1.5 1.5 1.5z" />
+                <path d="M9 16c.5.5 1.5 1 3 1s2.5-.5 3-1" />
+              </svg>
               <span className="font-medium">Shopify</span>
             </div>
             <div className="flex items-center gap-2">
-              <Globe className="w-6 h-6" />
+              <svg
+                className="w-6 h-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 4h16v16H4z" />
+                <path d="M8 8h8" />
+                <path d="M8 12h8" />
+                <path d="M8 16h8" />
+              </svg>
               <span className="font-medium">Notion</span>
             </div>
           </div>

@@ -5,7 +5,7 @@
  * Fetches and displays all entitlement overrides with optional orgId filter and pagination.
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Plus, Loader2, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { AdminEmptyState } from '@/components/admin/admin-empty-state'
 import { AdminDataTable, type Column } from '@/components/admin/admin-data-table'
+import { formatDate, detectClientLocale } from '@/lib/format-date'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -59,6 +60,7 @@ function isExpired(expiresAt: string | null): boolean {
 // ---------------------------------------------------------------------------
 
 export default function AdminOverridesPage() {
+  const locale = detectClientLocale()
   const [data, setData] = useState<Override[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -144,7 +146,7 @@ export default function AdminOverridesPage() {
         const expired = isExpired(o.expiresAt)
         return (
           <Badge variant={expired ? 'destructive' : 'outline'}>
-            {new Date(o.expiresAt).toLocaleDateString()}
+            {formatDate(o.expiresAt, locale)}
             {expired ? ' (expired)' : ''}
           </Badge>
         )
@@ -165,9 +167,7 @@ export default function AdminOverridesPage() {
       key: 'createdAt',
       header: 'Created At',
       render: (o) => (
-        <span className="text-xs text-muted-foreground">
-          {new Date(o.createdAt).toLocaleDateString()}
-        </span>
+        <span className="text-xs text-muted-foreground">{formatDate(o.createdAt, locale)}</span>
       ),
     },
   ]
@@ -214,7 +214,7 @@ export default function AdminOverridesPage() {
         <Input
           placeholder="Filter by Organization ID..."
           value={orgFilter}
-          onChange={(e: any) => {
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setOrgFilter(e.target.value)
             setPage(1)
           }}

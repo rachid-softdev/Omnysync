@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth'
+import { getLocaleFromHeaders } from '@/lib/i18n'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,7 +19,9 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
+import { formatDate } from '@/lib/format-date'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +37,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
     return null
   }
 
+  const locale = getLocaleFromHeaders(await headers())
   const orgId = await getUserOrgId(session.user.id)
 
   const document = await prisma.document.findUnique({
@@ -108,7 +112,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 {connectorNames[document.destConnector?.type || 'UNKNOWN'] || 'Destination'}
               </span>
               <span>·</span>
-              <span>Created on {document.createdAt.toLocaleDateString('en-US')}</span>
+              <span>Created on {formatDate(document.createdAt, locale)}</span>
             </div>
           </div>
         </div>
@@ -186,9 +190,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
             <div>
               <p className="text-sm text-muted-foreground">Last sync</p>
               <p className="font-medium">
-                {document.lastSyncedAt
-                  ? document.lastSyncedAt.toLocaleDateString('en-US')
-                  : 'Never'}
+                {document.lastSyncedAt ? formatDate(document.lastSyncedAt, locale) : 'Never'}
               </p>
             </div>
           </CardContent>
@@ -363,7 +365,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                         </div>
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {log.createdAt.toLocaleDateString('en-US', {
+                        {formatDate(log.createdAt, locale, {
                           day: 'numeric',
                           month: 'short',
                           hour: '2-digit',
@@ -417,7 +419,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                   <div>
                     <p className="text-sm text-muted-foreground">Next sync</p>
                     <p className="font-medium">
-                      {document.nextSyncAt.toLocaleDateString('en-US', {
+                      {formatDate(document.nextSyncAt, locale, {
                         day: 'numeric',
                         month: 'long',
                         hour: '2-digit',

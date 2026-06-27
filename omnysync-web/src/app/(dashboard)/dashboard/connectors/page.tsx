@@ -5,9 +5,14 @@ import dynamic from 'next/dynamic'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { RefreshCw, Loader2 } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { RefreshCw, Loader2, XCircle } from 'lucide-react'
 import { ConnectorIcon } from '@/components/connector-icon'
+import { HelpTooltip } from '@/components/help-tooltip'
 import { useTranslations } from '@/lib/i18n/useTranslations'
+import { useBatchSelect } from '@/hooks/use-batch-select'
+import { BatchActionBar } from '@/components/batch-action-bar'
+import { toast } from '@/components/toast-provider'
 
 const ConnectorDialog = dynamic(
   () => import('@/components/connector-dialog').then((mod) => ({ default: mod.ConnectorDialog })),
@@ -54,6 +59,7 @@ export default function ConnectorsPage() {
   const [loading, setLoading] = useState(true)
   const [dialogType, setDialogType] = useState<string | null>(null)
   const [statusMsg, setStatusMsg] = useState('')
+  const [errorMsg, setErrorMsg] = useState('')
 
   const fetchConnectors = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -95,13 +101,27 @@ export default function ConnectorsPage() {
 
   const connectedTypesSet = useMemo(() => new Set(connectors.map((c) => c.type)), [connectors])
 
+  const { selectedIds, selectedCount, isAllSelected, toggle, selectAll, clearSelection } =
+    useBatchSelect(connectors)
+
+  const handleBatchDisconnect = useCallback(() => {
+    setConnectors((prev) => prev.filter((c) => !selectedIds.has(c.id)))
+    toast.success(`${selectedCount} connector(s) disconnected`)
+    clearSelection()
+  }, [selectedIds, selectedCount, clearSelection])
+
   const handleConnect = useCallback((type: string) => {
-    if (type === 'GOOGLE_DOCS') {
-      window.location.href = '/api/auth/connect/google'
-    } else if (type === 'NOTION') {
-      window.location.href = '/api/auth/connect/notion'
-    } else {
-      setDialogType(type)
+    try {
+      if (type === 'GOOGLE_DOCS') {
+        window.location.href = '/api/auth/connect/google'
+      } else if (type === 'NOTION') {
+        window.location.href = '/api/auth/connect/notion'
+      } else {
+        setDialogType(type)
+      }
+    } catch (err) {
+      setErrorMsg('Failed to initiate connection. Please try again.')
+      setTimeout(() => setErrorMsg(''), 5000)
     }
   }, [])
 
@@ -117,7 +137,10 @@ export default function ConnectorsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">{t('UI_CONNECTORS')}</h1>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            {t('UI_CONNECTORS')}
+            <HelpTooltip text="Connectors link your content platforms (WordPress, Ghost, Webflow, etc.) to Omnysync. Add source connectors to pull content from, and destination connectors to push content to." />
+          </h1>
           <p className="text-muted-foreground mt-1">{t('UI_MANAGE_CONNECTORS')}</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => fetchConnectors()}>
@@ -129,6 +152,11 @@ export default function ConnectorsPage() {
       {statusMsg && (
         <div className="mb-6 p-4 bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/30 rounded-lg text-sm">
           {statusMsg}
+        </div>
+      )}
+      {errorMsg && (
+        <div className="mb-6 p-4 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30 rounded-lg text-sm">
+          {errorMsg}
         </div>
       )}
 
@@ -203,12 +231,47 @@ export default function ConnectorsPage() {
       {/* Already configured connectors */}
       {connectors.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">{t('UI_MY_CONNECTORS')}</h2>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-xl font-semibold">{t('UI_MY_CONNECTORS')}</h2>
+            <Checkbox
+              id="select-all-connectors"
+              aria-label="Select all connectors"
+              checked={isAllSelected}
+              onCheckedChange={(checked) => {
+                if (checked) selectAll()
+                else clearSelection()
+              }}
+              className="ml-auto"
+            />
+          </div>
+
+          {selectedCount > 0 && (
+            <BatchActionBar
+              selectedCount={selectedCount}
+              isAllSelected={isAllSelected}
+              onSelectAll={selectAll}
+              onClearSelection={clearSelection}
+              actions={[
+                {
+                  label: 'Disconnect',
+                  icon: <XCircle className="w-4 h-4 mr-1" />,
+                  variant: 'destructive',
+                  onClick: handleBatchDisconnect,
+                },
+              ]}
+            />
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {connectors.map((connector) => (
               <Card key={connector.id}>
                 <CardContent className="flex items-center gap-4 p-4">
-                  <ConnectorIcon type={connector.type} className="w-10 h-10" />
+                  <Checkbox
+                    checked={selectedIds.has(connector.id)}
+                    onCheckedChange={() => toggle(connector.id)}
+                    aria-label={`Select ${connector.name}`}
+                  />
+                  <ConnectorIcon type={connector.type} className="w-10 h-10 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{connector.name}</p>
                     <p className="text-sm text-muted-foreground">
