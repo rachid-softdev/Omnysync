@@ -5,7 +5,7 @@
  * Form to create a new feature flag.
  */
 
-import { useState } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -152,7 +152,7 @@ export default function NewFeaturePage() {
                 id="key"
                 placeholder="EXPORT_PDF"
                 value={key}
-                onChange={(e: any) => setKey(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setKey(e.target.value)}
                 className={errors.key ? 'border-destructive' : ''}
               />
               {errors.key && <p className="text-sm text-destructive">{errors.key}</p>}
@@ -172,7 +172,7 @@ export default function NewFeaturePage() {
                 id="name"
                 placeholder="Export to PDF"
                 value={name}
-                onChange={(e: any) => setName(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                 className={errors.name ? 'border-destructive' : ''}
               />
               {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
@@ -207,7 +207,7 @@ export default function NewFeaturePage() {
                 id="description"
                 placeholder="Optional description of what this feature does..."
                 value={description}
-                onChange={(e: any) => setDescription(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
                 rows={3}
               />
             </div>
@@ -221,7 +221,7 @@ export default function NewFeaturePage() {
                 id="defaultConfig"
                 placeholder='{"quota": 100, "enabled": true}'
                 value={defaultConfig}
-                onChange={(e: any) => setDefaultConfig(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDefaultConfig(e.target.value)}
                 rows={3}
               />
               {errors.defaultConfig && (

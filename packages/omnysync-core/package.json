@@ -76,6 +76,7 @@
       "default": "./dist/crypto.js"
     },
     "./services/*": {
+      "types": "./dist/services/*.d.ts",
       "import": "./dist/services/*.mjs",
       "require": "./dist/services/*.js",
       "default": "./dist/services/*.js"

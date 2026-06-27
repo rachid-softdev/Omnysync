@@ -38,13 +38,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email } = forgotPasswordSchema.parse(body)
 
-    const result = await createPasswordResetToken(email)
-    const resultData = result as any
+    const result: { success: boolean; message: string } = (await createPasswordResetToken(
+      email
+    )) as unknown as { success: boolean; message: string }
 
     // Toujours retourner succès pour éviter de révéler si l'email existe
     return NextResponse.json({
       success: true,
-      message: resultData.message || resultData,
+      message: result.message,
     })
   } catch (error) {
     if (error instanceof z.ZodError) {

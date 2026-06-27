@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Tests for Webhooks API routes
  * Covers GET /api/webhooks, POST /api/webhooks, POST /api/webhooks/[connector]

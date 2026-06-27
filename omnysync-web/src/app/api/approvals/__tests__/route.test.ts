@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Tests for the Approvals API route
  * Covers GET /api/approvals and POST /api/approvals

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Tests pour les routes API des Connectors
  * Couvre GET /api/connectors et POST /api/connectors

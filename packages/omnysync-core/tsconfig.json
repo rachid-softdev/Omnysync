@@ -1,6 +1,7 @@
 {
   "extends": "@omnysync/config/tsconfig",
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "outDir": "./dist",
     "rootDir": "./src",
     // Override temporaire : ces flags seront réactivés dans tsconfig.strict.json

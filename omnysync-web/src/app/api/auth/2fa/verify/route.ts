@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { rateLimitRedisWithConfig } from '@/lib/rate-limit-redis'
 import { verifyTotpCode } from '@omnysync/core/services/two-factor'
 import { z } from 'zod'
+import type { Session } from 'next-auth'
 
 const verifySchema = z.object({
   code: z.string().min(6, 'Code invalide').max(6),
@@ -62,7 +63,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Update session (mark as verified)
-    await (session as any).update({ twoFactorVerified: true })
+    await (
+      session as Session & { update: (data: Record<string, unknown>) => Promise<unknown> }
+    ).update({ twoFactorVerified: true })
 
     return NextResponse.json({
       success: true,

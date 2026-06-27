@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Tests unitaires pour les routes /api/webhook-endpoints
  *

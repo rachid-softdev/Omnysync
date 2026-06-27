@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Tests pour les routes API de Sync
  * Couvre GET /api/sync, POST /api/sync, POST /api/sync/[id]/run, POST /api/sync/[id]/check

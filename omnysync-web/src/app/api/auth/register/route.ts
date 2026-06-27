@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
     // 🛡️ Wrap user + org creation in a Prisma transaction.
     // Without this, if organization.create() fails after user.create() succeeds,
     // the user becomes an orphan with no organization and cannot use the app.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma tx type not accessible from web package
     const { user } = await prisma.$transaction(async (tx: any) => {
       const createdUser = await tx.user.create({
         data: {

@@ -35,7 +35,7 @@ export async function GET() {
       select: { id: true, title: true },
     })
 
-    const documentIds = documents.map((d: any) => d.id)
+    const documentIds = documents.map((d) => d.id)
 
     const approvals = await prisma.approvalRequest.findMany({
       where: { documentId: { in: documentIds } },
@@ -48,10 +48,10 @@ export async function GET() {
     // Si viewer/member, ne montrer que les demandes en attente
     const filteredApprovals = ['OWNER', 'ADMIN'].includes(membership.role)
       ? approvals
-      : approvals.filter((a: any) => a.status === 'PENDING')
+      : approvals.filter((a) => a.status === 'PENDING')
 
     return NextResponse.json({
-      approvals: filteredApprovals.map((a: any) => ({
+      approvals: filteredApprovals.map((a) => ({
         id: a.id,
         documentId: a.documentId,
         documentTitle: a.document.title,

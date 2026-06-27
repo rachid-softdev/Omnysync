@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Tests pour les routes API Team
  * Couvre GET /api/team, POST /api/team, PUT /api/team/[memberId], DELETE /api/team/[memberId]

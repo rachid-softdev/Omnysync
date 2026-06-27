@@ -40,12 +40,20 @@ export async function POST(request: NextRequest) {
     const { token, password } = resetPasswordSchema.parse(body)
 
     // Valider le token d'abord
-    const validation = (await validateResetToken(token)) as any
+    const validation: { valid: boolean; userId?: string; error?: string } =
+      (await validateResetToken(token)) as unknown as {
+        valid: boolean
+        userId?: string
+        error?: string
+      }
     if (!validation.valid) {
       return NextResponse.json({ error: validation.error }, { status: 400 })
     }
 
-    const result = (await resetPassword(token, password)) as any
+    const result: { success: boolean; error?: string } = (await resetPassword(
+      token,
+      password
+    )) as unknown as { success: boolean; error?: string }
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 })

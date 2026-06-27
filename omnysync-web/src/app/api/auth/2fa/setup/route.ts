@@ -79,6 +79,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { action, code } = setupSchema.parse(body)
 
+    // pendingSecrets type is not properly resolved from core package, cast explicitly
+    const secrets = pendingSecrets as unknown as Map<string, { secret: string; expiresAt: Date }>
+
     if (action === 'verify' && !code) {
       return NextResponse.json({ error: 'Code de vérification requis' }, { status: 400 })
     }
@@ -88,7 +91,7 @@ export async function POST(request: NextRequest) {
       const { secret, otpauthUrl } = await generateTotpSecret(session.user.id)
 
       // Stocker le secret temporairement (expire dans 10 minutes)
-      ;(pendingSecrets as any).set(session.user.id, {
+      secrets.set(session.user.id, {
         secret,
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       })
@@ -102,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     if (action === 'verify' && code) {
       // Récupérer le secret stocké lors de l'initiation
-      const pending = pendingSecrets.get(session.user.id)
+      const pending = secrets.get(session.user.id)
       if (!pending) {
         return NextResponse.json(
           {
@@ -112,9 +115,8 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const pendingData = pending as any
-      if (pendingData.expiresAt < new Date()) {
-        pendingSecrets.delete(session.user.id)
+      if (pending.expiresAt < new Date()) {
+        secrets.delete(session.user.id)
         return NextResponse.json(
           {
             error: 'Session expirée. Veuillez recommencer la configuration du 2FA.',
@@ -125,7 +127,7 @@ export async function POST(request: NextRequest) {
 
       // Vérifier le code TOTP avec le secret stocké
       const totp = new OTPAuth.TOTP({
-        secret: OTPAuth.Secret.fromBase32(pendingData.secret),
+        secret: OTPAuth.Secret.fromBase32(pending.secret),
         issuer: 'Omnysync',
         label: 'Omnysync',
       })
@@ -137,7 +139,7 @@ export async function POST(request: NextRequest) {
 
       // Configurer le 2FA avec le vrai secret vérifié
       // Le nettoyage de pendingSecrets est géré par setupTwoFactor (finally)
-      const result = await setupTwoFactor(session.user.id, pendingData.secret)
+      const result = await setupTwoFactor(session.user.id, pending.secret)
 
       if (!result.success) {
         return NextResponse.json({ error: result.error }, { status: 500 })

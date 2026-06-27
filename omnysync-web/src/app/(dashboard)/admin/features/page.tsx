@@ -5,7 +5,7 @@
  * Fetches and displays all feature flags with sorting, search, and pagination.
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, type ChangeEvent } from 'react'
 import Link from 'next/link'
 import { Plus, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -207,7 +207,7 @@ export default function AdminFeaturesPage() {
         <Input
           placeholder="Search features..."
           value={search}
-          onChange={(e: any) => setSearch(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           className="max-w-sm"
         />
       </div>

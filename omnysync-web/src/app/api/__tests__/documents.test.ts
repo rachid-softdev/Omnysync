@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * Tests pour les routes API des Documents
  * Couvre GET /api/documents et POST /api/documents
