@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, type ChangeEvent } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { useTranslations } from '@/lib/i18n/useTranslations'
+import { formatDateTime, detectClientLocale } from '@/lib/format-date'
+import { useBatchSelect } from '@/hooks/use-batch-select'
+import { BatchActionBar } from '@/components/batch-action-bar'
 
 interface WebhookEndpoint {
   id: string
@@ -52,11 +56,36 @@ interface WebhookEndpoint {
 
 export default function WebhooksPage() {
   const { t } = useTranslations()
+  const locale = detectClientLocale()
   const [loading, setLoading] = useState(true)
   const [webhooks, setWebhooks] = useState<WebhookEndpoint[]>([])
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [testingId, setTestingId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+
+  const [batchDeleteConfirmOpen, setBatchDeleteConfirmOpen] = useState(false)
+
+  const { selectedIds, selectedCount, isAllSelected, toggle, selectAll, clearSelection } =
+    useBatchSelect(webhooks)
+
+  const handleBatchDelete = useCallback(async () => {
+    const ids = Array.from(selectedIds)
+    let success = 0
+    for (const id of ids) {
+      try {
+        const res = await fetch(`/api/webhook-endpoints/${id}`, { method: 'DELETE' })
+        if (res.ok) {
+          setWebhooks((prev) => prev.filter((w) => w.id !== id))
+          success++
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    toast.success(`${success} webhook(s) deleted`)
+    clearSelection()
+    setBatchDeleteConfirmOpen(false)
+  }, [selectedIds, clearSelection])
 
   // Form state
   const [newWebhook, setNewWebhook] = useState({
@@ -71,9 +100,12 @@ export default function WebhooksPage() {
       if (res.ok) {
         const data = await res.json()
         setWebhooks(data.webhooks || [])
+      } else {
+        toast.error(`Failed to load webhooks (${res.status}). Refresh the page to try again.`)
       }
     } catch (e) {
       console.error(e)
+      toast.error('Unable to connect to the server. Check your internet connection.')
     } finally {
       setLoading(false)
     }
@@ -96,9 +128,12 @@ export default function WebhooksPage() {
         setWebhooks([...webhooks, data.webhook])
         setIsCreateOpen(false)
         setNewWebhook({ connectorId: '', type: 'WORDPRESS', url: '' })
+      } else {
+        toast.error(`Failed to create webhook (${res.status}). Check your input and try again.`)
       }
     } catch (e) {
       console.error(e)
+      toast.error('Unable to create webhook. Check your connection and try again.')
     }
   }
 
@@ -110,11 +145,11 @@ export default function WebhooksPage() {
         setWebhooks(webhooks.filter((w) => w.id !== deleteTarget))
         toast.success('Webhook deleted')
       } else {
-        toast.error('Error deleting webhook')
+        toast.error(`Could not delete webhook (${res.status}). Try again or contact support.`)
       }
     } catch (e) {
       console.error(e)
-      toast.error('Error deleting webhook')
+      toast.error('Could not delete webhook. Check your connection and try again.')
     } finally {
       setDeleteTarget(null)
     }
@@ -130,9 +165,12 @@ export default function WebhooksPage() {
 
       if (res.ok) {
         setWebhooks(webhooks.map((w) => (w.id === id ? { ...w, isActive } : w)))
+      } else {
+        toast.error(`Could not ${isActive ? 'enable' : 'disable'} webhook (${res.status}).`)
       }
     } catch (e) {
       console.error(e)
+      toast.error('Could not update webhook. Check your connection and try again.')
     }
   }
 
@@ -143,12 +181,12 @@ export default function WebhooksPage() {
       const data = await res.json()
 
       if (res.ok && data.success) {
-        toast.success('Test sent successfully!')
+        toast.success('Test webhook sent successfully!')
       } else {
-        toast.error(`Error: ${data.error}`)
+        toast.error(`Test failed: ${data.error || 'Unknown error. Verify the endpoint URL.'}`)
       }
     } catch {
-      toast.error('Error during test')
+      toast.error('Could not send test to webhook. Check that the endpoint URL is reachable.')
     } finally {
       setTestingId(null)
     }
@@ -231,7 +269,9 @@ export default function WebhooksPage() {
                 <Input
                   placeholder="https://your-site.com/webhook"
                   value={newWebhook.url}
-                  onChange={(e: any) => setNewWebhook({ ...newWebhook, url: e.target.value })}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setNewWebhook({ ...newWebhook, url: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -261,97 +301,159 @@ export default function WebhooksPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {webhooks.map((webhook) => (
-            <Card key={webhook.id}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`p-3 rounded-lg ${webhook.isActive ? 'bg-green-500/10' : 'bg-muted'}`}
-                    >
-                      <Webhook
-                        className={`w-5 h-5 ${webhook.isActive ? 'text-green-500' : 'text-muted-foreground'}`}
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{webhook.type}</p>
-                        <Badge variant={webhook.isActive ? 'default' : 'secondary'}>
-                          {webhook.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{webhook.url}</p>
-                      {webhook.lastTriggeredAt && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Last triggered:{' '}
-                          {new Date(webhook.lastTriggeredAt).toLocaleString('en-US')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+        <div className="relative">
+          {selectedCount > 0 && (
+            <BatchActionBar
+              selectedCount={selectedCount}
+              isAllSelected={isAllSelected}
+              onSelectAll={selectAll}
+              onClearSelection={clearSelection}
+              actions={[
+                {
+                  label: 'Delete',
+                  icon: <Trash2 className="w-4 h-4 mr-1" />,
+                  variant: 'destructive',
+                  onClick: () => setBatchDeleteConfirmOpen(true),
+                },
+              ]}
+            />
+          )}
 
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={webhook.isActive}
-                      onCheckedChange={(checked) => toggleWebhook(webhook.id, checked)}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => testWebhook(webhook.id)}
-                      disabled={testingId === webhook.id}
-                    >
-                      {testingId === webhook.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Play className="w-4 h-4" />
-                      )}
-                    </Button>
-                    {webhook.secret && (
-                      <Button variant="ghost" size="sm" onClick={() => copySecret(webhook.secret!)}>
-                        <Copy className="w-4 h-4" />
+          {/* Hidden select-all checkbox in header area */}
+          <div className="flex items-center gap-2 mb-4">
+            <Checkbox
+              id="select-all-webhooks"
+              aria-label="Select all webhooks"
+              checked={isAllSelected}
+              onCheckedChange={(checked) => {
+                if (checked) selectAll()
+                else clearSelection()
+              }}
+            />
+            <label
+              htmlFor="select-all-webhooks"
+              className="text-sm text-muted-foreground cursor-pointer select-none"
+            >
+              {isAllSelected ? 'All selected' : `${webhooks.length} webhooks`}
+            </label>
+          </div>
+
+          <div className="space-y-4">
+            {webhooks.map((webhook) => (
+              <Card key={webhook.id}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Checkbox
+                        checked={selectedIds.has(webhook.id)}
+                        onCheckedChange={() => toggle(webhook.id)}
+                        aria-label={`Select ${webhook.type}`}
+                      />
+                      <div
+                        className={`p-3 rounded-lg ${webhook.isActive ? 'bg-green-500/10' : 'bg-muted'}`}
+                      >
+                        <Webhook
+                          className={`w-5 h-5 ${webhook.isActive ? 'text-green-500' : 'text-muted-foreground'}`}
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{webhook.type}</p>
+                          <Badge variant={webhook.isActive ? 'default' : 'secondary'}>
+                            {webhook.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{webhook.url}</p>
+                        {webhook.lastTriggeredAt && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Last triggered: {formatDateTime(webhook.lastTriggeredAt, locale)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={webhook.isActive}
+                        onCheckedChange={(checked) => toggleWebhook(webhook.id, checked)}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => testWebhook(webhook.id)}
+                        disabled={testingId === webhook.id}
+                      >
+                        {testingId === webhook.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Play className="w-4 h-4" />
+                        )}
                       </Button>
-                    )}
-                    <AlertDialog
-                      open={deleteTarget === webhook.id}
-                      onOpenChange={(open) => {
-                        if (!open) setDeleteTarget(null)
-                      }}
-                    >
-                      <AlertDialogTrigger asChild>
+                      {webhook.secret && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-destructive"
-                          onClick={() => setDeleteTarget(webhook.id)}
+                          onClick={() => copySecret(webhook.secret!)}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Copy className="w-4 h-4" />
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete webhook</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this webhook? This action is
-                            irreversible.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
-                            Cancel
-                          </AlertDialogCancel>
-                          <AlertDialogAction onClick={confirmDeleteWebhook}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                      )}
+                      <AlertDialog
+                        open={deleteTarget === webhook.id}
+                        onOpenChange={(open) => {
+                          if (!open) setDeleteTarget(null)
+                        }}
+                      >
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive"
+                            onClick={() => setDeleteTarget(webhook.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete webhook</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this webhook? This action is
+                              irreversible.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
+                              Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction onClick={confirmDeleteWebhook}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <AlertDialog open={batchDeleteConfirmOpen} onOpenChange={setBatchDeleteConfirmOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete webhooks</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete {selectedCount} webhook(s)? This action is
+                  irreversible.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleBatchDelete}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
     </div>

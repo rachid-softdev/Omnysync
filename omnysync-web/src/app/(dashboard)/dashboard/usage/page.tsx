@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { Loader2, Zap, FileText, Users, Image, Link2, BarChart3, Calendar } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/useTranslations'
+import { formatDate, detectClientLocale } from '@/lib/format-date'
 
 interface UsageData {
   currentPlan: string
@@ -45,18 +46,26 @@ interface UsageData {
 
 export default function UsagePage() {
   const { t } = useTranslations()
+  const locale = detectClientLocale()
   const [loading, setLoading] = useState(true)
   const [usage, setUsage] = useState<UsageData | null>(null)
+  const [isFallbackData, setIsFallbackData] = useState(false)
 
   const fetchUsage = async () => {
     try {
+      setLoading(true)
+      setIsFallbackData(false)
+      setUsage(null)
       const res = await fetch('/api/usage')
       if (res.ok) {
         const data = await res.json()
         setUsage(data)
+      } else {
+        setIsFallbackData(true)
       }
     } catch (e) {
       console.error(e)
+      setIsFallbackData(true)
     } finally {
       setLoading(false)
     }
@@ -121,6 +130,16 @@ export default function UsagePage() {
         <p className="text-muted-foreground mt-1">{t('USAGE_SUBTITLE')}</p>
       </div>
 
+      {isFallbackData && (
+        <div className="mb-6 p-4 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 border border-yellow-500/30 rounded-lg text-sm flex items-center justify-between">
+          <span>Unable to load live data. Showing estimated usage.</span>
+          <Button variant="outline" size="sm" onClick={fetchUsage} disabled={loading}>
+            {loading && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+            Retry
+          </Button>
+        </div>
+      )}
+
       {/* Plan Info */}
       <Card className="mb-8">
         <CardContent className="p-6">
@@ -131,9 +150,8 @@ export default function UsagePage() {
                 <Badge variant="default">Active</Badge>
               </div>
               <p className="text-muted-foreground mt-1">
-                Billing cycle:{' '}
-                {new Date(displayUsage.billingCycle.start).toLocaleDateString('en-US')} -{' '}
-                {new Date(displayUsage.billingCycle.end).toLocaleDateString('en-US')}
+                Billing cycle: {formatDate(displayUsage.billingCycle.start, locale)} -{' '}
+                {formatDate(displayUsage.billingCycle.end, locale)}
               </p>
             </div>
             <Button variant="outline">Change plan</Button>
@@ -341,7 +359,7 @@ export default function UsagePage() {
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-muted-foreground" />
-                            {new Date(month.month + '-01').toLocaleDateString('en-US', {
+                            {formatDate(month.month + '-01', locale, {
                               month: 'long',
                               year: 'numeric',
                             })}

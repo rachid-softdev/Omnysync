@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, type ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { AdminDataTable } from '@/components/admin/admin-data-table'
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, Eye, AlertCircle } from 'lucide-react'
 import type { Column } from '@/components/admin/admin-data-table'
+import { formatDate, detectClientLocale } from '@/lib/format-date'
 
 interface User {
   id: string
@@ -20,6 +21,7 @@ interface User {
 
 export default function AdminUsersPage() {
   const router = useRouter()
+  const locale = detectClientLocale()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -37,7 +39,7 @@ export default function AdminUsersPage() {
     setError(null)
     fetch('/api/admin/users')
       .then((res) => {
-        if (!res.ok) throw new Error('Erreur lors du chargement des utilisateurs')
+        if (!res.ok) throw new Error('Failed to load users')
         return res.json()
       })
       .then((json) => {
@@ -72,21 +74,21 @@ export default function AdminUsersPage() {
       },
       {
         key: 'name',
-        header: 'Nom',
+        header: 'Name',
         render: (user) => user.name || '—',
       },
       {
         key: 'role',
-        header: 'Rôle',
+        header: 'Role',
         render: (user) => (
           <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>{user.role}</Badge>
         ),
       },
       {
         key: 'createdAt',
-        header: 'Créé le',
+        header: 'Created',
         render: (user) =>
-          new Date(user.createdAt).toLocaleDateString('fr-FR', {
+          formatDate(user.createdAt, locale, {
             day: 'numeric',
             month: 'short',
             year: 'numeric',
@@ -98,13 +100,13 @@ export default function AdminUsersPage() {
         render: (user) => (
           <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/users/${user.id}`)}>
             <Eye className="h-4 w-4 mr-1" />
-            Voir
+            View
           </Button>
         ),
         className: 'text-right',
       },
     ],
-    [router]
+    [router, locale]
   )
 
   const pagination = {
@@ -117,17 +119,17 @@ export default function AdminUsersPage() {
   return (
     <div className="p-8">
       <AdminPageHeader
-        title="Utilisateurs"
-        description={`${users.length} utilisateur${users.length > 1 ? 's' : ''} sur la plateforme`}
+        title="Users"
+        description={`${users.length} user${users.length !== 1 ? 's' : ''} on the platform`}
       />
 
       {/* Search bar */}
       <div className="relative mb-6 max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Rechercher par email ou nom…"
+          placeholder="Search by email or name…"
           value={search}
-          onChange={(e: any) => setSearch(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           className="pl-10"
         />
       </div>

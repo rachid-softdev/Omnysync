@@ -191,9 +191,7 @@ export class ExperimentService {
     const repo = getEntitlementRepository()
     const feature = await (
       repo as unknown as {
-        getFeature(
-          featureKey: string
-        ): Promise<{
+        getFeature(featureKey: string): Promise<{
           type?: string
           defaultConfig?: unknown
           enabled?: boolean
@@ -222,9 +220,7 @@ export class ExperimentService {
     const repo = getEntitlementRepository()
     const feature = await (
       repo as unknown as {
-        getFeature(
-          featureKey: string
-        ): Promise<{
+        getFeature(featureKey: string): Promise<{
           type?: string
           defaultConfig?: unknown
           enabled?: boolean

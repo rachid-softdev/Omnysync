@@ -1,11 +1,14 @@
 import { auth } from '@/lib/auth'
 import { requireAdmin } from '@/lib/auth/require-admin'
+import { getLocaleFromHeaders } from '@/lib/i18n'
 import { prisma } from '@/lib/prisma'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, Building2, Package, Puzzle, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import { Button } from '@/components/ui/button'
+import { formatDate } from '@/lib/format-date'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +16,8 @@ export default async function AdminDashboardPage() {
   const session = await auth()
   if (!session?.user?.id) return null
   await requireAdmin()
+
+  const locale = getLocaleFromHeaders(await headers())
 
   const [totalUsers, totalOrgs, totalPlans, totalFeatures, recentUsers, recentOrgs] =
     await Promise.all([
@@ -34,19 +39,19 @@ export default async function AdminDashboardPage() {
 
   const stats = [
     {
-      label: 'Utilisateurs',
+      label: 'Users',
       value: totalUsers,
       icon: Users,
       href: '/admin/users',
     },
     {
-      label: 'Organisations',
+      label: 'Organizations',
       value: totalOrgs,
       icon: Building2,
       href: '/admin/orgs',
     },
     {
-      label: 'Plans actifs',
+      label: 'Active Plans',
       value: totalPlans,
       icon: Package,
       href: '/admin/plans',
@@ -61,10 +66,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="p-8">
-      <AdminPageHeader
-        title="Administration"
-        description="Vue d'ensemble de la plateforme Omnysync"
-      />
+      <AdminPageHeader title="Administration" description="Omnysync platform overview" />
 
       {/* Stats cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -91,19 +93,21 @@ export default async function AdminDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Derniers utilisateurs</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">Les 5 derniers comptes créés</p>
+              <CardTitle>Recent Users</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                The 5 most recently created accounts
+              </p>
             </div>
             <Link href="/admin/users">
               <Button variant="ghost" size="sm">
-                Voir tout
+                View all
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </Link>
           </CardHeader>
           <CardContent>
             {recentUsers.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Aucun utilisateur</p>
+              <p className="text-sm text-muted-foreground text-center py-8">No users yet</p>
             ) : (
               <div className="space-y-3">
                 {recentUsers.map((user) => (
@@ -113,7 +117,7 @@ export default async function AdminDashboardPage() {
                     className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{user.name || 'Sans nom'}</p>
+                      <p className="text-sm font-medium truncate">{user.name || 'Unnamed'}</p>
                       <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
@@ -121,7 +125,7 @@ export default async function AdminDashboardPage() {
                         {user.role}
                       </span>
                       <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {user.createdAt.toLocaleDateString()}
+                        {formatDate(user.createdAt, locale)}
                       </span>
                     </div>
                   </Link>
@@ -135,21 +139,21 @@ export default async function AdminDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Dernières organisations</CardTitle>
+              <CardTitle>Recent Organizations</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Les 5 dernières organisations créées
+                The 5 most recently created organizations
               </p>
             </div>
             <Link href="/admin/orgs">
               <Button variant="ghost" size="sm">
-                Voir tout
+                View all
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </Link>
           </CardHeader>
           <CardContent>
             {recentOrgs.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Aucune organisation</p>
+              <p className="text-sm text-muted-foreground text-center py-8">No organizations yet</p>
             ) : (
               <div className="space-y-3">
                 {recentOrgs.map((org) => (
@@ -165,7 +169,7 @@ export default async function AdminDashboardPage() {
                       )}
                     </div>
                     <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">
-                      {org.createdAt.toLocaleDateString()}
+                      {formatDate(org.createdAt, locale)}
                     </span>
                   </Link>
                 ))}

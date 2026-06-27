@@ -23,11 +23,13 @@ import {
   ExternalLink,
   Building,
   Globe,
+  AlertCircle,
 } from 'lucide-react'
 
 export default function SettingsPage() {
   const { t } = useTranslations()
   const [loading, setLoading] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [saved, setSaved] = useState(false)
   const [name, setName] = useState('')
   const [notifications, setNotifications] = useState({
@@ -42,13 +44,32 @@ export default function SettingsPage() {
     { id: '1', name: 'Production API Key', createdAt: '2026-01-15', lastUsed: '2026-05-10' },
   ])
 
-  const handleSave = async () => {
+  const handleSaveProfile = async () => {
     setLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setLoading(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    setSaved(false)
+    setSaveError('')
+
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Failed to save profile (${res.status})`)
+      }
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (err) {
+      setSaveError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to save changes. Check your connection and try again.'
+      )
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -137,8 +158,14 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
+                {saveError && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>{saveError}</span>
+                  </div>
+                )}
                 <div className="flex justify-end">
-                  <Button onClick={handleSave} disabled={loading}>
+                  <Button onClick={handleSaveProfile} disabled={loading}>
                     {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     {saved && <CheckCircle className="w-4 h-4 mr-2" />}
                     {saved ? 'Saved!' : 'Save'}
@@ -326,7 +353,7 @@ export default function SettingsPage() {
                     }
                   />
                 </div>
-                <Button className="mt-4" onClick={handleSave} disabled={loading}>
+                <Button className="mt-4" onClick={handleSaveProfile} disabled={loading}>
                   {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Save preferences
                 </Button>

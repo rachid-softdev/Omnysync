@@ -16,9 +16,13 @@ import {
   FileCheck,
   Zap,
   Shield,
+  ExternalLink,
 } from 'lucide-react'
 import { logoutAction } from '@/lib/actions'
 import { MobileNav } from '@/components/mobile-nav'
+import { SidebarNav } from '@/components/sidebar-nav'
+import { KeyboardShortcuts } from '@/components/keyboard-shortcuts'
+import { CommandPalette, CommandPaletteTrigger } from '@/components/command-palette'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -64,22 +68,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="p-6 border-b border-border">
           <h1 className="text-xl font-bold">Omnysync</h1>
         </div>
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
-            {navItems.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors"
-                >
-                  <item.icon className="w-5 h-5" />
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <SidebarNav items={navItems} />
         <div className="p-4 border-t border-border">
+          <Link
+            href="https://docs.omnysync.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors mb-2"
+          >
+            <ExternalLink className="w-4 h-4" />
+            <span>Help & Documentation</span>
+          </Link>
           <div className="flex items-center gap-3 mb-4">
             {user.image && (
               <Image
@@ -104,10 +103,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <LogOut className="w-4 h-4 mr-2" />
             {trans('UI_LOGOUT')}
           </Button>
+          <CommandPaletteTrigger />
         </div>
       </aside>
       {/* Mobile navigation */}
       <MobileNav navItems={navItems} user={user} />
+      <CommandPalette />
+      <KeyboardShortcuts />
       <main id="main-content" className="flex-1 bg-background md:pt-0 pt-14">
         {children}
       </main>

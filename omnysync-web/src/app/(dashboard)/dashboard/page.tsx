@@ -1,12 +1,15 @@
 import { auth } from '@/lib/auth'
 import { t } from '@/lib/i18n'
+import { getLocaleFromHeaders } from '@/lib/i18n'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { FileText, Plug, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import type { Metadata } from 'next'
+import { formatDate } from '@/lib/format-date'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -20,6 +23,7 @@ export default async function DashboardPage() {
     return null
   }
 
+  const locale = getLocaleFromHeaders(await headers())
   const orgId = await getUserOrgId(session.user.id)
 
   const [docCount, connectorCount, syncedCount, errorCount, recentLogs] = await Promise.all([
@@ -119,7 +123,7 @@ export default async function DashboardPage() {
                       <span>{log.message}</span>
                     </div>
                     <span className="text-muted-foreground text-xs">
-                      {log.createdAt.toLocaleDateString()}
+                      {formatDate(log.createdAt, locale)}
                     </span>
                   </div>
                 ))}

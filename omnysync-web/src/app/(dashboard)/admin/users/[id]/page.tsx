@@ -8,6 +8,7 @@ import { AdminStatusBadge } from '@/components/admin/admin-status-badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Mail, Calendar, Building2, Shield, User as UserIcon } from 'lucide-react'
+import { formatDate, detectClientLocale } from '@/lib/format-date'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,7 @@ interface PageProps {
 }
 
 export default async function AdminUserDetailPage({ params }: PageProps) {
+  const locale = detectClientLocale()
   const session = await auth()
   if (!session?.user?.id) return null
   await requireAdmin()
@@ -96,7 +98,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span>
                   Créé le{' '}
-                  {user.createdAt.toLocaleDateString('fr-FR', {
+                  {formatDate(user.createdAt, locale, {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
@@ -112,7 +114,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span>
                     Dernière connexion :{' '}
-                    {user.lastLoginAt.toLocaleDateString('fr-FR', {
+                    {formatDate(user.lastLoginAt, locale, {
                       day: 'numeric',
                       month: 'long',
                       year: 'numeric',
@@ -126,7 +128,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                 <div className="flex items-center gap-3 text-sm">
                   <AdminStatusBadge status="error" label="Désactivé" />
                   <span className="text-destructive text-xs">
-                    Compte désactivé le {user.disabledAt.toLocaleDateString('fr-FR')}
+                    Compte désactivé le {formatDate(user.disabledAt, locale)}
                   </span>
                 </div>
               )}
@@ -147,23 +149,31 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
               <p className="text-sm text-muted-foreground text-center py-8">Aucune organisation</p>
             ) : (
               <div className="space-y-3">
-                {user.organizations.map(({ organization, role }: any) => (
-                  <Link
-                    key={organization.id}
-                    href={`/admin/orgs/${organization.id}`}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors"
-                  >
-                    <div>
-                      <p className="font-medium">{organization.name}</p>
-                      {organization.slug && (
-                        <p className="text-xs text-muted-foreground">/{organization.slug}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{role}</Badge>
-                    </div>
-                  </Link>
-                ))}
+                {user.organizations.map(
+                  ({
+                    organization,
+                    role,
+                  }: {
+                    organization: { id: string; name: string; slug: string }
+                    role: string
+                  }) => (
+                    <Link
+                      key={organization.id}
+                      href={`/admin/orgs/${organization.id}`}
+                      className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                    >
+                      <div>
+                        <p className="font-medium">{organization.name}</p>
+                        {organization.slug && (
+                          <p className="text-xs text-muted-foreground">/{organization.slug}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{role}</Badge>
+                      </div>
+                    </Link>
+                  )
+                )}
               </div>
             )}
           </CardContent>

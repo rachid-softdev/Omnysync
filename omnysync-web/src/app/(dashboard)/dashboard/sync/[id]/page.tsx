@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth'
+import { getLocaleFromHeaders } from '@/lib/i18n'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,8 +18,10 @@ import {
   Send,
 } from 'lucide-react'
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import { ConnectorIcon } from '@/components/connector-icon'
 import { notFound } from 'next/navigation'
+import { formatDateTime } from '@/lib/format-date'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +37,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
     return null
   }
 
+  const locale = getLocaleFromHeaders(await headers())
   const orgId = await getUserOrgId(session.user.id)
 
   // Get sync execution logs for this document
@@ -177,7 +181,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
                 </h2>
                 {document.lastSyncedAt && (
                   <p className="text-sm text-muted-foreground">
-                    Last execution: {document.lastSyncedAt.toLocaleString('en-US')}
+                    Last execution: {formatDateTime(document.lastSyncedAt, locale)}
                   </p>
                 )}
               </div>
@@ -316,7 +320,13 @@ export default async function SyncDetailPage({ params }: PageProps) {
                   }`}
                 >
                   <span className="text-xs opacity-50">
-                    [{log.createdAt.toLocaleTimeString('en-US')}]
+                    [
+                    {formatDateTime(log.createdAt, locale, {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                    })}
+                    ]
                   </span>{' '}
                   {log.status === 'SUCCESS' && '✓ '}
                   {log.status === 'ERROR' && '✗ '}

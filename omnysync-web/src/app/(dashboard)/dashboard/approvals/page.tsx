@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
@@ -15,6 +16,10 @@ import {
 } from '@/components/ui/dialog'
 import { Loader2, FileCheck, Clock, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/useTranslations'
+import { formatDateTime, detectClientLocale } from '@/lib/format-date'
+import { useBatchSelect } from '@/hooks/use-batch-select'
+import { BatchActionBar } from '@/components/batch-action-bar'
+import { toast } from '@/components/toast-provider'
 
 interface ApprovalRequest {
   id: string
@@ -31,6 +36,7 @@ interface ApprovalRequest {
 
 export default function ApprovalsPage() {
   const { t } = useTranslations()
+  const locale = detectClientLocale()
   const [loading, setLoading] = useState(true)
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([])
   const [selectedApproval, setSelectedApproval] = useState<ApprovalRequest | null>(null)
@@ -38,15 +44,91 @@ export default function ApprovalsPage() {
   const [rejectComment, setRejectComment] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
+  const pendingApprovals = approvals.filter((a) => a.status === 'PENDING')
+  const historyApprovals = approvals.filter((a) => a.status !== 'PENDING')
+
+  const { selectedIds, selectedCount, isAllSelected, toggle, selectAll, clearSelection } =
+    useBatchSelect(pendingApprovals)
+
+  // Batch action loading
+  const [batchLoading, setBatchLoading] = useState(false)
+
+  const batchApprove = useCallback(async () => {
+    setBatchLoading(true)
+    const ids = Array.from(selectedIds)
+    let success = 0
+    for (const id of ids) {
+      try {
+        const res = await fetch(`/api/approvals/${id}/approve`, { method: 'POST' })
+        if (res.ok) {
+          setApprovals((prev) =>
+            prev.map((a) =>
+              a.id === id
+                ? { ...a, status: 'APPROVED' as const, approvedAt: new Date().toISOString() }
+                : a
+            )
+          )
+          success++
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    if (success === ids.length) {
+      toast.success(`${success} request(s) approved`)
+    } else {
+      toast.warning(
+        `Approved ${success} of ${ids.length} request(s). ${ids.length - success} failed.`
+      )
+    }
+    clearSelection()
+    setBatchLoading(false)
+  }, [selectedIds, clearSelection])
+
+  const batchReject = useCallback(async () => {
+    setBatchLoading(true)
+    const ids = Array.from(selectedIds)
+    let success = 0
+    for (const id of ids) {
+      try {
+        const res = await fetch(`/api/approvals/${id}/reject`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ comments: '' }),
+        })
+        if (res.ok) {
+          setApprovals((prev) =>
+            prev.map((a) => (a.id === id ? { ...a, status: 'REJECTED' as const } : a))
+          )
+          success++
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    if (success === ids.length) {
+      toast.success(`${success} request(s) rejected`)
+    } else {
+      toast.warning(
+        `Rejected ${success} of ${ids.length} request(s). ${ids.length - success} failed.`
+      )
+    }
+    clearSelection()
+    setBatchLoading(false)
+  }, [selectedIds, clearSelection])
+
   const fetchApprovals = async () => {
     try {
       const res = await fetch('/api/approvals')
       if (res.ok) {
         const data = await res.json()
         setApprovals(data.approvals || [])
+      } else {
+        toast.error(`Failed to load approvals (${res.status}). Refresh the page to try again.`)
       }
     } catch (e) {
       console.error(e)
+      toast.error('Unable to load approvals. Check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -68,9 +150,13 @@ export default function ApprovalsPage() {
               : a
           )
         )
+        toast.success('Request approved')
+      } else {
+        toast.error(`Could not approve request (${res.status}). Try again.`)
       }
     } catch (e) {
       console.error(e)
+      toast.error('Could not approve request. Check your connection and try again.')
     } finally {
       setActionLoading(null)
     }
@@ -92,9 +178,13 @@ export default function ApprovalsPage() {
         )
         setRejectOpen(false)
         setRejectComment('')
+        toast.success('Request rejected')
+      } else {
+        toast.error(`Could not reject request (${res.status}). Try again.`)
       }
     } catch (e) {
       console.error(e)
+      toast.error('Could not reject request. Check your connection and try again.')
     } finally {
       setActionLoading(null)
     }
@@ -143,9 +233,6 @@ export default function ApprovalsPage() {
     )
   }
 
-  const pendingApprovals = approvals.filter((a) => a.status === 'PENDING')
-  const historyApprovals = approvals.filter((a) => a.status !== 'PENDING')
-
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -155,16 +242,58 @@ export default function ApprovalsPage() {
 
       {/* Pending */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Clock className="w-5 h-5" />
-          {t('APPROVALS_PENDING')} ({pendingApprovals.length})
-        </h2>
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Clock className="w-5 h-5" />
+            {t('APPROVALS_PENDING')} ({pendingApprovals.length})
+          </h2>
+          {pendingApprovals.length > 0 && (
+            <Checkbox
+              id="select-all-pending"
+              aria-label="Select all pending approvals"
+              checked={isAllSelected}
+              onCheckedChange={(checked) => {
+                if (checked) selectAll()
+                else clearSelection()
+              }}
+              className="ml-auto"
+            />
+          )}
+        </div>
+
+        {selectedCount > 0 && (
+          <BatchActionBar
+            selectedCount={selectedCount}
+            isAllSelected={isAllSelected}
+            onSelectAll={selectAll}
+            onClearSelection={clearSelection}
+            actions={[
+              {
+                label: 'Approve',
+                icon: <CheckCircle className="w-4 h-4 mr-1" />,
+                variant: 'default',
+                onClick: batchApprove,
+                loading: batchLoading,
+              },
+              {
+                label: 'Reject',
+                icon: <XCircle className="w-4 h-4 mr-1" />,
+                variant: 'destructive',
+                onClick: batchReject,
+                loading: batchLoading,
+              },
+            ]}
+          />
+        )}
 
         {pendingApprovals.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <FileCheck className="w-10 h-10 text-muted-foreground mb-3" />
               <p className="text-muted-foreground">No pending approval requests</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Pending approvals will appear here when documents are submitted for review.
+              </p>
             </CardContent>
           </Card>
         ) : (
@@ -173,18 +302,26 @@ export default function ApprovalsPage() {
               <Card key={approval.id}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold">{approval.documentTitle}</h3>
-                        {getStatusBadge(approval.status)}
+                    <div className="flex items-start gap-3 flex-1">
+                      <Checkbox
+                        checked={selectedIds.has(approval.id)}
+                        onCheckedChange={() => toggle(approval.id)}
+                        aria-label={`Select ${approval.documentTitle}`}
+                        className="mt-1"
+                      />
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="font-semibold">{approval.documentTitle}</h3>
+                          {getStatusBadge(approval.status)}
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Requested by {approval.requestedBy} •{' '}
+                          {formatDateTime(approval.requestedAt, locale)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Expires on {formatDateTime(approval.expiresAt, locale)}
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Requested by {approval.requestedBy} •{' '}
-                        {new Date(approval.requestedAt).toLocaleString('en-US')}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Expires on {new Date(approval.expiresAt).toLocaleString('en-US')}
-                      </p>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -241,6 +378,9 @@ export default function ApprovalsPage() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <p className="text-muted-foreground">No approval history</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Resolved approvals will be listed here for reference.
+              </p>
             </CardContent>
           </Card>
         ) : (
@@ -256,10 +396,10 @@ export default function ApprovalsPage() {
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {approval.status === 'APPROVED'
-                          ? `Approved by ${approval.approvedBy} on ${approval.approvedAt ? new Date(approval.approvedAt).toLocaleString('en-US') : ''}`
+                          ? `Approved by ${approval.approvedBy} on ${approval.approvedAt ? formatDateTime(approval.approvedAt, locale) : ''}`
                           : approval.status === 'REJECTED'
                             ? `Rejected${approval.comments ? `: ${approval.comments}` : ''}`
-                            : `Expired on ${new Date(approval.expiresAt).toLocaleString('en-US')}`}
+                            : `Expired on ${formatDateTime(approval.expiresAt, locale)}`}
                       </p>
                     </div>
                   </div>
@@ -280,7 +420,9 @@ export default function ApprovalsPage() {
           <Textarea
             placeholder="Reason for rejection (optional)"
             value={rejectComment}
-            onChange={(e: any) => setRejectComment(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+              setRejectComment(e.target.value)
+            }
             className="min-h-[100px]"
           />
           <DialogFooter>

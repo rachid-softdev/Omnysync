@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, type ChangeEvent } from 'react'
 import Link from 'next/link'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { AdminDataTable } from '@/components/admin/admin-data-table'
@@ -8,6 +8,7 @@ import { AdminStatusBadge } from '@/components/admin/admin-status-badge'
 import { Input } from '@/components/ui/input'
 import { Search, Building2 } from 'lucide-react'
 import type { Column } from '@/components/admin/admin-data-table'
+import { formatDate, detectClientLocale } from '@/lib/format-date'
 
 interface OrgSubscription {
   planKey: string
@@ -23,6 +24,7 @@ interface Organization {
 }
 
 export default function AdminOrgsPage() {
+  const locale = detectClientLocale()
   const [orgs, setOrgs] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -40,7 +42,7 @@ export default function AdminOrgsPage() {
     setError(null)
     fetch('/api/admin/orgs')
       .then((res) => {
-        if (!res.ok) throw new Error('Erreur lors du chargement des organisations')
+        if (!res.ok) throw new Error('Failed to load organizations')
         return res.json()
       })
       .then((json) => {
@@ -68,7 +70,7 @@ export default function AdminOrgsPage() {
     () => [
       {
         key: 'name',
-        header: 'Nom',
+        header: 'Name',
         render: (org) => (
           <Link
             href={`/admin/orgs/${org.id}`}
@@ -111,9 +113,9 @@ export default function AdminOrgsPage() {
       },
       {
         key: 'createdAt',
-        header: 'Créé le',
+        header: 'Created',
         render: (org) =>
-          new Date(org.createdAt).toLocaleDateString('fr-FR', {
+          formatDate(org.createdAt, locale, {
             day: 'numeric',
             month: 'short',
             year: 'numeric',
@@ -133,17 +135,17 @@ export default function AdminOrgsPage() {
   return (
     <div className="p-8">
       <AdminPageHeader
-        title="Organisations"
-        description={`${orgs.length} organisation${orgs.length > 1 ? 's' : ''} sur la plateforme`}
+        title="Organizations"
+        description={`${orgs.length} organization${orgs.length !== 1 ? 's' : ''} on the platform`}
       />
 
       {/* Search bar */}
       <div className="relative mb-6 max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Rechercher par nom ou slug…"
+          placeholder="Search by name or slug…"
           value={search}
-          onChange={(e: any) => setSearch(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           className="pl-10"
         />
       </div>

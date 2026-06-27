@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
-import { Zap, Globe, BarChart3, Shield } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Zap, Globe, BarChart3, Shield, AlertCircle } from 'lucide-react'
 
 export default function SignInPage() {
   const router = useRouter()
@@ -13,10 +14,69 @@ export default function SignInPage() {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string
+    password?: string
+    name?: string
+  }>({})
   const [loading, setLoading] = useState(false)
+
+  const validateEmail = (value: string): string | undefined => {
+    if (!value.trim()) return 'Email is required'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Enter a valid email address'
+    return undefined
+  }
+
+  const validatePassword = (value: string): string | undefined => {
+    if (!value) return 'Password is required'
+    if (value.length < 8) return 'Password must be at least 8 characters'
+    return undefined
+  }
+
+  const validateName = (value: string): string | undefined => {
+    if (!isLogin && !value.trim()) return 'Name is required'
+    return undefined
+  }
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setEmail(value)
+    setFieldErrors((prev) => ({ ...prev, email: validateEmail(value) }))
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setPassword(value)
+    if (!isLogin) {
+      setFieldErrors((prev) => ({ ...prev, password: validatePassword(value) }))
+    } else {
+      setFieldErrors((prev) => ({ ...prev, password: undefined }))
+    }
+  }
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setName(value)
+    if (!isLogin) {
+      setFieldErrors((prev) => ({ ...prev, name: validateName(value) }))
+    }
+  }
+
+  const getSubmitError = (): string | undefined => {
+    const emailErr = validateEmail(email)
+    const passwordErr = validatePassword(password)
+    const nameErr = validateName(name)
+    if (emailErr || passwordErr || nameErr) return 'Please fix the errors above before continuing.'
+    return undefined
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const submitErr = getSubmitError()
+    if (submitErr) {
+      setError(submitErr)
+      return
+    }
     setError('')
     setLoading(true)
 
@@ -30,9 +90,16 @@ export default function SignInPage() {
         })
 
         if (result?.error) {
-          setError('Invalid email or password')
+          if (result.error === 'CredentialsSignin') {
+            setError('Invalid email or password. Check your credentials and try again.')
+          } else if (result.error === 'OAuthAccountNotLinked') {
+            setError(
+              'This email is already linked to another sign-in method. Try signing in with Google.'
+            )
+          } else {
+            setError(`Unable to sign in: ${result.error}. Please try again or contact support.`)
+          }
         } else {
-          // Check if 2FA verification is needed
           router.push('/dashboard')
         }
       } else {
@@ -46,7 +113,11 @@ export default function SignInPage() {
         const data = await res.json()
 
         if (!res.ok) {
-          setError(data.error || 'Registration error')
+          if (res.status === 409) {
+            setError('An account with this email already exists. Try signing in instead.')
+          } else {
+            setError(data.error || 'Registration failed. Please try again or contact support.')
+          }
         } else {
           // Auto login after registration
           const result = await signIn('credentials', {
@@ -61,7 +132,7 @@ export default function SignInPage() {
         }
       }
     } catch {
-      setError('An error occurred')
+      setError('Unable to connect. Check your internet connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -133,15 +204,20 @@ export default function SignInPage() {
                 <label htmlFor="name" className="text-sm font-medium mb-1 block">
                   Name
                 </label>
-                <input
+                <Input
                   id="name"
                   type="text"
                   placeholder="Your name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full h-11 px-4 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  onChange={handleNameChange}
                   required={!isLogin}
+                  aria-invalid={!!fieldErrors.name}
                 />
+                {fieldErrors.name && (
+                  <p className="text-xs text-destructive mt-1" role="alert">
+                    {fieldErrors.name}
+                  </p>
+                )}
               </div>
             )}
 
@@ -149,15 +225,20 @@ export default function SignInPage() {
               <label htmlFor="email" className="text-sm font-medium mb-1 block">
                 Email
               </label>
-              <input
+              <Input
                 id="email"
                 type="email"
                 placeholder="you@company.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-11 px-4 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                onChange={handleEmailChange}
                 required
+                aria-invalid={!!fieldErrors.email}
               />
+              {fieldErrors.email && (
+                <p className="text-xs text-destructive mt-1" role="alert">
+                  {fieldErrors.email}
+                </p>
+              )}
             </div>
 
             <div>
@@ -174,22 +255,30 @@ export default function SignInPage() {
                   </Link>
                 )}
               </div>
-              <input
+              <Input
                 id="password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-11 px-4 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                onChange={handlePasswordChange}
                 required
-                minLength={8}
+                aria-invalid={!!fieldErrors.password}
               />
+              {fieldErrors.password && (
+                <p className="text-xs text-destructive mt-1" role="alert">
+                  {fieldErrors.password}
+                </p>
+              )}
             </div>
 
             {error && (
-              <p className="text-sm text-red-500" role="alert">
-                {error}
-              </p>
+              <div
+                className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm"
+                role="alert"
+              >
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>{error}</span>
+              </div>
             )}
 
             <button
@@ -207,6 +296,7 @@ export default function SignInPage() {
               type="button"
               onClick={() => {
                 setIsLogin(!isLogin)
+                setFieldErrors({})
                 setError('')
               }}
               className="text-primary hover:underline font-medium"
