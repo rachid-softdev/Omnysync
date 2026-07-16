@@ -15,7 +15,7 @@ jobs:
           node-version: "20"
           cache: "npm"
       - run: npm ci
-      - run: npx prisma generate
+      - run: cd packages/omnysync-core && npx prisma generate --schema=../../omnysync-web/prisma/schema.prisma
       # Why: Next.js forces NODE_ENV=production during next build, so the
       # env.ts Zod validation runs its production checks. All required
       # env vars must be present at build time.

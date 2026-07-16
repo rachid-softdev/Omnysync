@@ -49,6 +49,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        # Why: prisma CLI is a devDependency of @omnysync/core, schema lives in
+        # omnysync-web. Without this, tsc cannot see the generated models
+        # ('Property X does not exist on PrismaClient') because each CI job
+        # runs on a fresh VM and the test job's generation does not persist.
+        run: pnpm --filter @omnysync/core exec prisma generate --schema=../../omnysync-web/prisma/schema.prisma
+
       - name: Type check
         # Note: Scoped to @omnysync/core — le web source cleanup (258 erreurs)
         # est un effort separe. Ci-dessous les stats actuelles :
@@ -127,6 +134,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        # Why: next build (web) imports @omnysync/core/prisma, whose client must
+        # be generated into core's node_modules on this fresh VM.
+        run: pnpm --filter @omnysync/core exec prisma generate --schema=../../omnysync-web/prisma/schema.prisma
 
       - name: Build
         # Why: Next.js forces NODE_ENV=production during next build, so the
