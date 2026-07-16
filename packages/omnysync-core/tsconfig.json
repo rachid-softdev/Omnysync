@@ -6,7 +6,14 @@
     "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
-      "@prisma/client": ["../omnysync-web/prisma/generated/client"]
+      // Point directly at the generated declaration entry so tsc resolves types
+      // from the shared client regardless of which pnpm @prisma/client copy it
+      // would otherwise fall back to (pnpm keeps separate copies per workspace,
+      // and the generated folder's package.json `exports` lacks a `types`
+      // condition, so `bundler` resolution falls back to node_modules).
+      "@prisma/client": [
+        "../../omnysync-web/prisma/generated/client/index.d.ts"
+      ]
     },
     // Override temporaire : ces flags seront réactivés dans tsconfig.strict.json
     // après résolution des erreurs préexistantes dans sync.ts, scheduler.ts, queue.ts
