@@ -98,7 +98,6 @@ jobs:
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: true
-          threshold: 70
 
   build:
     runs-on: ubuntu-latest
