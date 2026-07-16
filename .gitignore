@@ -56,6 +56,7 @@ dist/
 next-env.d.ts
 
 /src/generated/prisma
+omnysync-web/prisma/generated/
 
 # biome
 .biome/

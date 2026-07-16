@@ -91,6 +91,9 @@ export default defineConfig({
       resend: path.resolve(__dirname, 'src/__tests__/__mocks__/resend.ts'),
       // Provide a stub for server-only (Next.js internal) so tests can resolve it
       'server-only': path.resolve(__dirname, 'src/__tests__/__mocks__/server-only.ts'),
+      // Route @prisma/client to the single shared generated client so core and
+      // web resolve the same models (avoids pnpm's per-workspace copy split).
+      '@prisma/client': path.resolve(__dirname, 'prisma/generated/client'),
     },
   },
 })

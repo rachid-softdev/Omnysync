@@ -4,6 +4,10 @@
     "ignoreDeprecations": "6.0",
     "outDir": "./dist",
     "rootDir": "./src",
+    "baseUrl": ".",
+    "paths": {
+      "@prisma/client": ["../omnysync-web/prisma/generated/client"]
+    },
     // Override temporaire : ces flags seront réactivés dans tsconfig.strict.json
     // après résolution des erreurs préexistantes dans sync.ts, scheduler.ts, queue.ts
     "strictNullChecks": false,

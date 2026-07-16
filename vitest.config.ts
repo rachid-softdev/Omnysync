@@ -98,6 +98,12 @@ export default defineConfig({
         __dirname,
         "tests/__mocks__/next-headers.ts",
       ),
+      // Route @prisma/client to the single shared generated client so core and
+      // web resolve the same models (avoids pnpm's per-workspace copy split).
+      "@prisma/client": path.resolve(
+        __dirname,
+        "omnysync-web/prisma/generated/client",
+      ),
       "server-only": path.resolve(
         __dirname,
         "omnysync-web/src/__tests__/__mocks__/server-only.ts",

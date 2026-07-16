@@ -1,15 +1,16 @@
 generator client {
   provider = "prisma-client-js"
+  // Single shared client into the repo so BOTH @omnysync/core and omnysync-web
+  // resolve @prisma/client to the same location (via tsconfig `paths` + the
+  // vitest aliases). pnpm keeps separate @prisma/client copies per workspace and
+  // letting prisma pick one left the other copy empty in CI.
+  output   = "./generated/client"
 }
 
-// Generate a second copy into @omnysync/core's node_modules so core's tsc and
-// vitest (which resolve @prisma/client to the core package's own copy) see the
-// models. pnpm keeps core and web @prisma/client copies separate, and prisma
-// generates into the copy resolved from this schema's directory (web), leaving
-// the core copy empty otherwise.
-generator clientCore {
+generator clientDefault {
   provider = "prisma-client-js"
-  output   = "../../packages/omnysync-core/node_modules/@prisma/client/.prisma/client"
+  // Keep the default @prisma/client package (used by node/tsx seed scripts that
+  // import @prisma/client directly) generated as well.
 }
 
 datasource db {
