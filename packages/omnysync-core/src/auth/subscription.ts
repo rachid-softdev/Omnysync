@@ -57,10 +57,9 @@ export async function getUserPlan(userId: string): Promise<Plan> {
     where: { userId },
     include: {
       organization: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         include: {
           subscriptions: { take: 1 },
-        } as any,
+        },
       },
     },
   });

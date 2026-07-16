@@ -5,6 +5,7 @@
 
 import { prisma } from "../prisma";
 import { auth } from "../auth";
+import { Prisma } from "@prisma/client";
 
 // ============================================================================
 // TYPES
@@ -152,7 +153,7 @@ export async function auditLog(
         action,
         targetType,
         targetId,
-        details: details || {},
+        details: (details || {}) as Prisma.InputJsonValue,
         ipAddress,
         userAgent,
       },

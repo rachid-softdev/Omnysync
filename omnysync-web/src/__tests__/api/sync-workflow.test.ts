@@ -68,6 +68,7 @@ vi.mock('@/lib/prisma', () => ({
     },
     connector: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
     },
     syncLog: {
@@ -171,7 +172,7 @@ describe('Sync Workflow API', () => {
         data: validBody,
       } as any)
 
-      vi.mocked(prisma.connector.findUnique)
+      vi.mocked(prisma.connector.findFirst)
         .mockResolvedValueOnce({ id: 'connector-1', type: 'GOOGLE_DOCS' } as any)
         .mockResolvedValueOnce({ id: 'connector-2', type: 'WORDPRESS' } as any)
 
@@ -240,7 +241,7 @@ describe('Sync Workflow API', () => {
         data: validBody,
       } as any)
 
-      vi.mocked(prisma.connector.findUnique).mockResolvedValue(null)
+      vi.mocked(prisma.connector.findFirst).mockResolvedValue(null)
 
       const { POST } = await import('@/app/api/sync/route')
       const response = await POST(makeRequest(validBody))

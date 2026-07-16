@@ -91,6 +91,13 @@ export default defineConfig({
         __dirname,
         "node_modules/.pnpm/zod@4.4.3/node_modules/zod",
       ),
+      // Stub next/headers for the root config (CI) so server components that
+      // call headers()/cookies() during render don't throw "outside a request
+      // scope" under jsdom. The web config achieves this via a setup-file mock.
+      "next/headers": path.resolve(
+        __dirname,
+        "tests/__mocks__/next-headers.ts",
+      ),
       "server-only": path.resolve(
         __dirname,
         "omnysync-web/src/__tests__/__mocks__/server-only.ts",

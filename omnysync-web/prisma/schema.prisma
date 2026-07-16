@@ -2,6 +2,16 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Generate a second copy into @omnysync/core's node_modules so core's tsc and
+// vitest (which resolve @prisma/client to the core package's own copy) see the
+// models. pnpm keeps core and web @prisma/client copies separate, and prisma
+// generates into the copy resolved from this schema's directory (web), leaving
+// the core copy empty otherwise.
+generator clientCore {
+  provider = "prisma-client-js"
+  output   = "../../packages/omnysync-core/node_modules/@prisma/client/.prisma/client"
+}
+
 datasource db {
   provider = "postgresql"
 }

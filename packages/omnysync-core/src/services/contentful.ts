@@ -295,7 +295,7 @@ export async function listContentfulDocuments(
   }
 
   const accessToken = decrypt(connector.credentials || "");
-  const config = JSON.parse(decrypt(connector.config || "{}"));
+  const config = JSON.parse(decrypt((connector.config || "{}") as string));
 
   if (!config.spaceId) {
     return [];
@@ -366,7 +366,7 @@ export async function getContentfulEntryContent(
   }
 
   const accessToken = decrypt(connector.credentials || "");
-  const config = JSON.parse(decrypt(connector.config || "{}"));
+  const config = JSON.parse(decrypt((connector.config || "{}") as string));
 
   if (!config.spaceId) {
     throw new Error("Missing space ID");

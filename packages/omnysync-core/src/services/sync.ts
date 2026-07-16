@@ -6,6 +6,7 @@ import {
   ERR_SYNC_SUCCESS,
   ERR_API_FAILED,
 } from "../errors";
+import { Prisma } from "@prisma/client";
 import { decrypt } from "../crypto";
 import { sendSyncCompleteEmail } from "../email";
 import { detectContentChanges } from "./ai";
@@ -36,7 +37,7 @@ interface PublishDocument {
     id: string;
     type: string;
     credentials: string | null;
-    config: Record<string, unknown> | null;
+    config: Prisma.JsonValue | null;
   } | null;
 }
 

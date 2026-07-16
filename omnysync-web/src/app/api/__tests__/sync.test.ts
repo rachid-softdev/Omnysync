@@ -23,6 +23,7 @@ vi.mock('@/lib/prisma', () => ({
     },
     connector: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
     },
     syncLog: {
       create: vi.fn(),
@@ -204,8 +205,8 @@ describe('POST /api/sync', () => {
     // Default: quota OK
     vi.mocked(checkAndIncrementQuota).mockResolvedValue({ allowed: true, remaining: 99 } as any)
 
-    // Default: connecteurs existent
-    vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+    // Default: connecteurs existent et appartiennent à l'org
+    vi.mocked(prisma.connector.findFirst).mockResolvedValue({
       id: 'connector-id',
       type: 'WORDPRESS',
     } as any)
@@ -323,13 +324,37 @@ describe('POST /api/sync', () => {
   // ── Connecteurs invalides ───────────────────────────────────────────────
 
   it('should return 400 when source or dest connector is not found', async () => {
-    vi.mocked(prisma.connector.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.connector.findFirst).mockResolvedValue(null)
 
     const { POST } = await import('@/app/api/sync/route')
     const response = await POST(makeRequest(validBody))
 
     expect(response.status).toBe(400)
     expect(apiError).toHaveBeenCalledWith('Invalid connectors', 400)
+  })
+
+  // ── Connecteur d'une autre org (IDOR) ──────────────────────────────────
+
+  it('should scope connector lookups by the caller organizationId (no cross-org bind)', async () => {
+    vi.mocked(prisma.connector.findFirst).mockResolvedValue({
+      id: 'connector-id',
+      type: 'WORDPRESS',
+    } as any)
+
+    const { POST } = await import('@/app/api/sync/route')
+    await POST(makeRequest(validBody))
+
+    // Both connector lookups must be constrained to the caller's org
+    expect(prisma.connector.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: validBody.sourceConnectorId, organizationId: 'org-1' },
+      })
+    )
+    expect(prisma.connector.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: validBody.destConnectorId, organizationId: 'org-1' },
+      })
+    )
   })
 
   // ── Quota dépassé ───────────────────────────────────────────────────────

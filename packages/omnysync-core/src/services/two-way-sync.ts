@@ -60,13 +60,16 @@ async function fetchRemoteContent(
     return null;
   }
 
+  const destConfig = document.destConnector.config as Record<
+    string,
+    unknown
+  > | null;
   const rawCredentials = decrypt(
-    document.destConnector.config?.credentials?.toString() ||
+    (destConfig?.credentials as string | undefined)?.toString() ||
       document.destConnector.credentials ||
       "",
   );
-  const config =
-    (document.destConnector.config as Record<string, string>) || {};
+  const config = (destConfig as Record<string, string>) || {};
 
   // WordPress
   if (document.destConnector.type === "WORDPRESS") {

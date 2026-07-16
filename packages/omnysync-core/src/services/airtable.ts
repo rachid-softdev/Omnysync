@@ -204,7 +204,7 @@ export async function listAirtableDocuments(
   }
 
   const apiKey = decrypt(connector.credentials || "");
-  const config = JSON.parse(decrypt(connector.config || "{}"));
+  const config = JSON.parse(decrypt((connector.config || "{}") as string));
 
   if (!config.baseId) {
     return [];
@@ -276,7 +276,7 @@ export async function getAirtableRecordContent(
   }
 
   const apiKey = decrypt(connector.credentials || "");
-  const config = JSON.parse(decrypt(connector.config || "{}"));
+  const config = JSON.parse(decrypt((connector.config || "{}") as string));
 
   // Parse recordId (peut être tableId:recordId ou juste recordId)
   const [tableId, actualRecordId] = recordId.includes(":")

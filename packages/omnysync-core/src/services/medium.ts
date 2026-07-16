@@ -218,7 +218,7 @@ export async function publishToMedium(
   }
 
   const accessToken = decrypt(connector.credentials || "");
-  const config = JSON.parse(decrypt(connector.config || "{}"));
+  const config = JSON.parse(decrypt((connector.config || "{}") as string));
 
   const postPayload = {
     title: document.title,

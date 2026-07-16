@@ -117,10 +117,9 @@ export async function checkQuota(
   // Get organization and subscription
   const org = await prisma.organization.findUnique({
     where: { id: organizationId },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     include: {
       subscriptions: { take: 1 },
-    } as any,
+    },
   });
 
   if (!org) {

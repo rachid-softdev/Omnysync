@@ -19,6 +19,7 @@ import type {
   DowngradePreview,
   DowngradeStrategy,
   ActiveSubscriptionStatus,
+  Json,
 } from "./types";
 import { PLAN_KEYS, DEFAULT_PLAN } from "./constants";
 
@@ -153,7 +154,7 @@ export interface ConsumeUsageResult {
 export interface PlanFeatureUpdate {
   enabled: boolean;
   limitValue: number | null;
-  configJson: Record<string, unknown> | null;
+  configJson: Prisma.InputJsonValue;
   downgradeStrategy: DowngradeStrategy;
 }
 
@@ -162,13 +163,13 @@ export interface FeatureCreateInput {
   name: string;
   description?: string;
   type: FeatureType;
-  defaultConfig?: Record<string, unknown>;
+  defaultConfig?: Prisma.InputJsonValue;
 }
 
 export interface FeatureUpdateInput {
   name?: string;
   description?: string;
-  defaultConfig?: Record<string, unknown>;
+  defaultConfig?: Prisma.InputJsonValue;
 }
 
 // ============================================================================
@@ -688,7 +689,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
         featureName: pf.feature.name,
         enabled: pf.enabled,
         limitValue: pf.limitValue,
-        configJson: pf.configJson as Record<string, unknown> | null,
+        configJson: pf.configJson as Json | null,
         downgradeStrategy: pf.downgradeStrategy as DowngradeStrategy,
       })),
     };
@@ -721,7 +722,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
         featureName: pf.feature.name,
         enabled: pf.enabled,
         limitValue: pf.limitValue,
-        configJson: pf.configJson as Record<string, unknown> | null,
+        configJson: pf.configJson as Json | null,
         downgradeStrategy: pf.downgradeStrategy as DowngradeStrategy,
       })),
     }));
@@ -758,7 +759,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
         featureName: feature.name,
         enabled: pp.enabled,
         limitValue: pp.limitValue,
-        configJson: pp.configJson as Record<string, unknown> | null,
+        configJson: pp.configJson as Json | null,
         downgradeStrategy: pp.downgradeStrategy as DowngradeStrategy,
       })),
     };
@@ -792,7 +793,7 @@ export class PrismaEntitlementRepository implements IEntitlementRepository {
         featureName: f.name,
         enabled: pp.enabled,
         limitValue: pp.limitValue,
-        configJson: pp.configJson as Record<string, unknown> | null,
+        configJson: pp.configJson as Json | null,
         downgradeStrategy: pp.downgradeStrategy as DowngradeStrategy,
       })),
     }));

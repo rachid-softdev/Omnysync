@@ -64,12 +64,15 @@ export async function POST(req: NextRequest) {
     return apiError(message, 429, 'QUOTA_EXCEEDED')
   }
 
-  const sourceConnector = await prisma.connector.findUnique({
-    where: { id: sourceConnectorId },
+  // SECURITY: Connectors must belong to the caller's organization. Without this
+  // check a user could bind a sync to another org's connector and, via performSync,
+  // read from / write to that org's connected systems using its credentials.
+  const sourceConnector = await prisma.connector.findFirst({
+    where: { id: sourceConnectorId, organizationId: orgId },
   })
 
-  const destConnector = await prisma.connector.findUnique({
-    where: { id: destConnectorId },
+  const destConnector = await prisma.connector.findFirst({
+    where: { id: destConnectorId, organizationId: orgId },
   })
 
   if (!sourceConnector || !destConnector) {
