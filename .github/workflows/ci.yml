@@ -95,9 +95,14 @@ jobs:
 
       - name: Upload coverage
         uses: codecov/codecov-action@v7
+        # Non-blocking: this repo has no CODECOV_TOKEN secret configured, so the
+        # upload cannot authenticate and would otherwise fail the whole pipeline.
+        # Coverage reporting is auxiliary; re-enable strict failure once the
+        # CODECOV_TOKEN secret is added.
+        continue-on-error: true
         with:
           files: ./coverage/lcov.info
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   build:
     runs-on: ubuntu-latest
