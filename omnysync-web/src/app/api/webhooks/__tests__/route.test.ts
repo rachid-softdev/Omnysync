@@ -722,4 +722,248 @@ describe('POST /api/webhooks/[connector]', () => {
 
     expect(response.status).toBe(500)
   })
+
+  // ==========================================================================
+  // TAE5 security regression: webhook endpoint auth (fix #2)
+  //
+  // Every connector handler MUST require an active webhook endpoint with a
+  // non-empty secret, and MUST verify the HMAC signature. Otherwise 401.
+  // These lock in the P0 fix; they mirror the existing prisma/crypto mocks.
+  // ==========================================================================
+
+  // ── WordPress ────────────────────────────────────────────────────────────
+
+  it('TAE5 wordpress: returns 401 when webhook endpoint is not found', async () => {
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue(null)
+
+    const { POST } = await import('@/app/api/webhooks/[connector]/route')
+    const response = await POST(
+      makePostRequest(
+        'wordpress',
+        { post_id: 1, action: 'post_published' },
+        { 'x-hub-signature': 'sig' }
+      ),
+      { params: Promise.resolve({ connector: 'wordpress' }) }
+    )
+
+    expect(response.status).toBe(401)
+  })
+
+  it('TAE5 wordpress: returns 401 when webhook endpoint has empty secret', async () => {
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
+      id: 'wh-1',
+      connectorId: 'conn-1',
+      type: 'WORDPRESS',
+      isActive: true,
+      secret: '',
+      url: 'https://example.com/webhook',
+    } as any)
+
+    const { POST } = await import('@/app/api/webhooks/[connector]/route')
+    const response = await POST(
+      makePostRequest(
+        'wordpress',
+        { post_id: 1, action: 'post_published' },
+        { 'x-hub-signature': 'sig' }
+      ),
+      { params: Promise.resolve({ connector: 'wordpress' }) }
+    )
+
+    expect(response.status).toBe(401)
+  })
+
+  it('TAE5 wordpress: returns 401 on invalid signature', async () => {
+    mockCrypto.timingSafeEqual.mockReturnValue(false)
+
+    const { POST } = await import('@/app/api/webhooks/[connector]/route')
+    const response = await POST(
+      makePostRequest(
+        'wordpress',
+        { post_id: 1, action: 'post_published' },
+        { 'x-hub-signature': 'bad' }
+      ),
+      { params: Promise.resolve({ connector: 'wordpress' }) }
+    )
+
+    expect(response.status).toBe(401)
+  })
+
+  // ── Ghost ────────────────────────────────────────────────────────────────
+
+  it('TAE5 ghost: returns 401 when webhook endpoint is not found', async () => {
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue(null)
+
+    const { POST } = await import('@/app/api/webhooks/[connector]/route')
+    const response = await POST(
+      makePostRequest(
+        'ghost',
+        { event: 'post.published', post: { id: 'a' } },
+        { 'x-ghost-signature': 'sha256=sig' }
+      ),
+      { params: Promise.resolve({ connector: 'ghost' }) }
+    )
+
+    expect(response.status).toBe(401)
+  })
+
+  it('TAE5 ghost: returns 401 when webhook endpoint has empty secret', async () => {
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
+      id: 'wh-1',
+      connectorId: 'conn-1',
+      type: 'GHOST',
+      isActive: true,
+      secret: '',
+      url: 'https://example.com/ghost-webhook',
+    } as any)
+
+    const { POST } = await import('@/app/api/webhooks/[connector]/route')
+    const response = await POST(
+      makePostRequest(
+        'ghost',
+        { event: 'post.published', post: { id: 'a' } },
+        { 'x-ghost-signature': 'sha256=sig' }
+      ),
+      { params: Promise.resolve({ connector: 'ghost' }) }
+    )
+
+    expect(response.status).toBe(401)
+  })
+
+  it('TAE5 ghost: returns 401 on invalid signature', async () => {
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
+      id: 'wh-1',
+      connectorId: 'conn-1',
+      type: 'GHOST',
+      isActive: true,
+      secret: 'test-secret',
+      url: 'https://example.com/ghost-webhook',
+    } as any)
+    mockCrypto.timingSafeEqual.mockReturnValue(false)
+
+    const { POST } = await import('@/app/api/webhooks/[connector]/route')
+    const response = await POST(
+      makePostRequest(
+        'ghost',
+        { event: 'post.published', post: { id: 'a' } },
+        { 'x-ghost-signature': 'sha256=badsig' }
+      ),
+      { params: Promise.resolve({ connector: 'ghost' }) }
+    )
+
+    expect(response.status).toBe(401)
+  })
+
+  // ── Webflow ──────────────────────────────────────────────────────────────
+
+  it('TAE5 webflow: returns 401 when webhook endpoint is not found', async () => {
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue(null)
+
+    const { POST } = await import('@/app/api/webhooks/[connector]/route')
+    const response = await POST(
+      makePostRequest(
+        'webflow',
+        { type: 'item_published', data: { item: { id: 'i1' } } },
+        { 'x-webflow-signature': 'sig' }
+      ),
+      { params: Promise.resolve({ connector: 'webflow' }) }
+    )
+
+    expect(response.status).toBe(401)
+  })
+
+  it('TAE5 webflow: returns 401 when webhook endpoint has empty secret', async () => {
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
+      id: 'wh-1',
+      connectorId: 'conn-1',
+      type: 'WEBFLOW',
+      isActive: true,
+      secret: '',
+      url: 'https://example.com/webflow-webhook',
+    } as any)
+
+    const { POST } = await import('@/app/api/webhooks/[connector]/route')
+    const response = await POST(
+      makePostRequest(
+        'webflow',
+        { type: 'item_published', data: { item: { id: 'i1' } } },
+        { 'x-webflow-signature': 'sig' }
+      ),
+      { params: Promise.resolve({ connector: 'webflow' }) }
+    )
+
+    expect(response.status).toBe(401)
+  })
+
+  it('TAE5 webflow: returns 401 on invalid signature', async () => {
+    mockCrypto.timingSafeEqual.mockReturnValue(false)
+
+    const { POST } = await import('@/app/api/webhooks/[connector]/route')
+    const response = await POST(
+      makePostRequest(
+        'webflow',
+        { type: 'item_published', data: { item: { id: 'i1' } } },
+        { 'x-webflow-signature': 'badsig' }
+      ),
+      { params: Promise.resolve({ connector: 'webflow' }) }
+    )
+
+    expect(response.status).toBe(401)
+  })
+
+  // ── Shopify ──────────────────────────────────────────────────────────────
+
+  it('TAE5 shopify: returns 401 when webhook endpoint is not found', async () => {
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue(null)
+
+    const { POST } = await import('@/app/api/webhooks/[connector]/route')
+    const response = await POST(
+      makePostRequest(
+        'shopify',
+        { field: 'value' },
+        { 'x-shopify-hmac-sha256': 'hmac', 'x-shopify-topic': 'collection_created' }
+      ),
+      { params: Promise.resolve({ connector: 'shopify' }) }
+    )
+
+    expect(response.status).toBe(401)
+  })
+
+  it('TAE5 shopify: returns 401 when webhook endpoint has empty secret', async () => {
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
+      id: 'wh-1',
+      connectorId: 'conn-1',
+      type: 'SHOPIFY',
+      isActive: true,
+      secret: '',
+      url: 'https://example.com/shopify-webhook',
+    } as any)
+
+    const { POST } = await import('@/app/api/webhooks/[connector]/route')
+    const response = await POST(
+      makePostRequest(
+        'shopify',
+        { field: 'value' },
+        { 'x-shopify-hmac-sha256': 'hmac', 'x-shopify-topic': 'collection_created' }
+      ),
+      { params: Promise.resolve({ connector: 'shopify' }) }
+    )
+
+    expect(response.status).toBe(401)
+  })
+
+  it('TAE5 shopify: returns 401 on invalid signature', async () => {
+    mockCrypto.timingSafeEqual.mockReturnValue(false)
+
+    const { POST } = await import('@/app/api/webhooks/[connector]/route')
+    const response = await POST(
+      makePostRequest(
+        'shopify',
+        { article: { id: 1 } },
+        { 'x-shopify-hmac-sha256': 'badhmac', 'x-shopify-topic': 'article_created' }
+      ),
+      { params: Promise.resolve({ connector: 'shopify' }) }
+    )
+
+    expect(response.status).toBe(401)
+  })
 })

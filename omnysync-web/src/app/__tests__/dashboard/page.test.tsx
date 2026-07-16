@@ -8,28 +8,33 @@ vi.mock('@/lib/auth', () => ({
   }),
 }))
 
-vi.mock('@/lib/i18n', () => ({
-  t: (key: string) => {
-    const translations: Record<string, string> = {
-      UI_DOCS_LABEL: 'Documents',
-      UI_CONNECTORS_LABEL: 'Connectors',
-      UI_SYNCED: 'Synced',
-      UI_ERRORS: 'Errors',
-      UI_WELCOME: 'Welcome',
-      UI_MANAGE_CONTENT: 'Manage your content',
-      UI_NEW_SYNC: 'New Sync',
-      UI_RECENT_ACTIVITY: 'Recent Activity',
-      UI_LAST_SYNCS: 'Last syncs',
-      UI_NO_ACTIVITY: 'No activity yet',
-      UI_GETTING_STARTED: 'Getting Started',
-      UI_FIRST_STEPS: 'First steps',
-      UI_DOCS_MARKETING: 'Create a document',
-      UI_DESTINATIONS_SETUP: 'Set up destinations',
-      UI_FIRST_SYNC: 'Run your first sync',
-    }
-    return translations[key] || key
-  },
-}))
+// Mock t() with the strings the test asserts, but fall back to the REAL
+// translations (via importOriginal) for any key the page renders that isn't
+// listed here. getLocaleFromHeaders comes from the real module automatically.
+vi.mock('@/lib/i18n', async (importOriginal) => {
+  const actual: any = await importOriginal()
+  const translations: Record<string, string> = {
+    UI_DOCS_LABEL: 'Documents',
+    UI_CONNECTORS_LABEL: 'Connectors',
+    UI_SYNCED: 'Synced',
+    UI_ERRORS: 'Errors',
+    UI_WELCOME: 'Welcome',
+    UI_MANAGE_CONTENT: 'Manage your content',
+    UI_NEW_SYNC: 'New Sync',
+    UI_RECENT_ACTIVITY: 'Recent Activity',
+    UI_LAST_SYNCS: 'Last syncs',
+    UI_NO_ACTIVITY: 'No activity yet',
+    UI_GETTING_STARTED: 'Getting Started',
+    UI_FIRST_STEPS: 'First steps',
+    UI_DOCS_MARKETING: 'Create a document',
+    UI_DESTINATIONS_SETUP: 'Set up destinations',
+    UI_FIRST_SYNC: 'Run your first sync',
+  }
+  return {
+    ...actual,
+    t: (key: string, locale?: string) => translations[key] || actual.t(key, locale),
+  }
+})
 
 vi.mock('@/lib/auth/org', () => ({
   getUserOrgId: vi.fn().mockResolvedValue('org-1'),

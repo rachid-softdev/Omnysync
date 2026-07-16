@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
 
         // Mark as completed after successful processing
         if (idempotencyKey) {
-          markJobCompleted(idempotencyKey)
+          markJobCompleted(idempotencyKey, result)
         }
         return NextResponse.json(result)
       }
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
         })
 
         if (idempotencyKey) {
-          markJobCompleted(idempotencyKey)
+          markJobCompleted(idempotencyKey, result)
         }
         return NextResponse.json(result)
       }
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
         })
 
         if (idempotencyKey) {
-          markJobCompleted(idempotencyKey)
+          markJobCompleted(idempotencyKey, result)
         }
         return NextResponse.json(result)
       }
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
         })
 
         if (idempotencyKey) {
-          markJobCompleted(idempotencyKey)
+          markJobCompleted(idempotencyKey, result)
         }
         return NextResponse.json(result)
       }

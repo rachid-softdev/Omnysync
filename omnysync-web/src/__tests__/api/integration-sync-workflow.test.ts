@@ -633,7 +633,7 @@ describe('Integration Sync Workflow API', () => {
 
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
-      expect(enqueueChangeDetection).toHaveBeenCalledWith('doc-1', 'test-user-1')
+      expect(enqueueChangeDetection).toHaveBeenCalledWith('doc-1')
     })
 
     it('should return 404 when document not found', async () => {

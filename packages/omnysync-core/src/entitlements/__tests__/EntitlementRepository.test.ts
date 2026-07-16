@@ -178,7 +178,7 @@ describe("PrismaEntitlementRepository", () => {
       planKey: "pro",
       status: "ACTIVE",
       currentPeriodStart: new Date("2026-01-01"),
-      currentPeriodEnd: new Date("2026-07-01"),
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       cancelAtPeriodEnd: false,
       trialStart: null,
       trialEnd: null,

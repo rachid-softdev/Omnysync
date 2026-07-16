@@ -46,7 +46,7 @@ describe('SignInPage', () => {
   })
 
   it('shows error on login failure', async () => {
-    mockSignIn.mockResolvedValueOnce({ error: 'Invalid credentials' })
+    mockSignIn.mockResolvedValueOnce({ error: 'CredentialsSignin' })
 
     render(<SignInPage />)
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@test.com' } })
@@ -54,7 +54,7 @@ describe('SignInPage', () => {
     fireEvent.click(screen.getByText('Sign in'))
 
     await waitFor(() => {
-      expect(screen.getByText('Invalid email or password')).toBeInTheDocument()
+      expect(screen.getByText(/Invalid email or password/)).toBeInTheDocument()
     })
   })
 

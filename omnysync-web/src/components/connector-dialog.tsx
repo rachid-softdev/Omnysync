@@ -189,9 +189,9 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
           <div className="space-y-4">
             {platformFields.map((field) => (
               <div key={field.key} className="space-y-1.5">
-                <Label>{field.label}</Label>
-                {}
+                <Label htmlFor={field.key}>{field.label}</Label>
                 <Input
+                  id={field.key}
                   type={field.type}
                   placeholder={field.placeholder}
                   value={fields[field.key] || ''}

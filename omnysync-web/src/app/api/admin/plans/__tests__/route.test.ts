@@ -476,10 +476,39 @@ describe('POST /api/admin/plans', () => {
     mockPrismaFindUnique.mockRejectedValue(new Error('DB error'))
 
     const { POST } = await import('../route')
-    const res = await POST(mockRequest({ body: { key: 'x', name: 'X' } }))
+    const res = await POST(mockRequest({ body: { key: 'X', name: 'X', type: 'BOOLEAN' } }))
     const data = await res.json()
 
     expect(res.status).toBe(500)
     expect(data.error).toBe('INTERNAL_ERROR')
+  })
+})
+
+// ============================================================================
+// EC-19: non-ADMIN role must be forbidden from admin routes (requireAdmin → AuthError 403)
+// ============================================================================
+
+describe('EC-19: non-ADMIN role is forbidden from admin route', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns 403 when session role is USER on GET /api/admin/plans', async () => {
+    // Explicitly assert the role, not just the helper default.
+    mockAuthFn.mockResolvedValue(mockSession({ user: { role: 'USER' } }))
+
+    const { GET } = await import('../route')
+    const res = await GET(mockRequest())
+
+    expect(res.status).toBe(403)
+  })
+
+  it('returns 403 when session role is USER on POST /api/admin/plans', async () => {
+    mockAuthFn.mockResolvedValue(mockSession({ user: { role: 'USER' } }))
+
+    const { POST } = await import('../route')
+    const res = await POST(mockRequest({ body: { key: 'x', name: 'X' } }))
+
+    expect(res.status).toBe(403)
   })
 })

@@ -14,10 +14,10 @@ vi.mock('@/components/ui/tabs', () => {
   }>({ value: 'overview', onChange: () => {} })
 
   return {
-    Tabs: ({ defaultValue, children, className, ...props }: any) => {
-      const [value, onChange] = useState(defaultValue)
+    Tabs: ({ value, defaultValue, children, className, ...props }: any) => {
+      const [current, onChange] = useState(value ?? defaultValue ?? 'overview')
       return (
-        <TabsContext.Provider value={{ value, onChange }}>
+        <TabsContext.Provider value={{ value: current, onChange }}>
           <div className={className} data-orientation="horizontal" {...props}>
             {children}
           </div>

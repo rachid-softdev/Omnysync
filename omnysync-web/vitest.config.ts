@@ -16,6 +16,10 @@ export default defineConfig({
       OAUTH_ENCRYPTION_KEY: 'test-oauth-key-for-testing-purposes!',
     },
     setupFiles: ['./src/__tests__/setup-core-mock.ts', './src/__tests__/setup-global.ts'],
+    // Playwright e2e specs live in e2e/** and must run under the Playwright
+    // runner, not vitest. Collecting them here throws
+    // "Playwright Test did not expect test.describe() to be called here."
+    exclude: ['e2e/**', '**/node_modules/**', '**/dist/**'],
     server: {
       deps: {
         inline: ['@radix-ui'],

@@ -167,8 +167,9 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Mot de passe actuel</Label>
+            <Label htmlFor="current-password">Mot de passe actuel</Label>
             <Input
+              id="current-password"
               type="password"
               value={currentPassword}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -178,8 +179,9 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label>Nouveau mot de passe</Label>
+            <Label htmlFor="new-password">Nouveau mot de passe</Label>
             <Input
+              id="new-password"
               type="password"
               value={newPassword}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)}
@@ -187,8 +189,9 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label>Confirmer le mot de passe</Label>
+            <Label htmlFor="confirm-password">Confirmer le mot de passe</Label>
             <Input
+              id="confirm-password"
               type="password"
               value={confirmPassword}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>

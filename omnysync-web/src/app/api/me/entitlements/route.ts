@@ -6,7 +6,7 @@
  *
  * Response:
  * {
- *   plan: "pro",
+ *   planKey: "pro",
  *   features: { EXPORT_PDF: true, AI_SUMMARY: false },
  *   limits: { MAX_CONNECTORS: 10 },
  *   usage: { MAX_SYNCS: 5 },
@@ -16,33 +16,32 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { getUserOrgId } from '@/lib/auth/org'
 import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
 import { getExperimentService } from '@/lib/entitlements/ExperimentService'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Get user from session (implementation depends on your auth setup)
-async function getUserOrgId(request: NextRequest): Promise<string | null> {
-  // Try to get from header first (for API clients)
-  const headerOrgId = request.headers.get('x-org-id')
-
-  if (headerOrgId) {
-    return headerOrgId
-  }
-
-  // In a real implementation, get from session
-  // For now, return null to require proper auth
-  return null
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const orgId = await getUserOrgId(request)
-
-    if (!orgId) {
+    // Authentifier l'utilisateur avant toute chose
+    const session = await auth()
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'UNAUTHORIZED', message: 'Organization not identified' },
+        { error: 'UNAUTHORIZED', message: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    // Résoudre l'organisation de façon sécurisée (jamais via un header forgeable)
+    let orgId: string
+    try {
+      orgId = await getUserOrgId(session.user.id)
+    } catch {
+      return NextResponse.json(
+        { error: 'UNAUTHORIZED', message: 'No organization' },
         { status: 401 }
       )
     }
@@ -68,21 +67,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Build experiment groups (if user ID available)
+    // Build experiment groups for the authenticated user
     const experimentGroups: Record<string, string> = {}
+    const userId = session.user.id
 
-    // For experiments, we need a user ID to determine group
-    // This would typically come from the session
-    const userId = request.headers.get('x-user-id')
-
-    if (userId) {
-      for (const [key, config] of Object.entries(entitlements.experiments || {})) {
-        const group = experimentService.getExperimentGroup(
-          userId,
-          config as { seed: string; percentage: number }
-        )
-        experimentGroups[key] = group
-      }
+    for (const [key, config] of Object.entries(entitlements.experiments || {})) {
+      const group = experimentService.getExperimentGroup(
+        userId,
+        config as { seed: string; percentage: number }
+      )
+      experimentGroups[key] = group
     }
 
     // Build response
@@ -95,10 +89,12 @@ export async function GET(request: NextRequest) {
       experimentGroups: Object.keys(experimentGroups).length > 0 ? experimentGroups : undefined,
     }
 
-    // Cache-Control: public, max-age=60 (60 seconds)
+    // Entitlements are per-user/per-org data — must NOT be cached by shared/CDN
+    // caches (a `public`/`s-maxage` header would let one user's entitlements be
+    // served to another from the edge cache). Force a private, browser-only cache.
     return NextResponse.json(response, {
       headers: {
-        'Cache-Control': 'public, max-age=60, s-maxage=60',
+        'Cache-Control': 'private, max-age=60',
       },
     })
   } catch (error) {

@@ -79,13 +79,14 @@ describe('AnalyticsPage', () => {
   it('renders error state on fetch failure', async () => {
     ;(global.fetch as any).mockResolvedValueOnce({
       ok: false,
+      status: 500,
       json: async () => ({}),
     })
 
     render(<AnalyticsPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Error loading analytics data')).toBeInTheDocument()
+      expect(screen.getByText(/analytics server is temporarily unavailable/i)).toBeInTheDocument()
     })
   })
 

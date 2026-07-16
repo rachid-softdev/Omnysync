@@ -122,7 +122,9 @@ async function handleWordPressWebhook(
 ): Promise<NextResponse> {
   try {
     const body = await req.text()
-    const signature = req.headers.get('x-hub-signature') || ''
+    // WordPress sends `X-Hub-Signature: sha256=<hex>` — strip the algorithm prefix
+    // so the raw hex digest is compared against the HMAC we compute.
+    const signature = (req.headers.get('x-hub-signature') || '').replace(/^sha256=/, '')
 
     const webhook = await prisma.webhookEndpoint.findFirst({
       where: {
@@ -132,14 +134,16 @@ async function handleWordPressWebhook(
       },
     })
 
-    if (webhook?.secret) {
-      const isValid = verifyWebhookSignature(body, signature, webhook.secret)
-      if (!isValid) {
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-      }
+    if (!webhook || !webhook.secret) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const data = (await req.json()) as unknown as {
+    const isValid = verifyWebhookSignature(body, signature, webhook.secret)
+    if (!isValid) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    }
+
+    const data = JSON.parse(body) as unknown as {
       post_id?: number
       action?: string
     }
@@ -200,13 +204,17 @@ async function handleGhostWebhook(req: NextRequest, connectorId: string): Promis
       },
     })
 
-    if (webhook?.secret && ghostSignature) {
-      const isValid = verifyWebhookSignature(body, ghostSignature, webhook.secret)
-      if (!isValid) {
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-      }
-    } else if (webhook?.secret && !ghostSignature) {
+    if (!webhook || !webhook.secret) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!ghostSignature) {
       return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
+    }
+
+    const isValid = verifyWebhookSignature(body, ghostSignature, webhook.secret)
+    if (!isValid) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
     const data = JSON.parse(body) as unknown as {
@@ -264,11 +272,13 @@ async function handleWebflowWebhook(req: NextRequest, connectorId: string): Prom
       },
     })
 
-    if (webhook?.secret) {
-      const isValid = verifyWebhookSignature(body, signature, webhook.secret)
-      if (!isValid) {
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-      }
+    if (!webhook || !webhook.secret) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const isValid = verifyWebhookSignature(body, signature, webhook.secret)
+    if (!isValid) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
     const data = JSON.parse(body) as unknown as {
@@ -324,24 +334,26 @@ async function handleShopifyWebhook(req: NextRequest, connectorId: string): Prom
       },
     })
 
-    if (webhook?.secret) {
-      // Shopify HMAC is base64-encoded HMAC-SHA256
-      const expected = crypto.createHmac('sha256', webhook.secret).update(body).digest('base64')
-      try {
-        const isValid = crypto.timingSafeEqual(Buffer.from(hmacHeader), Buffer.from(expected))
-        if (!isValid) {
-          return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-        }
-      } catch {
+    if (!webhook || !webhook.secret) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Shopify HMAC is base64-encoded HMAC-SHA256
+    const expected = crypto.createHmac('sha256', webhook.secret).update(body).digest('base64')
+    try {
+      const isValid = crypto.timingSafeEqual(Buffer.from(hmacHeader), Buffer.from(expected))
+      if (!isValid) {
         return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
       }
+    } catch {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
     const topic = req.headers.get('x-shopify-topic') || ''
 
     // Shopify webhook topics: article_created, article_updated, article_deleted
     if (topic.startsWith('article_')) {
-      const data = (await req.json()) as unknown as {
+      const data = JSON.parse(body) as unknown as {
         article?: { id?: number }
       }
 

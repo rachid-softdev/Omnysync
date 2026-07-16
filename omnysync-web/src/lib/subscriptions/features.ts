@@ -347,6 +347,11 @@ export async function updateUserPlan(
   stripeCustomerId?: string,
   stripeSubscriptionId?: string
 ): Promise<void> {
+  // Empêcher l'écriture d'une clé de plan invalide (et le crash plans[planKey]!.price plus bas)
+  if (!(planKey in plans)) {
+    throw new Error(`Invalid plan key: ${planKey}`)
+  }
+
   const oldSubscription = await prisma.subscription.findUnique({
     where: { userId },
   })

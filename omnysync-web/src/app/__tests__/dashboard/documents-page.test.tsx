@@ -8,23 +8,42 @@ vi.mock('@/lib/auth', () => ({
   }),
 }))
 
-vi.mock('@/lib/i18n', () => ({
-  t: (key: string) => {
-    const translations: Record<string, string> = {
-      UI_DOCS_LABEL: 'Documents',
-      UI_MANAGE_DOCS: 'Manage your documents',
-      UI_ALL_DOCS: 'All documents',
-      UI_ALL_DOCS_DESC: 'List of synced documents',
-      UI_NO_DOCS: 'No documents yet',
-      UI_IMPORT_DOCS: 'Connect a source to import documents',
-    }
-    return translations[key] || key
-  },
-}))
+// Mock t() with the strings the test asserts, but fall back to the REAL
+// translations (via importOriginal) for any key the page renders that isn't
+// listed here. getLocaleFromHeaders comes from the real module automatically.
+vi.mock('@/lib/i18n', async (importOriginal) => {
+  const actual: any = await importOriginal()
+  const translations: Record<string, string> = {
+    UI_DOCS_LABEL: 'Documents',
+    UI_MANAGE_DOCS: 'Manage your documents',
+    UI_ALL_DOCS: 'All documents',
+    UI_ALL_DOCS_DESC: 'List of synced documents',
+    UI_NO_DOCS: 'No documents yet',
+    UI_IMPORT_DOCS: 'Connect a source to import documents',
+  }
+  return {
+    ...actual,
+    t: (key: string, locale?: string) => translations[key] || actual.t(key, locale),
+  }
+})
 
 vi.mock('@/lib/auth/org', () => ({
   getUserOrgId: vi.fn().mockResolvedValue('org-1'),
 }))
+
+// The client BatchDocumentList uses the useTranslations() hook, which in jsdom
+// would normally fetch /api/i18n and fail. Delegate to the (already mocked)
+// server i18n module so the same custom + real translations apply here.
+vi.mock('@/lib/i18n/useTranslations', async () => {
+  const i18n: any = await import('@/lib/i18n')
+  return {
+    useTranslations: () => ({
+      t: (key: string) => i18n.t(key, 'en'),
+      loading: false,
+      locale: 'en',
+    }),
+  }
+})
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {

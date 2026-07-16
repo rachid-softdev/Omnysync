@@ -54,9 +54,9 @@ describe('AdminDashboardPage', () => {
   it('renders all 4 stats cards', async () => {
     const Component = await AdminDashboardPage()
     render(Component)
-    expect(screen.getByText('Utilisateurs')).toBeInTheDocument()
-    expect(screen.getByText('Organisations')).toBeInTheDocument()
-    expect(screen.getByText('Plans actifs')).toBeInTheDocument()
+    expect(screen.getByText('Users')).toBeInTheDocument()
+    expect(screen.getByText('Organizations')).toBeInTheDocument()
+    expect(screen.getByText('Active Plans')).toBeInTheDocument()
     expect(screen.getByText('Features')).toBeInTheDocument()
   })
 
@@ -72,7 +72,7 @@ describe('AdminDashboardPage', () => {
   it('renders the "Recent Users" section', async () => {
     const Component = await AdminDashboardPage()
     render(Component)
-    expect(screen.getByText('Derniers utilisateurs')).toBeInTheDocument()
+    expect(screen.getByText('Recent Users')).toBeInTheDocument()
     expect(screen.getByText('Alice')).toBeInTheDocument()
     expect(screen.getByText('Bob')).toBeInTheDocument()
   })
@@ -80,7 +80,7 @@ describe('AdminDashboardPage', () => {
   it('renders the "Recent Organizations" section', async () => {
     const Component = await AdminDashboardPage()
     render(Component)
-    expect(screen.getByText('Dernières organisations')).toBeInTheDocument()
+    expect(screen.getByText('Recent Organizations')).toBeInTheDocument()
     expect(screen.getByText('Acme Inc')).toBeInTheDocument()
     expect(screen.getByText('Globex Corp')).toBeInTheDocument()
   })
@@ -91,7 +91,7 @@ describe('AdminDashboardPage', () => {
 
     const Component = await AdminDashboardPage()
     render(Component)
-    expect(screen.getByText('Aucun utilisateur')).toBeInTheDocument()
+    expect(screen.getByText('No users yet')).toBeInTheDocument()
   })
 
   it('renders empty state when no recent organizations', async () => {
@@ -100,17 +100,17 @@ describe('AdminDashboardPage', () => {
 
     const Component = await AdminDashboardPage()
     render(Component)
-    expect(screen.getByText('Aucune organisation')).toBeInTheDocument()
+    expect(screen.getByText('No organizations yet')).toBeInTheDocument()
   })
 
   it('stats cards link to the correct admin pages', async () => {
     const Component = await AdminDashboardPage()
     render(Component)
     // Each stat card is wrapped in a Link; finding by the label text
-    const usersLink = screen.getByText('Utilisateurs').closest('a')
+    const usersLink = screen.getByText('Users').closest('a')
     expect(usersLink).toHaveAttribute('href', '/admin/users')
 
-    const orgsLink = screen.getByText('Organisations').closest('a')
+    const orgsLink = screen.getByText('Organizations').closest('a')
     expect(orgsLink).toHaveAttribute('href', '/admin/orgs')
   })
 })

@@ -33,18 +33,32 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-vi.mock('lucide-react', () => ({
-  ArrowLeft: () => <svg data-testid="icon-arrowleft" />,
-  RefreshCw: () => <svg data-testid="icon-refresh" />,
-  CheckCircle: () => <svg data-testid="icon-checkcircle" />,
-  AlertCircle: () => <svg data-testid="icon-alertcircle" />,
-  Clock: () => <svg data-testid="icon-clock" />,
-  FileText: () => <svg data-testid="icon-filetxt" />,
-  Database: () => <svg data-testid="icon-database" />,
-  Wand2: () => <svg data-testid="icon-wand" />,
-  Upload: () => <svg data-testid="icon-upload" />,
-  Send: () => <svg data-testid="icon-send" />,
-}))
+vi.mock('lucide-react', () => {
+  const icons: Record<string, any> = {
+    ArrowLeft: () => <svg data-testid="icon-arrowleft" />,
+    RefreshCw: () => <svg data-testid="icon-refresh" />,
+    CheckCircle: () => <svg data-testid="icon-checkcircle" />,
+    AlertCircle: () => <svg data-testid="icon-alertcircle" />,
+    Clock: () => <svg data-testid="icon-clock" />,
+    FileText: () => <svg data-testid="icon-filetxt" />,
+    Database: () => <svg data-testid="icon-database" />,
+    Wand2: () => <svg data-testid="icon-wand" />,
+    Upload: () => <svg data-testid="icon-upload" />,
+    Send: () => <svg data-testid="icon-send" />,
+    Info: () => <svg data-testid="icon-info" />,
+  }
+  return new Proxy(icons, {
+    get(target, prop) {
+      if (typeof prop === 'string' && prop in target) return (target as any)[prop]
+      if (typeof prop === 'string' && /^[A-Z]/.test(prop)) {
+        return function LucideIcon() {
+          return <svg data-testid={`icon-${prop.toLowerCase()}`} />
+        }
+      }
+      return (target as any)[prop]
+    },
+  })
+})
 
 vi.mock('@/components/connector-icon', () => ({
   ConnectorIcon: ({ type, className }: any) => (

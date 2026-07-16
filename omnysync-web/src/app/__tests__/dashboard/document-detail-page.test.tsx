@@ -30,16 +30,32 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-vi.mock('lucide-react', () => ({
-  ArrowLeft: () => <svg data-testid="icon-arrowleft" />,
-  RefreshCw: () => <svg data-testid="icon-refresh" />,
-  Trash2: () => <svg data-testid="icon-trash" />,
-  Edit: () => <svg data-testid="icon-edit" />,
-  Calendar: () => <svg data-testid="icon-calendar" />,
-  Clock: () => <svg data-testid="icon-clock" />,
-  CheckCircle: () => <svg data-testid="icon-checkcircle" />,
-  AlertCircle: () => <svg data-testid="icon-alertcircle" />,
-}))
+vi.mock('lucide-react', () => {
+  const icons: Record<string, any> = {
+    ArrowLeft: () => <svg data-testid="icon-arrowleft" />,
+    RefreshCw: () => <svg data-testid="icon-refresh" />,
+    Trash2: () => <svg data-testid="icon-trash" />,
+    Edit: () => <svg data-testid="icon-edit" />,
+    Calendar: () => <svg data-testid="icon-calendar" />,
+    Clock: () => <svg data-testid="icon-clock" />,
+    CheckCircle: () => <svg data-testid="icon-checkcircle" />,
+    AlertCircle: () => <svg data-testid="icon-alertcircle" />,
+    Info: () => <svg data-testid="icon-info" />,
+  }
+  // Fallback so any other lucide icon (e.g. used by shared components like
+  // HelpTooltip) renders a generic SVG instead of throwing "No X export".
+  return new Proxy(icons, {
+    get(target, prop) {
+      if (typeof prop === 'string' && prop in target) return (target as any)[prop]
+      if (typeof prop === 'string' && /^[A-Z]/.test(prop)) {
+        return function LucideIcon() {
+          return <svg data-testid={`icon-${prop.toLowerCase()}`} />
+        }
+      }
+      return (target as any)[prop]
+    },
+  })
+})
 
 beforeEach(() => {
   vi.clearAllMocks()

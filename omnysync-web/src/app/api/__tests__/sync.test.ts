@@ -485,7 +485,7 @@ describe('POST /api/sync/[id]/check', () => {
     expect(response.status).toBe(200)
     expect(data.success).toBe(true)
     expect(data.message).toBe('Change detection queued')
-    expect(enqueueChangeDetection).toHaveBeenCalledWith('doc-1', 'user-1')
+    expect(enqueueChangeDetection).toHaveBeenCalledWith('doc-1')
   })
 
   // ── Document inexistant ─────────────────────────────────────────────────

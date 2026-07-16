@@ -70,23 +70,20 @@ export async function POST(req: NextRequest) {
 
   switch (type) {
     case 'WORDPRESS':
-      testResult = {
-        success: await testWordPressConnection(config.siteUrl, {
-          username: credentials.username,
-          password: credentials.password,
-        }),
-      }
+      testResult = await testWordPressConnection(
+        config.siteUrl,
+        credentials.username,
+        credentials.password
+      )
       break
     case 'GHOST':
-      testResult = { success: await testGhostConnection(config.siteUrl, credentials.adminApiKey) }
+      testResult = await testGhostConnection(config.siteUrl, credentials.adminApiKey)
       break
     case 'WEBFLOW':
-      testResult = { success: await testWebflowConnection(credentials.accessToken) }
+      testResult = await testWebflowConnection(credentials.accessToken, config.siteId)
       break
     case 'SHOPIFY':
-      testResult = {
-        success: await testShopifyConnection(config.shopDomain, credentials.accessToken),
-      }
+      testResult = await testShopifyConnection(config.shopDomain, credentials.accessToken)
       break
     case 'GOOGLE_DOCS':
       // Google Docs doesn't have a test connection unless we try listing docs
@@ -97,15 +94,13 @@ export async function POST(req: NextRequest) {
       testResult = { success: true, error: '' }
       break
     case 'MEDIUM':
-      testResult = { success: await testMediumConnection(credentials.accessToken) }
+      testResult = await testMediumConnection(credentials.accessToken)
       break
     case 'AIRTABLE':
-      testResult = { success: await testAirtableConnection(credentials.apiKey) }
+      testResult = await testAirtableConnection(credentials.apiKey)
       break
     case 'CONTENTFUL':
-      testResult = {
-        success: await testContentfulConnection(config.spaceId, credentials.accessToken),
-      }
+      testResult = await testContentfulConnection(credentials.accessToken, config.spaceId)
       break
   }
 
@@ -123,15 +118,23 @@ export async function POST(req: NextRequest) {
   switch (type) {
     case 'WORDPRESS': {
       const { saveWordPressConnector } = await import('@omnysync/core/services/wordpress')
-      connector = await saveWordPressConnector(orgId, config.siteUrl, {
-        username: credentials.username,
-        password: credentials.password,
-      })
+      connector = await saveWordPressConnector(
+        session.user.id,
+        orgId,
+        config.siteUrl,
+        credentials.username,
+        credentials.password
+      )
       break
     }
     case 'GHOST': {
       const { saveGhostConnector } = await import('@omnysync/core/services/ghost')
-      connector = await saveGhostConnector(orgId, config.siteUrl, credentials.adminApiKey)
+      connector = await saveGhostConnector(
+        session.user.id,
+        orgId,
+        config.siteUrl,
+        credentials.adminApiKey
+      )
       break
     }
     case 'WEBFLOW': {

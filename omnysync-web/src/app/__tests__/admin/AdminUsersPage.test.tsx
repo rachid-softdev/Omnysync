@@ -53,7 +53,7 @@ describe('AdminUsersPage', () => {
     render(<AdminUsersPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Utilisateurs')).toBeInTheDocument()
+      expect(screen.getByText('Users')).toBeInTheDocument()
     })
   })
 
@@ -66,7 +66,7 @@ describe('AdminUsersPage', () => {
     render(<AdminUsersPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('2 utilisateurs sur la plateforme')).toBeInTheDocument()
+      expect(screen.getByText('2 users on the platform')).toBeInTheDocument()
     })
   })
 
@@ -118,7 +118,7 @@ describe('AdminUsersPage', () => {
     render(<AdminUsersPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Erreur lors du chargement des utilisateurs')).toBeInTheDocument()
+      expect(screen.getByText('Failed to load users')).toBeInTheDocument()
     })
   })
 
@@ -157,7 +157,7 @@ describe('AdminUsersPage', () => {
       expect(screen.getByText('john@test.com')).toBeInTheDocument()
     })
 
-    const searchInput = screen.getByPlaceholderText('Rechercher par email ou nom…')
+    const searchInput = screen.getByPlaceholderText('Search by email or name…')
     fireEvent.change(searchInput, { target: { value: 'admin' } })
 
     await waitFor(() => {
@@ -178,7 +178,7 @@ describe('AdminUsersPage', () => {
       expect(screen.getByText('John Doe')).toBeInTheDocument()
     })
 
-    const searchInput = screen.getByPlaceholderText('Rechercher par email ou nom…')
+    const searchInput = screen.getByPlaceholderText('Search by email or name…')
     fireEvent.change(searchInput, { target: { value: 'Admin' } })
 
     await waitFor(() => {
@@ -199,7 +199,7 @@ describe('AdminUsersPage', () => {
       expect(screen.getByText('john@test.com')).toBeInTheDocument()
     })
 
-    const searchInput = screen.getByPlaceholderText('Rechercher par email ou nom…')
+    const searchInput = screen.getByPlaceholderText('Search by email or name…')
 
     // Tape une recherche
     fireEvent.change(searchInput, { target: { value: 'admin' } })
@@ -226,9 +226,9 @@ describe('AdminUsersPage', () => {
     render(<AdminUsersPage />)
 
     await waitFor(() => {
-      // toLocaleDateString('fr-FR') → ex: "1 janv. 2026"
-      expect(screen.getByText(/1 janv\.? 2026/)).toBeInTheDocument()
-      expect(screen.getByText(/2 janv\.? 2026/)).toBeInTheDocument()
+      // toLocaleDateString('en-US') → ex: "Jan 1, 2026"
+      expect(screen.getByText(/Jan 1, 2026/)).toBeInTheDocument()
+      expect(screen.getByText(/Jan 2, 2026/)).toBeInTheDocument()
     })
   })
 
@@ -241,7 +241,7 @@ describe('AdminUsersPage', () => {
     render(<AdminUsersPage />)
 
     await waitFor(() => {
-      const voirButtons = screen.getAllByText('Voir')
+      const voirButtons = screen.getAllByText('View')
       expect(voirButtons).toHaveLength(2)
     })
   })

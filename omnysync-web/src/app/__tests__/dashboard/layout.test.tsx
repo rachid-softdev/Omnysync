@@ -6,6 +6,16 @@ const mockRedirect = vi.hoisted(() => vi.fn())
 
 vi.mock('next/navigation', () => ({
   redirect: mockRedirect,
+  usePathname: () => '/dashboard',
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    refresh: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+  }),
+  useSearchParams: () => new URLSearchParams(),
+  useParams: () => ({}),
 }))
 
 vi.mock('next/image', () => ({
@@ -54,18 +64,38 @@ vi.mock('@/lib/actions', () => ({
   logoutAction: vi.fn(),
 }))
 
-vi.mock('lucide-react', () => ({
-  LayoutDashboard: () => <svg data-testid="icon-dashboard" />,
-  FileText: () => <svg data-testid="icon-filetxt" />,
-  Plug: () => <svg data-testid="icon-plug" />,
-  Settings: () => <svg data-testid="icon-settings" />,
-  LogOut: () => <svg data-testid="icon-logout" />,
-  ArrowRightLeft: () => <svg data-testid="icon-sync" />,
-  BarChart3: () => <svg data-testid="icon-analytics" />,
-  Webhook: () => <svg data-testid="icon-webhook" />,
-  FileCheck: () => <svg data-testid="icon-approvals" />,
-  Zap: () => <svg data-testid="icon-zap" />,
-}))
+vi.mock('lucide-react', () => {
+  const icons: Record<string, any> = {
+    LayoutDashboard: () => <svg data-testid="icon-dashboard" />,
+    FileText: () => <svg data-testid="icon-filetxt" />,
+    Plug: () => <svg data-testid="icon-plug" />,
+    Settings: () => <svg data-testid="icon-settings" />,
+    LogOut: () => <svg data-testid="icon-logout" />,
+    ArrowRightLeft: () => <svg data-testid="icon-sync" />,
+    BarChart3: () => <svg data-testid="icon-analytics" />,
+    Webhook: () => <svg data-testid="icon-webhook" />,
+    FileCheck: () => <svg data-testid="icon-approvals" />,
+    Zap: () => <svg data-testid="icon-zap" />,
+    Plus: () => <svg data-testid="icon-plus" />,
+    Shield: () => <svg data-testid="icon-shield" />,
+    ExternalLink: () => <svg data-testid="icon-external" />,
+    Info: () => <svg data-testid="icon-info" />,
+  }
+  return new Proxy(icons, {
+    get(target, prop) {
+      if (typeof prop === 'string' && prop in target) return (target as any)[prop]
+      if (typeof prop === 'string' && /^[A-Z]/.test(prop)) {
+        return function LucideIcon() {
+          return <svg data-testid={`icon-${prop.toLowerCase()}`} />
+        }
+      }
+      return (target as any)[prop]
+    },
+    has(target, prop) {
+      return typeof prop === 'string' ? true : prop in target
+    },
+  })
+})
 
 beforeEach(() => {
   vi.clearAllMocks()

@@ -14,10 +14,10 @@ vi.mock('@/components/ui/tabs', () => {
   }>({ value: 'profile', onChange: () => {} })
 
   return {
-    Tabs: ({ defaultValue, children, className, ...props }: any) => {
-      const [value, onChange] = useState(defaultValue)
+    Tabs: ({ value, defaultValue, children, className, ...props }: any) => {
+      const [current, onChange] = useState(value ?? defaultValue ?? 'profile')
       return (
-        <TabsContext.Provider value={{ value, onChange }}>
+        <TabsContext.Provider value={{ value: current, onChange }}>
           <div className={className} data-orientation="horizontal" {...props}>
             {children}
           </div>
@@ -103,6 +103,11 @@ describe('SettingsPage', () => {
   })
 
   it('shows "Saved!" after saving profile', async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({}),
+    })
+
     render(<SettingsPage />)
 
     const saveButton = screen.getByText('Save')
