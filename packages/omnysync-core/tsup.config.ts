@@ -44,10 +44,12 @@ export default defineConfig({
     "services/contentful": "src/services/contentful.ts",
   },
   format: ["esm", "cjs"],
-  // DTS emitted WITHOUT resolving external types: `@prisma/client` (and other
-  // externals) stay as bare import specifiers in the .d.ts, so generation does
-  // not require the generated client to be resolvable at build time.
-  dts: { resolve: false },
+  // DTS type-checks the source, so `@prisma/client` must resolve to a GENERATED
+  // copy. In CI we mirror the generated web client into core's node_modules
+  // copy (see .github/workflows/ci.yml "Sync core's Prisma Client copy"). It
+  // stays a bare external import in the emitted .d.ts because it is listed in
+  // `external` below.
+  dts: true,
   splitting: false,
   sourcemap: true,
   clean: true,

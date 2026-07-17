@@ -127,6 +127,23 @@ jobs:
         # be generated into core's node_modules on this fresh VM.
         run: pnpm --filter @omnysync/core exec prisma generate --schema=../../omnysync-web/prisma/schema.prisma
 
+      - name: Sync core's Prisma Client copy
+        # Why: pnpm keeps @omnysync/core and omnysync-web on separate
+        # @prisma/client copies. `prisma generate` writes the client to the
+        # shared generated dir (omnysync-web/prisma/generated/client) but does
+        # NOT fill core's own node_modules copy (pnpm's virtual store is
+        # read-only). tsup type-checks core's source against core's own
+        # @prisma/client copy, which would otherwise be the UNGENERATED stub and
+        # fail dts generation. Mirror the freshly generated shared client into
+        # core's copy so tsup resolves a real client.
+        run: |
+          CORE_CLIENT=$(node -e "console.log(require('path').dirname(require.resolve('@prisma/client/package.json',{paths:['packages/omnysync-core']})))")
+          SHARED_CLIENT="$PWD/omnysync-web/prisma/generated/client"
+          rm -rf "$CORE_CLIENT/.prisma"
+          mkdir -p "$CORE_CLIENT/.prisma/client"
+          cp -r "$SHARED_CLIENT/." "$CORE_CLIENT/.prisma/client/"
+          echo "Synced @prisma/client: $SHARED_CLIENT -> $CORE_CLIENT/.prisma/client"
+
       - name: Build
         # Why: Next.js forces NODE_ENV=production during next build, so the
         # env.ts Zod validation runs its production checks. All required
