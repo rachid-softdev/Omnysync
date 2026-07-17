@@ -6,5 +6,8 @@
     "./tsconfig": "./tsconfig.base.json",
     "./eslint": "./eslint.base.js",
     "./tailwind": "./tailwind.base.ts"
+  },
+  "dependencies": {
+    "tailwindcss-animate": "^1.0.7"
   }
 }
