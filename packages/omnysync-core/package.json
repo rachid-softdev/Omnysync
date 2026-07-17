@@ -114,7 +114,7 @@
     "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lucide-react": "^1.18.0",
+    "lucide-react": "^1.22.0",
     "openai": "^6.42.0",
     "otpauth": "^9.5.1",
     "pg": "^8.20.0",
