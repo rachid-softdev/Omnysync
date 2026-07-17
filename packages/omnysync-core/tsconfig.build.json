@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Intentionally empty `paths`: tsup/esbuild must NOT rewrite `@prisma/client`
+    // to the shared generated-client path (that would inline a relative import
+    // into dist, which then can't resolve `@prisma/client-runtime-utils` at
+    // next-build time). Keeping it a bare external import lets the consuming
+    // app resolve @prisma/client from its own (generated) node_modules copy.
+    "paths": {}
+  }
+}

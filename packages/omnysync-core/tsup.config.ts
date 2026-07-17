@@ -1,6 +1,9 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
+  // Use a tsconfig without `paths` so esbuild keeps `@prisma/client` as a bare
+  // external import in the emitted JS (see tsconfig.build.json).
+  tsconfig: "tsconfig.build.json",
   entry: {
     index: "src/index.ts",
     prisma: "src/prisma/index.ts",
@@ -41,10 +44,10 @@ export default defineConfig({
     "services/contentful": "src/services/contentful.ts",
   },
   format: ["esm", "cjs"],
-  // DTS généré avec resolve:true pour que tsup resolve les types externes
-  // (notamment @prisma/client). Le type-check strict est maintenu via
-  // `tsconfig.strict.json` avec `tsc --noEmit`.
-  dts: { resolve: true },
+  // DTS emitted WITHOUT resolving external types: `@prisma/client` (and other
+  // externals) stay as bare import specifiers in the .d.ts, so generation does
+  // not require the generated client to be resolvable at build time.
+  dts: { resolve: false },
   splitting: false,
   sourcemap: true,
   clean: true,
