@@ -54,13 +54,20 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   jsx: "preserve",
-  external: [
-    "react",
-    "react-dom",
-    "bcrypt",
-    "@prisma/client",
-    "@prisma/adapter-pg",
-    "pg",
-    "otpauth",
-  ],
+  // Keep @prisma/client a BARE external import even though tsconfig.build.json's
+  // `paths` rewrite it to the shared generated-client directory. esbuild would
+  // otherwise inline a relative import into dist, which then fails to resolve
+  // `@prisma/client-runtime-utils` at next-build time.
+  external: (id) =>
+    id === "@prisma/client" ||
+    id.startsWith("@prisma/client/") ||
+    id.includes("omnysync-web/prisma/generated/client") ||
+    [
+      "react",
+      "react-dom",
+      "bcrypt",
+      "@prisma/adapter-pg",
+      "pg",
+      "otpauth",
+    ].includes(id),
 });
