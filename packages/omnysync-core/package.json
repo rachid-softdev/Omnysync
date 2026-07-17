@@ -126,7 +126,7 @@
   "devDependencies": {
     "@omnysync/config": "workspace:*",
     "@types/bcrypt": "^6.0.0",
-    "@types/node": "^25",
+    "@types/node": "^26",
     "@types/pg": "^8.11.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
