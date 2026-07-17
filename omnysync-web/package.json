@@ -18,6 +18,7 @@
     "@auth/prisma-adapter": "^2.11.2",
     "@omnysync/core": "workspace:*",
     "@prisma/client": "^7.8.0",
+    "@prisma/client-runtime-utils": "^7.8.0",
     "@sentry/nextjs": "^10.57.0",
     "bcrypt": "^6.0.0",
     "clsx": "^2.1.1",

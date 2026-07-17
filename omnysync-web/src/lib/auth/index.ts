@@ -80,6 +80,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         })
 
         if (dbUser) {
+          token.id = user.id
           token.role = dbUser.role ?? 'USER'
           token.passwordChangedAt = dbUser.passwordChangedAt?.getTime() ?? 0
           token.has2FA = !!dbUser.twoFactorAuth
