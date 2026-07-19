@@ -264,6 +264,56 @@ describe('POST /api/team', () => {
       })
     )
   })
+
+  // ── Privilège : MEMBER tente d'ajouter un membre (escalade) ───────────────
+  // TAE5 #21 / TAE1 #182 — un membre sans rôle OWNER/ADMIN doit être bloqué.
+  // En production, le findFirst filtré par role:{in:['OWNER','ADMIN']} renvoie
+  // null pour un MEMBER ; on simule ce résultat ici.
+
+  it('should return 403 when a regular MEMBER tries to add a member (privilege escalation blocked)', async () => {
+    vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null)
+
+    const { POST } = await import('@/app/api/team/route')
+    const response = await POST(makeRequest({ email: 'new@omnysync.com', role: 'MEMBER' }))
+
+    expect(response.status).toBe(403)
+  })
+
+  // ── Garde d'unicité : pas de double ajout sur POST répété ─────────────────
+  // TAE5 #10/#40 — le même appelant ne doit pas pouvoir compter deux fois le
+  // même membre. Le second POST doit tomber sur le garde existingMember → 400.
+
+  it('should not double-add an existing member on repeated POST (uniqueness guard)', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 'new-user',
+      email: 'new@omnysync.com',
+    } as any)
+
+    // Deux POST successifs × 2 appels findFirst chacun = 4 appels.
+    // POST1: caller ADMIN, puis membre pas encore existant (null) -> 200 + create.
+    // POST2: caller ADMIN, puis membre déjà existant (MEMBER) -> 400.
+    vi.mocked(prisma.userOrganization.findFirst)
+      .mockResolvedValueOnce({ id: 'membership-admin', role: 'ADMIN' } as any)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 'membership-admin', role: 'ADMIN' } as any)
+      .mockResolvedValueOnce({ id: 'membership-existing', role: 'MEMBER' } as any)
+
+    vi.mocked(prisma.userOrganization.create).mockResolvedValue({
+      id: 'new-membership',
+      userId: 'new-user',
+      organizationId: 'org-1',
+      role: 'MEMBER',
+    } as any)
+
+    const { POST } = await import('@/app/api/team/route')
+    const r1 = await POST(makeRequest({ email: 'new@omnysync.com', role: 'MEMBER' }))
+    const r2 = await POST(makeRequest({ email: 'new@omnysync.com', role: 'MEMBER' }))
+
+    expect(r1.status).toBe(200)
+    expect(r2.status).toBe(400)
+    // La création n'a été appelée qu'une seule fois.
+    expect(prisma.userOrganization.create).toHaveBeenCalledTimes(1)
+  })
 })
 
 // ============================================================================

@@ -337,4 +337,60 @@ describe('POST /api/documents', () => {
     expect(response.status).toBe(200)
     expect(data.title).toBe('Seulement le titre')
   })
+
+  // ── Titre très long (>1000 caractères) ────────────────────────────────────
+  // TAE5 #30 — un titre démesuré ne doit pas planter la route ; il est stocké
+  // tel quel et la création renvoie 200.
+
+  it('should handle a very long title (>1000 chars) and return 200', async () => {
+    const longTitle = 'A'.repeat(1500)
+
+    const createdDoc = {
+      id: 'doc-long',
+      userId: 'user-1',
+      organizationId: 'org-1',
+      title: longTitle,
+      status: 'DRAFT',
+      syncStatus: 'NOT_SYNCED',
+    }
+
+    vi.mocked(prisma.document.create).mockResolvedValue(createdDoc as any)
+
+    const { POST } = await import('@/app/api/documents/route')
+    const response = await POST(makeRequest({ title: longTitle }))
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.title).toBe(longTitle)
+    expect(prisma.document.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ title: longTitle }),
+      })
+    )
+  })
+
+  // ── Titre avec unicode/emoji ──────────────────────────────────────────────
+  // TAE5 #44 — les caractères unicode/emoji doivent être acceptés sans erreur.
+
+  it('should accept a title containing unicode and emoji and return 200', async () => {
+    const emojiTitle = 'Café 🚀 résumé — hôtel'
+
+    const createdDoc = {
+      id: 'doc-emoji',
+      userId: 'user-1',
+      organizationId: 'org-1',
+      title: emojiTitle,
+      status: 'DRAFT',
+      syncStatus: 'NOT_SYNCED',
+    }
+
+    vi.mocked(prisma.document.create).mockResolvedValue(createdDoc as any)
+
+    const { POST } = await import('@/app/api/documents/route')
+    const response = await POST(makeRequest({ title: emojiTitle }))
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.title).toBe(emojiTitle)
+  })
 })

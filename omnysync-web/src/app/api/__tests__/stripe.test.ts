@@ -511,4 +511,171 @@ describe('POST /api/stripe/webhook', () => {
     const body = await response.json()
     expect(body.error).toBe('Handler error')
   })
+
+  // ==========================================================================
+  // Concurrent identical webhooks — idempotency (TAE5 #43)
+  // ==========================================================================
+
+  it('should process only one of two concurrent identical webhooks (second skipped)', async () => {
+    const eventId = 'evt_concurrent'
+    mockConstructEvent.mockReturnValue({
+      id: eventId,
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          customer: 'cus_org123',
+          subscription: 'sub_abc',
+        },
+      },
+    })
+
+    vi.mocked(prisma.organization.findFirst).mockResolvedValue({ id: 'org-1' } as any)
+    vi.mocked(prisma.subscription.upsert).mockResolvedValue({} as any)
+    vi.mocked(prisma.organization.update).mockResolvedValue({} as any)
+
+    // First claim succeeds; second collides with the unique constraint (P2002).
+    vi.mocked(prisma.webhookEvent.create)
+      .mockResolvedValueOnce({} as any)
+      .mockRejectedValueOnce(
+        new (vi.mocked(Prisma).PrismaClientKnownRequestError)('Unique constraint failed', {
+          code: 'P2002',
+        })
+      )
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const r1 = await POST(makeWebhookRequest(JSON.stringify({})))
+    const r2 = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(r1.status).toBe(200)
+    expect(r2.status).toBe(200)
+    const d2 = await r2.json()
+    expect(d2.skipped).toBe(true)
+
+    // Business logic ran exactly once.
+    expect(prisma.subscription.upsert).toHaveBeenCalledTimes(1)
+  })
+
+  // ==========================================================================
+  // checkout.session.completed with invalid client_reference_id (TAE5 #61)
+  // ==========================================================================
+
+  it('should handle checkout.session.completed with unknown user gracefully (no crash)', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_unknown_user',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          customer: 'cus_unknown',
+          subscription: 'sub_unknown',
+          client_reference_id: 'user-does-not-exist',
+        },
+      },
+    })
+
+    // No org by customer, no org by user → handler short-circuits, no upsert.
+    vi.mocked(prisma.organization.findFirst).mockResolvedValue(null)
+    vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null)
+    vi.mocked(prisma.webhookEvent.create).mockResolvedValue({} as any)
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(200)
+    expect(prisma.subscription.upsert).not.toHaveBeenCalled()
+  })
+
+  // ==========================================================================
+  // customer.subscription.updated downgrade (TAE5 #62)
+  // ==========================================================================
+
+  it('should handle a subscription downgrade (cancel_at_period_end) gracefully', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_downgrade',
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: 'sub_abc',
+          customer: 'cus_org123',
+          status: 'active',
+          items: { data: [{ price: { id: 'price_pro_monthly' } }] },
+          current_period_start: Math.floor(Date.now() / 1000) - 86400,
+          current_period_end: Math.floor(Date.now() / 1000) + 2592000,
+          cancel_at_period_end: true,
+        },
+      },
+    })
+
+    vi.mocked(prisma.organization.findFirst).mockResolvedValue({ id: 'org-1' } as any)
+    vi.mocked(prisma.subscription.update).mockResolvedValue({} as any)
+    vi.mocked(prisma.webhookEvent.create).mockResolvedValue({} as any)
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(200)
+    expect(prisma.subscription.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { organizationId: 'org-1' },
+        data: expect.objectContaining({
+          cancelAtPeriodEnd: true,
+          planKey: 'pro',
+        }),
+      })
+    )
+  })
+
+  // ==========================================================================
+  // invoice.payment_failed (TAE5 #63)
+  // ==========================================================================
+
+  it('should handle invoice.payment_failed by marking the subscription PAST_DUE', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_inv_failed',
+      type: 'invoice.payment_failed',
+      data: { object: { subscription: 'sub_abc' } },
+    })
+
+    vi.mocked(prisma.subscription.findFirst).mockResolvedValue({
+      organizationId: 'org-1',
+    } as any)
+    vi.mocked(prisma.subscription.update).mockResolvedValue({} as any)
+    vi.mocked(prisma.webhookEvent.create).mockResolvedValue({} as any)
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(200)
+    expect(prisma.subscription.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { organizationId: 'org-1' },
+        data: expect.objectContaining({ status: 'PAST_DUE' }),
+      })
+    )
+  })
+
+  // ==========================================================================
+  // Stripe API down during checkout (TAE5 #90 / #183 area)
+  // ==========================================================================
+
+  it('should return 500 when Stripe subscription retrieval fails during checkout', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_checkout_down',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          customer: 'cus_org123',
+          subscription: 'sub_abc',
+        },
+      },
+    })
+
+    vi.mocked(prisma.organization.findFirst).mockResolvedValue({ id: 'org-1' } as any)
+    mockStripeInstance.subscriptions.retrieve.mockRejectedValue(new Error('Stripe API down'))
+    vi.mocked(prisma.webhookEvent.create).mockResolvedValue({} as any)
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(500)
+  })
 })

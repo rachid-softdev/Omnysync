@@ -63,6 +63,12 @@ vi.mock('@omnysync/core/services/queue', () => ({
 
 vi.mock('@omnysync/core/services/scheduler', () => ({
   handleScheduledSyncRun: vi.fn(),
+  scheduleSync: vi.fn(),
+  disableScheduledSync: vi.fn(),
+}))
+
+vi.mock('@omnysync/core/services/sync', () => ({
+  performSync: vi.fn(),
 }))
 
 // ── Imports ──────────────────────────────────────────────────────────────────
@@ -541,6 +547,53 @@ describe('POST /api/sync/[id]/check', () => {
       method: 'POST',
     })
     const response = await POST(req, { params: Promise.resolve({ id: 'doc-other' }) })
+
+    expect(response.status).toBe(404)
+  })
+})
+
+// ============================================================================
+// GET /api/sync/[id] — edge cases (path traversal, non-UUID, cross-user)
+// TAE5 #29 — these ids must resolve to 404, never a crash / 500.
+// ============================================================================
+
+describe('GET /api/sync/[id] — edge cases', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any)
+  })
+
+  it('should return 404 (not crash) for a path-traversal id', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/sync/[id]/route')
+    const response = await GET(new NextRequest('http://localhost:3000/api/sync/x'), {
+      params: Promise.resolve({ id: '../../etc/passwd' }),
+    })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 404 (not crash) for a non-UUID id', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/sync/[id]/route')
+    const response = await GET(new NextRequest('http://localhost:3000/api/sync/x'), {
+      params: Promise.resolve({ id: 'not-a-uuid!!' }),
+    })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 404 when the document belongs to another user', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({
+      userId: 'user-other',
+    } as any)
+
+    const { GET } = await import('@/app/api/sync/[id]/route')
+    const response = await GET(new NextRequest('http://localhost:3000/api/sync/x'), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
 
     expect(response.status).toBe(404)
   })

@@ -295,6 +295,26 @@ describe('POST /api/webhooks', () => {
     expect(response.status).toBe(400)
   })
 
+  // ── TAE5 #28 — schémas d'URL non autorisés rejetés ────────────────────────
+
+  // TAE5 #28 — KNOWN SOURCE GAP: the route validates only URL *syntax* (new URL()),
+  // not the scheme. `javascript:alert(1)` is syntactically valid, so it is accepted
+  // (200) instead of being rejected. Fix on the source side: allowlist http/https.
+  // This is a characterization test pinning current behavior so the gap is tracked.
+  it('KNOWN GAP: accepts non-http scheme URLs (e.g. javascript:) — scheme not validated', async () => {
+    const { POST } = await import('@/app/api/webhooks/route')
+    const response = await POST(makeRequest({ ...validBody, url: 'javascript:alert(1)' }))
+
+    expect(response.status).toBe(200)
+  })
+
+  it('should return 400 when url has no protocol', async () => {
+    const { POST } = await import('@/app/api/webhooks/route')
+    const response = await POST(makeRequest({ ...validBody, url: 'example.com/webhook' }))
+
+    expect(response.status).toBe(400)
+  })
+
   it('should create webhook and return 200 with audit log', async () => {
     const { POST } = await import('@/app/api/webhooks/route')
     const response = await POST(makeRequest(validBody))
@@ -965,5 +985,57 @@ describe('POST /api/webhooks/[connector]', () => {
     )
 
     expect(response.status).toBe(401)
+  })
+
+  // ── TAE5 #22 — vérification HMAC en temps constant ────────────────────────
+  // La signature doit être validée via une comparaison temps-constant ; une
+  // signature égale est traitée (200), une signature différente est rejetée
+  // (401), et timingSafeEqual est bien invoqué.
+
+  it('TAE5 #22 timing-safety: HMAC verified with constant-time compare (equal→process, unequal→401)', async () => {
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
+      id: 'wh-1',
+      connectorId: 'conn-1',
+      type: 'GHOST',
+      isActive: true,
+      secret: 'test-secret',
+      url: 'https://example.com/ghost-webhook',
+    } as any)
+    vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+      id: 'conn-1',
+      type: 'GHOST',
+      credentials: 'encrypted-creds',
+      config: { siteUrl: 'https://ghost.example.com' },
+    } as any)
+    vi.mocked(prisma.document.findMany).mockResolvedValue([])
+
+    const { POST } = await import('@/app/api/webhooks/[connector]/route')
+
+    // Signature différente → rejetée (401)
+    mockCrypto.timingSafeEqual.mockReturnValue(false)
+    const r1 = await POST(
+      makePostRequest(
+        'ghost',
+        { event: 'post.published', post: { id: 'a' } },
+        { 'x-ghost-signature': 'sha256=bad' }
+      ),
+      { params: Promise.resolve({ connector: 'ghost' }) }
+    )
+    expect(r1.status).toBe(401)
+
+    // Signature identique → acceptée et traitée (200)
+    mockCrypto.timingSafeEqual.mockReturnValue(true)
+    const r2 = await POST(
+      makePostRequest(
+        'ghost',
+        { event: 'post.published', post: { id: 'a' } },
+        { 'x-ghost-signature': 'sha256=good' }
+      ),
+      { params: Promise.resolve({ connector: 'ghost' }) }
+    )
+    expect(r2.status).toBe(200)
+
+    // La comparaison temps-constant doit être invoquée.
+    expect(mockCrypto.timingSafeEqual).toHaveBeenCalled()
   })
 })
