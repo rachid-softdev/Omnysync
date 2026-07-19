@@ -57,17 +57,18 @@ export default defineConfig({
   // Keep @prisma/client a BARE external import even though tsconfig.build.json's
   // `paths` rewrite it to the shared generated-client directory. esbuild would
   // otherwise inline a relative import into dist, which then fails to resolve
-  // `@prisma/client-runtime-utils` at next-build time.
-  external: (id) =>
-    id === "@prisma/client" ||
-    id.startsWith("@prisma/client/") ||
-    id.includes("omnysync-web/prisma/generated/client") ||
-    [
-      "react",
-      "react-dom",
-      "bcrypt",
-      "@prisma/adapter-pg",
-      "pg",
-      "otpauth",
-    ].includes(id),
+  // `@prisma/client-runtime-utils` at next-build time. tsup's `external` only
+  // accepts an array of strings / RegExp — a function crashes with
+  // "external is not iterable" (tsup 8.x).
+  external: [
+    "@prisma/client",
+    /@prisma\/client\//,
+    /omnysync-web\/prisma\/generated\/client/,
+    "react",
+    "react-dom",
+    "bcrypt",
+    "@prisma/adapter-pg",
+    "pg",
+    "otpauth",
+  ],
 });

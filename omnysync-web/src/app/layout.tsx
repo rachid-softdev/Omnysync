@@ -1,11 +1,8 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import { headers } from 'next/headers'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
-
-const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers()
@@ -55,7 +52,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen bg-background`}>
+      <body className="font-sans min-h-screen bg-background">
         <Providers>
           <Header />
           {children}

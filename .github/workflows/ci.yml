@@ -107,9 +107,24 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: [lint, test, typecheck]
-    # Fail fast instead of hanging indefinitely if `next build` blocks on a
-    # missing service/network dependency.
-    timeout-minutes: 25
+    # Generous timeout: core's tsup dts type-check alone takes ~10 min, plus
+    # next build. Fails fast on a true hang (e.g. missing network/service).
+    timeout-minutes: 40
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v6
@@ -146,6 +161,14 @@ jobs:
           mkdir -p "$CORE_CLIENT/.prisma/client"
           cp -r "$SHARED_CLIENT/." "$CORE_CLIENT/.prisma/client/"
           echo "Synced @prisma/client: $SHARED_CLIENT -> $CORE_CLIENT/.prisma/client"
+
+      - name: Push database schema
+        # Why: next build (web) may prerender pages that query the database at
+        # build time. Provide a real Postgres (service above) + schema so the
+        # build does not hang/fail on a missing DB.
+        run: pnpm --filter @omnysync/core exec prisma db push --schema=../../omnysync-web/prisma/schema.prisma --skip-generate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
 
       - name: Build
         # Why: Next.js forces NODE_ENV=production during next build, so the
