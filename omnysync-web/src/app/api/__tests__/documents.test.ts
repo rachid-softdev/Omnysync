@@ -20,6 +20,9 @@ vi.mock('@/lib/prisma', () => ({
       findMany: vi.fn(),
       count: vi.fn(),
       create: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }))
@@ -392,5 +395,243 @@ describe('POST /api/documents', () => {
 
     expect(response.status).toBe(200)
     expect(data.title).toBe(emojiTitle)
+  })
+})
+
+// ============================================================================
+// GET /api/documents/[id]
+// ============================================================================
+
+describe('GET /api/documents/[id]', () => {
+  const makeReq = (id: string) => new NextRequest(`http://localhost:3000/api/documents/${id}`)
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any)
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+  })
+
+  it('should return 401 when unauthenticated', async () => {
+    vi.mocked(auth).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/documents/[id]/route')
+    const response = await GET(makeReq('doc-1'), { params: Promise.resolve({ id: 'doc-1' }) })
+
+    expect(response.status).toBe(401)
+  })
+
+  it('should return the document with source/dest connectors and 20 sync logs', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({
+      id: 'doc-1',
+      title: 'Doc 1',
+      status: 'DRAFT',
+      organizationId: 'org-1',
+      sourceConnector: { id: 's1', type: 'WORDPRESS' },
+      destConnector: { id: 'd1', type: 'GHOST' },
+      syncLogs: [{ id: 'log-1', status: 'INFO', message: 'ok', createdAt: new Date('2026-07-19') }],
+    } as any)
+
+    const { GET } = await import('@/app/api/documents/[id]/route')
+    const response = await GET(makeReq('doc-1'), { params: Promise.resolve({ id: 'doc-1' }) })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.id).toBe('doc-1')
+    expect(data.sourceConnector).toEqual({ id: 's1', type: 'WORDPRESS' })
+    expect(data.destConnector).toEqual({ id: 'd1', type: 'GHOST' })
+    expect(data.syncLogs).toHaveLength(1)
+
+    expect(prisma.document.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'doc-1', organizationId: 'org-1' },
+        include: expect.objectContaining({
+          syncLogs: expect.objectContaining({
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+          }),
+        }),
+      })
+    )
+  })
+
+  it('should return 404 when the document is not found', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/documents/[id]/route')
+    const response = await GET(makeReq('doc-x'), { params: Promise.resolve({ id: 'doc-x' }) })
+
+    expect(response.status).toBe(404)
+    expect(apiError).toHaveBeenCalledWith('Document not found', 404)
+  })
+
+  it('should scope the lookup by the caller organization (cross-org → 404)', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/documents/[id]/route')
+    await GET(makeReq('doc-1'), { params: Promise.resolve({ id: 'doc-1' }) })
+
+    expect(prisma.document.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'doc-1', organizationId: 'org-1' },
+      })
+    )
+  })
+})
+
+// ============================================================================
+// PUT /api/documents/[id]
+// ============================================================================
+
+describe('PUT /api/documents/[id]', () => {
+  const makeRequest = (id: string, body: any) =>
+    new NextRequest(`http://localhost:3000/api/documents/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any)
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({
+      id: 'doc-1',
+      organizationId: 'org-1',
+    } as any)
+    vi.mocked(prisma.document.update).mockResolvedValue({ id: 'doc-1' } as any)
+  })
+
+  it('should return 401 when unauthenticated', async () => {
+    vi.mocked(auth).mockResolvedValue(null)
+
+    const { PUT } = await import('@/app/api/documents/[id]/route')
+    const response = await PUT(makeRequest('doc-1', { title: 'X' }), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+
+    expect(response.status).toBe(401)
+  })
+
+  it('should update only the allowed fields', async () => {
+    const { PUT } = await import('@/app/api/documents/[id]/route')
+    const response = await PUT(
+      makeRequest('doc-1', {
+        title: 'New Title',
+        seoTitle: 'SEO',
+        tags: ['a', 'b'],
+        autoSyncEnabled: true,
+        syncFrequency: 'DAILY',
+        sourceConnectorId: 'should-be-ignored',
+        status: 'PUBLISHED',
+      }),
+      { params: Promise.resolve({ id: 'doc-1' }) }
+    )
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(prisma.document.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'doc-1' },
+        data: expect.objectContaining({
+          title: 'New Title',
+          seoTitle: 'SEO',
+          tags: ['a', 'b'],
+          autoSyncEnabled: true,
+          syncFrequency: 'DAILY',
+        }),
+      })
+    )
+
+    const updateData = vi.mocked(prisma.document.update).mock.calls[0][0].data as Record<
+      string,
+      unknown
+    >
+    expect(updateData.sourceConnectorId).toBeUndefined()
+    expect(updateData.status).toBeUndefined()
+  })
+
+  it('should filter out the disallowed `description` field', async () => {
+    const { PUT } = await import('@/app/api/documents/[id]/route')
+    await PUT(makeRequest('doc-1', { description: 'nope', excerpt: 'ok' }), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+
+    const updateData = vi.mocked(prisma.document.update).mock.calls[0][0].data as Record<
+      string,
+      unknown
+    >
+    expect(updateData.description).toBeUndefined()
+    // `excerpt` is an allowed field
+    expect(updateData.excerpt).toBe('ok')
+  })
+
+  it('should return 404 when the document is not found', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(null)
+
+    const { PUT } = await import('@/app/api/documents/[id]/route')
+    const response = await PUT(makeRequest('doc-x', { title: 'X' }), {
+      params: Promise.resolve({ id: 'doc-x' }),
+    })
+
+    expect(response.status).toBe(404)
+    expect(apiError).toHaveBeenCalledWith('Document not found', 404)
+  })
+})
+
+// ============================================================================
+// DELETE /api/documents/[id]
+// ============================================================================
+
+describe('DELETE /api/documents/[id]', () => {
+  const makeReq = (id: string) =>
+    new NextRequest(`http://localhost:3000/api/documents/${id}`, { method: 'DELETE' })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any)
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({
+      id: 'doc-1',
+      organizationId: 'org-1',
+    } as any)
+    vi.mocked(prisma.document.update).mockResolvedValue({ id: 'doc-1' } as any)
+  })
+
+  it('should return 401 when unauthenticated', async () => {
+    vi.mocked(auth).mockResolvedValue(null)
+
+    const { DELETE } = await import('@/app/api/documents/[id]/route')
+    const response = await DELETE(makeReq('doc-1'), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+
+    expect(response.status).toBe(401)
+  })
+
+  it('should soft-delete by archiving (status ARCHIVED), not physically delete', async () => {
+    const { DELETE } = await import('@/app/api/documents/[id]/route')
+    const response = await DELETE(makeReq('doc-1'), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.success).toBe(true)
+    expect(prisma.document.update).toHaveBeenCalledWith({
+      where: { id: 'doc-1' },
+      data: { status: 'ARCHIVED' },
+    })
+    expect(prisma.document.delete).not.toHaveBeenCalled()
+  })
+
+  it('should return 404 when the document is not found', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(null)
+
+    const { DELETE } = await import('@/app/api/documents/[id]/route')
+    const response = await DELETE(makeReq('doc-x'), {
+      params: Promise.resolve({ id: 'doc-x' }),
+    })
+
+    expect(response.status).toBe(404)
   })
 })

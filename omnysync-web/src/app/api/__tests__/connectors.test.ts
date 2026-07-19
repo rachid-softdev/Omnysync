@@ -19,6 +19,9 @@ vi.mock('@/lib/prisma', () => ({
     connector: {
       findMany: vi.fn(),
       create: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }))
@@ -61,22 +64,38 @@ vi.mock('@omnysync/core/services/ghost', () => ({
 // Mocks complets pour les autres connecteurs (importés statiquement par la route)
 vi.mock('@omnysync/core/services/webflow', () => ({
   testWebflowConnection: vi.fn(),
+  saveWebflowConnector: vi.fn(),
 }))
 
 vi.mock('@omnysync/core/services/shopify', () => ({
   testShopifyConnection: vi.fn(),
+  saveShopifyConnector: vi.fn(),
 }))
 
 vi.mock('@omnysync/core/services/medium', () => ({
   testMediumConnection: vi.fn(),
+  saveMediumConnector: vi.fn(),
 }))
 
 vi.mock('@omnysync/core/services/airtable', () => ({
   testAirtableConnection: vi.fn(),
+  saveAirtableConnector: vi.fn(),
 }))
 
 vi.mock('@omnysync/core/services/contentful', () => ({
   testContentfulConnection: vi.fn(),
+  saveContentfulConnector: vi.fn(),
+}))
+
+// Google Docs et Notion : save + list importés dynamiquement par la route
+vi.mock('@omnysync/core/services/google-docs', () => ({
+  saveGoogleDocsConnector: vi.fn(),
+  listGoogleDocs: vi.fn(),
+}))
+
+vi.mock('@omnysync/core/services/notion', () => ({
+  saveNotionConnector: vi.fn(),
+  listNotionPages: vi.fn(),
 }))
 
 // ── Imports ──────────────────────────────────────────────────────────────────
@@ -89,6 +108,16 @@ import { createConnectorSchema } from '@/lib/validations'
 import { apiError } from '@/lib/api-error'
 import { testWordPressConnection, saveWordPressConnector } from '@omnysync/core/services/wordpress'
 import { testGhostConnection, saveGhostConnector } from '@omnysync/core/services/ghost'
+import { testWebflowConnection, saveWebflowConnector } from '@omnysync/core/services/webflow'
+import { testShopifyConnection, saveShopifyConnector } from '@omnysync/core/services/shopify'
+import { testMediumConnection, saveMediumConnector } from '@omnysync/core/services/medium'
+import { testAirtableConnection, saveAirtableConnector } from '@omnysync/core/services/airtable'
+import {
+  testContentfulConnection,
+  saveContentfulConnector,
+} from '@omnysync/core/services/contentful'
+import { saveGoogleDocsConnector, listGoogleDocs } from '@omnysync/core/services/google-docs'
+import { saveNotionConnector, listNotionPages } from '@omnysync/core/services/notion'
 
 // ============================================================================
 // SUITE
@@ -345,5 +374,342 @@ describe('POST /api/connectors', () => {
     const response = await POST(makeRequest(validWordPressBody))
 
     expect(response.status).toBe(429)
+  })
+})
+
+// ============================================================================
+// POST /api/connectors — other connector types
+// ============================================================================
+
+describe('POST /api/connectors — other connector types', () => {
+  const makeRequest = (body: any) =>
+    new NextRequest('http://localhost:3000/api/connectors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1', email: 't@o.com' } } as any)
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+    vi.mocked(checkConnectorLimit).mockResolvedValue({ allowed: true } as any)
+  })
+
+  it('should create a Webflow connector', async () => {
+    const body = {
+      type: 'WEBFLOW',
+      name: 'WF',
+      config: { siteId: 'site-1' },
+      credentials: { accessToken: 'tok' },
+    }
+    vi.mocked(createConnectorSchema.safeParse).mockReturnValue({ success: true, data: body } as any)
+    vi.mocked(testWebflowConnection).mockResolvedValue({ success: true })
+    vi.mocked(saveWebflowConnector).mockResolvedValue({ id: 'c-wf', type: 'WEBFLOW' } as any)
+
+    const { POST } = await import('@/app/api/connectors/route')
+    const response = await POST(makeRequest(body))
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.id).toBe('c-wf')
+    expect(testWebflowConnection).toHaveBeenCalledWith('tok', 'site-1')
+    expect(saveWebflowConnector).toHaveBeenCalledWith('org-1', 'tok', 'site-1')
+  })
+
+  it('should create a Shopify connector', async () => {
+    const body = {
+      type: 'SHOPIFY',
+      name: 'SH',
+      config: { shopDomain: 'x.myshopify.com' },
+      credentials: { accessToken: 'tok' },
+    }
+    vi.mocked(createConnectorSchema.safeParse).mockReturnValue({ success: true, data: body } as any)
+    vi.mocked(testShopifyConnection).mockResolvedValue({ success: true })
+    vi.mocked(saveShopifyConnector).mockResolvedValue({ id: 'c-sh', type: 'SHOPIFY' } as any)
+
+    const { POST } = await import('@/app/api/connectors/route')
+    const response = await POST(makeRequest(body))
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(testShopifyConnection).toHaveBeenCalledWith('x.myshopify.com', 'tok')
+    expect(saveShopifyConnector).toHaveBeenCalledWith('org-1', 'x.myshopify.com', 'tok')
+  })
+
+  it('should create a Google Docs connector (no connection test)', async () => {
+    const body = {
+      type: 'GOOGLE_DOCS',
+      name: 'GD',
+      credentials: { accessToken: 'tok', refreshToken: 'ref' },
+    }
+    vi.mocked(createConnectorSchema.safeParse).mockReturnValue({ success: true, data: body } as any)
+    vi.mocked(saveGoogleDocsConnector).mockResolvedValue({ id: 'c-gd', type: 'GOOGLE_DOCS' } as any)
+
+    const { POST } = await import('@/app/api/connectors/route')
+    const response = await POST(makeRequest(body))
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(saveGoogleDocsConnector).toHaveBeenCalledWith('org-1', 'tok', 'ref')
+  })
+
+  it('should create a Notion connector (no connection test)', async () => {
+    const body = {
+      type: 'NOTION',
+      name: 'NO',
+      credentials: { accessToken: 'tok' },
+    }
+    vi.mocked(createConnectorSchema.safeParse).mockReturnValue({ success: true, data: body } as any)
+    vi.mocked(saveNotionConnector).mockResolvedValue({ id: 'c-no', type: 'NOTION' } as any)
+
+    const { POST } = await import('@/app/api/connectors/route')
+    const response = await POST(makeRequest(body))
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(saveNotionConnector).toHaveBeenCalledWith('org-1', 'tok')
+  })
+
+  it('should create a Medium connector', async () => {
+    const body = {
+      type: 'MEDIUM',
+      name: 'MD',
+      credentials: { accessToken: 'tok' },
+    }
+    vi.mocked(createConnectorSchema.safeParse).mockReturnValue({ success: true, data: body } as any)
+    vi.mocked(testMediumConnection).mockResolvedValue({ success: true })
+    vi.mocked(saveMediumConnector).mockResolvedValue({ id: 'c-md', type: 'MEDIUM' } as any)
+
+    const { POST } = await import('@/app/api/connectors/route')
+    const response = await POST(makeRequest(body))
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(testMediumConnection).toHaveBeenCalledWith('tok')
+    expect(saveMediumConnector).toHaveBeenCalledWith('org-1', 'tok')
+  })
+
+  it('should create an Airtable connector', async () => {
+    const body = {
+      type: 'AIRTABLE',
+      name: 'AT',
+      credentials: { apiKey: 'key' },
+    }
+    vi.mocked(createConnectorSchema.safeParse).mockReturnValue({ success: true, data: body } as any)
+    vi.mocked(testAirtableConnection).mockResolvedValue({ success: true })
+    vi.mocked(saveAirtableConnector).mockResolvedValue({ id: 'c-at', type: 'AIRTABLE' } as any)
+
+    const { POST } = await import('@/app/api/connectors/route')
+    const response = await POST(makeRequest(body))
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(testAirtableConnection).toHaveBeenCalledWith('key')
+    expect(saveAirtableConnector).toHaveBeenCalledWith('org-1', 'key')
+  })
+
+  it('should create a Contentful connector', async () => {
+    const body = {
+      type: 'CONTENTFUL',
+      name: 'CF',
+      config: { spaceId: 'space-1' },
+      credentials: { accessToken: 'tok' },
+    }
+    vi.mocked(createConnectorSchema.safeParse).mockReturnValue({ success: true, data: body } as any)
+    vi.mocked(testContentfulConnection).mockResolvedValue({ success: true })
+    vi.mocked(saveContentfulConnector).mockResolvedValue({ id: 'c-cf', type: 'CONTENTFUL' } as any)
+
+    const { POST } = await import('@/app/api/connectors/route')
+    const response = await POST(makeRequest(body))
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(testContentfulConnection).toHaveBeenCalledWith('tok', 'space-1')
+    expect(saveContentfulConnector).toHaveBeenCalledWith('org-1', 'space-1', 'tok')
+  })
+
+  it('should return 400 when Webflow connection test fails', async () => {
+    const body = {
+      type: 'WEBFLOW',
+      name: 'WF',
+      config: { siteId: 'site-1' },
+      credentials: { accessToken: 'tok' },
+    }
+    vi.mocked(createConnectorSchema.safeParse).mockReturnValue({ success: true, data: body } as any)
+    vi.mocked(testWebflowConnection).mockResolvedValue({ success: false, error: 'bad' })
+
+    const { POST } = await import('@/app/api/connectors/route')
+    const response = await POST(makeRequest(body))
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.error).toMatch(/Connection failed/i)
+    expect(saveWebflowConnector).not.toHaveBeenCalled()
+  })
+})
+
+// ============================================================================
+// DELETE /api/connectors/[id]
+// ============================================================================
+
+describe('DELETE /api/connectors/[id]', () => {
+  const makeRequest = () =>
+    new NextRequest('http://localhost:3000/api/connectors/c-1', { method: 'DELETE' })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any)
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+  })
+
+  it('should delete a connector owned by the organization', async () => {
+    vi.mocked(prisma.connector.findFirst).mockResolvedValue({
+      id: 'c-1',
+      organizationId: 'org-1',
+      userId: 'user-other',
+    } as any)
+    vi.mocked(prisma.connector.delete).mockResolvedValue({} as any)
+
+    const { DELETE } = await import('@/app/api/connectors/[id]/route')
+    const response = await DELETE(makeRequest(), { params: Promise.resolve({ id: 'c-1' }) })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.success).toBe(true)
+    expect(prisma.connector.delete).toHaveBeenCalledWith({ where: { id: 'c-1' } })
+  })
+
+  it('should return 404 when the connector is not found', async () => {
+    vi.mocked(prisma.connector.findFirst).mockResolvedValue(null)
+
+    const { DELETE } = await import('@/app/api/connectors/[id]/route')
+    const response = await DELETE(makeRequest(), { params: Promise.resolve({ id: 'c-1' }) })
+
+    expect(response.status).toBe(404)
+    expect(apiError).toHaveBeenCalledWith('Connector not found', 404)
+  })
+
+  it('should return 400 when the connector has linked documents (P2003)', async () => {
+    vi.mocked(prisma.connector.findFirst).mockResolvedValue({
+      id: 'c-1',
+      organizationId: 'org-1',
+    } as any)
+    vi.mocked(prisma.connector.delete).mockRejectedValue({ code: 'P2003' })
+
+    const { DELETE } = await import('@/app/api/connectors/[id]/route')
+    const response = await DELETE(makeRequest(), { params: Promise.resolve({ id: 'c-1' }) })
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.error).toMatch(/linked documents/i)
+  })
+})
+
+// ============================================================================
+// GET /api/connectors/[id]/documents
+// ============================================================================
+
+describe('GET /api/connectors/[id]/documents', () => {
+  const makeReq = (id: string) =>
+    new NextRequest(`http://localhost:3000/api/connectors/${id}/documents`)
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any)
+  })
+
+  it('should return 401 when unauthenticated', async () => {
+    vi.mocked(auth).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/connectors/[id]/documents/route')
+    const response = await GET(makeReq('c-1'), { params: Promise.resolve({ id: 'c-1' }) })
+
+    expect(response.status).toBe(401)
+  })
+
+  it('should return 404 when the connector does not exist', async () => {
+    vi.mocked(prisma.connector.findUnique).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/connectors/[id]/documents/route')
+    const response = await GET(makeReq('c-1'), { params: Promise.resolve({ id: 'c-1' }) })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 404 when the connector belongs to another user', async () => {
+    vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+      id: 'c-1',
+      userId: 'user-other',
+      type: 'GOOGLE_DOCS',
+    } as any)
+
+    const { GET } = await import('@/app/api/connectors/[id]/documents/route')
+    const response = await GET(makeReq('c-1'), { params: Promise.resolve({ id: 'c-1' }) })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should list Google Docs for a GOOGLE_DOCS connector', async () => {
+    vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+      id: 'c-1',
+      userId: 'user-1',
+      type: 'GOOGLE_DOCS',
+      credentials: JSON.stringify({ accessToken: 'tok' }),
+    } as any)
+    vi.mocked(listGoogleDocs).mockResolvedValue([{ id: 'doc-a', title: 'A' }] as any)
+
+    const { GET } = await import('@/app/api/connectors/[id]/documents/route')
+    const response = await GET(makeReq('c-1'), { params: Promise.resolve({ id: 'c-1' }) })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data).toEqual([{ id: 'doc-a', title: 'A' }])
+    expect(listGoogleDocs).toHaveBeenCalledWith('tok')
+  })
+
+  it('should list Notion pages for a NOTION connector', async () => {
+    vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+      id: 'c-1',
+      userId: 'user-1',
+      type: 'NOTION',
+      config: { accessToken: 'tok' },
+    } as any)
+    vi.mocked(listNotionPages).mockResolvedValue([{ id: 'p-1', title: 'Page' }] as any)
+
+    const { GET } = await import('@/app/api/connectors/[id]/documents/route')
+    const response = await GET(makeReq('c-1'), { params: Promise.resolve({ id: 'c-1' }) })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(listNotionPages).toHaveBeenCalledWith('tok')
+  })
+
+  it('should return 400 for an unsupported connector type', async () => {
+    vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+      id: 'c-1',
+      userId: 'user-1',
+      type: 'WORDPRESS',
+    } as any)
+
+    const { GET } = await import('@/app/api/connectors/[id]/documents/route')
+    const response = await GET(makeReq('c-1'), { params: Promise.resolve({ id: 'c-1' }) })
+
+    expect(response.status).toBe(400)
+  })
+
+  it('should return 500 when the listing throws', async () => {
+    vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+      id: 'c-1',
+      userId: 'user-1',
+      type: 'GOOGLE_DOCS',
+      credentials: JSON.stringify({ accessToken: 'tok' }),
+    } as any)
+    vi.mocked(listGoogleDocs).mockRejectedValue(new Error('api down'))
+
+    const { GET } = await import('@/app/api/connectors/[id]/documents/route')
+    const response = await GET(makeReq('c-1'), { params: Promise.resolve({ id: 'c-1' }) })
+
+    expect(response.status).toBe(500)
   })
 })

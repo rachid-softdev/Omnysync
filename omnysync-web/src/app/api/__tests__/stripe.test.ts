@@ -12,19 +12,31 @@ import { NextRequest } from 'next/server'
 
 // ── Mocks partagés (hoisted pour disponibilité dans vi.mock factory) ─────────
 
-const { mockHeadersGet, mockConstructEvent, mockStripeInstance } = vi.hoisted(() => {
+const {
+  mockHeadersGet,
+  mockConstructEvent,
+  mockStripeInstance,
+  mockCheckoutCreate,
+  mockPortalCreate,
+} = vi.hoisted(() => {
   const mockHeadersGet = vi.fn()
   const mockConstructEvent = vi.fn()
   const mockRetrieveSubscription = vi.fn()
   const mockRetrieveInvoice = vi.fn()
+  const mockCheckoutCreate = vi.fn()
+  const mockPortalCreate = vi.fn()
 
   return {
     mockHeadersGet,
     mockConstructEvent,
+    mockCheckoutCreate,
+    mockPortalCreate,
     mockStripeInstance: {
       webhooks: { constructEvent: mockConstructEvent },
       subscriptions: { retrieve: mockRetrieveSubscription },
       invoices: { retrieve: mockRetrieveInvoice },
+      checkout: { sessions: { create: mockCheckoutCreate } },
+      billingPortal: { sessions: { create: mockPortalCreate } },
     },
   }
 })
@@ -35,6 +47,14 @@ vi.mock('next/headers', () => ({
   headers: vi.fn(() => ({
     get: mockHeadersGet,
   })),
+}))
+
+vi.mock('@/lib/auth', () => ({
+  auth: vi.fn(),
+}))
+
+vi.mock('@/lib/auth/org', () => ({
+  getUserOrgId: vi.fn(),
 }))
 
 vi.mock('stripe', () => ({
@@ -70,6 +90,7 @@ vi.mock('@/lib/prisma', () => ({
     },
     subscription: {
       findFirst: vi.fn(),
+      findUnique: vi.fn(),
       upsert: vi.fn(),
       update: vi.fn(),
     },
@@ -96,6 +117,8 @@ vi.mock('@/lib/api-error', () => ({
 import { prisma } from '@/lib/prisma'
 import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
 import { apiError } from '@/lib/api-error'
+import { auth } from '@/lib/auth'
+import { getUserOrgId } from '@/lib/auth/org'
 import { Prisma } from '@prisma/client'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -125,6 +148,12 @@ const SUBSCRIPTION_RETRIEVE_DEFAULT = {
 describe('POST /api/stripe/webhook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
+    // Authenticated caller (checkout/portal use auth; webhook ignores it)
+    vi.mocked(auth).mockResolvedValue({
+      user: { id: 'user-1', email: 'test@omnysync.com' },
+    } as any)
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
 
     // Environment: price → plan mapping
     process.env.STRIPE_PRICE_PRO_MONTHLY = 'price_pro_monthly'
@@ -677,5 +706,385 @@ describe('POST /api/stripe/webhook', () => {
     const response = await POST(makeWebhookRequest(JSON.stringify({})))
 
     expect(response.status).toBe(500)
+  })
+})
+
+// ============================================================================
+// POST /api/stripe/checkout
+// ============================================================================
+
+describe('POST /api/stripe/checkout', () => {
+  const makeRequest = (body: any) =>
+    new NextRequest('http://localhost:3000/api/stripe/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body ?? {}),
+    })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({
+      user: { id: 'user-1', email: 'test@omnysync.com' },
+    } as any)
+    process.env.STRIPE_PRICE_PRO_MONTHLY = 'price_pro_monthly'
+    process.env.NEXTAUTH_URL = 'http://localhost:3000'
+    mockCheckoutCreate.mockResolvedValue({ url: 'https://stripe.com/checkout/sess_123' })
+  })
+
+  it('should return 401 when unauthenticated', async () => {
+    vi.mocked(auth).mockResolvedValue(null)
+
+    const { POST } = await import('@/app/api/stripe/checkout/route')
+    const response = await POST(makeRequest({ priceId: 'price_pro_monthly' }))
+
+    expect(response.status).toBe(401)
+  })
+
+  it('should create a checkout session and return its URL', async () => {
+    const { POST } = await import('@/app/api/stripe/checkout/route')
+    const response = await POST(makeRequest({ priceId: 'price_pro_monthly' }))
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.url).toBe('https://stripe.com/checkout/sess_123')
+    expect(mockCheckoutCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'subscription',
+        client_reference_id: 'user-1',
+        customer_email: 'test@omnysync.com',
+        line_items: [{ price: 'price_pro_monthly', quantity: 1 }],
+      })
+    )
+  })
+
+  it('should set the client_reference_id to the authenticated user id', async () => {
+    const { POST } = await import('@/app/api/stripe/checkout/route')
+    await POST(makeRequest({}))
+
+    expect(mockCheckoutCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ client_reference_id: 'user-1' })
+    )
+  })
+
+  it('should return 500 when Stripe is unavailable', async () => {
+    mockCheckoutCreate.mockRejectedValue(new Error('Stripe API down'))
+
+    const { POST } = await import('@/app/api/stripe/checkout/route')
+    const response = await POST(makeRequest({ priceId: 'price_pro_monthly' }))
+
+    expect(response.status).toBe(500)
+  })
+
+  it('should use the configured success and cancel return URLs', async () => {
+    const { POST } = await import('@/app/api/stripe/checkout/route')
+    await POST(makeRequest({}))
+
+    expect(mockCheckoutCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success_url: 'http://localhost:3000/dashboard?success=true',
+        cancel_url: 'http://localhost:3000/pricing?canceled=true',
+      })
+    )
+  })
+})
+
+// ============================================================================
+// POST /api/stripe/portal
+// ============================================================================
+
+describe('POST /api/stripe/portal', () => {
+  const makeRequest = () =>
+    new NextRequest('http://localhost:3000/api/stripe/portal', { method: 'GET' })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({
+      user: { id: 'user-1', email: 'test@omnysync.com' },
+    } as any)
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+    process.env.NEXTAUTH_URL = 'http://localhost:3000'
+    mockPortalCreate.mockResolvedValue({ url: 'https://stripe.com/portal/sess_456' })
+  })
+
+  it('should return 401 when unauthenticated', async () => {
+    vi.mocked(auth).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/stripe/portal/route')
+    const response = await GET()
+
+    expect(response.status).toBe(401)
+  })
+
+  it('should return 404 when there is no subscription', async () => {
+    vi.mocked(prisma.subscription.findUnique).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/stripe/portal/route')
+    const response = await GET()
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 404 when the subscription has no stripeCustomerId', async () => {
+    vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
+      id: 'sub-1',
+      stripeCustomerId: null,
+    } as any)
+
+    const { GET } = await import('@/app/api/stripe/portal/route')
+    const response = await GET()
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should create a portal session and return its URL', async () => {
+    vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
+      id: 'sub-1',
+      stripeCustomerId: 'cus_abc',
+    } as any)
+
+    const { GET } = await import('@/app/api/stripe/portal/route')
+    const response = await GET()
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.url).toBe('https://stripe.com/portal/sess_456')
+    expect(mockPortalCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        customer: 'cus_abc',
+        return_url: 'http://localhost:3000/dashboard/settings',
+      })
+    )
+  })
+
+  it('should return 500 when Stripe is unavailable', async () => {
+    vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
+      id: 'sub-1',
+      stripeCustomerId: 'cus_abc',
+    } as any)
+    mockPortalCreate.mockRejectedValue(new Error('Stripe API down'))
+
+    const { GET } = await import('@/app/api/stripe/portal/route')
+    const response = await GET()
+
+    expect(response.status).toBe(500)
+  })
+})
+
+// ============================================================================
+// POST /api/stripe/webhook — additional scenarios
+// ============================================================================
+
+describe('POST /api/stripe/webhook — additional scenarios', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    process.env.STRIPE_PRICE_PRO_MONTHLY = 'price_pro_monthly'
+    process.env.STRIPE_PRICE_PRO_YEARLY = 'price_pro_yearly'
+    mockHeadersGet.mockReturnValue('test_signature')
+    vi.mocked(getFeatureGateService).mockReturnValue({
+      invalidateCache: vi.fn().mockResolvedValue(undefined),
+    } as any)
+    vi.mocked(prisma.webhookEvent.create).mockResolvedValue({} as any)
+  })
+
+  it('should handle checkout.session.completed without customerId (no crash)', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_no_customer',
+      type: 'checkout.session.completed',
+      data: { object: { subscription: 'sub_abc' } },
+    })
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.received).toBe(true)
+    expect(prisma.subscription.upsert).not.toHaveBeenCalled()
+  })
+
+  it('should handle customer.subscription.created (upsert)', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_sub_created',
+      type: 'customer.subscription.created',
+      data: {
+        object: {
+          id: 'sub_new',
+          customer: 'cus_org123',
+          status: 'active',
+          items: { data: [{ price: { id: 'price_pro_monthly' } }] },
+          current_period_start: Math.floor(Date.now() / 1000) - 86400,
+          current_period_end: Math.floor(Date.now() / 1000) + 2592000,
+        },
+      },
+    })
+    vi.mocked(prisma.organization.findFirst).mockResolvedValue({ id: 'org-1' } as any)
+    vi.mocked(prisma.subscription.upsert).mockResolvedValue({} as any)
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(200)
+    expect(prisma.subscription.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { organizationId: 'org-1' },
+        create: expect.objectContaining({ planKey: 'pro', status: 'ACTIVE' }),
+      })
+    )
+  })
+
+  it('should warn and skip customer.subscription.created without an org', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_sub_created_noorg',
+      type: 'customer.subscription.created',
+      data: {
+        object: {
+          id: 'sub_new',
+          customer: 'cus_unknown',
+          status: 'active',
+          items: { data: [{ price: { id: 'price_pro_monthly' } }] },
+          current_period_start: 1,
+          current_period_end: 2,
+        },
+      },
+    })
+    vi.mocked(prisma.organization.findFirst).mockResolvedValue(null)
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(200)
+    expect(prisma.subscription.upsert).not.toHaveBeenCalled()
+  })
+
+  it('should warn and skip customer.subscription.deleted without an org', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_sub_deleted_noorg',
+      type: 'customer.subscription.deleted',
+      data: { object: { id: 'sub_unknown' } },
+    })
+    vi.mocked(prisma.subscription.findFirst).mockResolvedValue(null)
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(200)
+    expect(prisma.subscription.update).not.toHaveBeenCalled()
+  })
+
+  it('should handle invoice.payment_succeeded (ACTIVE + period update)', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_pay_succ',
+      type: 'invoice.payment_succeeded',
+      data: { object: { subscription: 'sub_abc' } },
+    })
+    vi.mocked(prisma.subscription.findFirst).mockResolvedValue({
+      organizationId: 'org-1',
+    } as any)
+    mockStripeInstance.subscriptions.retrieve.mockResolvedValue({
+      status: 'active',
+      current_period_start: Math.floor(Date.now() / 1000) - 86400,
+      current_period_end: Math.floor(Date.now() / 1000) + 2592000,
+      trial_start: null,
+      trial_end: null,
+      cancel_at_period_end: false,
+    })
+    vi.mocked(prisma.subscription.update).mockResolvedValue({} as any)
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(200)
+    expect(prisma.subscription.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { organizationId: 'org-1' },
+        data: expect.objectContaining({ status: 'ACTIVE' }),
+      })
+    )
+  })
+
+  it('should early-return on invoice.payment_succeeded without a subscription id', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_pay_succ_nosub',
+      type: 'invoice.payment_succeeded',
+      data: { object: {} },
+    })
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(200)
+    expect(prisma.subscription.update).not.toHaveBeenCalled()
+  })
+
+  it('should handle customer.subscription.trial_end (log + payment method check)', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_trial_end',
+      type: 'customer.subscription.trial_end',
+      data: {
+        object: {
+          id: 'sub_abc',
+          trial_end: Math.floor(Date.now() / 1000) + 86400,
+          default_payment_method: null,
+        },
+      },
+    })
+    vi.mocked(prisma.subscription.findFirst).mockResolvedValue({
+      organizationId: 'org-1',
+    } as any)
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(200)
+    expect(prisma.subscription.update).not.toHaveBeenCalled()
+  })
+
+  it('should default to the free plan for an unknown price id', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_checkout_free',
+      type: 'checkout.session.completed',
+      data: { object: { customer: 'cus_org123', subscription: 'sub_abc' } },
+    })
+    vi.mocked(prisma.organization.findFirst).mockResolvedValue({ id: 'org-1' } as any)
+    mockStripeInstance.subscriptions.retrieve.mockResolvedValue({
+      status: 'active',
+      items: { data: [{ price: { id: 'price_unknown_xyz' } }] },
+      current_period_start: Math.floor(Date.now() / 1000) - 86400,
+      current_period_end: Math.floor(Date.now() / 1000) + 2592000,
+      trial_start: null,
+      trial_end: null,
+      cancel_at_period_end: false,
+    })
+    vi.mocked(prisma.subscription.upsert).mockResolvedValue({} as any)
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(200)
+    expect(prisma.subscription.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ planKey: 'free' }),
+      })
+    )
+  })
+
+  it('should mark the event as processed even when the handler fails (atomicity)', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_handler_fail',
+      type: 'checkout.session.completed',
+      data: { object: { customer: 'cus_org123', subscription: 'sub_abc' } },
+    })
+    vi.mocked(prisma.organization.findFirst).mockResolvedValue({ id: 'org-1' } as any)
+    vi.mocked(prisma.subscription.upsert).mockRejectedValue(new Error('DB connection lost'))
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(500)
+    expect(prisma.webhookEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { eventId: 'evt_handler_fail', eventType: 'checkout.session.completed' },
+      })
+    )
   })
 })
