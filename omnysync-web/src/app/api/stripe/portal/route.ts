@@ -4,7 +4,9 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
+function getStripe(): Stripe {
+  return new Stripe(process.env.STRIPE_SECRET_KEY || '')
+}
 
 export async function GET() {
   const session = await auth()
@@ -24,7 +26,7 @@ export async function GET() {
   }
 
   try {
-    const portalSession = await stripe.billingPortal.sessions.create({
+    const portalSession = await getStripe().billingPortal.sessions.create({
       customer: subscription.stripeCustomerId,
       return_url: `${process.env.NEXTAUTH_URL}/dashboard/settings`,
     })

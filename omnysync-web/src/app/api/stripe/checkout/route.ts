@@ -3,7 +3,9 @@ import Stripe from 'stripe'
 import { auth } from '@/lib/auth'
 import { z } from 'zod'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
+function getStripe(): Stripe {
+  return new Stripe(process.env.STRIPE_SECRET_KEY || '')
+}
 
 const checkoutSchema = z.object({
   priceId: z.string().min(1).optional(),
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No price ID configured' }, { status: 500 })
     }
 
-    const checkoutSession = await stripe.checkout.sessions.create({
+    const checkoutSession = await getStripe().checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       client_reference_id: session.user.id,

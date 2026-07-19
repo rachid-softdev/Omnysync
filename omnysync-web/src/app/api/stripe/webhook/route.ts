@@ -23,11 +23,6 @@ import { prisma } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia',
-}) as unknown as StripeInstance
-
 // Local type workaround for missing stripe .d.ts files
 type StripeInstance = {
   subscriptions: { retrieve: (id: string) => Promise<Record<string, any>> }
@@ -46,6 +41,18 @@ type StripeEvent = {
 type StripeCheckoutSession = Record<string, any>
 type StripeSubscription = Record<string, any>
 type StripeInvoice = Record<string, any>
+
+// Lazily initialize Stripe so this route module can be imported at build time
+// (Next.js evaluates route modules during `next build`) without a valid key.
+let stripeInstance: StripeInstance | null = null
+function getStripe(): StripeInstance {
+  if (!stripeInstance) {
+    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+      apiVersion: '2024-12-18.acacia',
+    }) as unknown as StripeInstance
+  }
+  return stripeInstance
+}
 
 // Price ID to plan key mapping
 // In production, these should be in env vars or DB
@@ -139,7 +146,7 @@ async function handleCheckoutSessionCompleted(event: StripeEvent): Promise<void>
   }
 
   // Get full subscription details from Stripe
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+  const subscription = await getStripe().subscriptions.retrieve(subscriptionId)
 
   const priceId = subscription.items.data[0]?.price?.id || ''
   const planKey = getPlanFromPriceId(priceId)
@@ -323,7 +330,7 @@ async function handleInvoicePaymentSucceeded(event: StripeEvent): Promise<void> 
   }
 
   // Get updated subscription from Stripe
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+  const subscription = await getStripe().subscriptions.retrieve(subscriptionId)
 
   await prisma.subscription.update({
     where: { organizationId: orgId },
@@ -411,7 +418,11 @@ export async function POST(req: NextRequest) {
   let event: StripeEvent
 
   try {
-    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET || '')
+    event = getStripe().webhooks.constructEvent(
+      body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET || ''
+    )
   } catch (err) {
     console.error('[StripeWebhook] Invalid signature:', err)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
