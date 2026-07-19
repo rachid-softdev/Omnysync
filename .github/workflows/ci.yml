@@ -166,7 +166,7 @@ jobs:
         # Why: next build (web) may prerender pages that query the database at
         # build time. Provide a real Postgres (service above) + schema so the
         # build does not hang/fail on a missing DB.
-        run: pnpm --filter @omnysync/core exec prisma db push --schema=../../omnysync-web/prisma/schema.prisma --skip-generate
+        run: pnpm --filter @omnysync/core exec prisma db push --schema=../../omnysync-web/prisma/schema.prisma --accept-data-loss
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
 
