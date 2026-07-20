@@ -417,6 +417,11 @@ describe("html-parser", () => {
       expect(cleanHtml("")).toBe("");
     });
 
+    it("should not throw on null/undefined input (TAE3 #14 robustness)", () => {
+      expect(cleanHtml(null as unknown as string)).toBe("");
+      expect(cleanHtml(undefined as unknown as string)).toBe("");
+    });
+
     it("should handle whitespace-only string", () => {
       expect(cleanHtml("   ")).toBe("");
     });
@@ -915,6 +920,11 @@ describe("html-parser", () => {
     it("should handle empty string", () => {
       // The function wraps in <p>...</p> then strips empty ones, so empty input → ""
       expect(parseMarkdownToHtml("")).toBe("");
+    });
+
+    it("should not throw on null/undefined input (TAE3 #14 robustness)", () => {
+      expect(parseMarkdownToHtml(null as unknown as string)).toBe("");
+      expect(parseMarkdownToHtml(undefined as unknown as string)).toBe("");
     });
 
     it("should handle text with no markdown formatting", () => {
