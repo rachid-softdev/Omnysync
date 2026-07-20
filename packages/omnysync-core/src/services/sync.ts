@@ -340,7 +340,7 @@ export async function performSync(
         userId: document.userId,
         action: "fetch_content_completed",
         status: "INFO",
-        message: `Contenu récupéré (${content.length} caractères)`,
+        message: `Contenu récupéré (${content?.length ?? 0} caractères)`,
       },
     });
 
@@ -358,7 +358,7 @@ export async function performSync(
 
     const { parseMarkdownToHtml, parseGoogleDocToHtml } =
       await import("./html-parser");
-    let htmlContent = content;
+    let htmlContent = content ?? "";
 
     if (document.sourceConnector?.type === "NOTION") {
       htmlContent = parseMarkdownToHtml(content);
