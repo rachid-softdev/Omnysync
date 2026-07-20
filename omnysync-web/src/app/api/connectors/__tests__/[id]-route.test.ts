@@ -144,12 +144,13 @@ describe('DELETE /api/connectors/[id]', () => {
     expect(response.status).toBe(200)
     expect(data.success).toBe(true)
 
-    // Verify the connector belongs to the org before deleting
+    // Verify the connector belongs to the org AND the user before deleting
     expect(prisma.connector.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
           id: 'conn-to-delete',
           organizationId: 'org-1',
+          userId: 'user-1',
         },
       })
     )
