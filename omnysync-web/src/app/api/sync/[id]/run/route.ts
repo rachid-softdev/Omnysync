@@ -8,6 +8,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { id } = await params
 
+  if (!id) {
+    return NextResponse.json({ error: 'Missing sync id' }, { status: 400 })
+  }
+
   // Vérification basique du token dans les headers
   const authHeader = req.headers.get('authorization')
   const expectedToken = process.env.CRON_SECRET
@@ -19,5 +23,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   }
 
-  return handleScheduledSyncRun(id)
+  try {
+    return await handleScheduledSyncRun(id)
+  } catch (error) {
+    console.error('[sync/run] execution failed:', error)
+    return NextResponse.json({ error: 'Sync execution failed' }, { status: 500 })
+  }
 }

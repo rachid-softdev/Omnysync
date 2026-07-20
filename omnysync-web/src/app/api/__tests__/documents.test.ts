@@ -538,6 +538,7 @@ describe('PUT /api/documents/[id]', () => {
           tags: ['a', 'b'],
           autoSyncEnabled: true,
           syncFrequency: 'DAILY',
+          status: 'PUBLISHED',
         }),
       })
     )
@@ -547,7 +548,21 @@ describe('PUT /api/documents/[id]', () => {
       unknown
     >
     expect(updateData.sourceConnectorId).toBeUndefined()
-    expect(updateData.status).toBeUndefined()
+    expect(updateData.status).toBe('PUBLISHED')
+  })
+
+  it('should allow restoring an archived document', async () => {
+    const { PUT } = await import('@/app/api/documents/[id]/route')
+    const response = await PUT(makeRequest('doc-1', { status: 'ARCHIVED' }), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+    expect(response.status).toBe(200)
+
+    const updateData = vi.mocked(prisma.document.update).mock.calls[0][0].data as Record<
+      string,
+      unknown
+    >
+    expect(updateData.status).toBe('ARCHIVED')
   })
 
   it('should filter out the disallowed `description` field', async () => {

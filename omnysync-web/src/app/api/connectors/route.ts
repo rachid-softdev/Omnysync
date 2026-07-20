@@ -31,7 +31,10 @@ export async function GET() {
     },
   })
 
-  return NextResponse.json(connectors, {
+  // Never expose stored credentials to clients.
+  const safeConnectors = connectors.map(({ credentials: _credentials, ...rest }) => rest)
+
+  return NextResponse.json(safeConnectors, {
     headers: {
       'Cache-Control': 'private, max-age=30, stale-while-revalidate=60',
     },

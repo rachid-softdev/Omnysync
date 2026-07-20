@@ -472,6 +472,26 @@ describe('POST /api/sync/[id]/run', () => {
     expect(data.success).toBe(true)
     expect(handleScheduledSyncRun).toHaveBeenCalledWith('sync-1')
   })
+
+  // ── Erreur d'exécution capturée → 500 ────────────────────────────────────
+
+  it('should return 500 when sync execution throws', async () => {
+    vi.stubEnv('CRON_SECRET', '')
+    vi.stubEnv('NODE_ENV', 'production')
+
+    vi.mocked(handleScheduledSyncRun).mockRejectedValue(new Error('boom'))
+
+    const { POST } = await import('@/app/api/sync/[id]/run/route')
+    const req = new NextRequest('http://localhost:3000/api/sync/sync-1/run', {
+      method: 'POST',
+    })
+    const response = await POST(req, { params: Promise.resolve({ id: 'sync-1' }) })
+    const data = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(data.error).toMatch(/failed/i)
+    expect(handleScheduledSyncRun).toHaveBeenCalledWith('sync-1')
+  })
 })
 
 // ============================================================================

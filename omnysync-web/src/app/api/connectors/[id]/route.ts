@@ -22,6 +22,7 @@ export async function DELETE(
     where: {
       id,
       organizationId: orgId,
+      userId: session.user.id,
     },
   })
 

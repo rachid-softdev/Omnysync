@@ -62,6 +62,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     'seoDescription',
     'seoKeywords',
     'excerpt',
+    'status',
     'categories',
     'tags',
     'autoSyncEnabled',

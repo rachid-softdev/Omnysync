@@ -12,7 +12,17 @@ import { randomBytes } from 'crypto'
 const createWebhookSchema = z.object({
   connectorId: z.string().min(1, 'Connecteur requis'),
   type: z.enum(['WORDPRESS', 'GHOST', 'WEBFLOW', 'SHOPIFY']),
-  url: z.string().url('URL invalide'),
+  url: z
+    .string()
+    .url('URL invalide')
+    .refine((u) => {
+      try {
+        const proto = new URL(u).protocol
+        return proto === 'http:' || proto === 'https:'
+      } catch {
+        return false
+      }
+    }, 'URL must use http or https'),
 })
 
 export async function GET() {

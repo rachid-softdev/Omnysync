@@ -297,15 +297,13 @@ describe('POST /api/webhooks', () => {
 
   // ── TAE5 #28 — schémas d'URL non autorisés rejetés ────────────────────────
 
-  // TAE5 #28 — KNOWN SOURCE GAP: the route validates only URL *syntax* (new URL()),
-  // not the scheme. `javascript:alert(1)` is syntactically valid, so it is accepted
-  // (200) instead of being rejected. Fix on the source side: allowlist http/https.
-  // This is a characterization test pinning current behavior so the gap is tracked.
-  it('KNOWN GAP: accepts non-http scheme URLs (e.g. javascript:) — scheme not validated', async () => {
+  // TAE5 #28 — FIXED: the route now allows only http/https schemes, so
+  // non-http schemes such as `javascript:` are rejected with 400.
+  it('should reject non-http scheme URLs (e.g. javascript:) with 400', async () => {
     const { POST } = await import('@/app/api/webhooks/route')
     const response = await POST(makeRequest({ ...validBody, url: 'javascript:alert(1)' }))
 
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(400)
   })
 
   it('should return 400 when url has no protocol', async () => {

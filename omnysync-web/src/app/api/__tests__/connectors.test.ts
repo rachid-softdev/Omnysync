@@ -169,6 +169,38 @@ describe('GET /api/connectors', () => {
     )
   })
 
+  // ── Credentials jamais exposées ─────────────────────────────────────────
+
+  it('should never expose stored credentials in the response', async () => {
+    const mockConnectors = [
+      {
+        id: 'c1',
+        type: 'WORDPRESS',
+        name: 'Mon WP',
+        organizationId: 'org-1',
+        credentials: 'encrypted-secret-value',
+      },
+      {
+        id: 'c2',
+        type: 'GHOST',
+        name: 'Mon Ghost',
+        organizationId: 'org-1',
+        credentials: 'another-secret',
+      },
+    ]
+    vi.mocked(prisma.connector.findMany).mockResolvedValue(mockConnectors as any)
+
+    const { GET } = await import('@/app/api/connectors/route')
+    const response = await GET()
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data).toHaveLength(2)
+    for (const c of data) {
+      expect(c).not.toHaveProperty('credentials')
+    }
+  })
+
   // ── Liste vide ──────────────────────────────────────────────────────────
 
   it('should return empty array when no connectors exist', async () => {
@@ -563,11 +595,11 @@ describe('DELETE /api/connectors/[id]', () => {
     vi.mocked(getUserOrgId).mockResolvedValue('org-1')
   })
 
-  it('should delete a connector owned by the organization', async () => {
+  it('should delete a connector owned by the user', async () => {
     vi.mocked(prisma.connector.findFirst).mockResolvedValue({
       id: 'c-1',
       organizationId: 'org-1',
-      userId: 'user-other',
+      userId: 'user-1',
     } as any)
     vi.mocked(prisma.connector.delete).mockResolvedValue({} as any)
 
@@ -578,6 +610,21 @@ describe('DELETE /api/connectors/[id]', () => {
     expect(response.status).toBe(200)
     expect(data.success).toBe(true)
     expect(prisma.connector.delete).toHaveBeenCalledWith({ where: { id: 'c-1' } })
+  })
+
+  it('should return 404 when the connector belongs to another user', async () => {
+    vi.mocked(prisma.connector.findFirst).mockResolvedValue(null)
+
+    const { DELETE } = await import('@/app/api/connectors/[id]/route')
+    const response = await DELETE(makeRequest(), { params: Promise.resolve({ id: 'c-1' }) })
+
+    expect(response.status).toBe(404)
+    expect(apiError).toHaveBeenCalledWith('Connector not found', 404)
+    expect(prisma.connector.delete).not.toHaveBeenCalled()
+    // Ownership must be enforced via the lookup filter.
+    expect(prisma.connector.findFirst).toHaveBeenCalledWith({
+      where: { id: 'c-1', organizationId: 'org-1', userId: 'user-1' },
+    })
   })
 
   it('should return 404 when the connector is not found', async () => {
