@@ -94,6 +94,16 @@ function checkCsrfOrigin(request: NextRequest): NextResponse | null {
  * 3. Rate limiting — Redis-backed with in-memory fallback (API only).
  */
 export async function middleware(request: NextRequest): Promise<NextResponse> {
+  const { pathname } = request.nextUrl
+
+  // ── 0. Dev-only routes: block /dev/* in production ────────────────────
+  if (
+    process.env.NODE_ENV === 'production' &&
+    (pathname === '/dev' || pathname.startsWith('/dev/'))
+  ) {
+    return NextResponse.rewrite(new URL('/404', request.url))
+  }
+
   // ── 1. CSRF check (avant tout, pour les requêtes state-changing) ──────
   const csrfResponse = checkCsrfOrigin(request)
   if (csrfResponse) return csrfResponse
