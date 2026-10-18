@@ -9,7 +9,9 @@ import {
   generateTotpSecret,
   setupTwoFactor,
   getTwoFactorStatus,
-  pendingSecrets,
+  storePendingSecret,
+  getPendingSecret,
+  removePendingSecret,
 } from '@omnysync/core/services/two-factor'
 import * as OTPAuth from 'otpauth'
 import { z } from 'zod'
@@ -37,7 +39,11 @@ export async function GET() {
     }
 
     // Générer un nouveau secret
-    const { secret, otpauthUrl } = await generateTotpSecret(session.user.id)
+    const { secret, otpauthUrl } = generateTotpSecret()
+
+    // Store it as the pending secret so a client that displays this secret can
+    // verify it (GET and action=initiate must behave identically).
+    await storePendingSecret(session.user.id, secret)
 
     return NextResponse.json({
       enabled: false,
@@ -79,22 +85,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { action, code } = setupSchema.parse(body)
 
-    // pendingSecrets type is not properly resolved from core package, cast explicitly
-    const secrets = pendingSecrets as unknown as Map<string, { secret: string; expiresAt: Date }>
-
     if (action === 'verify' && !code) {
       return NextResponse.json({ error: 'Code de vérification requis' }, { status: 400 })
     }
 
     if (action === 'initiate') {
       // Générer le secret pour l'initiation
-      const { secret, otpauthUrl } = await generateTotpSecret(session.user.id)
+      const { secret, otpauthUrl } = generateTotpSecret()
 
-      // Stocker le secret temporairement (expire dans 10 minutes)
-      secrets.set(session.user.id, {
-        secret,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-      })
+      // Stocker le secret temporairement (expire dans 10 minutes). Uses the
+      // cache-aware helper: the in-memory Map alone breaks as soon as the
+      // initiate and verify requests hit different server instances.
+      await storePendingSecret(session.user.id, secret)
 
       return NextResponse.json({
         secret,
@@ -105,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     if (action === 'verify' && code) {
       // Récupérer le secret stocké lors de l'initiation
-      const pending = secrets.get(session.user.id)
+      const pending = await getPendingSecret(session.user.id)
       if (!pending) {
         return NextResponse.json(
           {
@@ -116,7 +118,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (pending.expiresAt < new Date()) {
-        secrets.delete(session.user.id)
+        await removePendingSecret(session.user.id)
         return NextResponse.json(
           {
             error: 'Session expirée. Veuillez recommencer la configuration du 2FA.',

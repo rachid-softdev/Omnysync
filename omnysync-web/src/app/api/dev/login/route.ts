@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { hashPassword } from "@/lib/auth/password";
+import { ensureUserOrg } from "@/lib/auth/org";
 import { signIn } from "@/lib/auth";
 
 /**
@@ -22,7 +23,7 @@ export async function POST() {
 
   const passwordHash = await hashPassword(DEV_PASSWORD);
 
-  await prisma.user.upsert({
+  const devUser = await prisma.user.upsert({
     where: { email: DEV_EMAIL },
     update: { password: passwordHash, role: "ADMIN", disabledAt: null, deletedAt: null },
     create: {
@@ -33,16 +34,31 @@ export async function POST() {
     },
   });
 
-  const fd = new FormData();
-  fd.set("email", DEV_EMAIL);
-  fd.set("password", DEV_PASSWORD);
-  const result = await signIn("credentials", fd, { redirect: false });
+  // The dev user must own an organization: every org-scoped API resolves the
+  // caller's organization through a membership, and a user without one is
+  // rejected (401) by all of them - which would defeat the purpose of this
+  // endpoint for E2E flows.
+  await ensureUserOrg(devUser.id);
 
-  if (result?.error) {
-    return NextResponse.json(
-      { error: "Dev sign-in failed", detail: result.error },
-      { status: 401 },
-    );
+  // next-auth v5 server signature: signIn(provider, credentials, authorizationParams).
+  // The credentials object (not the FormData react variant) is required here;
+  // `redirect: false` makes the call return the redirect URL instead of redirecting,
+  // while the session cookie is still set on the response via cookies().
+  const result = await signIn("credentials", {
+    email: DEV_EMAIL,
+    password: DEV_PASSWORD,
+    redirect: false,
+  });
+
+  // A rejected sign-in comes back as the error redirect URL (or an error object)
+  // rather than a session cookie.
+  const failed =
+    typeof result === "string"
+      ? /[?&]error=/.test(result)
+      : Boolean(result && typeof result === "object" && result.error);
+
+  if (failed) {
+    return NextResponse.json({ error: "Dev sign-in failed" }, { status: 401 });
   }
 
   return NextResponse.json({ ok: true, email: DEV_EMAIL });

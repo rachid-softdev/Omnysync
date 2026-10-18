@@ -21,6 +21,12 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
+// The queue handler resolves the plan to decide whether AI enrichment runs.
+vi.mock('@/lib/auth/subscription', () => ({
+  getPlanLimits: vi.fn(() => ({ aiFeatures: true })),
+  getUserPlan: vi.fn(async () => 'pro'),
+}))
+
 vi.mock('@omnysync/core/services/sync', () => ({
   performSync: vi.fn(),
   detectAndSyncChanges: vi.fn(),
@@ -49,6 +55,7 @@ import {
   markJobCompleted,
 } from '@omnysync/core/services/queue'
 import { uploadAllImages } from '@omnysync/core/services/image-upload'
+import { prisma } from '@/lib/prisma'
 
 // ============================================================================
 // POST /api/queue
@@ -108,6 +115,27 @@ describe('POST /api/queue', () => {
     expect(response.status).toBe(401)
   })
 
+  it('should return 401 when the QStash signature is not a valid signed JWT', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('QSTASH_CURRENT_SIGNING_KEY', 'sig_current_test_key')
+    vi.stubEnv('QSTASH_NEXT_SIGNING_KEY', 'sig_next_test_key')
+
+    const req = new NextRequest('http://localhost:3000/api/queue', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'upstash-signature': 'not-a-valid-qstash-jwt',
+      },
+      body: JSON.stringify(defaultPayload),
+    })
+
+    const { POST } = await import('@/app/api/queue/route')
+    const response = await POST(req)
+
+    expect(response.status).toBe(401)
+    expect(processJobWithRetry).not.toHaveBeenCalled()
+  })
+
   // ── Type de job inconnu ─────────────────────────────────────────────────
 
   it('should return 400 for unknown job type', async () => {
@@ -142,9 +170,10 @@ describe('POST /api/queue', () => {
 
   // ── sync_document sans userId (pas d'upload d'images) ───────────────────
 
-  it('should process sync_document without uploading images when userId is missing', async () => {
+  it('should fall back to the document owner when userId is missing from the payload', async () => {
     const syncResult = { synced: true }
     vi.mocked(processJobWithRetry).mockResolvedValue(syncResult)
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({ userId: 'owner-1' } as any)
 
     const { POST } = await import('@/app/api/queue/route')
     const response = await POST(
@@ -157,7 +186,25 @@ describe('POST /api/queue', () => {
 
     expect(response.status).toBe(200)
     expect(data).toEqual(syncResult)
-    expect(uploadAllImages).not.toHaveBeenCalled()
+    expect(prisma.document.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'doc-1' }, select: { userId: true } })
+    )
+    expect(uploadAllImages).toHaveBeenCalledWith('doc-1', 'owner-1')
+  })
+
+  it('should return 404 when neither the payload nor the document identifies an owner', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(null)
+
+    const { POST } = await import('@/app/api/queue/route')
+    const response = await POST(
+      makeRequest({
+        ...defaultPayload,
+        payload: { documentId: 'doc-missing', sourceConnectorId: 'c1', destConnectorId: 'c2' },
+      })
+    )
+
+    expect(response.status).toBe(404)
+    expect(processJobWithRetry).not.toHaveBeenCalled()
   })
 
   // ── detect_changes ──────────────────────────────────────────────────────

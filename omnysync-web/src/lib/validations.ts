@@ -65,14 +65,18 @@ const mediumConnectorSchema = z.object({
 const airtableConnectorSchema = z.object({
   type: z.literal('AIRTABLE'),
   name: z.string().min(1).max(100),
-  config: z.object({ baseId: z.string().min(1), tableId: z.string().min(1) }),
+  // baseId is required by the Airtable API (the connector cannot list documents
+  // without it); tableId is optional — when omitted, all tables are listed.
+  config: z.object({ baseId: z.string().min(1), tableId: z.string().optional() }),
   credentials: z.object({ apiKey: z.string().min(1) }),
 })
 
 const contentfulConnectorSchema = z.object({
   type: z.literal('CONTENTFUL'),
   name: z.string().min(1).max(100),
-  config: z.object({ spaceId: z.string().min(1), contentTypeId: z.string().min(1) }),
+  // spaceId is required by the Contentful API; contentTypeId is optional — when
+  // omitted, entries from all content types are listed.
+  config: z.object({ spaceId: z.string().min(1), contentTypeId: z.string().optional() }),
   credentials: z.object({ accessToken: z.string().min(1) }),
 })
 

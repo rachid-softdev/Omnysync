@@ -31,6 +31,11 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
+// Webhook endpoints are a plan feature: default to allowed.
+vi.mock('@/lib/auth/subscription', () => ({
+  checkPlanFeature: vi.fn(async () => ({ allowed: true, plan: 'pro' })),
+}))
+
 // ── Imports ──────────────────────────────────────────────────────────────────
 
 import { auth } from '@/lib/auth'

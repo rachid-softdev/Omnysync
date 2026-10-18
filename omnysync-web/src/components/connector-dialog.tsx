@@ -46,11 +46,11 @@ const PLATFORM_FIELDS: Record<
   ],
   AIRTABLE: [
     { label: 'API Key', key: 'apiKey', type: 'password', placeholder: 'key...' },
-    { label: 'Base ID (optional)', key: 'baseId', type: 'text', placeholder: 'app...' },
+    { label: 'Base ID', key: 'baseId', type: 'text', placeholder: 'app...' },
   ],
   CONTENTFUL: [
     { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'token...' },
-    { label: 'Space ID (optional)', key: 'spaceId', type: 'text', placeholder: 'space ID' },
+    { label: 'Space ID', key: 'spaceId', type: 'text', placeholder: 'space ID' },
   ],
   MEDIUM: [
     { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'token...' },

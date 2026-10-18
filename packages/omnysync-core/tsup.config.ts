@@ -19,7 +19,12 @@ export default defineConfig({
     "entitlements/EntitlementRepository":
       "src/entitlements/EntitlementRepository.ts",
     "entitlements/ExperimentService": "src/entitlements/ExperimentService.ts",
-    entitlements: "src/entitlements/index.ts",
+    // NOTE: the entry key must be "entitlements/index" (not "entitlements") so
+    // the emitted file is dist/entitlements/index.js — which is what the
+    // "./entitlements" export in package.json points to. With the key
+    // "entitlements", tsup emits dist/entitlements.js and every runtime import
+    // of "@omnysync/core/entitlements" fails with MODULE_NOT_FOUND.
+    "entitlements/index": "src/entitlements/index.ts",
     "services/two-factor": "src/services/two-factor.ts",
     "services/password-reset": "src/services/password-reset.ts",
     "services/sync": "src/services/sync.ts",
@@ -42,6 +47,8 @@ export default defineConfig({
     "services/medium": "src/services/medium.ts",
     "services/airtable": "src/services/airtable.ts",
     "services/contentful": "src/services/contentful.ts",
+    "services/approval": "src/services/approval.ts",
+    "services/types": "src/services/types.ts",
   },
   format: ["esm", "cjs"],
   // DTS type-checks the source, so `@prisma/client` must resolve to a GENERATED
@@ -58,16 +65,20 @@ export default defineConfig({
   // `paths` rewrite it to the shared generated-client directory. esbuild would
   // otherwise inline a relative import into dist, which then fails to resolve
   // `@prisma/client-runtime-utils` at next-build time.
-  external: (id) =>
-    id === "@prisma/client" ||
-    id.startsWith("@prisma/client/") ||
-    id.includes("omnysync-web/prisma/generated/client") ||
-    [
-      "react",
-      "react-dom",
-      "bcrypt",
-      "@prisma/adapter-pg",
-      "pg",
-      "otpauth",
-    ].includes(id),
+  //
+  // Must stay an array (strings + RegExp), never a predicate function: tsup
+  // posts these options to its DTS worker thread via postMessage, and
+  // non-cloneable values make the whole build fail with DataCloneError
+  // (`external` is not among the option keys tsup strips before posting).
+  external: [
+    "@prisma/client",
+    /^@prisma\/client\//,
+    /omnysync-web[\\/]prisma[\\/]generated[\\/]client/,
+    "react",
+    "react-dom",
+    "bcrypt",
+    "@prisma/adapter-pg",
+    "pg",
+    "otpauth",
+  ],
 });

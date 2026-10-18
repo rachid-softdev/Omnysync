@@ -95,8 +95,8 @@ describe("Plan definitions", () => {
     expect(plans).toHaveProperty("enterprise");
   });
 
-  it("should have free plan with maxSyncsPerMonth=10", () => {
-    expect(plans.free.maxSyncsPerMonth).toBe(10);
+  it("should have free plan with maxSyncsPerMonth=5", () => {
+    expect(plans.free.maxSyncsPerMonth).toBe(5);
   });
 
   it("should have business plan with all features enabled", () => {
@@ -201,43 +201,43 @@ describe("checkQuota", () => {
   });
 
   it("should check maxDocuments count against limit", async () => {
+    mockPrisma.document.count.mockResolvedValue(25);
+
+    const result = await checkQuota(orgId, "maxDocuments");
+
+    expect(result.allowed).toBe(true);
+    expect(result.current).toBe(25);
+    expect(result.limit).toBe(50);
+  });
+
+  it("should deny when maxDocuments count reaches limit", async () => {
     mockPrisma.document.count.mockResolvedValue(50);
 
     const result = await checkQuota(orgId, "maxDocuments");
 
-    expect(result.allowed).toBe(true);
-    expect(result.current).toBe(50);
-    expect(result.limit).toBe(100);
-  });
-
-  it("should deny when maxDocuments count reaches limit", async () => {
-    mockPrisma.document.count.mockResolvedValue(100);
-
-    const result = await checkQuota(orgId, "maxDocuments");
-
     expect(result.allowed).toBe(false);
-    expect(result.message).toContain("Limite de 100 documents");
+    expect(result.message).toContain("Limite de 50 documents");
   });
 
   it("should check maxSyncsPerMonth count for current month", async () => {
+    mockPrisma.syncLog.count.mockResolvedValue(2);
+
+    const result = await checkQuota(orgId, "maxSyncsPerMonth");
+
+    expect(result.allowed).toBe(true);
+    expect(result.current).toBe(2);
+    expect(result.limit).toBe(5);
+  });
+
+  it("should deny when maxSyncsPerMonth count reaches limit", async () => {
     mockPrisma.syncLog.count.mockResolvedValue(5);
 
     const result = await checkQuota(orgId, "maxSyncsPerMonth");
 
-    expect(result.allowed).toBe(true);
-    expect(result.current).toBe(5);
-    expect(result.limit).toBe(10);
-  });
-
-  it("should deny when maxSyncsPerMonth count reaches limit", async () => {
-    mockPrisma.syncLog.count.mockResolvedValue(10);
-
-    const result = await checkQuota(orgId, "maxSyncsPerMonth");
-
     expect(result.allowed).toBe(false);
-    expect(result.current).toBe(10);
-    expect(result.limit).toBe(10);
-    expect(result.message).toContain("Limite de 10 synchronisations");
+    expect(result.current).toBe(5);
+    expect(result.limit).toBe(5);
+    expect(result.message).toContain("Limite de 5 synchronisations");
   });
 
   it("should query syncLog with gte startOfMonth filter", async () => {
@@ -323,13 +323,13 @@ describe("checkQuota", () => {
   });
 
   it("should have message undefined for maxDocuments when under limit (line 170-173)", async () => {
-    mockPrisma.document.count.mockResolvedValue(50); // under free plan limit of 100
+    mockPrisma.document.count.mockResolvedValue(25); // under free plan limit of 50
 
     const result = await checkQuota(orgId, "maxDocuments");
 
     expect(result.allowed).toBe(true);
-    expect(result.current).toBe(50);
-    expect(result.limit).toBe(100);
+    expect(result.current).toBe(25);
+    expect(result.limit).toBe(50);
     expect(result.message).toBeUndefined();
   });
 });
@@ -496,11 +496,11 @@ describe("getUsageStats", () => {
 
     expect(stats).toEqual({
       syncCount: 3,
-      maxSyncs: 10,
+      maxSyncs: 5,
       connectorCount: 1,
       maxConnectors: 2,
       documentCount: 10,
-      maxDocuments: 100,
+      maxDocuments: 50,
       memberCount: 1,
       maxMembers: 1,
     });
@@ -702,24 +702,24 @@ describe("Race conditions - concurrent quota operations", () => {
   it("should not exceed limit with sequential checkAndIncrement calls", async () => {
     // Simulate the pattern used in the sync route:
     //   checkAndIncrementQuota → checkQuota → check + recordUsage
-    // On free plan, maxSyncsPerMonth = 10
+    // On free plan, maxSyncsPerMonth = 5
 
     // Each time check is called, the syncLog count goes up
     let syncCount = 0;
     mockPrisma.syncLog.count.mockImplementation(async () => syncCount);
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 5; i++) {
       mockPrisma.syncLog.count.mockResolvedValue(syncCount);
       const result = await checkQuota(orgId, "maxSyncsPerMonth");
       expect(result.allowed).toBe(true);
       syncCount++; // Simulate increment after each sync
     }
 
-    // 11th should fail
+    // 6th should fail
     mockPrisma.syncLog.count.mockResolvedValue(syncCount);
     const result = await checkQuota(orgId, "maxSyncsPerMonth");
     expect(result.allowed).toBe(false);
-    expect(result.current).toBe(10);
+    expect(result.current).toBe(5);
   });
 
   it("should handle concurrent checkQuota calls via updateMany optimistic locking", async () => {

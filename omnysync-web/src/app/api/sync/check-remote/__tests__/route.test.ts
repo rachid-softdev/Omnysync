@@ -21,6 +21,10 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
+vi.mock('@/lib/auth/org', () => ({
+  getUserOrgId: vi.fn(),
+}))
+
 vi.mock('@omnysync/core/services/sync', () => ({
   checkRemoteChanges: vi.fn(),
 }))
@@ -29,6 +33,7 @@ vi.mock('@omnysync/core/services/sync', () => ({
 
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getUserOrgId } from '@/lib/auth/org'
 import { checkRemoteChanges } from '@omnysync/core/services/sync'
 
 // ============================================================================
@@ -50,6 +55,8 @@ describe('POST /api/sync/check-remote', () => {
     vi.mocked(auth).mockResolvedValue({
       user: { id: 'user-1', email: 'test@omnysync.com' },
     } as any)
+
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
   })
 
   // ── Non authentifié ──────────────────────────────────────────────────────
@@ -74,19 +81,31 @@ describe('POST /api/sync/check-remote', () => {
     expect(response.status).toBe(404)
   })
 
-  // ── Document d'un autre utilisateur ──────────────────────────────────────
+  // ── Document d'une autre organisation ────────────────────────────────────
 
-  it('should return 404 when document belongs to another user', async () => {
+  it('should return 404 when document belongs to another organization', async () => {
     vi.mocked(prisma.document.findUnique).mockResolvedValue({
       id: 'doc-other',
       userId: 'user-other',
-      title: 'Other user document',
+      organizationId: 'org-other',
+      title: 'Other organization document',
     } as any)
 
     const { POST } = await import('@/app/api/sync/check-remote/route')
     const response = await POST(makeRequest({ documentId: 'doc-other' }))
 
     expect(response.status).toBe(404)
+    expect(checkRemoteChanges).not.toHaveBeenCalled()
+  })
+
+  // ── documentId manquant ──────────────────────────────────────────────────
+
+  it('should return 400 when documentId is missing', async () => {
+    const { POST } = await import('@/app/api/sync/check-remote/route')
+    const response = await POST(makeRequest({}))
+
+    expect(response.status).toBe(400)
+    expect(prisma.document.findUnique).not.toHaveBeenCalled()
   })
 
   // ── Vérification réussie ─────────────────────────────────────────────────
@@ -95,6 +114,7 @@ describe('POST /api/sync/check-remote', () => {
     vi.mocked(prisma.document.findUnique).mockResolvedValue({
       id: 'doc-1',
       userId: 'user-1',
+      organizationId: 'org-1',
       title: 'My document',
     } as any)
 
@@ -120,6 +140,7 @@ describe('POST /api/sync/check-remote', () => {
     vi.mocked(prisma.document.findUnique).mockResolvedValue({
       id: 'doc-1',
       userId: 'user-1',
+      organizationId: 'org-1',
       title: 'My document',
     } as any)
 

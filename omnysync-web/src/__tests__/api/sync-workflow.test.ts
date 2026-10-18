@@ -90,6 +90,7 @@ vi.mock('@/lib/auth/org', () => ({
 
 vi.mock('@/lib/auth/subscription', () => ({
   checkAndIncrementQuota: vi.fn(),
+  checkDocumentLimit: vi.fn(),
 }))
 
 vi.mock('@/lib/validations', () => ({
@@ -126,7 +127,7 @@ vi.mock('@omnysync/core/services/scheduler', () => ({
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
-import { checkAndIncrementQuota } from '@/lib/auth/subscription'
+import { checkAndIncrementQuota, checkDocumentLimit } from '@/lib/auth/subscription'
 import { createSyncSchema } from '@/lib/validations'
 import { enqueueSyncJob, enqueueChangeDetection } from '@omnysync/core/services/queue'
 import { handleScheduledSyncRun } from '@omnysync/core/services/scheduler'
@@ -145,6 +146,13 @@ describe('Sync Workflow API', () => {
 
     // Default: quota OK
     vi.mocked(checkAndIncrementQuota).mockResolvedValue({ allowed: true })
+
+    // Default: document limit OK
+    vi.mocked(checkDocumentLimit).mockResolvedValue({
+      allowed: true,
+      current: 0,
+      limit: 50,
+    } as any)
   })
 
   // ==========================================================================
@@ -210,7 +218,7 @@ describe('Sync Workflow API', () => {
         'doc-1',
         'connector-1',
         'connector-2',
-        'test-user-1'
+        { userId: 'test-user-1' }
       )
     })
 
@@ -254,6 +262,11 @@ describe('Sync Workflow API', () => {
         success: true,
         data: validBody,
       } as any)
+      // Validation (connectors, limits) now happens before the quota increment,
+      // so the connectors must be valid for the quota check to be reached.
+      vi.mocked(prisma.connector.findFirst)
+        .mockResolvedValueOnce({ id: 'connector-1', type: 'GOOGLE_DOCS' } as any)
+        .mockResolvedValueOnce({ id: 'connector-2', type: 'WORDPRESS' } as any)
       vi.mocked(checkAndIncrementQuota).mockResolvedValue({
         allowed: false,
         upgradeUrl: 'https://omnysync.com/pricing',
@@ -319,10 +332,10 @@ describe('Sync Workflow API', () => {
   // ==========================================================================
 
   describe('POST /api/sync/[id]/check', () => {
-    it('should queue change detection for the document owner', async () => {
+    it('should queue change detection for a member of the document organization', async () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue({
         id: 'doc-1',
-        userId: 'test-user-1',
+        organizationId: 'org-1',
       } as any)
       vi.mocked(enqueueChangeDetection).mockResolvedValue(undefined as any)
 
@@ -335,13 +348,13 @@ describe('Sync Workflow API', () => {
 
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
-      expect(enqueueChangeDetection).toHaveBeenCalledWith('doc-1')
+      expect(enqueueChangeDetection).toHaveBeenCalledWith('doc-1', 'test-user-1')
     })
 
-    it('should return 404 when document does not belong to user', async () => {
+    it('should return 404 when document belongs to another organization', async () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue({
         id: 'doc-1',
-        userId: 'other-user',
+        organizationId: 'org-other',
       } as any)
 
       const { POST } = await import('@/app/api/sync/[id]/check/route')
@@ -369,7 +382,7 @@ describe('Sync Workflow API', () => {
   // ==========================================================================
 
   describe('GET /api/sync/[id]/preview', () => {
-    it('should return document preview for the owner', async () => {
+    it('should return document preview for a member of the organization', async () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue({
         id: 'doc-1',
         title: 'Test Document',
@@ -379,6 +392,7 @@ describe('Sync Workflow API', () => {
         seoDescription: 'A test document',
         featuredImage: 'https://example.com/image.jpg',
         userId: 'test-user-1',
+        organizationId: 'org-1',
       } as any)
 
       const { GET } = await import('@/app/api/sync/[id]/preview/route')
@@ -406,10 +420,11 @@ describe('Sync Workflow API', () => {
       expect(response.status).toBe(404)
     })
 
-    it('should return 404 when document belongs to another user', async () => {
+    it('should return 404 when document belongs to another organization', async () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue({
         id: 'doc-1',
         userId: 'other-user',
+        organizationId: 'org-other',
       } as any)
 
       const { GET } = await import('@/app/api/sync/[id]/preview/route')

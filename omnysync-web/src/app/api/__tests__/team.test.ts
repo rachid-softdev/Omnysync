@@ -33,11 +33,16 @@ vi.mock('@/lib/auth/org', () => ({
   getUserOrgId: vi.fn(),
 }))
 
+vi.mock('@/lib/auth/subscription', () => ({
+  checkTeamMemberLimit: vi.fn(),
+}))
+
 // ── Imports ──────────────────────────────────────────────────────────────────
 
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
+import { checkTeamMemberLimit } from '@/lib/auth/subscription'
 
 // ============================================================================
 // GET /api/team
@@ -170,6 +175,13 @@ describe('POST /api/team', () => {
       id: 'membership-admin',
       role: 'ADMIN',
     } as any)
+
+    // Default: team member limit not reached
+    vi.mocked(checkTeamMemberLimit).mockResolvedValue({
+      allowed: true,
+      current: 1,
+      limit: 10,
+    })
   })
 
   // ── Non authentifié ──────────────────────────────────────────────────────
@@ -263,6 +275,41 @@ describe('POST /api/team', () => {
         }),
       })
     )
+  })
+
+  // ── Limite de membres (plan) ────────────────────────────────────────────
+
+  it('should return 429 when the team member limit is reached', async () => {
+    vi.mocked(checkTeamMemberLimit).mockResolvedValue({
+      allowed: false,
+      current: 1,
+      limit: 1,
+      upgradeUrl: '/pricing',
+    })
+
+    const { POST } = await import('@/app/api/team/route')
+    const response = await POST(makeRequest({ email: 'blocked@omnysync.com', role: 'MEMBER' }))
+
+    expect(response.status).toBe(429)
+    expect(prisma.userOrganization.create).not.toHaveBeenCalled()
+  })
+
+  // ── Rôle non assignable ─────────────────────────────────────────────────
+
+  it('should return 400 when role is not assignable (OWNER)', async () => {
+    const { POST } = await import('@/app/api/team/route')
+    const response = await POST(makeRequest({ email: 'new@omnysync.com', role: 'OWNER' }))
+
+    expect(response.status).toBe(400)
+  })
+
+  // ── Email invalide ──────────────────────────────────────────────────────
+
+  it('should return 400 when email is missing or invalid', async () => {
+    const { POST } = await import('@/app/api/team/route')
+    const response = await POST(makeRequest({ role: 'MEMBER' }))
+
+    expect(response.status).toBe(400)
   })
 })
 

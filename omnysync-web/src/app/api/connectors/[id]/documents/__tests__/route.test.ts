@@ -22,6 +22,17 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
+vi.mock('@/lib/auth/org', () => ({
+  getUserOrgId: vi.fn(),
+}))
+
+// Identity crypto: the routes must decrypt before reading the stored value;
+// mocking here keeps the test focused on the route logic.
+vi.mock('@/lib/crypto', () => ({
+  decrypt: vi.fn((value: string) => value),
+  encrypt: vi.fn((value: string) => value),
+}))
+
 vi.mock('@omnysync/core/services/google-docs', () => ({
   listGoogleDocs: vi.fn(),
 }))
@@ -30,12 +41,24 @@ vi.mock('@omnysync/core/services/notion', () => ({
   listNotionPages: vi.fn(),
 }))
 
+vi.mock('@omnysync/core/services/airtable', () => ({
+  listAirtableDocuments: vi.fn(),
+}))
+
+vi.mock('@omnysync/core/services/contentful', () => ({
+  listContentfulDocuments: vi.fn(),
+}))
+
 // ── Imports ──────────────────────────────────────────────────────────────────
 
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getUserOrgId } from '@/lib/auth/org'
+import { decrypt } from '@/lib/crypto'
 import { listGoogleDocs } from '@omnysync/core/services/google-docs'
 import { listNotionPages } from '@omnysync/core/services/notion'
+import { listAirtableDocuments } from '@omnysync/core/services/airtable'
+import { listContentfulDocuments } from '@omnysync/core/services/contentful'
 
 // ============================================================================
 // GET /api/connectors/[id]/documents
@@ -55,10 +78,13 @@ describe('GET /api/connectors/[id]/documents', () => {
       user: { id: 'user-1', email: 'test@omnysync.com' },
     } as any)
 
-    // Default: connector exists and belongs to user
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+
+    // Default: connector exists in the caller's organization
     vi.mocked(prisma.connector.findUnique).mockResolvedValue({
       id: 'conn-1',
       userId: 'user-1',
+      organizationId: 'org-1',
       type: 'GOOGLE_DOCS',
       credentials: JSON.stringify({ accessToken: 'google-token-123' }),
       config: {},
@@ -91,12 +117,13 @@ describe('GET /api/connectors/[id]/documents', () => {
     expect(response.status).toBe(404)
   })
 
-  // ── Connector belongs to another user ───────────────────────────────────
+  // ── Connector of another organization ───────────────────────────────────
 
-  it('should return 404 when connector belongs to another user', async () => {
+  it('should return 404 when connector belongs to another organization', async () => {
     vi.mocked(prisma.connector.findUnique).mockResolvedValue({
       id: 'conn-other',
       userId: 'user-other',
+      organizationId: 'org-other',
       type: 'GOOGLE_DOCS',
     } as any)
 
@@ -110,7 +137,7 @@ describe('GET /api/connectors/[id]/documents', () => {
 
   // ── Google Docs: returns documents ──────────────────────────────────────
 
-  it('should call listGoogleDocs and return documents for GOOGLE_DOCS type', async () => {
+  it('should decrypt the credentials and call listGoogleDocs for GOOGLE_DOCS', async () => {
     const mockDocs = [
       { id: 'doc-1', name: 'Document 1', modifiedTime: '2026-06-19T10:00:00Z' },
       { id: 'doc-2', name: 'Document 2', modifiedTime: '2026-06-18T10:00:00Z' },
@@ -125,18 +152,20 @@ describe('GET /api/connectors/[id]/documents', () => {
 
     expect(response.status).toBe(200)
     expect(data).toEqual(mockDocs)
+    expect(decrypt).toHaveBeenCalled()
     expect(listGoogleDocs).toHaveBeenCalledWith('google-token-123')
   })
 
   // ── Notion: returns pages ───────────────────────────────────────────────
 
-  it('should call listNotionPages and return pages for NOTION type', async () => {
+  it('should decrypt the Notion token from credentials and list pages', async () => {
     vi.mocked(prisma.connector.findUnique).mockResolvedValue({
       id: 'conn-notion',
       userId: 'user-1',
+      organizationId: 'org-1',
       type: 'NOTION',
-      credentials: null,
-      config: { accessToken: 'notion-token-456' },
+      credentials: 'notion-token-456',
+      config: {},
     } as any)
 
     const mockPages = [
@@ -153,30 +182,61 @@ describe('GET /api/connectors/[id]/documents', () => {
 
     expect(response.status).toBe(200)
     expect(data).toEqual(mockPages)
+    // The token is stored encrypted in `credentials`, never in `config`.
+    expect(decrypt).toHaveBeenCalledWith('notion-token-456')
     expect(listNotionPages).toHaveBeenCalledWith('notion-token-456')
   })
 
-  // ── Notion: reads token from credentials when config has no accessToken ─
+  // ── Airtable: returns records ───────────────────────────────────────────
 
-  it('should read Notion token from credentials when config has no accessToken', async () => {
+  it('should call listAirtableDocuments for AIRTABLE type', async () => {
     vi.mocked(prisma.connector.findUnique).mockResolvedValue({
-      id: 'conn-notion',
+      id: 'conn-airtable',
       userId: 'user-1',
-      type: 'NOTION',
-      credentials: JSON.stringify({ accessToken: 'creds-token' }),
-      config: {},
+      organizationId: 'org-1',
+      type: 'AIRTABLE',
+      credentials: 'airtable-key',
+      config: '{"baseId":"app123"}',
     } as any)
 
-    vi.mocked(listNotionPages).mockResolvedValue([])
+    const mockRecords = [{ id: 'table1:rec1', title: 'Airtable record' }]
+    vi.mocked(listAirtableDocuments).mockResolvedValue(mockRecords as any)
 
     const { GET } = await import('@/app/api/connectors/[id]/documents/route')
     const response = await GET(makeRequest(), {
-      params: Promise.resolve({ id: 'conn-notion' }),
+      params: Promise.resolve({ id: 'conn-airtable' }),
     })
+    const data = await response.json()
 
     expect(response.status).toBe(200)
-    // When config has no accessToken, it falls back to credentials
-    expect(listNotionPages).toHaveBeenCalledWith('')
+    expect(data).toEqual(mockRecords)
+    expect(listAirtableDocuments).toHaveBeenCalledWith('conn-airtable')
+  })
+
+  // ── Contentful: returns entries ─────────────────────────────────────────
+
+  it('should call listContentfulDocuments for CONTENTFUL type', async () => {
+    vi.mocked(prisma.connector.findUnique).mockResolvedValue({
+      id: 'conn-contentful',
+      userId: 'user-1',
+      organizationId: 'org-1',
+      type: 'CONTENTFUL',
+      credentials: 'contentful-token',
+      config: '{"spaceId":"space123"}',
+    } as any)
+
+    const mockEntries = [{ id: 'article:entry1', title: 'Contentful entry' }]
+    vi.mocked(listContentfulDocuments).mockResolvedValue(mockEntries as any)
+
+    const { GET } = await import('@/app/api/connectors/[id]/documents/route')
+    const response = await GET(makeRequest(), {
+      params: Promise.resolve({ id: 'conn-contentful' }),
+    })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data).toEqual(mockEntries)
+    expect(listContentfulDocuments).toHaveBeenCalledWith('conn-contentful')
   })
 
   // ── Unsupported connector type ──────────────────────────────────────────
@@ -185,6 +245,7 @@ describe('GET /api/connectors/[id]/documents', () => {
     vi.mocked(prisma.connector.findUnique).mockResolvedValue({
       id: 'conn-wp',
       userId: 'user-1',
+      organizationId: 'org-1',
       type: 'WORDPRESS',
     } as any)
 

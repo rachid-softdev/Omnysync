@@ -31,6 +31,11 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
+// The approval portal is a Business-plan feature: default to allowed.
+vi.mock('@/lib/auth/subscription', () => ({
+  checkPlanFeature: vi.fn(async () => ({ allowed: true, plan: 'business' })),
+}))
+
 // ── Imports ──────────────────────────────────────────────────────────────────
 
 import { auth } from '@/lib/auth'
@@ -64,6 +69,22 @@ describe('GET /api/approvals', () => {
     const response = await GET()
 
     expect(response.status).toBe(401)
+  })
+
+  it('should return 403 when the plan does not include the approval portal', async () => {
+    const { checkPlanFeature } = await import('@/lib/auth/subscription')
+    vi.mocked(checkPlanFeature).mockResolvedValueOnce({
+      allowed: false,
+      plan: 'pro',
+      upgradeUrl: '/pricing',
+    } as any)
+
+    const { GET } = await import('@/app/api/approvals/route')
+    const response = await GET()
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.code).toBe('PLAN_FEATURE_REQUIRED')
   })
 
   // ── Organization not found ──────────────────────────────────────────────

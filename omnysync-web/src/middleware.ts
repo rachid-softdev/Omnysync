@@ -34,6 +34,33 @@ function createErrorResponse(status: number, error: string): NextResponse {
  * Vérifie l'origine des requêtes state-changing (CSRF protection).
  * Retourne null si la requête est autorisée, ou une réponse 403 sinon.
  */
+
+// Exact origin comparison: a prefix match would accept
+// `https://app.omnysync.com.evil.com` as a trusted origin.
+function toOrigin(value: string | null): string | null {
+  if (!value) return null
+  try {
+    return new URL(value).origin
+  } catch {
+    return null
+  }
+}
+
+function isTrustedOrigin(value: string | null, requestOrigin: string): boolean {
+  const origin = toOrigin(value)
+  if (!origin) return false
+
+  const isLocalDev =
+    process.env.NODE_ENV === 'development' &&
+    (origin === 'http://localhost:3000' || origin === 'http://localhost:3001')
+
+  if (isLocalDev) return true
+
+  if (origin === requestOrigin) return true
+
+  return allowedOrigins.some((allowed) => toOrigin(allowed) === origin)
+}
+
 function checkCsrfOrigin(request: NextRequest): NextResponse | null {
   const method = request.method.toUpperCase()
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
@@ -47,42 +74,23 @@ function checkCsrfOrigin(request: NextRequest): NextResponse | null {
 
   const origin = request.headers.get('origin')
   const referer = request.headers.get('referer')
+  const requestOrigin = request.nextUrl.origin
 
-  // Si Origin est présent, vérifier qu'il correspond
+  // Si Origin est présent, il doit correspondre exactement.
   if (origin) {
-    const isLocalDev =
-      process.env.NODE_ENV === 'development' &&
-      (origin === 'http://localhost:3000' || origin === 'http://localhost:3001')
+    if (isTrustedOrigin(origin, requestOrigin)) return null
 
-    if (isLocalDev) return null
-
-    // Vérifier les origines autorisées
-    const isAllowed = allowedOrigins.some((o) => origin.startsWith(o))
-    // Vérifier la même origine (Next.js URL)
-    const requestOrigin = request.nextUrl.origin
-    const isSameOrigin = requestOrigin && origin.startsWith(requestOrigin)
-
-    if (isAllowed || isSameOrigin) return null
-
-    // Si Origin est présent mais ne correspond pas → bloquer
     return createErrorResponse(403, 'Origine non autorisée')
   }
 
-  // Si Origin absent mais Referer présent, vérifier le Referer
+  // Si Origin absent mais Referer présent, appliquer la même règle.
   if (referer) {
-    const isLocalDev =
-      process.env.NODE_ENV === 'development' && referer.startsWith('http://localhost:3000')
-
-    if (isLocalDev) return null
-
-    const isAllowed = allowedOrigins.some((o) => referer.startsWith(o))
-
-    if (isAllowed) return null
+    if (isTrustedOrigin(referer, requestOrigin)) return null
 
     return createErrorResponse(403, 'Référent non autorisé')
   }
 
-  // Ni Origin ni Referer → autoriser (appels natifs / programmatiques)
+  // Ni Origin ni Referer: autoriser (appels natifs / programmatiques)
   return null
 }
 

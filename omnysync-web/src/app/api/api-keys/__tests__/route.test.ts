@@ -13,6 +13,11 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
+// API keys require the Business plan: default to allowed, tests override.
+vi.mock('@/lib/auth/subscription', () => ({
+  checkPlanFeature: vi.fn(async () => ({ allowed: true, plan: 'business' })),
+}))
+
 import { GET, POST } from '../route'
 
 describe('GET /api/api-keys', () => {
@@ -28,6 +33,23 @@ describe('GET /api/api-keys', () => {
 
     expect(response.status).toBe(401)
     expect(data.error).toBeDefined()
+  })
+
+  it('returns 403 when the plan does not include API access', async () => {
+    mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
+
+    const { checkPlanFeature } = await import('@/lib/auth/subscription')
+    vi.mocked(checkPlanFeature).mockResolvedValueOnce({
+      allowed: false,
+      plan: 'pro',
+      upgradeUrl: '/pricing',
+    } as any)
+
+    const response = await GET()
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.code).toBe('PLAN_FEATURE_REQUIRED')
   })
 
   it('returns 404 when no organization found', async () => {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getUserOrgId } from '@/lib/auth/org'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -11,11 +12,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const { id } = await params
 
+  // Documents are organization-scoped: any member of the document's
+  // organization may preview it (same rule as GET /api/sync/[id]).
+  const orgId = await getUserOrgId(session.user.id)
+
   const document = await prisma.document.findUnique({
     where: { id },
   })
 
-  if (!document || document.userId !== session.user.id) {
+  if (!document || document.organizationId !== orgId) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 

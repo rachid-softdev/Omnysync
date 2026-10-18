@@ -13,6 +13,35 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
  * Simule la logique de checkCsrfOrigin extraite du middleware.
  * On teste la logique métier indépendamment de NextResponse.
  */
+function toOrigin(value: string | null): string | null {
+  if (!value) return null
+  try {
+    return new URL(value).origin
+  } catch {
+    return null
+  }
+}
+
+function isTrustedOrigin(
+  value: string | null,
+  requestOrigin: string,
+  allowedOrigins: string[],
+  nodeEnv: string
+): boolean {
+  const origin = toOrigin(value)
+  if (!origin) return false
+
+  const isLocalDev =
+    nodeEnv === 'development' &&
+    (origin === 'http://localhost:3000' || origin === 'http://localhost:3001')
+
+  if (isLocalDev) return true
+
+  if (origin === requestOrigin) return true
+
+  return allowedOrigins.some((allowed) => toOrigin(allowed) === origin)
+}
+
 function checkCsrfOrigin(
   method: string,
   origin: string | null,
@@ -31,28 +60,17 @@ function checkCsrfOrigin(
   }
 
   if (origin) {
-    const isLocalDev =
-      nodeEnv === 'development' &&
-      (origin === 'http://localhost:3000' || origin === 'http://localhost:3001')
-
-    if (isLocalDev) return { blocked: false }
-
-    const isAllowed = allowedOrigins.some((o) => origin.startsWith(o))
-    const isSameOrigin = requestOrigin && origin.startsWith(requestOrigin)
-
-    if (isAllowed || isSameOrigin) return { blocked: false }
+    if (isTrustedOrigin(origin, requestOrigin, allowedOrigins, nodeEnv)) {
+      return { blocked: false }
+    }
 
     return { blocked: true, reason: 'Origine non autorisée' }
   }
 
   if (referer) {
-    const isLocalDev = nodeEnv === 'development' && referer.startsWith('http://localhost:3000')
-
-    if (isLocalDev) return { blocked: false }
-
-    const isAllowed = allowedOrigins.some((o) => referer.startsWith(o))
-
-    if (isAllowed) return { blocked: false }
+    if (isTrustedOrigin(referer, requestOrigin, allowedOrigins, nodeEnv)) {
+      return { blocked: false }
+    }
 
     return { blocked: true, reason: 'Référent non autorisé' }
   }
@@ -286,6 +304,50 @@ describe('CSRF Origin Validation', () => {
       expect(result.blocked).toBe(true)
       expect(result.reason).toBe('Origine non autorisée')
     })
+  })
+})
+
+describe('CSRF origin suffix attacks', () => {
+  const requestOrigin = 'https://app.omnysync.com'
+  const allowedOrigins = ['https://app.omnysync.com', 'https://admin.omnysync.com']
+
+  it('blocks an origin that only starts with the trusted origin', () => {
+    const result = checkCsrfOrigin(
+      'POST',
+      'https://app.omnysync.com.evil.com',
+      null,
+      false,
+      requestOrigin,
+      allowedOrigins,
+      'production'
+    )
+    expect(result.blocked).toBe(true)
+  })
+
+  it('blocks an allowed origin used as a prefix', () => {
+    const result = checkCsrfOrigin(
+      'POST',
+      'https://admin.omnysync.com.evil.com',
+      null,
+      false,
+      requestOrigin,
+      allowedOrigins,
+      'production'
+    )
+    expect(result.blocked).toBe(true)
+  })
+
+  it('allows a same-origin Referer when Origin is absent', () => {
+    const result = checkCsrfOrigin(
+      'POST',
+      null,
+      'https://app.omnysync.com/dashboard',
+      false,
+      requestOrigin,
+      [],
+      'production'
+    )
+    expect(result.blocked).toBe(false)
   })
 })
 

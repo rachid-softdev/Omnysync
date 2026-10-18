@@ -183,9 +183,9 @@ describe("getPlanLimits", () => {
     const limits = getPlanLimits("free");
 
     expect(limits).toEqual({
-      syncsPerMonth: 10,
+      syncsPerMonth: 5,
       connectors: 2,
-      documents: 100,
+      documents: 50,
       aiFeatures: false,
       bidirectionalSync: false,
       multiUser: false,
@@ -200,11 +200,11 @@ describe("getPlanLimits", () => {
     expect(limits).toEqual({
       syncsPerMonth: 100,
       connectors: 10,
-      documents: Infinity,
+      documents: 500,
       aiFeatures: true,
       bidirectionalSync: false,
       multiUser: false,
-      apiAccess: true,
+      apiAccess: false,
       scheduledSync: true,
     });
   });
@@ -246,12 +246,12 @@ describe("getQuotaUsage", () => {
 
     expect(result).toEqual({
       syncCount: 3,
-      syncLimit: 10,
+      syncLimit: 5,
       connectorCount: 1,
       connectorLimit: 2,
       documentCount: 10,
-      documentLimit: 100,
-      percentUsed: 30,
+      documentLimit: 50,
+      percentUsed: 60,
     });
   });
 
@@ -438,35 +438,35 @@ describe("checkDocumentLimit", () => {
     expect(result).toEqual({
       allowed: true,
       current: 100,
-      limit: Infinity,
+      limit: 500,
       upgradeUrl: undefined,
     });
   });
 
-  it("should return allowed true (unlimited) for pro plan", async () => {
+  it("should return allowed false when the pro plan document limit is reached", async () => {
     mockOrgMembership("pro");
     mockPrismaClient.document.count.mockResolvedValue(500);
 
     const result = await checkDocumentLimit("user-1");
 
     expect(result).toEqual({
-      allowed: true,
+      allowed: false,
       current: 500,
-      limit: Infinity,
-      upgradeUrl: undefined,
+      limit: 500,
+      upgradeUrl: "/pricing",
     });
   });
 
   it("should return allowed false with upgradeUrl when document limit exceeded", async () => {
     mockOrgMembership("free");
-    mockPrismaClient.document.count.mockResolvedValue(100); // free plan limit is 100, not less than 100
+    mockPrismaClient.document.count.mockResolvedValue(50); // free plan limit is 50, not less than 50
 
     const result = await checkDocumentLimit("user-1");
 
     expect(result).toEqual({
       allowed: false,
-      current: 100,
-      limit: 100,
+      current: 50,
+      limit: 50,
       upgradeUrl: "/pricing",
     });
   });
@@ -535,7 +535,7 @@ describe("getQuotaUsage edge cases", () => {
   it("should return 100% percentUsed when syncCount equals free plan limit", async () => {
     mockOrgMembership("free");
     mockPrismaClient.quotaUsage.findUnique.mockResolvedValue({
-      syncCount: 10,
+      syncCount: 5,
     });
     mockPrismaClient.connector.count.mockResolvedValue(2);
     mockPrismaClient.document.count.mockResolvedValue(50);
@@ -544,8 +544,8 @@ describe("getQuotaUsage edge cases", () => {
     const result = await getQuotaUsage("user-1");
 
     expect(result.percentUsed).toBe(100);
-    expect(result.syncCount).toBe(10);
-    expect(result.syncLimit).toBe(10);
+    expect(result.syncCount).toBe(5);
+    expect(result.syncLimit).toBe(5);
   });
 
   it("should return 0% percentUsed when syncCount is 0 on free plan (covers line 108 ternary)", async () => {
@@ -561,7 +561,7 @@ describe("getQuotaUsage edge cases", () => {
 
     expect(result.percentUsed).toBe(0);
     expect(result.syncCount).toBe(0);
-    expect(result.syncLimit).toBe(10);
+    expect(result.syncLimit).toBe(5);
   });
 
   it("should return >100% percentUsed when syncCount exceeds free plan limit", async () => {
@@ -575,7 +575,7 @@ describe("getQuotaUsage edge cases", () => {
     const { getQuotaUsage } = await import("../subscription");
     const result = await getQuotaUsage("user-1");
 
-    expect(result.percentUsed).toBe(150);
+    expect(result.percentUsed).toBe(300);
     expect(result.syncCount).toBe(15);
   });
 });
@@ -658,17 +658,17 @@ describe("checkDocumentLimit edge cases", () => {
     vi.clearAllMocks();
   });
 
-  it("should return allowed false with upgradeUrl when exactly at free plan limit (100 docs)", async () => {
+  it("should return allowed false with upgradeUrl when exactly at free plan limit (50 docs)", async () => {
     mockOrgMembership("free");
-    mockPrismaClient.document.count.mockResolvedValue(100);
+    mockPrismaClient.document.count.mockResolvedValue(50);
 
     const { checkDocumentLimit } = await import("../subscription");
     const result = await checkDocumentLimit("user-1");
 
     expect(result).toEqual({
       allowed: false,
-      current: 100,
-      limit: 100,
+      current: 50,
+      limit: 50,
       upgradeUrl: "/pricing",
     });
   });

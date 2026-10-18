@@ -20,11 +20,12 @@ import { auth } from '@/lib/auth'
 import { getUserOrgId } from '@/lib/auth/org'
 import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
 import { getExperimentService } from '@/lib/entitlements/ExperimentService'
+import { getEntitlementRepository } from '@/lib/entitlements/EntitlementRepository'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Authentifier l'utilisateur avant toute chose
     const session = await auth()
@@ -49,43 +50,33 @@ export async function GET(request: NextRequest) {
     const featureGate = getFeatureGateService()
     const experimentService = getExperimentService()
 
-    // Get entitlements from cache
+    // Get entitlements (plan, features, limits and measured usage) from cache
     const entitlements = await featureGate.getAllEntitlements(orgId)
 
-    // Build usage map
-    const usage: Record<string, number> = {}
-    const resetAt: Record<string, string> = {}
-
-    for (const [key, limit] of Object.entries(entitlements.limits || {})) {
-      if (limit !== null) {
-        // Get current usage
-        const feature = await featureGate.hasFeature(orgId, key)
-        if (feature) {
-          // Usage tracking would be fetched here
-          // For now, just pass limits
-        }
-      }
-    }
-
-    // Build experiment groups for the authenticated user
+    // Build experiment groups for the authenticated user.
+    // NOTE: `getAllEntitlements` returns an EntitlementsResponse which carries
+    // `plan` (not `planKey`) and no experiment configs at all — the experiment
+    // configuration lives on the admin-defined features of type EXPERIMENT.
     const experimentGroups: Record<string, string> = {}
     const userId = session.user.id
 
-    for (const [key, config] of Object.entries(entitlements.experiments || {})) {
-      const group = experimentService.getExperimentGroup(
-        userId,
-        config as { seed: string; percentage: number }
-      )
-      experimentGroups[key] = group
+    const experimentFeatures = (await getEntitlementRepository().getAllFeatures()).filter(
+      (feature) => feature.type === 'EXPERIMENT'
+    )
+
+    for (const feature of experimentFeatures) {
+      const config = await experimentService.getExperimentConfig(feature.key)
+      if (!config) continue
+      experimentGroups[feature.key] = experimentService.getExperimentGroup(userId, config)
     }
 
     // Build response
     const response = {
-      planKey: entitlements.planKey,
+      planKey: entitlements.plan,
       features: entitlements.features,
       limits: entitlements.limits,
-      usage,
-      resetAt,
+      usage: entitlements.usage ?? {},
+      resetAt: entitlements.resetAt ?? {},
       experimentGroups: Object.keys(experimentGroups).length > 0 ? experimentGroups : undefined,
     }
 

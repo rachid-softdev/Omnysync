@@ -80,7 +80,7 @@ describe('ConnectorDialog', () => {
       )
       expect(screen.getByText('Connect Airtable')).toBeInTheDocument()
       expect(screen.getByLabelText('API Key')).toBeInTheDocument()
-      expect(screen.getByLabelText('Base ID (optional)')).toBeInTheDocument()
+      expect(screen.getByLabelText('Base ID')).toBeInTheDocument()
     })
 
     it('renders dialog for CONTENTFUL connector', () => {
@@ -94,7 +94,7 @@ describe('ConnectorDialog', () => {
       )
       expect(screen.getByText('Connect Contentful')).toBeInTheDocument()
       expect(screen.getByLabelText('Access Token')).toBeInTheDocument()
-      expect(screen.getByLabelText('Space ID (optional)')).toBeInTheDocument()
+      expect(screen.getByLabelText('Space ID')).toBeInTheDocument()
     })
 
     it('renders dialog for MEDIUM connector', () => {

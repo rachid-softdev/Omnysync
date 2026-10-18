@@ -2,6 +2,16 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
+import { checkTeamMemberLimit } from '@/lib/auth/subscription'
+
+// OWNER is deliberately not assignable: transferring ownership goes through a
+// dedicated flow, so an admin can never mint another owner from this endpoint.
+const ASSIGNABLE_ROLES = ['ADMIN', 'MEMBER'] as const
+type AssignableRole = (typeof ASSIGNABLE_ROLES)[number]
+
+function isAssignableRole(value: unknown): value is AssignableRole {
+  return typeof value === 'string' && (ASSIGNABLE_ROLES as readonly string[]).includes(value)
+}
 
 export async function GET() {
   const session = await auth()
@@ -66,7 +76,33 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
 
-  const { email, role } = body
+  const { email, role } = body ?? {}
+
+  if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ error: 'A valid email is required' }, { status: 400 })
+  }
+
+  if (role !== undefined && !isAssignableRole(role)) {
+    return NextResponse.json(
+      { error: 'Invalid role. Allowed roles: ADMIN, MEMBER' },
+      { status: 400 }
+    )
+  }
+
+  const memberRole: AssignableRole = isAssignableRole(role) ? role : 'MEMBER'
+
+  // Plan entitlement: the number of organization members is limited by the plan
+  // (MAX_TEAM_MEMBERS — "Multi-users" is a Business feature).
+  const teamLimit = await checkTeamMemberLimit(session.user.id, orgId)
+  if (!teamLimit.allowed) {
+    return NextResponse.json(
+      {
+        error: `Team member limit reached (${teamLimit.current}/${teamLimit.limit}). Please upgrade your plan.`,
+        code: 'TEAM_LIMIT_EXCEEDED',
+      },
+      { status: 429 }
+    )
+  }
 
   // Find user by email
   const user = await prisma.user.findUnique({
@@ -79,7 +115,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       message: 'Invitation envoyée',
       email,
-      role,
+      role: memberRole,
     })
   }
 
@@ -100,7 +136,7 @@ export async function POST(req: NextRequest) {
     data: {
       userId: user.id,
       organizationId: orgId,
-      role: role || 'MEMBER',
+      role: memberRole,
     },
   })
 

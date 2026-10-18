@@ -1,7 +1,5 @@
-// @ts-expect-error - PrismaClient is available at runtime
 import { PrismaClient } from '@prisma/client'
 
-// @ts-expect-error - PrismaClient is a value at runtime
 const prisma = new PrismaClient()
 
 async function main() {
@@ -16,9 +14,6 @@ async function main() {
         email: 'admin@omnysync.com',
         name: 'Admin',
         role: 'ADMIN',
-        userRoles: {
-          create: [{ role: 'ADMIN' }, { role: 'USER' }],
-        },
       },
       update: {},
     })

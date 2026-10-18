@@ -273,7 +273,7 @@ export async function enqueueSyncJob(
   documentId: string,
   sourceConnectorId: string,
   destConnectorId: string,
-  options?: { delay?: number; priority?: number },
+  options?: { delay?: number; priority?: number; userId?: string },
 ) {
   return enqueueJob(
     {
@@ -283,6 +283,9 @@ export async function enqueueSyncJob(
         documentId,
         sourceConnectorId,
         destConnectorId,
+        // The queue worker authorizes the sync with this userId. Omitting it
+        // makes performSync() fail with "Access denied" on every job.
+        ...(options?.userId ? { userId: options.userId } : {}),
       },
       priority: options?.priority,
     },
@@ -330,12 +333,17 @@ export async function enqueueSEOProcessing(documentId: string) {
   });
 }
 
-export async function enqueueChangeDetection(documentId: string) {
+export async function enqueueChangeDetection(
+  documentId: string,
+  userId?: string,
+) {
   return enqueueJob({
     id: "",
     type: "detect_changes",
     payload: {
       documentId,
+      // Required by the queue worker to authorize the change detection run.
+      ...(userId ? { userId } : {}),
     },
   });
 }

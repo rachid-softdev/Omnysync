@@ -61,6 +61,7 @@ vi.mock('@omnysync/core/services/ghost', () => ({
 // Mocks complets pour les autres connecteurs (importés statiquement par la route)
 vi.mock('@omnysync/core/services/webflow', () => ({
   testWebflowConnection: vi.fn(),
+  saveWebflowConnector: vi.fn(),
 }))
 
 vi.mock('@omnysync/core/services/shopify', () => ({
@@ -89,6 +90,10 @@ import { createConnectorSchema } from '@/lib/validations'
 import { apiError } from '@/lib/api-error'
 import { testWordPressConnection, saveWordPressConnector } from '@omnysync/core/services/wordpress'
 import { testGhostConnection, saveGhostConnector } from '@omnysync/core/services/ghost'
+import {
+  testWebflowConnection,
+  saveWebflowConnector,
+} from '@omnysync/core/services/webflow'
 
 // ============================================================================
 // SUITE
@@ -286,6 +291,40 @@ describe('POST /api/connectors', () => {
     )
   })
 
+  // ── WEBFLOW valide (vérifie l'ordre des arguments passés au core) ───────
+
+  it('should create a Webflow connector passing (userId, orgId, siteId, accessToken)', async () => {
+    const webflowBody = {
+      type: 'WEBFLOW',
+      name: 'Mon Webflow',
+      config: { siteId: 'site-42' },
+      credentials: { accessToken: 'wf-token' },
+    }
+    vi.mocked(createConnectorSchema.safeParse).mockReturnValue({
+      success: true,
+      data: webflowBody,
+    } as any)
+    vi.mocked(testWebflowConnection).mockResolvedValue({ success: true })
+    vi.mocked(saveWebflowConnector).mockResolvedValue({
+      id: 'conn-new-3',
+      type: 'WEBFLOW',
+      name: 'Webflow - site-42',
+      userId: 'user-1',
+      organizationId: 'org-1',
+      credentials: 'encrypted-blob',
+    } as any)
+
+    const { POST } = await import('@/app/api/connectors/route')
+    const response = await POST(makeRequest(webflowBody))
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(testWebflowConnection).toHaveBeenCalledWith('wf-token', 'site-42')
+    expect(saveWebflowConnector).toHaveBeenCalledWith('user-1', 'org-1', 'site-42', 'wf-token')
+    // SECURITY: les credentials chiffrés ne doivent jamais être renvoyés.
+    expect(data.credentials).toBeUndefined()
+  })
+
   // ── Type invalide ───────────────────────────────────────────────────────
 
   it('should return 400 for invalid connector type (unknown type)', async () => {
@@ -335,15 +374,19 @@ describe('POST /api/connectors', () => {
 
   // ── Connector limit exceeded ────────────────────────────────────────────
 
-  it('should return 429 when connector limit is exceeded', async () => {
-    // Note: le code de la route vérifie `if (!withinLimit)`. checkConnectorLimit
-    // retourne normalement un objet `{ allowed, current, limit }`. On mocke une
-    // valeur falsy pour déclencher la branche limite dépassée.
-    vi.mocked(checkConnectorLimit).mockResolvedValue(false as any)
+  it('should return 429 and not create the connector when the limit is exceeded', async () => {
+    vi.mocked(checkConnectorLimit).mockResolvedValue({
+      allowed: false,
+      current: 2,
+      limit: 2,
+      upgradeUrl: '/pricing',
+    })
 
     const { POST } = await import('@/app/api/connectors/route')
     const response = await POST(makeRequest(validWordPressBody))
 
     expect(response.status).toBe(429)
+    // La limite doit être vérifiée AVANT tout appel au service de sauvegarde.
+    expect(saveWordPressConnector).not.toHaveBeenCalled()
   })
 })

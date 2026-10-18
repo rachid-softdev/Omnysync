@@ -12,7 +12,18 @@ export async function GET(req: NextRequest) {
 
   const orgId = await getUserOrgId(session.user.id)
   const { searchParams } = new URL(req.url)
-  const period = parseInt(searchParams.get('period') || '30')
+  const rawPeriod = parseInt(searchParams.get('period') || '30', 10)
+
+  // An unparsed or out-of-range period would build an Invalid Date (or scan an
+  // unbounded range) and crash the query with a 500.
+  if (!Number.isFinite(rawPeriod) || rawPeriod < 1 || rawPeriod > 365) {
+    return NextResponse.json(
+      { error: 'VALIDATION_ERROR', message: 'period must be an integer between 1 and 365' },
+      { status: 400 }
+    )
+  }
+
+  const period = rawPeriod
 
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - period)
@@ -46,8 +57,8 @@ export async function GET(req: NextRequest) {
   // Group by day
   const syncByDay: Record<string, number> = {}
   syncLogs.forEach((log) => {
-    const date = log.createdAt.toISOString().split('T')[0]
-    syncByDay[date] = (syncByDay[date] || 0) + 1
+    const date = log.createdAt.toISOString().slice(0, 10)
+    syncByDay[date] = (syncByDay[date] ?? 0) + 1
   })
 
   const syncByDayArray = Object.entries(syncByDay)

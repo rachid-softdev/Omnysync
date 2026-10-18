@@ -112,7 +112,7 @@ export function requireLimit(featureKey: string, orgIdResolver?: OrgIdResolver):
       const hasFeature = await featureGate.hasFeature(orgId, featureKey)
 
       if (!hasFeature) {
-        const planKey = await featureGate.getAllEntitlements(orgId).then((e) => e.planKey)
+        const planKey = await featureGate.getAllEntitlements(orgId).then((e) => e.plan)
         throw new FeatureGateError(
           'FEATURE_NOT_AVAILABLE',
           `Feature '${featureKey}' not available on ${planKey} plan`,

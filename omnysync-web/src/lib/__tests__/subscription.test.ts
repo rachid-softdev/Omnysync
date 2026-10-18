@@ -514,14 +514,19 @@ describe('Subscription Service', () => {
       expect(result.upgradeUrl).toBeUndefined()
     })
 
-    it('should throw for unknown plan (PLAN_LIMITS[unknown] is undefined)', async () => {
+    it('falls back to free limits for an unknown plan instead of crashing', async () => {
       vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(
         mockUserOrgLookup('unknown_plan' as any, 'ACTIVE') as any
       )
       vi.mocked(prisma.connector.count).mockResolvedValue(1)
 
-      // plan 'unknown_plan' n'existe pas dans PLAN_LIMITS → crash à l'accès
-      await expect(checkConnectorLimit('user-123')).rejects.toThrow()
+      // An unknown/legacy plan key must not crash every gated action: the
+      // limits fall back to the free plan (2 connectors, 1 already used).
+      const result = await checkConnectorLimit('user-123')
+
+      expect(result.allowed).toBe(true)
+      expect(result.current).toBe(1)
+      expect(result.limit).toBe(2)
     })
   })
 

@@ -34,6 +34,11 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
+// Webhook endpoints are a plan feature: default to allowed.
+vi.mock('@/lib/auth/subscription', () => ({
+  checkPlanFeature: vi.fn(async () => ({ allowed: true, plan: 'pro' })),
+}))
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function createMockRequest(body?: unknown): NextRequest {
@@ -70,6 +75,24 @@ describe('GET /api/webhook-endpoints', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('retourne 403 si le plan n inclut pas les webhooks', async () => {
+    mockSession()
+
+    const { checkPlanFeature } = await import('@/lib/auth/subscription')
+    vi.mocked(checkPlanFeature).mockResolvedValueOnce({
+      allowed: false,
+      plan: 'free',
+      upgradeUrl: '/pricing',
+    } as any)
+
+    const GET = await importGET()
+    const response = await GET()
+    const body = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(body.code).toBe('PLAN_FEATURE_REQUIRED')
   })
 
   it('retourne 401 si non authentifié', async () => {

@@ -22,12 +22,23 @@ export async function GET() {
 
   const orgId = await getUserOrgId(session.user.id)
 
+  // SECURITY: never expose `credentials` (encrypted provider secrets) or
+  // internal ownership columns to the client. Select only what the UI needs.
   const connectors = await prisma.connector.findMany({
     where: {
       organizationId: orgId,
     },
     orderBy: {
       createdAt: 'desc',
+    },
+    select: {
+      id: true,
+      type: true,
+      name: true,
+      status: true,
+      config: true,
+      createdAt: true,
+      updatedAt: true,
     },
   })
 
@@ -57,8 +68,10 @@ export async function POST(req: NextRequest) {
   const { type, config, credentials } = parsed.data
 
   // Check connector limit based on plan
-  const withinLimit = await checkConnectorLimit(session.user.id)
-  if (!withinLimit) {
+  // checkConnectorLimit() returns a result object — testing the object itself
+  // for truthiness made the limit impossible to reach (every object is truthy).
+  const connectorLimit = await checkConnectorLimit(session.user.id)
+  if (!connectorLimit.allowed) {
     return apiError(
       'Connector limit exceeded. Please upgrade your plan.',
       429,
@@ -100,7 +113,7 @@ export async function POST(req: NextRequest) {
       testResult = await testAirtableConnection(credentials.apiKey)
       break
     case 'CONTENTFUL':
-      testResult = await testContentfulConnection(credentials.accessToken, config.spaceId)
+      testResult = await testContentfulConnection(credentials.accessToken)
       break
   }
 
@@ -139,17 +152,28 @@ export async function POST(req: NextRequest) {
     }
     case 'WEBFLOW': {
       const { saveWebflowConnector } = await import('@omnysync/core/services/webflow')
-      connector = await saveWebflowConnector(orgId, credentials.accessToken, config.siteId)
+      connector = await saveWebflowConnector(
+        session.user.id,
+        orgId,
+        config.siteId,
+        credentials.accessToken
+      )
       break
     }
     case 'SHOPIFY': {
       const { saveShopifyConnector } = await import('@omnysync/core/services/shopify')
-      connector = await saveShopifyConnector(orgId, config.shopDomain, credentials.accessToken)
+      connector = await saveShopifyConnector(
+        session.user.id,
+        orgId,
+        config.shopDomain,
+        credentials.accessToken
+      )
       break
     }
     case 'GOOGLE_DOCS': {
       const { saveGoogleDocsConnector } = await import('@omnysync/core/services/google-docs')
       connector = await saveGoogleDocsConnector(
+        session.user.id,
         orgId,
         credentials.accessToken,
         credentials.refreshToken ?? ''
@@ -158,27 +182,37 @@ export async function POST(req: NextRequest) {
     }
     case 'NOTION': {
       const { saveNotionConnector } = await import('@omnysync/core/services/notion')
-      connector = await saveNotionConnector(orgId, credentials.accessToken)
+      connector = await saveNotionConnector(session.user.id, orgId, credentials.accessToken)
       break
     }
     case 'MEDIUM': {
       const { saveMediumConnector } = await import('@omnysync/core/services/medium')
-      connector = await saveMediumConnector(orgId, credentials.accessToken)
+      connector = await saveMediumConnector(session.user.id, orgId, credentials.accessToken, {
+        publicationId: config.publicationId,
+      })
       break
     }
     case 'AIRTABLE': {
       const { saveAirtableConnector } = await import('@omnysync/core/services/airtable')
-      connector = await saveAirtableConnector(orgId, credentials.apiKey)
+      connector = await saveAirtableConnector(session.user.id, orgId, credentials.apiKey, {
+        baseId: config.baseId,
+        tableId: config.tableId,
+      })
       break
     }
     case 'CONTENTFUL': {
       const { saveContentfulConnector } = await import('@omnysync/core/services/contentful')
-      connector = await saveContentfulConnector(orgId, config.spaceId, credentials.accessToken)
+      connector = await saveContentfulConnector(session.user.id, orgId, credentials.accessToken, {
+        spaceId: config.spaceId,
+        contentTypeId: config.contentTypeId,
+      })
       break
     }
     default:
       return NextResponse.json({ error: 'Invalid connector type' }, { status: 400 })
   }
 
-  return NextResponse.json(connector)
+  // SECURITY: mirror GET — never echo stored credentials back to the client.
+  const { credentials: _storedCredentials, ...safeConnector } = connector
+  return NextResponse.json(safeConnector)
 }

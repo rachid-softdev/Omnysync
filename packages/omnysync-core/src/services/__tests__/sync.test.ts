@@ -70,6 +70,9 @@ vi.mock("../webflow", () => ({
   createWebflowClient: vi.fn().mockReturnValue({
     createItem: vi.fn().mockResolvedValue({ items: [{ id: "item-1" }] }),
     updateItem: vi.fn().mockResolvedValue({}),
+    getCollections: vi
+      .fn()
+      .mockResolvedValue({ collections: [{ id: "collection-1" }] }),
   }),
 }));
 vi.mock("../shopify", () => ({

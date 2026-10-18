@@ -10,6 +10,7 @@
  */
 
 import { PrismaClient } from '@prisma/client'
+import { DEFAULT_PLAN_FEATURES } from '@omnysync/core/entitlements/constants'
 
 const prisma = new PrismaClient()
 
@@ -134,6 +135,12 @@ const FEATURES = [
     description: 'Automated scheduled syncing',
     type: 'BOOLEAN' as const,
   },
+  {
+    key: 'TEAM_MEMBERS',
+    name: 'Team Members',
+    description: 'Invite additional users to the organization',
+    type: 'BOOLEAN' as const,
+  },
 
   // Limit features
   {
@@ -189,53 +196,21 @@ const FEATURES = [
   },
 ]
 
-const PLAN_FEATURES: Record<
-  string,
-  Record<string, { enabled: boolean; limitValue: number | null; configJson: object | null }>
-> = {
+type PlanFeatureConfig = {
+  enabled: boolean
+  limitValue: number | null
+  configJson: object | null
+}
+
+// Experiment rollout configuration (percentage/seed per plan). This is rollout
+// state - not plan pricing - so it is declared locally; everything else is
+// derived from DEFAULT_PLAN_FEATURES below.
+const EXPERIMENT_ROLLOUT: Record<string, Record<string, PlanFeatureConfig>> = {
   free: {
-    EXPORT_PDF: { enabled: false, limitValue: null, configJson: null },
-    EXPORT_CSV: { enabled: true, limitValue: null, configJson: null },
-    AI_SUMMARY: { enabled: false, limitValue: null, configJson: null },
-    AI_SEO: { enabled: false, limitValue: null, configJson: null },
-    AI_IMAGES: { enabled: false, limitValue: null, configJson: null },
-    AI_INTERLINKING: { enabled: false, limitValue: null, configJson: null },
-    TWO_WAY_SYNC: { enabled: false, limitValue: null, configJson: null },
-    APPROVAL_PORTAL: { enabled: false, limitValue: null, configJson: null },
-    CUSTOM_DOMAIN: { enabled: false, limitValue: null, configJson: null },
-    API_ACCESS: { enabled: false, limitValue: null, configJson: null },
-    PRIORITY_SUPPORT: { enabled: false, limitValue: null, configJson: null },
-    ANALYTICS_EXPORT: { enabled: false, limitValue: null, configJson: null },
-    WEBHOOKS: { enabled: false, limitValue: null, configJson: null },
-    SCHEDULED_SYNC: { enabled: false, limitValue: null, configJson: null },
-    MAX_CONNECTORS: { enabled: true, limitValue: 2, configJson: null },
-    MAX_DOCUMENTS: { enabled: true, limitValue: 100, configJson: null },
-    MAX_SYNCS_PER_MONTH: { enabled: true, limitValue: 10, configJson: null },
-    MAX_TEAM_MEMBERS: { enabled: true, limitValue: 1, configJson: null },
-    MAX_API_CALLS: { enabled: true, limitValue: 0, configJson: null },
     NEW_DASHBOARD: { enabled: false, limitValue: null, configJson: null },
     AI_V2: { enabled: false, limitValue: null, configJson: null },
   },
   pro: {
-    EXPORT_PDF: { enabled: true, limitValue: null, configJson: null },
-    EXPORT_CSV: { enabled: true, limitValue: null, configJson: null },
-    AI_SUMMARY: { enabled: true, limitValue: null, configJson: null },
-    AI_SEO: { enabled: true, limitValue: null, configJson: null },
-    AI_IMAGES: { enabled: true, limitValue: null, configJson: null },
-    AI_INTERLINKING: { enabled: true, limitValue: null, configJson: null },
-    TWO_WAY_SYNC: { enabled: false, limitValue: null, configJson: null },
-    APPROVAL_PORTAL: { enabled: false, limitValue: null, configJson: null },
-    CUSTOM_DOMAIN: { enabled: false, limitValue: null, configJson: null },
-    API_ACCESS: { enabled: true, limitValue: null, configJson: null },
-    PRIORITY_SUPPORT: { enabled: false, limitValue: null, configJson: null },
-    ANALYTICS_EXPORT: { enabled: true, limitValue: null, configJson: null },
-    WEBHOOKS: { enabled: true, limitValue: null, configJson: null },
-    SCHEDULED_SYNC: { enabled: true, limitValue: null, configJson: null },
-    MAX_CONNECTORS: { enabled: true, limitValue: 10, configJson: null },
-    MAX_DOCUMENTS: { enabled: true, limitValue: -1, configJson: null }, // -1 = unlimited
-    MAX_SYNCS_PER_MONTH: { enabled: true, limitValue: 100, configJson: null },
-    MAX_TEAM_MEMBERS: { enabled: true, limitValue: 1, configJson: null },
-    MAX_API_CALLS: { enabled: true, limitValue: 1000, configJson: null },
     NEW_DASHBOARD: {
       enabled: true,
       limitValue: null,
@@ -244,61 +219,58 @@ const PLAN_FEATURES: Record<
     AI_V2: { enabled: false, limitValue: null, configJson: null },
   },
   business: {
-    EXPORT_PDF: { enabled: true, limitValue: null, configJson: null },
-    EXPORT_CSV: { enabled: true, limitValue: null, configJson: null },
-    AI_SUMMARY: { enabled: true, limitValue: null, configJson: null },
-    AI_SEO: { enabled: true, limitValue: null, configJson: null },
-    AI_IMAGES: { enabled: true, limitValue: null, configJson: null },
-    AI_INTERLINKING: { enabled: true, limitValue: null, configJson: null },
-    TWO_WAY_SYNC: { enabled: true, limitValue: null, configJson: null },
-    APPROVAL_PORTAL: { enabled: true, limitValue: null, configJson: null },
-    CUSTOM_DOMAIN: { enabled: true, limitValue: null, configJson: null },
-    API_ACCESS: { enabled: true, limitValue: null, configJson: null },
-    PRIORITY_SUPPORT: { enabled: true, limitValue: null, configJson: null },
-    ANALYTICS_EXPORT: { enabled: true, limitValue: null, configJson: null },
-    WEBHOOKS: { enabled: true, limitValue: null, configJson: null },
-    SCHEDULED_SYNC: { enabled: true, limitValue: null, configJson: null },
-    MAX_CONNECTORS: { enabled: true, limitValue: -1, configJson: null },
-    MAX_DOCUMENTS: { enabled: true, limitValue: -1, configJson: null },
-    MAX_SYNCS_PER_MONTH: { enabled: true, limitValue: -1, configJson: null },
-    MAX_TEAM_MEMBERS: { enabled: true, limitValue: 10, configJson: null },
-    MAX_API_CALLS: { enabled: true, limitValue: 10000, configJson: null },
     NEW_DASHBOARD: {
       enabled: true,
       limitValue: null,
       configJson: { percentage: 50, seed: 'NEW_DASHBOARD_v1' },
     },
-    AI_V2: { enabled: true, limitValue: null, configJson: { percentage: 25, seed: 'AI_V2_2026' } },
+    AI_V2: {
+      enabled: true,
+      limitValue: null,
+      configJson: { percentage: 25, seed: 'AI_V2_2026' },
+    },
   },
   enterprise: {
-    // All features enabled, all limits unlimited
-    EXPORT_PDF: { enabled: true, limitValue: null, configJson: null },
-    EXPORT_CSV: { enabled: true, limitValue: null, configJson: null },
-    AI_SUMMARY: { enabled: true, limitValue: null, configJson: null },
-    AI_SEO: { enabled: true, limitValue: null, configJson: null },
-    AI_IMAGES: { enabled: true, limitValue: null, configJson: null },
-    AI_INTERLINKING: { enabled: true, limitValue: null, configJson: null },
-    TWO_WAY_SYNC: { enabled: true, limitValue: null, configJson: null },
-    APPROVAL_PORTAL: { enabled: true, limitValue: null, configJson: null },
-    CUSTOM_DOMAIN: { enabled: true, limitValue: null, configJson: null },
-    API_ACCESS: { enabled: true, limitValue: null, configJson: null },
-    PRIORITY_SUPPORT: { enabled: true, limitValue: null, configJson: null },
-    ANALYTICS_EXPORT: { enabled: true, limitValue: null, configJson: null },
-    WEBHOOKS: { enabled: true, limitValue: null, configJson: null },
-    SCHEDULED_SYNC: { enabled: true, limitValue: null, configJson: null },
-    MAX_CONNECTORS: { enabled: true, limitValue: -1, configJson: null },
-    MAX_DOCUMENTS: { enabled: true, limitValue: -1, configJson: null },
-    MAX_SYNCS_PER_MONTH: { enabled: true, limitValue: -1, configJson: null },
-    MAX_TEAM_MEMBERS: { enabled: true, limitValue: -1, configJson: null },
-    MAX_API_CALLS: { enabled: true, limitValue: -1, configJson: null },
     NEW_DASHBOARD: {
       enabled: true,
       limitValue: null,
       configJson: { percentage: 100, seed: 'NEW_DASHBOARD_v1' },
     },
-    AI_V2: { enabled: true, limitValue: null, configJson: { percentage: 100, seed: 'AI_V2_2026' } },
+    AI_V2: {
+      enabled: true,
+      limitValue: null,
+      configJson: { percentage: 100, seed: 'AI_V2_2026' },
+    },
   },
 }
+
+// Plan -> feature matrix derived from the single source of truth
+// (DEFAULT_PLAN_FEATURES in @omnysync/core, aligned on the pricing page).
+// Do NOT reintroduce a second plan catalogue here: a duplicated matrix silently
+// contradicts the plan limits served by the application.
+function buildPlanFeatures(): Record<string, Record<string, PlanFeatureConfig>> {
+  const matrix: Record<string, Record<string, PlanFeatureConfig>> = {}
+
+  for (const [planKey, features] of Object.entries(DEFAULT_PLAN_FEATURES)) {
+    matrix[planKey] = {}
+
+    for (const [featureKey, value] of Object.entries(features)) {
+      // Booleans are availability toggles, numbers are limits (-1 = unlimited)
+      matrix[planKey][featureKey] =
+        typeof value === 'boolean'
+          ? { enabled: value, limitValue: null, configJson: null }
+          : { enabled: true, limitValue: value, configJson: null }
+    }
+
+    for (const [featureKey, config] of Object.entries(EXPERIMENT_ROLLOUT[planKey] ?? {})) {
+      matrix[planKey][featureKey] = config
+    }
+  }
+
+  return matrix
+}
+
+const PLAN_FEATURES = buildPlanFeatures()
 
 async function seed() {
   console.log('🌱 Seeding entitlements data...')

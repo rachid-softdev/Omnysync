@@ -55,6 +55,10 @@ vi.mock('@/lib/auth/org', () => ({
 
 vi.mock('@/lib/auth/subscription', () => ({
   checkAndIncrementQuota: vi.fn(),
+  checkDocumentLimit: vi.fn(),
+  checkPlanFeature: vi.fn(async () => ({ allowed: true, plan: 'pro' })),
+  getPlanLimits: vi.fn(() => ({ aiFeatures: true })),
+  getUserPlan: vi.fn(async () => 'pro'),
 }))
 
 vi.mock('@/lib/validations', () => ({
@@ -126,7 +130,7 @@ function mockSession(overrides?: Partial<MockSession>): MockSession {
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
-import { checkAndIncrementQuota } from '@/lib/auth/subscription'
+import { checkAndIncrementQuota, checkDocumentLimit } from '@/lib/auth/subscription'
 import { createSyncSchema } from '@/lib/validations'
 import { performSync } from '@omnysync/core/services/sync'
 
@@ -144,6 +148,13 @@ describe('Integration Sync API', () => {
 
     // Default: quota OK
     vi.mocked(checkAndIncrementQuota).mockResolvedValue({ allowed: true })
+
+    // Default: document limit OK
+    vi.mocked(checkDocumentLimit).mockResolvedValue({
+      allowed: true,
+      current: 0,
+      limit: 50,
+    } as any)
   })
 
   // ==========================================================================
@@ -203,7 +214,7 @@ describe('Integration Sync API', () => {
         'doc-1',
         'connector-1',
         'connector-2',
-        'test-user-1'
+        { userId: 'test-user-1' }
       )
     })
 
@@ -340,6 +351,7 @@ describe('Integration Sync API', () => {
         nextSyncAt: new Date('2026-06-08T12:00:00Z'),
         lastSyncError: null,
         userId: 'test-user-1',
+        organizationId: 'org-1',
         syncLogs: [
           {
             status: 'SUCCESS',
@@ -378,10 +390,11 @@ describe('Integration Sync API', () => {
       expect(response.status).toBe(404)
     })
 
-    it('should return 404 when document belongs to another user', async () => {
+    it('should return 404 when document belongs to another organization', async () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue({
         id: 'doc-other',
         userId: 'other-user',
+        organizationId: 'org-other',
       } as any)
 
       const { GET } = await import('@/app/api/sync/[id]/route')
@@ -417,6 +430,7 @@ describe('Integration Sync API', () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue({
         id: 'doc-1',
         userId: 'test-user-1',
+        organizationId: 'org-1',
         syncStatus: 'FAILED',
         sourceConnectorId: 'sc-1',
         destConnectorId: 'dc-1',
@@ -446,7 +460,9 @@ describe('Integration Sync API', () => {
         })
       )
       // Verify performSync was called with correct args
-      expect(performSync).toHaveBeenCalledWith('doc-1', 'sc-1', 'dc-1', 'test-user-1')
+      expect(performSync).toHaveBeenCalledWith('doc-1', 'sc-1', 'dc-1', 'test-user-1', {
+        ai: true,
+      })
     })
 
     // ========================================================================
@@ -457,6 +473,7 @@ describe('Integration Sync API', () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue({
         id: 'doc-1',
         userId: 'test-user-1',
+        organizationId: 'org-1',
         syncStatus: 'SYNCED',
       } as any)
 
@@ -470,6 +487,7 @@ describe('Integration Sync API', () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue({
         id: 'doc-1',
         userId: 'test-user-1',
+        organizationId: 'org-1',
         syncStatus: 'SYNCING',
       } as any)
 
@@ -483,6 +501,7 @@ describe('Integration Sync API', () => {
       vi.mocked(prisma.document.findUnique).mockResolvedValue({
         id: 'doc-1',
         userId: 'test-user-1',
+        organizationId: 'org-1',
         syncStatus: 'NOT_SYNCED',
       } as any)
 

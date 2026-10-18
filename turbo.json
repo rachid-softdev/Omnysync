@@ -14,7 +14,12 @@
       "dependsOn": []
     },
     "typecheck": {
-      "dependsOn": []
+      // The web app imports @omnysync/core through its package `exports`, which
+      // point at dist/ — so the core package must be built before any consumer
+      // can be type-checked. (Previously this was worked around with hand-written
+      // ambient stubs in omnysync-web/src/types, which silently desynchronised
+      // from the real core API.)
+      "dependsOn": ["^build"]
     },
     "test": {
       "dependsOn": [],

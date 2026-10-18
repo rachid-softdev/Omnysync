@@ -1,6 +1,8 @@
 /**
- * Tests for User API routes
- * Covers DELETE /api/user and PUT /api/user/password
+ * Tests for DELETE /api/user (account deletion)
+ *
+ * PUT /api/user/password is covered by
+ * src/app/api/user/password/__tests__/route.test.ts
  *
  * Pattern: mock auth + prisma at module level.
  */
@@ -17,8 +19,14 @@ vi.mock('@/lib/auth', () => ({
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
-      delete: vi.fn(),
+      update: vi.fn(),
     },
+    session: { deleteMany: vi.fn() },
+    account: { deleteMany: vi.fn() },
+    twoFactorAuth: { deleteMany: vi.fn() },
+    passwordReset: { deleteMany: vi.fn() },
+    apiKey: { deleteMany: vi.fn() },
+    userOrganization: { deleteMany: vi.fn() },
   },
 }))
 
@@ -47,7 +55,13 @@ describe('DELETE /api/user', () => {
       user: { id: 'user-1', email: 'test@omnysync.com' },
     } as any)
 
-    vi.mocked(prisma.user.delete).mockResolvedValue({} as any)
+    vi.mocked(prisma.user.update).mockResolvedValue({} as any)
+    vi.mocked(prisma.session.deleteMany).mockResolvedValue({ count: 0 } as any)
+    vi.mocked(prisma.account.deleteMany).mockResolvedValue({ count: 0 } as any)
+    vi.mocked(prisma.twoFactorAuth.deleteMany).mockResolvedValue({ count: 0 } as any)
+    vi.mocked(prisma.passwordReset.deleteMany).mockResolvedValue({ count: 0 } as any)
+    vi.mocked(prisma.apiKey.deleteMany).mockResolvedValue({ count: 0 } as any)
+    vi.mocked(prisma.userOrganization.deleteMany).mockResolvedValue({ count: 0 } as any)
   })
 
   // ── Non authentifié ──────────────────────────────────────────────────────
@@ -85,9 +99,9 @@ describe('DELETE /api/user', () => {
     expect(data.error).toContain('SUPPRIMER')
   })
 
-  // ── Succès ───────────────────────────────────────────────────────────────
+  // ── Succès: soft delete ──────────────────────────────────────────────────
 
-  it('should delete user and return success when confirmText is SUPPRIMER', async () => {
+  it('should soft-delete the user, revoke auth artifacts and leave the organization', async () => {
     const { DELETE } = await import('@/app/api/user/route')
     const response = await DELETE(makeRequest('SUPPRIMER'))
     const data = await response.json()
@@ -95,118 +109,35 @@ describe('DELETE /api/user', () => {
     expect(response.status).toBe(200)
     expect(data.success).toBe(true)
     expect(data.message).toBe('Compte supprimé')
-    expect(prisma.user.delete).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'user-1' },
-      })
-    )
+
+    // Soft delete (deletedAt invalidates all JWT sessions) + PII scrub
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: expect.objectContaining({
+        deletedAt: expect.any(Date),
+        email: null,
+        name: null,
+        password: null,
+      }),
+    })
+
+    // No hard delete that would cascade on Connector.userId / Document.userId
+    expect(prisma.session.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-1' } })
+    expect(prisma.account.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-1' } })
+    expect(prisma.twoFactorAuth.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-1' } })
+    expect(prisma.apiKey.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-1' } })
+    expect(prisma.userOrganization.deleteMany).toHaveBeenCalledWith({
+      where: { userId: 'user-1' },
+    })
   })
 
   // ── Erreur serveur ───────────────────────────────────────────────────────
 
-  it('should return 500 when prisma delete fails', async () => {
-    vi.mocked(prisma.user.delete).mockRejectedValue(new Error('DB error'))
+  it('should return 500 when the soft delete fails', async () => {
+    vi.mocked(prisma.user.update).mockRejectedValue(new Error('DB error'))
 
     const { DELETE } = await import('@/app/api/user/route')
     const response = await DELETE(makeRequest('SUPPRIMER'))
-
-    expect(response.status).toBe(500)
-    const data = await response.json()
-    expect(data.error).toBe('Erreur serveur')
-  })
-})
-
-// ============================================================================
-// PUT /api/user/password
-// ============================================================================
-
-describe('PUT /api/user/password', () => {
-  const makeRequest = (body: any) =>
-    new NextRequest('http://localhost:3000/api/user/password', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-
-    // Default: authenticated
-    vi.mocked(auth).mockResolvedValue({
-      user: { id: 'user-1', email: 'test@omnysync.com' },
-    } as any)
-  })
-
-  // ── Non authentifié ──────────────────────────────────────────────────────
-
-  it('should return 401 when unauthenticated', async () => {
-    vi.mocked(auth).mockResolvedValue(null)
-
-    const { PUT } = await import('@/app/api/user/password/route')
-    const response = await PUT(
-      makeRequest({ currentPassword: 'old', newPassword: 'newpassword123' })
-    )
-
-    expect(response.status).toBe(401)
-    const data = await response.json()
-    expect(data.error).toBe('Non autorisé')
-  })
-
-  // ── Succès — retourne le message de configuration requise ────────────────
-
-  it('should return message indicating password auth is not configured', async () => {
-    const { PUT } = await import('@/app/api/user/password/route')
-    const response = await PUT(
-      makeRequest({ currentPassword: 'old', newPassword: 'newpassword123' })
-    )
-    const data = await response.json()
-
-    expect(response.status).toBe(200)
-    expect(data.error).toContain('mot de passe')
-    expect(data.requiresPasswordAuth).toBe(true)
-  })
-
-  // ── Validation: currentPassword manquant → 400 ──────────────────────────
-
-  it('should return 400 when currentPassword is missing', async () => {
-    const { PUT } = await import('@/app/api/user/password/route')
-    const response = await PUT(makeRequest({ newPassword: 'newpassword123' }))
-
-    expect(response.status).toBe(400)
-    // Zod v4: message is "Invalid input: expected string, received undefined" for missing fields
-  })
-
-  // ── Validation: newPassword trop court → 400 ────────────────────────────
-
-  it('should return 400 when newPassword is too short (< 8 characters)', async () => {
-    const { PUT } = await import('@/app/api/user/password/route')
-    const response = await PUT(makeRequest({ currentPassword: 'old', newPassword: 'short' }))
-
-    expect(response.status).toBe(400)
-    const data = await response.json()
-    expect(data.error).toContain('8 caractères')
-  })
-
-  // ── Validation: newPassword manquant → 400 ──────────────────────────────
-
-  it('should return 400 when newPassword is missing', async () => {
-    const { PUT } = await import('@/app/api/user/password/route')
-    const response = await PUT(makeRequest({ currentPassword: 'old' }))
-
-    expect(response.status).toBe(400)
-  })
-
-  // ── Corps JSON invalide → 500 ────────────────────────────────────────────
-
-  it('should return 500 when JSON body is malformed', async () => {
-    const req = new NextRequest('http://localhost:3000/api/user/password', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: 'not json',
-    })
-
-    const { PUT } = await import('@/app/api/user/password/route')
-    const response = await PUT(req)
 
     expect(response.status).toBe(500)
     const data = await response.json()

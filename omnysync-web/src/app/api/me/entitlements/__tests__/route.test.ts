@@ -8,6 +8,8 @@ import type { NextRequest } from 'next/server'
 const mockGetAllEntitlements = vi.fn()
 const mockHasFeature = vi.fn()
 const mockGetExperimentGroup = vi.fn()
+const mockGetExperimentConfig = vi.fn()
+const mockGetAllFeatures = vi.fn()
 
 vi.mock('@/lib/auth', () => ({ auth: vi.fn() }))
 vi.mock('@/lib/auth/org', () => ({ getUserOrgId: vi.fn() }))
@@ -22,6 +24,13 @@ vi.mock('@/lib/entitlements/FeatureGateService', () => ({
 vi.mock('@/lib/entitlements/ExperimentService', () => ({
   getExperimentService: () => ({
     getExperimentGroup: mockGetExperimentGroup,
+    getExperimentConfig: mockGetExperimentConfig,
+  }),
+}))
+
+vi.mock('@/lib/entitlements/EntitlementRepository', () => ({
+  getEntitlementRepository: () => ({
+    getAllFeatures: mockGetAllFeatures,
   }),
 }))
 
@@ -44,14 +53,17 @@ function mockRequest(headers: Record<string, string> = {}): NextRequest {
   } as unknown as NextRequest
 }
 
+// Shape returned by FeatureGateService.getAllEntitlements (EntitlementsResponse)
 const baseEntitlements = {
-  planKey: 'pro',
+  plan: 'pro',
   features: { EXPORT_PDF: true, AI_SUMMARY: true },
   limits: { MAX_CONNECTORS: 10, MAX_DOCUMENTS: 1000 },
-  experiments: {
-    NEW_DASHBOARD: { percentage: 50, seed: 'exp-seed', enabled: false },
-  },
+  usage: { MAX_CONNECTORS: 2 },
+  resetAt: {},
 }
+
+// Experiment config as resolved from an admin-defined feature of type EXPERIMENT
+const experimentConfig = { percentage: 50, seed: 'exp-seed', enabled: false }
 
 // ============================================================================
 // GET /api/me/entitlements
@@ -64,6 +76,10 @@ describe('GET /api/me/entitlements', () => {
     // Authenticated by default
     vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any)
     vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+
+    // Default: no experiment features configured
+    mockGetAllFeatures.mockResolvedValue([])
+    mockGetExperimentConfig.mockResolvedValue(null)
   })
 
   it('returns 401 when no org header', async () => {
@@ -95,9 +111,11 @@ describe('GET /api/me/entitlements', () => {
     expect(mockGetAllEntitlements).toHaveBeenCalledWith('org-1')
   })
 
-  it('includes experimentGroups when x-user-id is present', async () => {
+  it('includes experimentGroups when an EXPERIMENT feature exists', async () => {
     mockGetAllEntitlements.mockResolvedValue(baseEntitlements)
     mockHasFeature.mockResolvedValue(true)
+    mockGetAllFeatures.mockResolvedValue([{ key: 'NEW_DASHBOARD', type: 'EXPERIMENT' }])
+    mockGetExperimentConfig.mockResolvedValue(experimentConfig)
     mockGetExperimentGroup.mockReturnValue('treatment')
 
     const { GET } = await import('../route')
@@ -107,20 +125,19 @@ describe('GET /api/me/entitlements', () => {
     expect(res.status).toBe(200)
     expect(body.experimentGroups).toBeDefined()
     expect(body.experimentGroups!.NEW_DASHBOARD).toBe('treatment')
-    expect(mockGetExperimentGroup).toHaveBeenCalledWith(
-      'user-1',
-      baseEntitlements.experiments.NEW_DASHBOARD
-    )
+    expect(mockGetExperimentGroup).toHaveBeenCalledWith('user-1', experimentConfig)
   })
 
-  it('omits experimentGroups when entitlements have no experiments', async () => {
+  it('omits experimentGroups when no EXPERIMENT feature is configured', async () => {
     mockGetAllEntitlements.mockResolvedValue({
-      planKey: 'free',
+      plan: 'free',
       features: { EXPORT_PDF: false },
       limits: {},
-      experiments: {},
+      usage: {},
+      resetAt: {},
     })
     mockHasFeature.mockResolvedValue(true)
+    mockGetAllFeatures.mockResolvedValue([])
 
     const { GET } = await import('../route')
     const res = await GET(mockRequest({ 'x-org-id': 'org-1' }))
@@ -145,10 +162,11 @@ describe('GET /api/me/entitlements', () => {
 
   it('returns empty usage when features are not limit type', async () => {
     mockGetAllEntitlements.mockResolvedValue({
-      planKey: 'free',
+      plan: 'free',
       features: { EXPORT_PDF: false },
       limits: {},
-      experiments: {},
+      usage: {},
+      resetAt: {},
     })
     mockHasFeature.mockResolvedValue(true)
 

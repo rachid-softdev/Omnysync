@@ -21,7 +21,14 @@ vi.mock('@/lib/prisma', () => ({
       count: vi.fn(),
       create: vi.fn(),
     },
+    connector: {
+      findMany: vi.fn(),
+    },
   },
+}))
+
+vi.mock('@/lib/auth/subscription', () => ({
+  checkDocumentLimit: vi.fn(),
 }))
 
 vi.mock('@/lib/auth/org', () => ({
@@ -44,6 +51,7 @@ vi.mock('@/lib/api-error', () => ({
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
+import { checkDocumentLimit } from '@/lib/auth/subscription'
 import { apiError } from '@/lib/api-error'
 
 // ============================================================================
@@ -213,6 +221,17 @@ describe('POST /api/documents', () => {
     } as any)
 
     vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+
+    // Default: plan under the document limit, connectors belong to the org
+    vi.mocked(checkDocumentLimit).mockResolvedValue({
+      allowed: true,
+      current: 0,
+      limit: 50,
+    })
+    vi.mocked(prisma.connector.findMany).mockResolvedValue([
+      { id: 'connector-1' },
+      { id: 'connector-2' },
+    ] as any)
   })
 
   // ── Non authentifié ──────────────────────────────────────────────────────
@@ -336,5 +355,40 @@ describe('POST /api/documents', () => {
 
     expect(response.status).toBe(200)
     expect(data.title).toBe('Seulement le titre')
+  })
+
+  // ── Limite de documents (plan) ──────────────────────────────────────────
+
+  it('should return 429 when the document limit is reached', async () => {
+    vi.mocked(checkDocumentLimit).mockResolvedValue({
+      allowed: false,
+      current: 50,
+      limit: 50,
+      upgradeUrl: '/pricing',
+    })
+
+    const { POST } = await import('@/app/api/documents/route')
+    const response = await POST(makeRequest({ title: 'Un document de trop' }))
+
+    expect(response.status).toBe(429)
+    expect(prisma.document.create).not.toHaveBeenCalled()
+  })
+
+  // ── Connecteurs d'une autre organisation ────────────────────────────────
+
+  it('should return 404 when a referenced connector belongs to another organization', async () => {
+    vi.mocked(prisma.connector.findMany).mockResolvedValue([{ id: 'connector-1' }] as any)
+
+    const { POST } = await import('@/app/api/documents/route')
+    const response = await POST(
+      makeRequest({
+        title: 'Sync',
+        sourceConnectorId: 'connector-1',
+        destConnectorId: 'foreign-connector',
+      })
+    )
+
+    expect(response.status).toBe(404)
+    expect(prisma.document.create).not.toHaveBeenCalled()
   })
 })

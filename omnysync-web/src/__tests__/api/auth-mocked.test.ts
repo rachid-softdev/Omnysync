@@ -66,6 +66,9 @@ vi.mock('@omnysync/core/services/password-reset', () => ({
 }))
 
 const mockTotpValidate = vi.hoisted(() => vi.fn())
+const mockPendingSecrets = vi.hoisted(
+  () => new Map<string, { secret: string; expiresAt: Date }>()
+)
 
 vi.mock('@omnysync/core/services/two-factor', () => ({
   generateTotpSecret: vi.fn().mockReturnValue({
@@ -79,7 +82,17 @@ vi.mock('@omnysync/core/services/two-factor', () => ({
   verifyTotpCode: vi.fn().mockResolvedValue({ valid: true }),
   getTwoFactorStatus: vi.fn(),
   disableTwoFactor: vi.fn(),
-  pendingSecrets: new Map(),
+  pendingSecrets: mockPendingSecrets,
+  storePendingSecret: vi.fn(async (userId: string, secret: string, ttlSeconds = 600) => {
+    mockPendingSecrets.set(userId, {
+      secret,
+      expiresAt: new Date(Date.now() + ttlSeconds * 1000),
+    })
+  }),
+  getPendingSecret: vi.fn(async (userId: string) => mockPendingSecrets.get(userId) ?? null),
+  removePendingSecret: vi.fn(async (userId: string) => {
+    mockPendingSecrets.delete(userId)
+  }),
 }))
 
 vi.mock('otpauth', () => ({

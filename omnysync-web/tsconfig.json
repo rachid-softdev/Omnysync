@@ -20,7 +20,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@prisma/client": ["./prisma/generated/client"]
+      "@prisma/client": ["./prisma/generated/client/index.d.ts"]
     },
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,

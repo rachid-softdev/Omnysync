@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { checkPlanFeature } from '@/lib/auth/subscription'
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
 
@@ -20,6 +21,19 @@ export async function GET() {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    // Webhook endpoints are a plan feature (pricing page).
+    const webhookAccess = await checkPlanFeature(session.user.id, 'webhooks')
+    if (!webhookAccess.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Webhooks are not included in your plan',
+          code: 'PLAN_FEATURE_REQUIRED',
+          upgradeUrl: webhookAccess.upgradeUrl,
+        },
+        { status: 403 }
+      )
     }
 
     // Récupérer l'organisation de l'utilisateur
@@ -65,6 +79,19 @@ export async function POST(request: NextRequest) {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    // Webhook endpoints are a plan feature (pricing page).
+    const webhookAccess = await checkPlanFeature(session.user.id, 'webhooks')
+    if (!webhookAccess.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Webhooks are not included in your plan',
+          code: 'PLAN_FEATURE_REQUIRED',
+          upgradeUrl: webhookAccess.upgradeUrl,
+        },
+        { status: 403 }
+      )
     }
 
     const body = await request.json()

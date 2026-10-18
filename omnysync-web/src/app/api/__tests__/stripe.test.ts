@@ -60,6 +60,7 @@ vi.mock('@/lib/prisma', () => ({
     webhookEvent: {
       findUnique: vi.fn(),
       create: vi.fn(),
+      delete: vi.fn(),
     },
     organization: {
       findFirst: vi.fn(),
@@ -283,6 +284,39 @@ describe('POST /api/stripe/webhook', () => {
     expect(prisma.subscription.upsert).toHaveBeenCalled()
   })
 
+  it('should resolve the organization from the checkout metadata when there is no customer or owner fallback', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_checkout_metadata',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          customer: 'cus_new',
+          subscription: 'sub_new',
+          client_reference_id: 'user-member',
+          metadata: { organizationId: 'org-meta', userId: 'user-member' },
+        },
+      },
+    })
+
+    // No org by customer ID, and the caller is not the owner → metadata wins.
+    vi.mocked(prisma.organization.findFirst).mockResolvedValue(null)
+
+    vi.mocked(prisma.subscription.upsert).mockResolvedValue({} as any)
+    vi.mocked(prisma.organization.update).mockResolvedValue({} as any)
+    vi.mocked(prisma.webhookEvent.create).mockResolvedValue({} as any)
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(200)
+    expect(prisma.subscription.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { organizationId: 'org-meta' },
+      })
+    )
+    expect(prisma.userOrganization.findFirst).not.toHaveBeenCalled()
+  })
+
   // ==========================================================================
   // customer.subscription.updated
   // ==========================================================================
@@ -371,6 +405,44 @@ describe('POST /api/stripe/webhook', () => {
       })
     )
     expect(prisma.subscription.update).toHaveBeenCalled()
+  })
+
+  it('should resolve customer.subscription.created via the subscription metadata on a first checkout', async () => {
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_created_meta',
+      type: 'customer.subscription.created',
+      data: {
+        object: {
+          id: 'sub_meta',
+          customer: 'cus_new',
+          status: 'trialing',
+          metadata: { organizationId: 'org-meta' },
+          items: { data: [{ price: { id: 'price_pro_monthly' } }] },
+          current_period_start: Math.floor(Date.now() / 1000) - 86400,
+          current_period_end: Math.floor(Date.now() / 1000) + 2592000,
+        },
+      },
+    })
+
+    // No org by customer ID (first checkout) → metadata fallback
+    vi.mocked(prisma.organization.findFirst).mockResolvedValue(null)
+    vi.mocked(prisma.subscription.upsert).mockResolvedValue({} as any)
+    vi.mocked(prisma.webhookEvent.create).mockResolvedValue({} as any)
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(200)
+    expect(prisma.subscription.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { organizationId: 'org-meta' },
+        create: expect.objectContaining({
+          planKey: 'pro',
+          status: 'TRIALING',
+          stripeSubscriptionId: 'sub_meta',
+        }),
+      })
+    )
   })
 
   // ==========================================================================
@@ -485,7 +557,7 @@ describe('POST /api/stripe/webhook', () => {
   // Handler error — retour 500
   // ==========================================================================
 
-  it('should return 500 when event handler throws', async () => {
+  it('releases the idempotency claim when the handler fails (so Stripe retries are processed)', async () => {
     mockConstructEvent.mockReturnValue({
       id: 'evt_error',
       type: 'checkout.session.completed',
@@ -503,6 +575,7 @@ describe('POST /api/stripe/webhook', () => {
 
     vi.mocked(prisma.subscription.upsert).mockRejectedValue(new Error('DB connection lost'))
     vi.mocked(prisma.webhookEvent.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.webhookEvent.delete).mockResolvedValue({} as any)
 
     const { POST } = await import('@/app/api/stripe/webhook/route')
     const response = await POST(makeWebhookRequest(JSON.stringify({})))
@@ -510,5 +583,38 @@ describe('POST /api/stripe/webhook', () => {
     expect(response.status).toBe(500)
     const body = await response.json()
     expect(body.error).toBe('Handler error')
+    expect(prisma.webhookEvent.delete).toHaveBeenCalledWith({ where: { eventId: 'evt_error' } })
+  })
+
+  it('resolves an empty price ID to the free plan (not the last configured plan)', async () => {
+    // Deployment where the paid price IDs are not configured: an empty price ID
+    // must not resolve to a paid plan (regression: it used to resolve to
+    // 'business' through the '' key of the price map).
+    delete process.env.STRIPE_PRICE_PRO_MONTHLY
+    delete process.env.STRIPE_PRICE_PRO_YEARLY
+    vi.resetModules()
+
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_no_price',
+      type: 'checkout.session.completed',
+      data: { object: { customer: 'cus_org123', subscription: 'sub_abc' } },
+    })
+    mockStripeInstance.subscriptions.retrieve.mockResolvedValue({
+      ...SUBSCRIPTION_RETRIEVE_DEFAULT,
+      items: { data: [{ price: { id: '' } }] },
+    })
+    vi.mocked(prisma.organization.findFirst).mockResolvedValue({ id: 'org-1' } as any)
+    vi.mocked(prisma.webhookEvent.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.subscription.upsert).mockResolvedValue({} as any)
+
+    const { POST } = await import('@/app/api/stripe/webhook/route')
+    const response = await POST(makeWebhookRequest(JSON.stringify({})))
+
+    expect(response.status).toBe(200)
+    expect(prisma.subscription.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ planKey: 'free' }),
+      })
+    )
   })
 })

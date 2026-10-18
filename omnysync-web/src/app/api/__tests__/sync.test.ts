@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -37,6 +37,7 @@ vi.mock('@/lib/auth/org', () => ({
 
 vi.mock('@/lib/auth/subscription', () => ({
   checkAndIncrementQuota: vi.fn(),
+  checkDocumentLimit: vi.fn(),
 }))
 
 vi.mock('@/lib/validations', () => ({
@@ -70,7 +71,7 @@ vi.mock('@omnysync/core/services/scheduler', () => ({
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
-import { checkAndIncrementQuota } from '@/lib/auth/subscription'
+import { checkAndIncrementQuota, checkDocumentLimit } from '@/lib/auth/subscription'
 import { createSyncSchema } from '@/lib/validations'
 import { apiError } from '@/lib/api-error'
 import { enqueueSyncJob, enqueueChangeDetection } from '@omnysync/core/services/queue'
@@ -205,11 +206,18 @@ describe('POST /api/sync', () => {
     // Default: quota OK
     vi.mocked(checkAndIncrementQuota).mockResolvedValue({ allowed: true, remaining: 99 } as any)
 
-    // Default: connecteurs existent et appartiennent à l'org
-    vi.mocked(prisma.connector.findFirst).mockResolvedValue({
-      id: 'connector-id',
-      type: 'WORDPRESS',
+    // Default: document limit OK
+    vi.mocked(checkDocumentLimit).mockResolvedValue({
+      allowed: true,
+      current: 1,
+      limit: 50,
     } as any)
+
+    // Default: connectors exist, belong to the org, and have a valid role
+    vi.mocked(prisma.connector.findFirst).mockReset()
+    vi.mocked(prisma.connector.findFirst)
+      .mockResolvedValueOnce({ id: 'connector-id', type: 'GOOGLE_DOCS' } as any)
+      .mockResolvedValueOnce({ id: 'connector-id', type: 'WORDPRESS' } as any)
   })
 
   // ── Non authentifié ──────────────────────────────────────────────────────
@@ -278,12 +286,12 @@ describe('POST /api/sync', () => {
       })
     )
 
-    // Vérifie enqueueSyncJob
+    // Vérifie enqueueSyncJob (userId travels in the options object)
     expect(enqueueSyncJob).toHaveBeenCalledWith(
       'doc-new',
       validBody.sourceConnectorId,
       validBody.destConnectorId,
-      'user-1'
+      { userId: 'user-1' }
     )
   })
 
@@ -324,6 +332,7 @@ describe('POST /api/sync', () => {
   // ── Connecteurs invalides ───────────────────────────────────────────────
 
   it('should return 400 when source or dest connector is not found', async () => {
+    vi.mocked(prisma.connector.findFirst).mockReset()
     vi.mocked(prisma.connector.findFirst).mockResolvedValue(null)
 
     const { POST } = await import('@/app/api/sync/route')
@@ -333,14 +342,41 @@ describe('POST /api/sync', () => {
     expect(apiError).toHaveBeenCalledWith('Invalid connectors', 400)
   })
 
+  it('should reject a connector that cannot be used as a source', async () => {
+    vi.mocked(prisma.connector.findFirst).mockReset()
+    vi.mocked(prisma.connector.findFirst)
+      .mockResolvedValueOnce({ id: 'connector-id', type: 'WORDPRESS' } as any)
+      .mockResolvedValueOnce({ id: 'connector-id', type: 'WORDPRESS' } as any)
+
+    const { POST } = await import('@/app/api/sync/route')
+    const response = await POST(makeRequest(validBody))
+
+    expect(response.status).toBe(400)
+    expect(apiError).toHaveBeenCalledWith(
+      'WORDPRESS cannot be used as a source connector',
+      400
+    )
+  })
+
+  it('should reject a connector that cannot be used as a destination', async () => {
+    vi.mocked(prisma.connector.findFirst).mockReset()
+    vi.mocked(prisma.connector.findFirst)
+      .mockResolvedValueOnce({ id: 'connector-id', type: 'GOOGLE_DOCS' } as any)
+      .mockResolvedValueOnce({ id: 'connector-id', type: 'GOOGLE_DOCS' } as any)
+
+    const { POST } = await import('@/app/api/sync/route')
+    const response = await POST(makeRequest(validBody))
+
+    expect(response.status).toBe(400)
+    expect(apiError).toHaveBeenCalledWith(
+      'GOOGLE_DOCS cannot be used as a destination connector',
+      400
+    )
+  })
+
   // ── Connecteur d'une autre org (IDOR) ──────────────────────────────────
 
   it('should scope connector lookups by the caller organizationId (no cross-org bind)', async () => {
-    vi.mocked(prisma.connector.findFirst).mockResolvedValue({
-      id: 'connector-id',
-      type: 'WORDPRESS',
-    } as any)
-
     const { POST } = await import('@/app/api/sync/route')
     await POST(makeRequest(validBody))
 
@@ -418,15 +454,11 @@ describe('POST /api/sync/[id]/run', () => {
     expect(response.status).toBe(401)
   })
 
-  // ── Mode dev: pas de vérification CRON → 200 ───────────────────────────
+  // ── Mode dev: un secret configuré reste obligatoire ─────────────────────
 
-  it('should bypass cron auth in dev mode and execute sync', async () => {
+  it('should require the CRON_SECRET header in dev mode when a secret is configured', async () => {
     vi.stubEnv('CRON_SECRET', 'my-cron-secret')
     vi.stubEnv('NODE_ENV', 'development')
-
-    vi.mocked(handleScheduledSyncRun).mockResolvedValue(
-      NextResponse.json({ success: true, message: 'Sync completed' })
-    )
 
     const { POST } = await import('@/app/api/sync/[id]/run/route')
     const req = new NextRequest('http://localhost:3000/api/sync/sync-1/run', {
@@ -434,23 +466,62 @@ describe('POST /api/sync/[id]/run', () => {
     })
     const response = await POST(req, { params: Promise.resolve({ id: 'sync-1' }) })
 
-    expect(response.status).toBe(200)
-    expect(handleScheduledSyncRun).toHaveBeenCalledWith('sync-1')
+    expect(response.status).toBe(401)
+    expect(handleScheduledSyncRun).not.toHaveBeenCalled()
   })
 
-  // ── Sync exécuté avec succès ───────────────────────────────────────────
+  it('should execute sync in dev mode when the CRON_SECRET header matches', async () => {
+    vi.stubEnv('CRON_SECRET', 'my-cron-secret')
+    vi.stubEnv('NODE_ENV', 'development')
 
-  it('should execute sync and return result', async () => {
-    vi.stubEnv('CRON_SECRET', '')
-    vi.stubEnv('NODE_ENV', 'production')
-
-    vi.mocked(handleScheduledSyncRun).mockResolvedValue(
-      NextResponse.json({ success: true, message: 'Sync executed successfully' })
-    )
+    vi.mocked(handleScheduledSyncRun).mockResolvedValue({
+      success: true,
+      message: 'Sync completed',
+    })
 
     const { POST } = await import('@/app/api/sync/[id]/run/route')
     const req = new NextRequest('http://localhost:3000/api/sync/sync-1/run', {
       method: 'POST',
+      headers: { authorization: 'Bearer my-cron-secret' },
+    })
+    const response = await POST(req, { params: Promise.resolve({ id: 'sync-1' }) })
+
+    expect(response.status).toBe(200)
+    expect(handleScheduledSyncRun).toHaveBeenCalledWith('sync-1')
+  })
+
+  // ── Production sans secret configuré: fail closed ────────────────────────
+
+  it('fails closed in production when CRON_SECRET is not configured', async () => {
+    vi.clearAllMocks()
+    vi.stubEnv('CRON_SECRET', '')
+    vi.stubEnv('NODE_ENV', 'production')
+
+    const { POST } = await import('@/app/api/sync/[id]/run/route')
+    const req = new NextRequest('http://localhost:3000/api/sync/sync-1/run', {
+      method: 'POST',
+    })
+    const response = await POST(req, { params: Promise.resolve({ id: 'sync-1' }) })
+
+    expect(response.status).toBe(401)
+    expect(handleScheduledSyncRun).not.toHaveBeenCalled()
+  })
+
+  // ── Sync exécuté avec succès (secret + header valides) ───────────────────
+
+  it('should execute sync and return result', async () => {
+    vi.stubEnv('CRON_SECRET', 'my-cron-secret')
+    vi.stubEnv('NODE_ENV', 'production')
+
+    vi.mocked(handleScheduledSyncRun).mockResolvedValue({
+      success: true,
+      message: 'Sync executed successfully',
+    })
+
+    const { POST } = await import('@/app/api/sync/[id]/run/route')
+    const req = new NextRequest('http://localhost:3000/api/sync/sync-1/run', {
+      method: 'POST',
+      headers: { authorization: 'Bearer my-cron-secret' },
     })
     const response = await POST(req, { params: Promise.resolve({ id: 'sync-1' }) })
     const data = await response.json()
@@ -473,6 +544,8 @@ describe('POST /api/sync/[id]/check', () => {
     vi.mocked(auth).mockResolvedValue({
       user: { id: 'user-1', email: 'test@omnysync.com' },
     } as any)
+
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
   })
 
   // ── Non authentifié ──────────────────────────────────────────────────────
@@ -491,10 +564,10 @@ describe('POST /api/sync/[id]/check', () => {
 
   // ── Document trouvé ─────────────────────────────────────────────────────
 
-  it('should enqueue change detection when document is found and belongs to user', async () => {
+  it('should enqueue change detection when document belongs to the caller organization', async () => {
     vi.mocked(prisma.document.findUnique).mockResolvedValue({
       id: 'doc-1',
-      userId: 'user-1',
+      organizationId: 'org-1',
       title: 'Mon document',
     } as any)
 
@@ -510,7 +583,7 @@ describe('POST /api/sync/[id]/check', () => {
     expect(response.status).toBe(200)
     expect(data.success).toBe(true)
     expect(data.message).toBe('Change detection queued')
-    expect(enqueueChangeDetection).toHaveBeenCalledWith('doc-1')
+    expect(enqueueChangeDetection).toHaveBeenCalledWith('doc-1', 'user-1')
   })
 
   // ── Document inexistant ─────────────────────────────────────────────────
@@ -527,12 +600,12 @@ describe('POST /api/sync/[id]/check', () => {
     expect(response.status).toBe(404)
   })
 
-  // ── Document d'un autre utilisateur ─────────────────────────────────────
+  // ── Document d'une autre organisation ───────────────────────────────────
 
-  it('should return 404 when document belongs to another user', async () => {
+  it('should return 404 when document belongs to another organization', async () => {
     vi.mocked(prisma.document.findUnique).mockResolvedValue({
       id: 'doc-other',
-      userId: 'user-other',
+      organizationId: 'org-other',
       title: 'Document de quelquun',
     } as any)
 

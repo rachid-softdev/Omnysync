@@ -102,7 +102,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           // Password was changed after this JWT was issued → invalidate
           if (
             token.passwordChangedAt &&
-            userStatus.passwordChangedAt?.getTime() > (token.passwordChangedAt as number)
+            (userStatus.passwordChangedAt?.getTime() ?? 0) >
+              (token.passwordChangedAt as number)
           ) {
             return { ...token, exp: Math.floor(Date.now() / 1000) - 1 }
           }

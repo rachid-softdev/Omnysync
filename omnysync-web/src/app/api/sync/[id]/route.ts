@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getUserOrgId } from '@/lib/auth/org'
 import { performSync } from '@omnysync/core/services/sync'
 import { scheduleSync, disableScheduledSync } from '@omnysync/core/services/scheduler'
-import { checkAndIncrementQuota } from '@/lib/auth/subscription'
+import { checkAndIncrementQuota, checkPlanFeature, getPlanLimits, getUserPlan } from '@/lib/auth/subscription'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -13,6 +14,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const { id } = await params
+
+  // Documents are organization-scoped: authorize through the caller's
+  // organization membership (the same rule performSync enforces), not through
+  // the document creator, otherwise members of a shared org get a 404 on
+  // documents they legitimately own access to.
+  const orgId = await getUserOrgId(session.user.id)
 
   const document = await prisma.document.findUnique({
     where: { id },
@@ -24,7 +31,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     },
   })
 
-  if (!document || document.userId !== session.user.id) {
+  if (!document || document.organizationId !== orgId) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
@@ -56,12 +63,14 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   }
 
   const { id } = await params
+  const orgId = await getUserOrgId(session.user.id)
 
   const document = await prisma.document.findUnique({
     where: { id },
+    select: { organizationId: true },
   })
 
-  if (!document || document.userId !== session.user.id) {
+  if (!document || document.organizationId !== orgId) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
@@ -86,6 +95,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params
   const body = await req.json()
   const { action } = body
+  const orgId = await getUserOrgId(session.user.id)
 
   const document = await prisma.document.findUnique({
     where: { id },
@@ -95,7 +105,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     },
   })
 
-  if (!document || document.userId !== session.user.id) {
+  if (!document || document.organizationId !== orgId) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
@@ -126,11 +136,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     })
 
     if (document.sourceConnectorId && document.destConnectorId) {
+      // AI enrichment is a paid feature: only run it when the org's plan
+      // includes it (the sync engine defaults to enabling it for internal
+      // Pro/Business-only callers).
+      const limits = getPlanLimits(await getUserPlan(session.user.id))
+
       const result = await performSync(
         id,
         document.sourceConnectorId,
         document.destConnectorId,
-        session.user.id
+        session.user.id,
+        { ai: limits.aiFeatures }
       )
       return NextResponse.json(result)
     }
@@ -146,6 +162,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json(
         { error: 'Invalid frequency. Use DAILY, WEEKLY, or MONTHLY' },
         { status: 400 }
+      )
+    }
+
+    // Scheduled sync is a paid feature (pricing page).
+    const scheduled = await checkPlanFeature(session.user.id, 'scheduledSync')
+    if (!scheduled.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Scheduled syncs are not included in your plan',
+          code: 'PLAN_FEATURE_REQUIRED',
+          upgradeUrl: scheduled.upgradeUrl,
+        },
+        { status: 403 }
       )
     }
 

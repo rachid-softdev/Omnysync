@@ -19,13 +19,14 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import type { SubscriptionStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2026-05-27.dahlia',
 }) as unknown as StripeInstance
 
 // Local type workaround for missing stripe .d.ts files
@@ -48,12 +49,21 @@ type StripeSubscription = Record<string, any>
 type StripeInvoice = Record<string, any>
 
 // Price ID to plan key mapping
-// In production, these should be in env vars or DB
-const PRICE_ID_TO_PLAN: Record<string, string> = {
-  [process.env.STRIPE_PRICE_PRO_MONTHLY || '']: 'pro',
-  [process.env.STRIPE_PRICE_PRO_YEARLY || '']: 'pro',
-  [process.env.STRIPE_PRICE_BUSINESS_MONTHLY || '']: 'business',
-  [process.env.STRIPE_PRICE_BUSINESS_YEARLY || '']: 'business',
+// In production, these should be in env vars or DB.
+// Only configured price IDs are registered: using `env || ''` as a key would
+// create an '' entry, making every event with an empty/unknown price resolve to
+// the last plan declared here (previously: 'business').
+const PRICE_ID_TO_PLAN: Record<string, string> = {}
+
+const PRICE_ENV_ENTRIES: Array<[priceId: string | undefined, planKey: string]> = [
+  [process.env.STRIPE_PRICE_PRO_MONTHLY, 'pro'],
+  [process.env.STRIPE_PRICE_PRO_YEARLY, 'pro'],
+  [process.env.STRIPE_PRICE_BUSINESS_MONTHLY, 'business'],
+  [process.env.STRIPE_PRICE_BUSINESS_YEARLY, 'business'],
+]
+
+for (const [priceId, planKey] of PRICE_ENV_ENTRIES) {
+  if (priceId) PRICE_ID_TO_PLAN[priceId] = planKey
 }
 
 // Default plan when no match found
@@ -80,8 +90,8 @@ function getPlanFromPriceId(priceId: string): string {
   return PRICE_ID_TO_PLAN[priceId] || DEFAULT_PLAN
 }
 
-function getStatusFromStripeStatus(status: string): string {
-  const statusMap: Record<string, string> = {
+function getStatusFromStripeStatus(status: string): SubscriptionStatus {
+  const statusMap: Record<string, SubscriptionStatus> = {
     active: 'ACTIVE',
     trialing: 'TRIALING',
     past_due: 'PAST_DUE',
@@ -91,7 +101,7 @@ function getStatusFromStripeStatus(status: string): string {
     unpaid: 'PAST_DUE',
   }
 
-  return statusMap[status] || 'ACTIVE'
+  return statusMap[status] ?? 'ACTIVE'
 }
 
 async function invalidateEntitlementsCache(orgId: string): Promise<void> {
@@ -147,7 +157,13 @@ async function handleCheckoutSessionCompleted(event: StripeEvent): Promise<void>
   // Find organization by customer ID
   let orgId = await findOrganizationByCustomerId(customerId)
 
-  // If no org found by customer ID, try by userId in client_reference_id
+  // The checkout route stores the organization in the session metadata: on a
+  // first checkout the org's stripeCustomerId does not exist yet.
+  if (!orgId && typeof session.metadata?.organizationId === 'string') {
+    orgId = session.metadata.organizationId
+  }
+
+  // If no org found by customer ID or metadata, try by userId in client_reference_id
   if (!orgId && session.client_reference_id) {
     const userOrg = await prisma.userOrganization.findFirst({
       where: { userId: session.client_reference_id, role: 'OWNER' },
@@ -209,7 +225,13 @@ async function handleSubscriptionCreated(event: StripeEvent): Promise<void> {
   const priceId = subscription.items.data[0]?.price?.id || ''
   const planKey = getPlanFromPriceId(priceId)
 
-  const orgId = await findOrganizationByCustomerId(customerId)
+  let orgId = await findOrganizationByCustomerId(customerId)
+
+  // First subscription: org's stripeCustomerId is not stored yet — the
+  // organization is carried by the subscription metadata set at checkout.
+  if (!orgId && typeof subscription.metadata?.organizationId === 'string') {
+    orgId = subscription.metadata.organizationId
+  }
 
   if (!orgId) {
     console.warn('[StripeWebhook] Organization not found for customer:', customerId)
@@ -256,6 +278,12 @@ async function handleSubscriptionUpdated(event: StripeEvent): Promise<void> {
 
   if (!orgId) {
     orgId = await findOrganizationBySubscriptionId(subscriptionId)
+  }
+
+  // First update: neither the customer nor the subscription is stored yet —
+  // fall back to the organization carried by the subscription metadata.
+  if (!orgId && typeof subscription.metadata?.organizationId === 'string') {
+    orgId = subscription.metadata.organizationId
   }
 
   if (!orgId) {
@@ -473,6 +501,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true })
   } catch (error) {
     console.error('[StripeWebhook] Handler error:', error)
+
+    // Release the idempotency claim: Stripe retries failed deliveries, and a
+    // claimed-but-unprocessed event would otherwise be skipped forever (the
+    // unique eventId would reject every retry).
+    try {
+      await prisma.webhookEvent.delete({ where: { eventId } })
+    } catch (cleanupError) {
+      console.error('[StripeWebhook] Failed to release idempotency claim:', cleanupError)
+    }
 
     return NextResponse.json({ error: 'Handler error', eventId }, { status: 500 })
   }

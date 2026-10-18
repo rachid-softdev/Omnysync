@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { getUserOrgId } from '@/lib/auth/org'
 import { encrypt } from '@/lib/crypto'
+import { verifyOAuthState } from '@/lib/auth/oauth-state'
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
@@ -12,22 +13,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard/connectors?error=missing_params', req.url))
   }
 
-  // 🔒 Verify the OAuth state: decode & validate nonce + ensure the caller is authenticated
-  let userId: string
-  try {
-    const decoded = JSON.parse(Buffer.from(stateParam, 'base64url').toString())
-    if (!decoded.userId || !decoded.nonce) {
-      throw new Error('Invalid state payload')
-    }
-    userId = decoded.userId
-
-    // Verify that the user behind this callback is the same one who initiated the flow
-    const session = await auth()
-    if (!session?.user?.id || session.user.id !== userId) {
-      return NextResponse.redirect(new URL('/auth/signin', req.url))
-    }
-  } catch {
+  // 🔒 Verify the signed OAuth state and ensure the caller is authenticated
+  // with the same account that initiated the flow.
+  const state = verifyOAuthState(stateParam)
+  if (!state) {
     return NextResponse.redirect(new URL('/dashboard/connectors?error=invalid_state', req.url))
+  }
+
+  const userId = state.userId
+  const session = await auth()
+  if (!session?.user?.id || session.user.id !== userId) {
+    return NextResponse.redirect(new URL('/auth/signin', req.url))
   }
 
   const clientId = process.env.NOTION_CLIENT_ID

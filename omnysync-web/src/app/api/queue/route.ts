@@ -1,27 +1,24 @@
-import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
+import { Receiver } from '@upstash/qstash'
 import { performSync, detectAndSyncChanges } from '@omnysync/core/services/sync'
 import { generateAImage, generateSEO } from '@omnysync/core/services/ai'
 import { uploadAllImages } from '@omnysync/core/services/image-upload'
 import { prisma } from '@/lib/prisma'
+import { getPlanLimits, getUserPlan } from '@/lib/auth/subscription'
 import {
   processJobWithRetry,
   isJobCompleted,
   markJobCompleted,
 } from '@omnysync/core/services/queue'
 
-function timingSafeCompare(a: string, b: string): boolean {
-  try {
-    const bufA = Buffer.from(a)
-    const bufB = Buffer.from(b)
-    if (bufA.length !== bufB.length) return false
-    return crypto.timingSafeEqual(bufA, bufB)
-  } catch {
-    return false
-  }
-}
-
-function verifyQStashSignature(req: NextRequest): boolean {
+/**
+ * Verify the QStash request signature.
+ *
+ * QStash signs the request with a JWT (HMAC-SHA256 over the raw body) — the
+ * signature must be verified against the signing keys; comparing the header to
+ * the key itself would reject every legitimate delivery.
+ */
+async function verifyQStashSignature(req: NextRequest, rawBody: string): Promise<boolean> {
   // In development, allow unsigned requests for testing
   if (process.env.NODE_ENV === 'development') {
     return true
@@ -32,35 +29,63 @@ function verifyQStashSignature(req: NextRequest): boolean {
     return false
   }
 
-  // QStash sends a signing key that should match QSTASH_CURRENT_SIGNING_KEY
-  // or QSTASH_NEXT_SIGNING_KEY (for key rotation)
-  const currentKey = process.env.QSTASH_CURRENT_SIGNING_KEY
-  const nextKey = process.env.QSTASH_NEXT_SIGNING_KEY
-
-  if (!currentKey && !nextKey) {
-    console.warn('No QStash signing keys configured — blocking webhook')
+  if (!process.env.QSTASH_CURRENT_SIGNING_KEY) {
+    console.warn('No QStash signing key configured — blocking webhook')
     return false
   }
 
-  // Use timingSafeEqual to prevent timing attacks
-  if (currentKey && timingSafeCompare(signature, currentKey)) {
-    return true
+  // Same key passed twice = rotation disabled, which the Receiver accepts.
+  const receiver = new Receiver({
+    currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY,
+    nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY ?? process.env.QSTASH_CURRENT_SIGNING_KEY,
+  })
+
+  try {
+    return await receiver.verify({ signature, body: rawBody })
+  } catch (error) {
+    console.warn('Invalid QStash signature:', error)
+    return false
+  }
+}
+
+/**
+ * Resolve the user that authorizes a queued job.
+ *
+ * The job payload normally carries the userId, but it may be missing for jobs
+ * enqueued by older code paths — in that case fall back to the document owner
+ * (performSync/detectAndSyncChanges use this id for the organization
+ * membership check).
+ */
+async function resolveJobUserId(
+  payload: Record<string, unknown> | undefined
+): Promise<string | null> {
+  const payloadUserId = payload?.userId
+  if (typeof payloadUserId === 'string' && payloadUserId.length > 0) {
+    return payloadUserId
   }
 
-  if (nextKey && timingSafeCompare(signature, nextKey)) {
-    return true
+  const documentId = payload?.documentId
+  if (typeof documentId !== 'string' || documentId.length === 0) {
+    return null
   }
 
-  return false
+  const document = await prisma.document.findUnique({
+    where: { id: documentId },
+    select: { userId: true },
+  })
+
+  return document?.userId ?? null
 }
 
 export async function POST(req: NextRequest) {
-  if (!verifyQStashSignature(req)) {
+  const rawBody = await req.text()
+
+  if (!(await verifyQStashSignature(req, rawBody))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    const body = await req.json()
+    const body = JSON.parse(rawBody)
     const { type, payload, idempotencyKey, jobId } = body
 
     // Check idempotency before processing
@@ -74,7 +99,14 @@ export async function POST(req: NextRequest) {
 
     switch (type) {
       case 'sync_document': {
-        const { userId } = payload
+        const userId = await resolveJobUserId(payload)
+        if (!userId) {
+          return NextResponse.json({ error: 'Unknown document' }, { status: 404 })
+        }
+        // AI enrichment is a paid feature: resolve the plan at processing time
+        // (it may have changed since the job was enqueued).
+        const limits = getPlanLimits(await getUserPlan(userId))
+
         const result = await processJobWithRetry(job, async (j: unknown) => {
           const jPayload = j as {
             payload: { documentId: string; sourceConnectorId: string; destConnectorId: string }
@@ -83,13 +115,12 @@ export async function POST(req: NextRequest) {
             jPayload.payload.documentId,
             jPayload.payload.sourceConnectorId,
             jPayload.payload.destConnectorId,
-            userId as string
+            userId,
+            { ai: limits.aiFeatures }
           )
         })
         // Upload images after sync (fire and forget)
-        if (userId) {
-          uploadAllImages(job.payload.documentId as string, userId as string).catch(console.error)
-        }
+        uploadAllImages(job.payload.documentId as string, userId).catch(console.error)
 
         // Mark as completed after successful processing
         if (idempotencyKey) {
@@ -99,10 +130,13 @@ export async function POST(req: NextRequest) {
       }
 
       case 'detect_changes': {
-        const { userId } = payload
+        const userId = await resolveJobUserId(payload)
+        if (!userId) {
+          return NextResponse.json({ error: 'Unknown document' }, { status: 404 })
+        }
         const result = await processJobWithRetry(job, async (j: unknown) => {
           const jPayload = j as { payload: { documentId: string } }
-          return detectAndSyncChanges(jPayload.payload.documentId, userId as string)
+          return detectAndSyncChanges(jPayload.payload.documentId, userId)
         })
 
         if (idempotencyKey) {
@@ -119,12 +153,9 @@ export async function POST(req: NextRequest) {
           })
 
           if (document && document.content) {
-            const seo = await generateSEO(document.content, document.title)
-            const seoData = JSON.parse(seo) as {
-              title: string
-              description: string
-              keywords: string[]
-            }
+            // generateSEO() returns an SEOData object — parsing it as JSON
+            // always threw and made every process_seo job fail.
+            const seoData = await generateSEO(document.content, document.title)
             await prisma.document.update({
               where: { id: documentId },
               data: {

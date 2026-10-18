@@ -3,6 +3,16 @@
 const nextConfig: NextConfig = {
   // Disable turbopack for this project due to fs import issues
   serverExternalPackages: ['fs', 'path'],
+  turbopack: {
+    resolveAlias: {
+      // Route @prisma/client to the single shared generated client, mirroring
+      // the tsconfig `paths` and vitest aliases. Turbopack does not resolve the
+      // legacy `.prisma/client` dot-directory that the @prisma/client package
+      // falls back to, which left the module empty in the production bundle
+      // (runtime enum exports such as DocumentStatus were `undefined`).
+      '@prisma/client': './prisma/generated/client/index.js',
+    },
+  },
   // Le typecheck se fait via \	sc --noEmit\ séparé
   typescript: { ignoreBuildErrors: true },
   output: 'standalone',

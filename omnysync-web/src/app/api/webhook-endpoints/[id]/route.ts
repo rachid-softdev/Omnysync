@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { checkPlanFeature } from '@/lib/auth/subscription'
 import { z } from 'zod'
 
 const updateWebhookSchema = z.object({
@@ -18,6 +19,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    // Webhook endpoints are a plan feature (pricing page).
+    const webhooks = await checkPlanFeature(session.user.id, 'webhooks')
+    if (!webhooks.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Webhooks are not included in your plan',
+          code: 'PLAN_FEATURE_REQUIRED',
+          upgradeUrl: webhooks.upgradeUrl,
+        },
+        { status: 403 }
+      )
     }
 
     const { id } = await params
@@ -74,6 +88,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
+    // Webhook endpoints are a plan feature (pricing page).
+    const webhooks = await checkPlanFeature(session.user.id, 'webhooks')
+    if (!webhooks.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Webhooks are not included in your plan',
+          code: 'PLAN_FEATURE_REQUIRED',
+          upgradeUrl: webhooks.upgradeUrl,
+        },
+        { status: 403 }
+      )
+    }
+
     const { id } = await params
     const body = await request.json()
     const { isActive } = updateWebhookSchema.parse(body)
@@ -126,6 +153,19 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    // Webhook endpoints are a plan feature (pricing page).
+    const webhooks = await checkPlanFeature(session.user.id, 'webhooks')
+    if (!webhooks.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Webhooks are not included in your plan',
+          code: 'PLAN_FEATURE_REQUIRED',
+          upgradeUrl: webhooks.upgradeUrl,
+        },
+        { status: 403 }
+      )
     }
 
     const { id } = await params

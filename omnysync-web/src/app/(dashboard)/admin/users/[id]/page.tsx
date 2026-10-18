@@ -154,7 +154,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                     organization,
                     role,
                   }: {
-                    organization: { id: string; name: string; slug: string }
+                    organization: { id: string; name: string; slug: string | null }
                     role: string
                   }) => (
                     <Link

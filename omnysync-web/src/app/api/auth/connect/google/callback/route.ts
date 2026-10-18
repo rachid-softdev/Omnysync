@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { ensureUserOrg } from '@/lib/auth/org'
 import { encrypt } from '@/lib/crypto'
+import { verifyOAuthState } from '@/lib/auth/oauth-state'
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
@@ -15,6 +16,17 @@ export async function GET(req: NextRequest) {
   // Identify the user via their session (the browser sends the session cookie)
   const session = await auth()
   if (!session?.user?.id) {
+    return NextResponse.redirect(new URL('/auth/signin', req.url))
+  }
+
+  // 🔒 Verify the signed OAuth state: it must have been issued by this app for
+  // this same user. Without this check, anyone could complete the flow with
+  // their own Google account and link it to the victim's organization.
+  const state = verifyOAuthState(returnedState)
+  if (!state) {
+    return NextResponse.redirect(new URL('/dashboard/connectors?error=invalid_state', req.url))
+  }
+  if (state.userId !== session.user.id) {
     return NextResponse.redirect(new URL('/auth/signin', req.url))
   }
 

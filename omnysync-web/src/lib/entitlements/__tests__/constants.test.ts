@@ -71,7 +71,9 @@ describe('entitlements constants (web re-export)', () => {
       const free = DEFAULT_PLAN_FEATURES.free
       expect(free[FEATURE_KEYS.EXPORT_PDF]).toBe(false)
       expect(free[FEATURE_KEYS.MAX_CONNECTORS]).toBe(2)
-      expect(free[FEATURE_KEYS.MAX_DOCUMENTS]).toBe(100)
+      // Aligned on the pricing page: 5 syncs / 2 connectors / 50 documents
+      expect(free[FEATURE_KEYS.MAX_SYNCS_PER_MONTH]).toBe(5)
+      expect(free[FEATURE_KEYS.MAX_DOCUMENTS]).toBe(50)
     })
 
     it('should have specific values for pro plan', () => {

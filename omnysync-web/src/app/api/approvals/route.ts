@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { checkPlanFeature } from '@/lib/auth/subscription'
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
 
@@ -18,6 +19,19 @@ export async function GET() {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    // The approval portal is a Business-plan feature (pricing page).
+    const approvalAccess = await checkPlanFeature(session.user.id, 'approvalPortal')
+    if (!approvalAccess.allowed) {
+      return NextResponse.json(
+        {
+          error: 'The approval portal requires the Business plan',
+          code: 'PLAN_FEATURE_REQUIRED',
+          upgradeUrl: approvalAccess.upgradeUrl,
+        },
+        { status: 403 }
+      )
     }
 
     const membership = await prisma.userOrganization.findFirst({
@@ -79,6 +93,19 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { documentId } = createApprovalSchema.parse(body)
+
+    // The approval portal is a Business-plan feature (pricing page).
+    const approvalAccess = await checkPlanFeature(session.user.id, 'approvalPortal')
+    if (!approvalAccess.allowed) {
+      return NextResponse.json(
+        {
+          error: 'The approval portal requires the Business plan',
+          code: 'PLAN_FEATURE_REQUIRED',
+          upgradeUrl: approvalAccess.upgradeUrl,
+        },
+        { status: 403 }
+      )
+    }
 
     const membership = await prisma.userOrganization.findFirst({
       where: { userId: session.user.id },

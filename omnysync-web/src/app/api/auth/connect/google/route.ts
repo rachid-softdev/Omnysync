@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import crypto from 'crypto'
+import { createOAuthState } from '@/lib/auth/oauth-state'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
@@ -11,7 +11,8 @@ export async function GET(req: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID!
   const redirectUri = `${process.env.NEXTAUTH_URL}/api/auth/connect/google/callback`
   const scope = encodeURIComponent('https://www.googleapis.com/auth/drive.readonly')
-  const state = crypto.randomUUID()
+  // Signed, user-bound state — verified in the callback.
+  const state = createOAuthState(session.user.id)
 
   const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&state=${state}`
 

@@ -92,6 +92,21 @@ describe('GET /api/analytics', () => {
     expect(data.failedSyncs).toBe(0)
   })
 
+  it('returns 400 for an invalid or out-of-range period', async () => {
+    mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
+
+    const { prisma } = await import('@/lib/prisma')
+
+    for (const period of ['abc', '0', '-5', '400']) {
+      const request = new NextRequest(`http://localhost:3000/api/analytics?period=${period}`)
+      const response = await GET(request)
+
+      expect(response.status).toBe(400)
+    }
+
+    expect(prisma.syncLog.findMany).not.toHaveBeenCalled()
+  })
+
   it('throws when prisma fails (no try/catch in route)', async () => {
     mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
 

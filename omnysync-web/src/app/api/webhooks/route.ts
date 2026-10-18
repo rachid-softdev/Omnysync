@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { checkPlanFeature } from '@/lib/auth/subscription'
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
 
@@ -23,6 +24,19 @@ export async function GET() {
     }
 
     // Récupérer l'organisation de l'utilisateur
+    // Webhook endpoints are a plan feature (pricing page).
+    const webhookAccess = await checkPlanFeature(session.user.id, 'webhooks')
+    if (!webhookAccess.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Webhooks are not included in your plan',
+          code: 'PLAN_FEATURE_REQUIRED',
+          upgradeUrl: webhookAccess.upgradeUrl,
+        },
+        { status: 403 }
+      )
+    }
+
     const membership = await prisma.userOrganization.findFirst({
       where: { userId: session.user.id },
       select: { organizationId: true },
@@ -71,6 +85,19 @@ export async function POST(request: NextRequest) {
     const { connectorId, type, url } = createWebhookSchema.parse(body)
 
     // Vérifier que le connecteur existe et appartient à l'org
+    // Webhook endpoints are a plan feature (pricing page).
+    const webhookAccess = await checkPlanFeature(session.user.id, 'webhooks')
+    if (!webhookAccess.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Webhooks are not included in your plan',
+          code: 'PLAN_FEATURE_REQUIRED',
+          upgradeUrl: webhookAccess.upgradeUrl,
+        },
+        { status: 403 }
+      )
+    }
+
     const membership = await prisma.userOrganization.findFirst({
       where: { userId: session.user.id },
       select: { organizationId: true },

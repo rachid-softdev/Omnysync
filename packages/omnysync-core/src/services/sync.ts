@@ -220,11 +220,21 @@ async function generateAIImages(
   }
 }
 
+export interface PerformSyncOptions {
+  /**
+   * AI enrichment (SEO, excerpt, interlinking, images) is a paid plan feature.
+   * Web routes pass the caller's plan flag; internal callers (scheduler,
+   * two-way sync, approval portal) are Pro/Business-only and may omit it.
+   */
+  ai?: boolean;
+}
+
 export async function performSync(
   documentId: string,
   sourceConnectorId: string,
   destConnectorId: string,
   userId: string,
+  options: PerformSyncOptions = {},
 ): Promise<SyncResult> {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
@@ -331,6 +341,22 @@ export async function performSync(
       );
       content = pageData.content;
       title = pageData.title;
+    } else if (document.sourceConnector?.type === "AIRTABLE") {
+      const { getAirtableRecordContent } = await import("./airtable");
+      const record = await getAirtableRecordContent(
+        document.sourceConnector.id,
+        document.sourceId!,
+      );
+      content = record.content;
+      title = record.title;
+    } else if (document.sourceConnector?.type === "CONTENTFUL") {
+      const { getContentfulEntryContent } = await import("./contentful");
+      const entry = await getContentfulEntryContent(
+        document.sourceConnector.id,
+        document.sourceId!,
+      );
+      content = entry.content;
+      title = entry.title;
     }
 
     await prisma.syncLog.create({
@@ -387,44 +413,65 @@ export async function performSync(
       },
     });
 
-    // Step 3: AI Enrichment (NEW!)
-    await prisma.syncLog.create({
-      data: {
+    // Step 3: AI Enrichment (paid plan feature — see PerformSyncOptions.ai)
+    let aiEnrichment = {
+      seoTitle: title,
+      seoDescription: "",
+      seoKeywords: [] as string[],
+      excerpt: "",
+    };
+    let aiImageUrl: string | null = null;
+
+    if (options.ai !== false) {
+      await prisma.syncLog.create({
+        data: {
+          documentId,
+          organizationId: document.organizationId,
+          userId: document.userId,
+          action: "ai_enrichment_started",
+          status: "INFO",
+          message: "Enrichissement IA...",
+        },
+      });
+
+      aiEnrichment = await enrichContentWithAI(
         documentId,
-        organizationId: document.organizationId,
-        userId: document.userId,
-        action: "ai_enrichment_started",
-        status: "INFO",
-        message: "Enrichissement IA...",
-      },
-    });
+        htmlContent,
+        title,
+        document.organizationId,
+        document.userId,
+      );
 
-    const aiEnrichment = await enrichContentWithAI(
-      documentId,
-      htmlContent,
-      title,
-      document.organizationId,
-      document.userId,
-    );
-
-    // Check for AI image generation
-    const aiImageUrl = await generateAIImages(
-      documentId,
-      htmlContent,
-      document.organizationId,
-      document.userId,
-    );
-
-    await prisma.syncLog.create({
-      data: {
+      // Check for AI image generation
+      aiImageUrl = await generateAIImages(
         documentId,
-        organizationId: document.organizationId,
-        userId: document.userId,
-        action: "ai_enrichment_completed",
-        status: "INFO",
-        message: "Enrichissement IA terminé",
-      },
-    });
+        htmlContent,
+        document.organizationId,
+        document.userId,
+      );
+
+      await prisma.syncLog.create({
+        data: {
+          documentId,
+          organizationId: document.organizationId,
+          userId: document.userId,
+          action: "ai_enrichment_completed",
+          status: "INFO",
+          message: "Enrichissement IA terminé",
+        },
+      });
+    } else {
+      await prisma.syncLog.create({
+        data: {
+          documentId,
+          organizationId: document.organizationId,
+          userId: document.userId,
+          action: "ai_enrichment_skipped",
+          status: "INFO",
+          message: "AI enrichment is not included in the current plan",
+        },
+      });
+    }
 
     // Step 4: Update document with content and AI enrichment
     await prisma.document.update({
@@ -607,15 +654,24 @@ async function publishToDestination(
 
     const slug = document.title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
+    // A Webflow item always belongs to a collection. When none is configured
+    // (the connector dialog does not ask for one yet), resolve the site's
+    // first collection instead of calling the API with `undefined`.
+    const collectionId = config.collectionId || (await client.getCollections()).collections[0]?.id;
+
+    if (!collectionId) {
+      throw new Error("No Webflow collection found for this site");
+    }
+
     if (document.slug) {
-      await client.updateItem(config.collectionId, document.slug, {
+      await client.updateItem(collectionId, document.slug, {
         name: document.title,
         slug,
         content: htmlContent,
         status: "published",
       });
     } else {
-      const result = await client.createItem(config.collectionId, {
+      const result = await client.createItem(collectionId, {
         name: document.title,
         slug,
         content: htmlContent,
@@ -662,9 +718,15 @@ async function publishToDestination(
   if (document.destConnector.type === "CONTENTFUL") {
     const { createContentfulEntry, updateContentfulEntry, getContentfulEntry } =
       await import("./contentful");
-    const spaceId = config.spaceId;
+    // Contentful connectors store their config as a JSON string, unlike the
+    // object-shaped configs of WordPress/Ghost/Webflow/Shopify.
+    const contentfulConfig: Record<string, string> =
+      typeof document.destConnector.config === "string"
+        ? JSON.parse(decrypt(document.destConnector.config))
+        : ((document.destConnector.config || {}) as Record<string, string>);
+    const spaceId = contentfulConfig.spaceId;
     const accessToken = rawCredentials;
-    const contentTypeId = config.contentTypeId || "article";
+    const contentTypeId = contentfulConfig.contentTypeId || "article";
 
     const fields = {
       title: { "en-US": document.title },
@@ -702,6 +764,41 @@ async function publishToDestination(
         contentTypeId,
         fields,
       );
+      await prisma.document.update({
+        where: { id: document.id },
+        data: { slug: result.id },
+      });
+    }
+  }
+
+  // Medium integration
+  if (document.destConnector.type === "MEDIUM") {
+    const { createMediumPost, createMediumPublicationPost } = await import("./medium");
+    // Medium connectors store their config as a JSON string
+    // ({ userId, username, publicationId? }).
+    const mediumConfig: Record<string, string> =
+      typeof document.destConnector.config === "string"
+        ? JSON.parse(decrypt(document.destConnector.config))
+        : ((document.destConnector.config || {}) as Record<string, string>);
+
+    if (document.slug) {
+      // The Medium API has no update endpoint: re-publishing would create a
+      // duplicate post. Keep the existing publication.
+      console.warn(
+        `[Sync] Medium post already published for document ${document.id} — skipping (Medium API does not support updates)`,
+      );
+    } else {
+      const post = {
+        title: document.title,
+        contentFormat: "html" as const,
+        content: htmlContent,
+        publishStatus: "public" as const,
+      };
+
+      const result = mediumConfig.publicationId
+        ? await createMediumPublicationPost(rawCredentials, mediumConfig.publicationId, post)
+        : await createMediumPost(rawCredentials, mediumConfig.userId, post);
+
       await prisma.document.update({
         where: { id: document.id },
         data: { slug: result.id },

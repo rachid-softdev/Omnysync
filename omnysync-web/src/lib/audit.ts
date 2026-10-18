@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 import { headers } from 'next/headers'
 import { auth } from '@/lib/auth'
 
@@ -153,7 +154,9 @@ export async function auditLog(
         action,
         targetType,
         targetId,
-        details: details || {},
+        // AuditDetails is a domain type (open-ended index signature); Prisma
+        // requires its own JSON union, so cast at the persistence boundary.
+        details: (details ?? {}) as Prisma.InputJsonValue,
         ipAddress,
         userAgent,
       },

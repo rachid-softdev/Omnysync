@@ -1,55 +1,84 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
+import {
+  ACTIVE_SUBSCRIPTION_STATUSES,
+  DEFAULT_PLAN_FEATURES,
+  FEATURE_KEYS,
+  PLAN_KEYS,
+  type PlanKey,
+} from '@omnysync/core/entitlements/constants'
 
-export type Plan = 'free' | 'pro' | 'business'
+export type Plan = PlanKey
 
 export interface PlanLimits {
   syncsPerMonth: number
   connectors: number
   documents: number
+  teamMembers: number
   aiFeatures: boolean
   bidirectionalSync: boolean
   multiUser: boolean
   apiAccess: boolean
   scheduledSync: boolean
+  webhooks: boolean
+  approvalPortal: boolean
+}
+
+/**
+ * Limited-feature values are stored as `-1` for "unlimited" in the shared plan
+ * catalogue (packages/omnysync-core/src/entitlements/constants.ts), while this
+ * module exposes `Infinity` internally.
+ */
+function toLimit(value: boolean | number | undefined): number {
+  if (typeof value !== 'number') return 0
+  return value < 0 ? Infinity : value
+}
+
+function toFlag(value: boolean | number | undefined): boolean {
+  return value === true
+}
+
+/**
+ * Single source of truth: the shared plan catalogue in @omnysync/core
+ * (`DEFAULT_PLAN_FEATURES`), which mirrors the public pricing page.
+ * Do not hard-code plan limits here — update the core catalogue instead.
+ */
+function limitsFromCore(plan: PlanKey): PlanLimits {
+  const features = DEFAULT_PLAN_FEATURES[plan]
+  return {
+    syncsPerMonth: toLimit(features[FEATURE_KEYS.MAX_SYNCS_PER_MONTH]),
+    connectors: toLimit(features[FEATURE_KEYS.MAX_CONNECTORS]),
+    documents: toLimit(features[FEATURE_KEYS.MAX_DOCUMENTS]),
+    teamMembers: toLimit(features[FEATURE_KEYS.MAX_TEAM_MEMBERS]),
+    aiFeatures:
+      toFlag(features[FEATURE_KEYS.AI_SEO]) &&
+      toFlag(features[FEATURE_KEYS.AI_IMAGES]) &&
+      toFlag(features[FEATURE_KEYS.AI_INTERLINKING]),
+    bidirectionalSync: toFlag(features[FEATURE_KEYS.TWO_WAY_SYNC]),
+    multiUser: toFlag(features[FEATURE_KEYS.TEAM_MEMBERS]),
+    apiAccess: toFlag(features[FEATURE_KEYS.API_ACCESS]),
+    scheduledSync: toFlag(features[FEATURE_KEYS.SCHEDULED_SYNC]),
+    webhooks: toFlag(features[FEATURE_KEYS.WEBHOOKS]),
+    approvalPortal: toFlag(features[FEATURE_KEYS.APPROVAL_PORTAL]),
+  }
 }
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
-  free: {
-    syncsPerMonth: 5,
-    connectors: 2,
-    documents: 50,
-    aiFeatures: false,
-    bidirectionalSync: false,
-    multiUser: false,
-    apiAccess: false,
-    scheduledSync: false,
-  },
-  pro: {
-    syncsPerMonth: 100,
-    connectors: 10,
-    documents: 500,
-    aiFeatures: true,
-    bidirectionalSync: false,
-    multiUser: false,
-    apiAccess: false,
-    scheduledSync: true,
-  },
-  business: {
-    syncsPerMonth: Infinity,
-    connectors: Infinity,
-    documents: Infinity,
-    aiFeatures: true,
-    bidirectionalSync: true,
-    multiUser: true,
-    apiAccess: true,
-    scheduledSync: true,
-  },
+  [PLAN_KEYS.FREE]: limitsFromCore(PLAN_KEYS.FREE),
+  [PLAN_KEYS.PRO]: limitsFromCore(PLAN_KEYS.PRO),
+  [PLAN_KEYS.BUSINESS]: limitsFromCore(PLAN_KEYS.BUSINESS),
+  [PLAN_KEYS.ENTERPRISE]: limitsFromCore(PLAN_KEYS.ENTERPRISE),
 }
 
 export function getCurrentMonth(): string {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
+const PLAN_KEY_VALUES: string[] = Object.values(PLAN_KEYS)
+
+function isPlanKey(value: string | null | undefined): value is Plan {
+  return typeof value === 'string' && PLAN_KEY_VALUES.includes(value)
 }
 
 export async function getUserPlan(userId: string): Promise<Plan> {
@@ -66,15 +95,67 @@ export async function getUserPlan(userId: string): Promise<Plan> {
 
   const subscription = orgMembership?.organization?.subscriptions?.[0]
 
-  if (!subscription || subscription.status !== 'ACTIVE') {
-    return 'free'
+  // Trials must keep their paid plan — Stripe reports trialing subscriptions
+  // with the TRIALING status, not ACTIVE.
+  const isActive =
+    subscription != null &&
+    (ACTIVE_SUBSCRIPTION_STATUSES as readonly string[]).includes(subscription.status)
+
+  if (!isActive) {
+    return PLAN_KEYS.FREE
   }
 
-  return (subscription.planKey as Plan) || 'free'
+  return isPlanKey(subscription.planKey) ? subscription.planKey : PLAN_KEYS.FREE
 }
 
 export function getPlanLimits(plan: Plan): PlanLimits {
-  return PLAN_LIMITS[plan]
+  // Defensive: an unknown plan key must never turn into a TypeError.
+  return PLAN_LIMITS[plan] ?? PLAN_LIMITS[PLAN_KEYS.FREE]
+}
+
+export type PlanFeature = keyof Pick<
+  PlanLimits,
+  | 'aiFeatures'
+  | 'apiAccess'
+  | 'bidirectionalSync'
+  | 'multiUser'
+  | 'scheduledSync'
+  | 'webhooks'
+  | 'approvalPortal'
+>
+
+/**
+ * Server-side gate for boolean plan features (pricing-page features that are
+ * not enforced by a numeric quota). Callers must return a 403 when
+ * `allowed` is false.
+ */
+export async function checkPlanFeature(
+  userId: string,
+  feature: PlanFeature
+): Promise<{ allowed: boolean; plan: Plan; upgradeUrl?: string }> {
+  const plan = await getUserPlan(userId)
+  const allowed = getPlanLimits(plan)[feature]
+
+  return {
+    allowed,
+    plan,
+    upgradeUrl: allowed ? undefined : '/pricing',
+  }
+}
+
+/**
+ * Counts plan-limited resources the same way the API routes scope them: by
+ * organization (the plan belongs to the organization), falling back to the user
+ * when no organization membership exists yet.
+ */
+async function getResourceScope(
+  userId: string
+): Promise<{ organizationId: string } | { userId: string }> {
+  const membership = await prisma.userOrganization.findFirst({
+    where: { userId },
+    select: { organizationId: true },
+  })
+  return membership ? { organizationId: membership.organizationId } : { userId }
 }
 
 export async function getQuotaUsage(userId: string): Promise<{
@@ -87,19 +168,23 @@ export async function getQuotaUsage(userId: string): Promise<{
   percentUsed: number
 }> {
   const plan = await getUserPlan(userId)
-  const limits = PLAN_LIMITS[plan]
+  const limits = getPlanLimits(plan)
   const month = getCurrentMonth()
+  const scope = await getResourceScope(userId)
 
   const [quotaUsage, connectorCount, documentCount] = await Promise.all([
     prisma.quotaUsage.findUnique({
       where: { userId_month: { userId, month } },
     }),
-    prisma.connector.count({ where: { userId } }),
-    prisma.document.count({ where: { userId } }),
+    prisma.connector.count({ where: scope }),
+    prisma.document.count({ where: scope }),
   ])
 
   const syncCount = quotaUsage?.syncCount || 0
-  const percentUsed = plan === 'free' ? Math.round((syncCount / limits.syncsPerMonth) * 100) : 0
+  const percentUsed =
+    limits.syncsPerMonth === Infinity
+      ? 0
+      : Math.min(100, Math.round((syncCount / limits.syncsPerMonth) * 100))
 
   return {
     syncCount,
@@ -118,7 +203,7 @@ export async function checkAndIncrementQuota(userId: string): Promise<{
   upgradeUrl?: string
 }> {
   const plan = await getUserPlan(userId)
-  const limits = PLAN_LIMITS[plan]
+  const limits = getPlanLimits(plan)
   const month = getCurrentMonth()
 
   if (limits.syncsPerMonth === Infinity) {
@@ -185,10 +270,11 @@ export async function checkConnectorLimit(userId: string): Promise<{
   upgradeUrl?: string
 }> {
   const plan = await getUserPlan(userId)
-  const limits = PLAN_LIMITS[plan]
+  const limits = getPlanLimits(plan)
+  const scope = await getResourceScope(userId)
 
   const connectorCount = await prisma.connector.count({
-    where: { userId },
+    where: scope,
   })
 
   const allowed = connectorCount < limits.connectors
@@ -208,10 +294,11 @@ export async function checkDocumentLimit(userId: string): Promise<{
   upgradeUrl?: string
 }> {
   const plan = await getUserPlan(userId)
-  const limits = PLAN_LIMITS[plan]
+  const limits = getPlanLimits(plan)
+  const scope = await getResourceScope(userId)
 
   const documentCount = await prisma.document.count({
-    where: { userId },
+    where: scope,
   })
 
   const allowed = documentCount < limits.documents
@@ -220,6 +307,32 @@ export async function checkDocumentLimit(userId: string): Promise<{
     allowed,
     current: documentCount,
     limit: limits.documents,
+    upgradeUrl: allowed ? undefined : '/pricing',
+  }
+}
+
+export async function checkTeamMemberLimit(
+  userId: string,
+  organizationId: string
+): Promise<{
+  allowed: boolean
+  current: number
+  limit: number
+  upgradeUrl?: string
+}> {
+  const plan = await getUserPlan(userId)
+  const limits = getPlanLimits(plan)
+
+  const current = await prisma.userOrganization.count({
+    where: { organizationId },
+  })
+
+  const allowed = current < limits.teamMembers
+
+  return {
+    allowed,
+    current,
+    limit: limits.teamMembers,
     upgradeUrl: allowed ? undefined : '/pricing',
   }
 }

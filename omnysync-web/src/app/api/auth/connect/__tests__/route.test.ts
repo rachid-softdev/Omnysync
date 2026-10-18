@@ -41,6 +41,12 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId, ensureUserOrg } from '@/lib/auth/org'
 import { encrypt } from '@/lib/crypto'
+import { createOAuthState, verifyOAuthState } from '@/lib/auth/oauth-state'
+
+// All connect flows sign the OAuth state with the application secret.
+beforeEach(() => {
+  process.env.NEXTAUTH_SECRET = 'test-oauth-secret'
+})
 
 // ============================================================================
 // GET /api/auth/connect/google
@@ -105,6 +111,7 @@ describe('GET /api/auth/connect/google', () => {
 
 describe('GET /api/auth/connect/google/callback', () => {
   let fetchMock: ReturnType<typeof vi.fn>
+  let validState: string
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -119,6 +126,8 @@ describe('GET /api/auth/connect/google/callback', () => {
 
     vi.mocked(ensureUserOrg).mockResolvedValue('org-1')
     vi.mocked(encrypt).mockImplementation((val: string) => `encrypted:${val}`)
+
+    validState = createOAuthState('user-1')
 
     // Mock fetch for token exchange
     fetchMock = vi.fn()
@@ -153,13 +162,42 @@ describe('GET /api/auth/connect/google/callback', () => {
 
     const { GET } = await import('@/app/api/auth/connect/google/callback/route')
     const req = new NextRequest(
-      'http://localhost:3000/api/auth/connect/google/callback?code=testcode&state=teststate'
+      `http://localhost:3000/api/auth/connect/google/callback?code=testcode&state=${validState}`
     )
     const response = await GET(req)
 
     expect(response.status).toBe(307)
     const location = response.headers.get('Location')
     expect(location).toContain('/auth/signin')
+  })
+
+  it('should redirect with error when the state is not signed by this app', async () => {
+    const { GET } = await import('@/app/api/auth/connect/google/callback/route')
+    const req = new NextRequest(
+      'http://localhost:3000/api/auth/connect/google/callback?code=attacker_code&state=attacker_state'
+    )
+    const response = await GET(req)
+
+    expect(response.status).toBe(307)
+    const location = response.headers.get('Location')
+    expect(location).toContain('error=invalid_state')
+    // Token exchange must never run for an unsigned state
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('should redirect to signin when the state belongs to another user', async () => {
+    const otherUserState = createOAuthState('user-other')
+
+    const { GET } = await import('@/app/api/auth/connect/google/callback/route')
+    const req = new NextRequest(
+      `http://localhost:3000/api/auth/connect/google/callback?code=testcode&state=${otherUserState}`
+    )
+    const response = await GET(req)
+
+    expect(response.status).toBe(307)
+    const location = response.headers.get('Location')
+    expect(location).toContain('/auth/signin')
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('should redirect with error when token exchange fails', async () => {
@@ -170,7 +208,7 @@ describe('GET /api/auth/connect/google/callback', () => {
 
     const { GET } = await import('@/app/api/auth/connect/google/callback/route')
     const req = new NextRequest(
-      'http://localhost:3000/api/auth/connect/google/callback?code=badcode&state=teststate'
+      `http://localhost:3000/api/auth/connect/google/callback?code=badcode&state=${validState}`
     )
     const response = await GET(req)
 
@@ -182,7 +220,7 @@ describe('GET /api/auth/connect/google/callback', () => {
   it('should treat OAuth error param as missing_params when no code provided (user declined)', async () => {
     const { GET } = await import('@/app/api/auth/connect/google/callback/route')
     const req = new NextRequest(
-      'http://localhost:3000/api/auth/connect/google/callback?error=access_denied&state=teststate'
+      `http://localhost:3000/api/auth/connect/google/callback?error=access_denied&state=${validState}`
     )
     const response = await GET(req)
 
@@ -195,7 +233,7 @@ describe('GET /api/auth/connect/google/callback', () => {
   it('should ignore OAuth error param when code and state are both present', async () => {
     const { GET } = await import('@/app/api/auth/connect/google/callback/route')
     const req = new NextRequest(
-      'http://localhost:3000/api/auth/connect/google/callback?error=access_denied&code=testcode&state=teststate'
+      `http://localhost:3000/api/auth/connect/google/callback?error=access_denied&code=testcode&state=${validState}`
     )
     const response = await GET(req)
 
@@ -214,7 +252,7 @@ describe('GET /api/auth/connect/google/callback', () => {
 
     const { GET } = await import('@/app/api/auth/connect/google/callback/route')
     const req = new NextRequest(
-      'http://localhost:3000/api/auth/connect/google/callback?code=testcode&state=teststate'
+      `http://localhost:3000/api/auth/connect/google/callback?code=testcode&state=${validState}`
     )
     const response = await GET(req)
 
@@ -233,7 +271,7 @@ describe('GET /api/auth/connect/google/callback', () => {
 
     const { GET } = await import('@/app/api/auth/connect/google/callback/route')
     const req = new NextRequest(
-      'http://localhost:3000/api/auth/connect/google/callback?code=testcode&state=teststate'
+      `http://localhost:3000/api/auth/connect/google/callback?code=testcode&state=${validState}`
     )
     const response = await GET(req)
 
@@ -247,7 +285,7 @@ describe('GET /api/auth/connect/google/callback', () => {
 
     const { GET } = await import('@/app/api/auth/connect/google/callback/route')
     const req = new NextRequest(
-      'http://localhost:3000/api/auth/connect/google/callback?code=testcode&state=teststate'
+      `http://localhost:3000/api/auth/connect/google/callback?code=testcode&state=${validState}`
     )
 
     // Route has no try/catch around ensureUserOrg — error propagates
@@ -263,7 +301,7 @@ describe('GET /api/auth/connect/google/callback', () => {
 
     const { GET } = await import('@/app/api/auth/connect/google/callback/route')
     const req = new NextRequest(
-      'http://localhost:3000/api/auth/connect/google/callback?code=testcode&state=teststate'
+      `http://localhost:3000/api/auth/connect/google/callback?code=testcode&state=${validState}`
     )
     const response = await GET(req)
 
@@ -288,7 +326,7 @@ describe('GET /api/auth/connect/google/callback', () => {
 
     const { GET } = await import('@/app/api/auth/connect/google/callback/route')
     const req = new NextRequest(
-      'http://localhost:3000/api/auth/connect/google/callback?code=testcode&state=teststate'
+      `http://localhost:3000/api/auth/connect/google/callback?code=testcode&state=${validState}`
     )
     const response = await GET(req)
 
@@ -364,12 +402,10 @@ describe('GET /api/auth/connect/notion', () => {
     expect(location).toContain(
       encodeURIComponent('http://localhost:3000/api/auth/connect/notion/callback')
     )
-    // Verify state param is base64url encoded JSON
+    // Verify state param is HMAC-signed and bound to the initiating user
     const stateParam = new URL(location!).searchParams.get('state')
     expect(stateParam).toBeTruthy()
-    const decoded = JSON.parse(Buffer.from(stateParam!, 'base64url').toString())
-    expect(decoded.userId).toBe('user-1')
-    expect(decoded.nonce).toBeTruthy()
+    expect(verifyOAuthState(stateParam!)).toEqual({ userId: 'user-1' })
   })
 })
 
@@ -379,9 +415,7 @@ describe('GET /api/auth/connect/notion', () => {
 
 describe('GET /api/auth/connect/notion/callback', () => {
   let fetchMock: ReturnType<typeof vi.fn>
-  const validStatePayload = Buffer.from(
-    JSON.stringify({ userId: 'user-1', nonce: 'test-nonce-123' })
-  ).toString('base64url')
+  let validStatePayload: string
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -396,6 +430,8 @@ describe('GET /api/auth/connect/notion/callback', () => {
 
     vi.mocked(getUserOrgId).mockResolvedValue('org-1')
     vi.mocked(encrypt).mockImplementation((val: string) => `encrypted:${val}`)
+
+    validStatePayload = createOAuthState('user-1')
 
     // Mock fetch for token exchange
     fetchMock = vi.fn()
@@ -450,9 +486,7 @@ describe('GET /api/auth/connect/notion/callback', () => {
 
   it('should redirect to signin when session user does not match state userId', async () => {
     // Session has different user than state
-    const wrongUserState = Buffer.from(
-      JSON.stringify({ userId: 'user-other', nonce: 'test-nonce' })
-    ).toString('base64url')
+    const wrongUserState = createOAuthState('user-other')
 
     const { GET } = await import('@/app/api/auth/connect/notion/callback/route')
     const req = new NextRequest(
