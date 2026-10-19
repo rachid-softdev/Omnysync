@@ -139,9 +139,9 @@ export default function TeamSettingsPage() {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'OWNER':
-        return <Crown className="w-4 h-4 text-yellow-500" />
+        return <Crown className="w-4 h-4 text-warning" />
       case 'ADMIN':
-        return <Shield className="w-4 h-4 text-blue-500" />
+        return <Shield className="w-4 h-4 text-info" />
       default:
         return <User className="w-4 h-4 text-muted-foreground" />
     }

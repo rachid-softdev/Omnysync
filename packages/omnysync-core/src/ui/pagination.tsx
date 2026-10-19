@@ -86,10 +86,10 @@ export function Pagination({
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="flex items-center justify-center w-9 h-9 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:pointer-events-none"
+        className="flex size-9 items-center justify-center rounded-md border border-border bg-background shadow-2xs transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50"
         aria-label="Previous page"
       >
-        <ChevronLeft className="w-4 h-4" />
+        <ChevronLeft className="size-4" />
       </button>
 
       {siblings.map((page, index) => {
@@ -97,9 +97,9 @@ export function Pagination({
           return (
             <span
               key={`ellipsis-${index}`}
-              className="flex items-center justify-center w-9 h-9"
+              className="flex size-9 items-center justify-center"
             >
-              <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+              <MoreHorizontal className="size-4 text-muted-foreground" />
             </span>
           );
         }
@@ -109,10 +109,10 @@ export function Pagination({
             key={page}
             onClick={() => onPageChange(page)}
             className={cn(
-              "flex items-center justify-center w-9 h-9 rounded-md text-sm font-medium transition-colors",
+              "flex size-9 items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
               page === currentPage
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                : "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+                ? "bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover"
+                : "border border-border bg-background shadow-2xs hover:bg-accent hover:text-accent-foreground",
             )}
             aria-label={`Page ${page}`}
             aria-current={page === currentPage ? "page" : undefined}
@@ -125,10 +125,10 @@ export function Pagination({
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="flex items-center justify-center w-9 h-9 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:pointer-events-none"
+        className="flex size-9 items-center justify-center rounded-md border border-border bg-background shadow-2xs transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50"
         aria-label="Next page"
       >
-        <ChevronRight className="w-4 h-4" />
+        <ChevronRight className="size-4" />
       </button>
     </nav>
   );
@@ -152,7 +152,7 @@ export function PageSizeSelect({
       <select
         value={pageSize}
         onChange={(e) => onPageSizeChange(Number(e.target.value))}
-        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-9 items-center justify-between rounded-lg border border-input bg-background px-3 py-1.5 text-sm shadow-2xs transition-[color,box-shadow,border-color] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pageSizeOptions.map((size) => (
           <option key={size} value={size}>

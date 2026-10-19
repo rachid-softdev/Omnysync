@@ -64,6 +64,10 @@ omnysync-web/prisma/generated/
 # playwright
 **/playwright-report/
 **/test-results/
+.playwright-cli/
+
+# local design-review artifacts
+.impeccable/
 
 # husky
 .husky/

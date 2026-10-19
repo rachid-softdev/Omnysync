@@ -5,52 +5,69 @@ import { usePathname } from 'next/navigation'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 
+/** Routes that own their own chrome (app shell, auth split-screen). */
+const APP_ROUTE_PREFIXES = ['/dashboard', '/admin', '/auth']
+
 export function Header() {
   const { t } = useTranslations()
   const pathname = usePathname()
 
-  // Auth pages have their own layout
-  if (pathname === '/auth/signin') return null
+  if (APP_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return null
+  }
 
   const isHome = pathname === '/'
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-3 bg-background/80 backdrop-blur-sm border-b border-border">
-      <Link href="/" className="text-xl font-bold" aria-label="Omnysync home">
-        Omnysync
-      </Link>
-      {isHome && (
-        <div className="hidden md:flex items-center gap-8">
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/70 bg-background/80 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-6">
+        <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Omnysync home">
+          <span className="grid size-6 place-items-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">
+            O
+          </span>
+          <span className="text-[15px] font-semibold tracking-tight">Omnysync</span>
+        </Link>
+
+        {isHome && (
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
+            <Link
+              href="#features"
+              aria-label={t('nav_features')}
+              className="rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {t('nav_features')}
+            </Link>
+            <Link
+              href="#how-it-works"
+              aria-label={t('nav_how_it_works')}
+              className="rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {t('nav_how_it_works')}
+            </Link>
+            <Link
+              href="/pricing"
+              className="rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {t('nav_pricing')}
+            </Link>
+          </nav>
+        )}
+
+        <div className="ml-auto flex items-center gap-1.5">
           <Link
-            href="#features"
-            className="text-sm text-muted-foreground hover:text-foreground"
-            aria-label={t('nav_features')}
+            href="/auth/signin"
+            className="rounded-md px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
-            {t('nav_features')}
+            {t('UI_SIGN_IN')}
           </Link>
+          <ThemeToggle />
           <Link
-            href="#how-it-works"
-            className="text-sm text-muted-foreground hover:text-foreground"
-            aria-label={t('nav_how_it_works')}
+            href="/auth/signin"
+            className="ml-1 inline-flex h-8 items-center justify-center rounded-full bg-primary px-4 text-[13px] font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary-hover"
           >
-            {t('nav_how_it_works')}
+            {t('UI_GET_STARTED')}
           </Link>
         </div>
-      )}
-      <div className="flex items-center gap-4">
-        <Link
-          href="/auth/signin"
-          className="text-sm font-medium text-muted-foreground hover:text-foreground"
-        >
-          {t('UI_SIGN_IN')}
-        </Link>
-        <ThemeToggle />
-        <Link
-          href="/auth/signin"
-          className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          {t('UI_GET_STARTED')}
-        </Link>
       </div>
     </header>
   )

@@ -8,11 +8,14 @@ import { Button } from '@/components/ui/button'
 import { Menu, X, LogOut } from 'lucide-react'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { logoutAction } from '@/lib/actions'
-import { t } from '@/lib/i18n'
+import { useTranslations } from '@/lib/i18n/useTranslations'
+import { cn } from '@/lib/utils'
+import { isNavItemActive } from '@/lib/nav'
+import { resolveNavIcon, type NavIcon } from '@/components/nav-icons'
 
 interface NavItem {
   href: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: NavIcon
   label: string
 }
 
@@ -29,79 +32,106 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
   const isMobile = useIsMobile()
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const { t } = useTranslations()
 
   if (!isMobile) return null
 
   return (
     <>
-      {/* Mobile header with hamburger */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-40 bg-card border-b border-border flex items-center justify-between px-4 h-14">
-        <h1 className="text-lg font-bold">Omnysync</h1>
-        <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)} aria-label="Open menu">
-          <Menu className="w-5 h-5" />
+      {/* Mobile top bar */}
+      <header className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur-md md:hidden">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <span className="grid size-7 place-items-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">
+            O
+          </span>
+          <span className="text-[15px] font-semibold tracking-tight">Omnysync</span>
+        </Link>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => setIsOpen(true)}
+          aria-label="Open menu"
+        >
+          <Menu className="size-5" />
         </Button>
       </header>
 
-      {/* Mobile drawer overlay */}
+      {/* Drawer overlay */}
       {isOpen && (
         <div
-          className="md:hidden fixed inset-0 z-50 bg-black/50"
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] md:hidden"
           onClick={() => setIsOpen(false)}
+          aria-hidden="true"
         />
       )}
 
-      {/* Mobile drawer */}
+      {/* Drawer */}
       <div
-        className={`md:hidden fixed top-0 left-0 z-50 h-full w-72 bg-card border-r border-border transform transition-transform duration-200 ease-in-out ${
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-border bg-sidebar transition-transform duration-200 ease-out-quart md:hidden',
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        )}
+        aria-hidden={!isOpen}
       >
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h1 className="text-xl font-bold">Omnysync</h1>
+        <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
+          <span className="text-[15px] font-semibold tracking-tight">Omnysync</span>
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
             onClick={() => setIsOpen(false)}
             aria-label="Close menu"
           >
-            <X className="w-5 h-5" />
+            <X className="size-5" />
           </Button>
         </div>
-        <nav className="p-4">
-          <ul className="space-y-2">
+
+        <nav className="flex-1 overflow-y-auto p-3">
+          <ul className="space-y-0.5">
             {navItems.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+              const isActive = isNavItemActive(pathname, item.href)
+              const Icon = resolveNavIcon(item.icon)
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
                     onClick={() => setIsOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                      isActive ? 'bg-accent text-accent-foreground' : 'hover:bg-accent'
-                    }`}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={cn(
+                      'flex h-9 items-center gap-2.5 rounded-md px-2.5 text-sm transition-colors',
+                      isActive
+                        ? 'bg-accent font-medium text-accent-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                    )}
                   >
-                    <item.icon className="w-5 h-5" />
-                    {item.label}
+                    <Icon className="size-4 shrink-0" />
+                    <span className="truncate">{item.label}</span>
                   </Link>
                 </li>
               )
             })}
           </ul>
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border">
-          <div className="flex items-center gap-3 mb-4">
-            {user.image && (
+
+        <div className="border-t border-sidebar-border p-3">
+          <div className="mb-3 flex items-center gap-2.5 rounded-lg border border-sidebar-border bg-background p-2">
+            {user.image ? (
               <Image
                 src={user.image}
                 alt={user.name || 'User'}
                 width={32}
                 height={32}
-                className="rounded-full"
+                className="size-8 rounded-full object-cover"
               />
+            ) : (
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                {(user.name || user.email || 'U').slice(0, 1).toUpperCase()}
+              </span>
             )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user.name}</p>
-              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-medium leading-tight">{user.name}</p>
+              <p className="truncate text-[11px] leading-tight text-muted-foreground">
+                {user.email}
+              </p>
             </div>
           </div>
           <Button
@@ -110,7 +140,7 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
             onClick={() => logoutAction()}
             className="w-full justify-start text-muted-foreground hover:text-foreground"
           >
-            <LogOut className="w-4 h-4 mr-2" />
+            <LogOut className="size-4" />
             {t('UI_LOGOUT')}
           </Button>
         </div>

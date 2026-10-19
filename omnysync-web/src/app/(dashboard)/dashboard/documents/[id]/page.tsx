@@ -5,19 +5,12 @@ import { getUserOrgId } from '@/lib/auth/org'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
+import { PageHeader, PageShell } from '@/components/page-header'
 
-import {
-  ArrowLeft,
-  RefreshCw,
-  Trash2,
-  Edit,
-  Calendar,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-} from 'lucide-react'
+import { ArrowLeft, RefreshCw, Trash2, Edit, Clock, CheckCircle, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
@@ -27,6 +20,19 @@ export const dynamic = 'force-dynamic'
 
 interface PageProps {
   params: Promise<{ id: string }>
+}
+
+const syncBadgeVariant: Record<string, 'success' | 'info' | 'destructive' | 'secondary'> = {
+  SYNCED: 'success',
+  SYNCING: 'info',
+  FAILED: 'destructive',
+  NOT_SYNCED: 'secondary',
+}
+
+const syncDotClass: Record<string, string> = {
+  SYNCED: 'bg-success',
+  SYNCING: 'bg-info',
+  FAILED: 'bg-destructive',
 }
 
 export default async function DocumentDetailPage({ params }: PageProps) {
@@ -88,149 +94,141 @@ export default async function DocumentDetailPage({ params }: PageProps) {
     SHOPIFY: 'Shopify',
   }
 
+  const sourceName = connectorNames[document.sourceConnector?.type || 'UNKNOWN'] || 'Source'
+  const destName = connectorNames[document.destConnector?.type || 'UNKNOWN'] || 'Destination'
+
   // Calculate sync progress
   const syncProgress =
     document.syncStatus === 'SYNCED' ? 100 : document.syncStatus === 'SYNCING' ? 50 : 0
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard/documents">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+    <PageShell>
+      <PageHeader
+        title={document.title}
+        description={`${sourceName} → ${destName} · Created on ${formatDate(document.createdAt, locale)}`}
+        actions={
+          <>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/dashboard/documents">
+                <ArrowLeft className="size-4" />
+                Back
+              </Link>
             </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold">{document.title}</h1>
-            <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-              <span>{connectorNames[document.sourceConnector?.type || 'UNKNOWN'] || 'Source'}</span>
-              <span>→</span>
-              <span>
-                {connectorNames[document.destConnector?.type || 'UNKNOWN'] || 'Destination'}
-              </span>
-              <span>·</span>
-              <span>Created on {formatDate(document.createdAt, locale)}</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Edit className="w-4 h-4 mr-2" />
-            Edit
-          </Button>
-          <Button variant="outline" size="sm">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Sync
-          </Button>
-          <Button variant="ghost" size="sm" className="text-destructive">
-            <Trash2 className="w-4 h-4 mr-2" />
-            Delete
-          </Button>
-        </div>
-      </div>
-
-      {/* Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div
-              className={`p-2 rounded-lg ${
-                document.status === 'PUBLISHED' ? 'bg-green-500/10' : 'bg-secondary'
-              }`}
+            <Button variant="outline" size="sm">
+              <Edit className="size-4" />
+              Edit
+            </Button>
+            <Button variant="outline" size="sm">
+              <RefreshCw className="size-4" />
+              Sync
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:bg-destructive-soft"
             >
-              {document.status === 'PUBLISHED' ? (
-                <CheckCircle className="w-5 h-5 text-green-500" />
-              ) : (
-                <Clock className="w-5 h-5 text-muted-foreground" />
-              )}
+              <Trash2 className="size-4" />
+              Delete
+            </Button>
+          </>
+        }
+      />
+
+      {/* Status + key facts: one dominant surface, one supporting surface. */}
+      <div className="mt-6 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <span
+                  className={`grid size-9 shrink-0 place-items-center rounded-lg ${
+                    document.status === 'PUBLISHED'
+                      ? 'bg-success-soft text-success'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {document.status === 'PUBLISHED' ? (
+                    <CheckCircle className="size-4.5" />
+                  ) : (
+                    <Clock className="size-4.5" />
+                  )}
+                </span>
+                <div>
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <span className="text-base font-semibold tracking-tight">
+                      {statusLabels[document.status] || document.status}
+                    </span>
+                    <Badge variant={syncBadgeVariant[document.syncStatus] || 'secondary'}>
+                      {syncDotClass[document.syncStatus] && (
+                        <span
+                          className={`size-1.5 rounded-full ${syncDotClass[document.syncStatus]}`}
+                          aria-hidden="true"
+                        />
+                      )}
+                      {syncStatusLabels[document.syncStatus] || document.syncStatus}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Sync progress</p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">
+                  {syncProgress}%
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Status</p>
-              <p className="font-medium">{statusLabels[document.status] || document.status}</p>
-            </div>
+            <Progress value={syncProgress} className="mt-4 h-1.5" />
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div
-              className={`p-2 rounded-lg ${
-                document.syncStatus === 'SYNCED'
-                  ? 'bg-green-500/10'
-                  : document.syncStatus === 'FAILED'
-                    ? 'bg-red-500/10'
-                    : 'bg-secondary'
-              }`}
-            >
-              {document.syncStatus === 'SYNCED' ? (
-                <CheckCircle className="w-5 h-5 text-green-500" />
-              ) : document.syncStatus === 'FAILED' ? (
-                <AlertCircle className="w-5 h-5 text-red-500" />
-              ) : (
-                <RefreshCw className="w-5 h-5 text-muted-foreground" />
-              )}
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Sync</p>
-              <p className="font-medium">
-                {syncStatusLabels[document.syncStatus] || document.syncStatus}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="p-2 rounded-lg bg-secondary">
-              <Calendar className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Last sync</p>
-              <p className="font-medium">
-                {document.lastSyncedAt ? formatDate(document.lastSyncedAt, locale) : 'Never'}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="p-2 rounded-lg bg-secondary">
-              <RefreshCw className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Version</p>
-              <p className="font-medium">v{document.version}</p>
-            </div>
+          <CardContent className="p-5">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <div>
+                <dt className="text-xs text-muted-foreground">Last sync</dt>
+                <dd className="mt-0.5 text-[13px] font-medium">
+                  {document.lastSyncedAt ? formatDate(document.lastSyncedAt, locale) : 'Never'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Version</dt>
+                <dd className="mt-0.5 text-[13px] font-medium tabular-nums">v{document.version}</dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-xs text-muted-foreground">Auto sync</dt>
+                <dd className="mt-0.5 text-[13px] font-medium">
+                  {document.autoSyncEnabled
+                    ? document.syncFrequency
+                      ? `Enabled · ${
+                          document.syncFrequency === 'DAILY'
+                            ? 'Daily'
+                            : document.syncFrequency === 'WEEKLY'
+                              ? 'Weekly'
+                              : document.syncFrequency === 'MONTHLY'
+                                ? 'Monthly'
+                                : 'Manual'
+                        }`
+                      : 'Enabled'
+                    : 'Disabled'}
+                </dd>
+              </div>
+            </dl>
           </CardContent>
         </Card>
       </div>
-
-      {/* Progress Bar */}
-      <Card className="mb-8">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Sync progress</span>
-            <span className="text-sm text-muted-foreground">{syncProgress}%</span>
-          </div>
-          <Progress value={syncProgress} className="h-2" />
-        </CardContent>
-      </Card>
 
       {/* Tabs */}
-      <Tabs value="overview" className="w-full">
-        <TabsList className="mb-4">
+      <Tabs defaultValue="overview" className="mt-8 w-full">
+        <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="logs">History</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TabsContent value="overview" className="mt-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
             {/* Content Preview */}
             <Card>
               <CardHeader>
@@ -247,7 +245,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                       }}
                     />
                   ) : (
-                    <p className="text-muted-foreground">No content available</p>
+                    <p className="text-sm text-muted-foreground">No content available</p>
                   )}
                 </div>
               </CardContent>
@@ -259,59 +257,62 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 <CardTitle>Metadata</CardTitle>
                 <CardDescription>Document information</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <CardContent>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
                   <div>
-                    <p className="text-sm text-muted-foreground">Source</p>
-                    <p className="font-medium">
+                    <dt className="text-xs text-muted-foreground">Source</dt>
+                    <dd className="mt-0.5 text-[13px] font-medium">
                       {connectorNames[document.sourceConnector?.type || 'UNKNOWN'] || '—'}
-                    </p>
+                    </dd>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Destination</p>
-                    <p className="font-medium">
+                    <dt className="text-xs text-muted-foreground">Destination</dt>
+                    <dd className="mt-0.5 text-[13px] font-medium">
                       {connectorNames[document.destConnector?.type || 'UNKNOWN'] || '—'}
-                    </p>
+                    </dd>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Categories</p>
-                    <p className="font-medium">{document.categories?.join(', ') || 'None'}</p>
+                    <dt className="text-xs text-muted-foreground">Categories</dt>
+                    <dd className="mt-0.5 text-[13px] font-medium">
+                      {document.categories?.join(', ') || 'None'}
+                    </dd>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Tags</p>
-                    <p className="font-medium">{document.tags?.join(', ') || 'None'}</p>
+                    <dt className="text-xs text-muted-foreground">Tags</dt>
+                    <dd className="mt-0.5 text-[13px] font-medium">
+                      {document.tags?.join(', ') || 'None'}
+                    </dd>
                   </div>
-                </div>
-
-                {document.excerpt && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Excerpt</p>
-                    <p className="text-sm">{document.excerpt}</p>
-                  </div>
-                )}
+                  {document.excerpt && (
+                    <div className="col-span-2">
+                      <dt className="text-xs text-muted-foreground">Excerpt</dt>
+                      <dd className="mt-0.5 text-[13px]">{document.excerpt}</dd>
+                    </div>
+                  )}
+                </dl>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="seo">
-          <Card>
+        <TabsContent value="seo" className="mt-4">
+          <Card className="max-w-3xl">
             <CardHeader>
               <CardTitle>SEO Optimization</CardTitle>
               <CardDescription>Metadata for search engines</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">SEO Title</p>
-                <p className="font-medium">{document.seoTitle || document.title}</p>
+                <p className="text-xs text-muted-foreground">SEO Title</p>
+                <p className="mt-1 text-sm font-medium">{document.seoTitle || document.title}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">SEO Description</p>
-                <p className="text-sm">{document.seoDescription || 'No description'}</p>
+                <p className="text-xs text-muted-foreground">SEO Description</p>
+                <p className="mt-1 text-sm">{document.seoDescription || 'No description'}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Keywords</p>
-                <div className="flex flex-wrap gap-2">
+                <p className="text-xs text-muted-foreground">Keywords</p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {document.seoKeywords && document.seoKeywords.length > 0 ? (
                     document.seoKeywords.map((keyword: string, index: number) => (
                       <Badge key={index} variant="secondary">
@@ -327,17 +328,19 @@ export default async function DocumentDetailPage({ params }: PageProps) {
           </Card>
         </TabsContent>
 
-        <TabsContent value="logs">
-          <Card>
+        <TabsContent value="logs" className="mt-4">
+          <Card className="max-w-3xl">
             <CardHeader>
               <CardTitle>Sync history</CardTitle>
               <CardDescription>Recent operations log</CardDescription>
             </CardHeader>
             <CardContent>
               {document.syncLogs.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No history available</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No history available
+                </p>
               ) : (
-                <div className="space-y-3">
+                <ul className="space-y-2">
                   {(
                     document.syncLogs as Array<{
                       id: string
@@ -347,24 +350,36 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                       createdAt: Date
                     }>
                   ).map((log) => (
-                    <div
+                    <li
                       key={log.id}
-                      className="flex items-center justify-between p-3 rounded-lg border"
+                      className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5"
                     >
-                      <div className="flex items-center gap-3">
-                        {log.status === 'SUCCESS' ? (
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                        ) : log.status === 'ERROR' ? (
-                          <AlertCircle className="w-4 h-4 text-red-500" />
-                        ) : (
-                          <Clock className="w-4 h-4 text-muted-foreground" />
-                        )}
-                        <div>
-                          <p className="text-sm font-medium">{log.action}</p>
-                          <p className="text-xs text-muted-foreground">{log.message}</p>
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span
+                          className={`grid size-6 shrink-0 place-items-center rounded-full ${
+                            log.status === 'SUCCESS'
+                              ? 'bg-success-soft text-success'
+                              : log.status === 'ERROR'
+                                ? 'bg-destructive-soft text-destructive'
+                                : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {log.status === 'SUCCESS' ? (
+                            <CheckCircle className="size-3.5" />
+                          ) : log.status === 'ERROR' ? (
+                            <AlertCircle className="size-3.5" />
+                          ) : (
+                            <Clock className="size-3.5" />
+                          )}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] font-medium">{log.action}</p>
+                          {log.message && (
+                            <p className="truncate text-xs text-muted-foreground">{log.message}</p>
+                          )}
                         </div>
                       </div>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                         {formatDate(log.createdAt, locale, {
                           day: 'numeric',
                           month: 'short',
@@ -372,16 +387,16 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                           minute: '2-digit',
                         })}
                       </span>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="settings">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TabsContent value="settings" className="mt-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {/* Sync Settings */}
             <Card>
               <CardHeader>
@@ -389,22 +404,21 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 <CardDescription>Configure sync frequency</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="font-medium">Auto sync</p>
-                    <p className="text-sm text-muted-foreground">Automatically detect changes</p>
+                    <p className="text-[13px] font-medium">Auto sync</p>
+                    <p className="text-xs text-muted-foreground">Automatically detect changes</p>
                   </div>
-                  <input
-                    type="checkbox"
+                  <Switch
                     checked={document.autoSyncEnabled}
-                    className="h-4 w-4"
-                    readOnly
+                    disabled
+                    aria-label="Auto sync enabled"
                   />
                 </div>
                 {document.autoSyncEnabled && document.syncFrequency && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Frequency</p>
-                    <p className="font-medium">
+                  <div className="border-t border-border pt-4">
+                    <p className="text-xs text-muted-foreground">Frequency</p>
+                    <p className="mt-0.5 text-[13px] font-medium">
                       {document.syncFrequency === 'DAILY'
                         ? 'Daily'
                         : document.syncFrequency === 'WEEKLY'
@@ -416,9 +430,9 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                   </div>
                 )}
                 {document.nextSyncAt && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Next sync</p>
-                    <p className="font-medium">
+                  <div className="border-t border-border pt-4">
+                    <p className="text-xs text-muted-foreground">Next sync</p>
+                    <p className="mt-0.5 text-[13px] font-medium">
                       {formatDate(document.nextSyncAt, locale, {
                         day: 'numeric',
                         month: 'long',
@@ -437,19 +451,19 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 <CardTitle>Publishing</CardTitle>
                 <CardDescription>Auto-publish options</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
+              <CardContent>
+                <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="font-medium">Auto-publish</p>
-                    <p className="text-sm text-muted-foreground">Publish immediately after sync</p>
+                    <p className="text-[13px] font-medium">Auto-publish</p>
+                    <p className="text-xs text-muted-foreground">Publish immediately after sync</p>
                   </div>
-                  <input type="checkbox" className="h-4 w-4" defaultChecked />
+                  <Switch defaultChecked aria-label="Auto-publish" />
                 </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   )
 }

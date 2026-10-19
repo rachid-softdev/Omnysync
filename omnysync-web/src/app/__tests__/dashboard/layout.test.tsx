@@ -28,23 +28,33 @@ vi.mock('@/lib/auth', () => ({
   }),
 }))
 
-vi.mock('@/lib/i18n', () => ({
-  t: (key: string) => {
-    const translations: Record<string, string> = {
-      UI_DASHBOARD: 'Dashboard',
-      UI_DOCS_LABEL: 'Documents',
-      UI_CONNECTORS: 'Connectors',
-      UI_SYNC: 'Sync',
-      UI_ANALYTICS: 'Analytics',
-      UI_WEBHOOKS: 'Webhooks',
-      UI_APPROVALS: 'Approvals',
-      UI_USAGE: 'Usage',
-      UI_SETTINGS: 'Settings',
-      UI_SKIP_TO_CONTENT: 'Skip to content',
-      UI_LOGOUT: 'Logout',
-    }
-    return translations[key] || key
-  },
+vi.mock('@/lib/i18n', () => {
+  const translations: Record<string, string> = {
+    UI_DASHBOARD: 'Dashboard',
+    UI_DOCS_LABEL: 'Documents',
+    UI_CONNECTORS: 'Connectors',
+    UI_SYNC: 'Sync',
+    UI_ANALYTICS: 'Analytics',
+    UI_WEBHOOKS: 'Webhooks',
+    UI_APPROVALS: 'Approvals',
+    UI_USAGE: 'Usage',
+    UI_SETTINGS: 'Settings',
+    UI_SKIP_TO_CONTENT: 'Skip to content',
+    UI_LOGOUT: 'Logout',
+  }
+  const translate = (key: string) => translations[key] || key
+  return {
+    t: translate,
+    getT: async () => translate,
+  }
+})
+
+vi.mock('@/lib/i18n/useTranslations', () => ({
+  useTranslations: () => ({
+    t: (key: string) => key,
+    loading: false,
+    locale: 'en',
+  }),
 }))
 
 vi.mock('@/lib/auth/org', () => ({
@@ -140,7 +150,8 @@ describe('DashboardLayout', () => {
     const element = await DashboardLayout({ children: <div>Content</div> })
     render(element)
 
-    expect(screen.getByText('Logout')).toBeInTheDocument()
+    // The sidebar footer uses an icon-only button, labelled for assistive tech.
+    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument()
   })
 
   it('renders MobileNav with nav items and user', async () => {
@@ -169,9 +180,9 @@ describe('DashboardLayout', () => {
     const element = await DashboardLayout({ children: <div>Content</div> })
     render(element)
 
-    const img = screen.getByAltText('Jane')
-    expect(img).toBeInTheDocument()
-    expect(img).toHaveAttribute('src', '/avatar.jpg')
+    const images = screen.getAllByAltText('Jane')
+    expect(images.length).toBeGreaterThanOrEqual(1)
+    expect(images[0]).toHaveAttribute('src', '/avatar.jpg')
   })
 
   it('redirects to sign-in when no session', async () => {

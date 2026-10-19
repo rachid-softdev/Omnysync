@@ -182,7 +182,7 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
 
         {success ? (
           <div className="flex flex-col items-center gap-3 py-8">
-            <CheckCircle className="w-10 h-10 text-green-500" aria-hidden="true" />
+            <CheckCircle className="w-10 h-10 text-success" aria-hidden="true" />
             <p className="text-sm text-muted-foreground">Connected successfully!</p>
           </div>
         ) : (

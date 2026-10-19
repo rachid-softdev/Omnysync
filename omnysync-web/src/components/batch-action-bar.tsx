@@ -19,6 +19,10 @@ interface BatchActionBarProps {
   actions: BatchAction[]
 }
 
+/**
+ * Sticky contextual toolbar shown while list rows are selected.
+ * Sits below the fixed top bar (h-14) so it stays visible while scrolling.
+ */
 export function BatchActionBar({
   selectedCount,
   isAllSelected,
@@ -29,16 +33,25 @@ export function BatchActionBar({
   if (selectedCount === 0) return null
 
   return (
-    <div className="sticky top-0 z-10 -mx-8 px-8 py-3 mb-4 bg-primary/5 border-b border-primary/20 backdrop-blur-sm">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={onClearSelection} aria-label="Clear selection">
-            <X className="w-4 h-4" />
+    <div className="sticky top-14 z-20 -mx-6 mb-4 border-b border-border bg-background px-6 lg:-mx-8 lg:px-8">
+      <div className="flex h-12 items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onClearSelection}
+            aria-label="Clear selection"
+          >
+            <X />
           </Button>
-          <span className="text-sm font-medium">
+          <span className="text-[13px] font-medium">
             {selectedCount} selected
             {!isAllSelected && (
-              <button onClick={onSelectAll} className="ml-2 text-xs text-primary hover:underline">
+              <button
+                type="button"
+                onClick={onSelectAll}
+                className="ml-2 text-xs font-normal text-primary hover:underline"
+              >
                 Select all
               </button>
             )}

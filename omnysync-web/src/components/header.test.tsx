@@ -18,6 +18,7 @@ vi.mock('@/lib/i18n/useTranslations', () => ({
       const translations: Record<string, string> = {
         nav_features: 'Features',
         nav_how_it_works: 'How it works',
+        nav_pricing: 'Pricing',
         UI_SIGN_IN: 'Sign In',
         UI_GET_STARTED: 'Get Started',
       }
@@ -49,12 +50,10 @@ describe('Header', () => {
     expect(container.innerHTML).toBe('')
   })
 
-  it('does not show nav links on dashboard page', () => {
+  it('does not render inside the app shell (dashboard owns its chrome)', () => {
     mockUsePathname.mockReturnValue('/dashboard')
-    render(<Header />)
-    expect(screen.getByText('Omnysync')).toBeInTheDocument()
-    expect(screen.queryByText('Features')).not.toBeInTheDocument()
-    expect(screen.queryByText('How it works')).not.toBeInTheDocument()
+    const { container } = render(<Header />)
+    expect(container.innerHTML).toBe('')
   })
 
   it('renders ThemeToggle component', () => {

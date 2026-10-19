@@ -1,9 +1,12 @@
 import { auth } from '@/lib/auth'
-import { t } from '@/lib/i18n'
-import { getLocaleFromHeaders } from '@/lib/i18n'
+import { getLocaleFromHeaders, getT } from '@/lib/i18n'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { BatchDocumentList } from '@/components/batch-document-list'
+import { PageHeader, PageShell } from '@/components/page-header'
+import { Button } from '@/components/ui/button'
+import { ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
@@ -16,6 +19,7 @@ export default async function DocumentsPage() {
   }
 
   const locale = getLocaleFromHeaders(await headers())
+  const t = await getT()
   const orgId = await getUserOrgId(session.user.id)
 
   const documents = await prisma.document.findMany({
@@ -31,15 +35,23 @@ export default async function DocumentsPage() {
   const serializedDocs = JSON.parse(JSON.stringify(documents))
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">{t('UI_DOCS_LABEL')}</h1>
-          <p className="text-muted-foreground mt-1">{t('UI_MANAGE_DOCS')}</p>
-        </div>
-      </div>
+    <PageShell>
+      <PageHeader
+        title={t('UI_DOCS_LABEL')}
+        description={t('UI_MANAGE_DOCS')}
+        actions={
+          <Button asChild>
+            <Link href="/dashboard/sync/new">
+              {t('UI_NEW_SYNC')}
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+        }
+      />
 
-      <BatchDocumentList documents={serializedDocs} locale={locale} />
-    </div>
+      <div className="mt-6">
+        <BatchDocumentList documents={serializedDocs} locale={locale} />
+      </div>
+    </PageShell>
   )
 }

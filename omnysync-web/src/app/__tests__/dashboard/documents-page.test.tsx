@@ -24,6 +24,7 @@ vi.mock('@/lib/i18n', async (importOriginal) => {
   return {
     ...actual,
     t: (key: string, locale?: string) => translations[key] || actual.t(key, locale),
+    getT: async () => (key: string) => translations[key] || actual.t(key),
   }
 })
 

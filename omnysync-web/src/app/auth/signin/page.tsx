@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { Input } from '@/components/ui/input'
-import { Zap, Globe, BarChart3, Shield, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { AlertCircle, ArrowRight, Check, Loader2 } from 'lucide-react'
 
 export default function SignInPage() {
   const router = useRouter()
@@ -82,7 +84,6 @@ export default function SignInPage() {
 
     try {
       if (isLogin) {
-        // Login with credentials
         const result = await signIn('credentials', {
           redirect: false,
           email,
@@ -103,7 +104,6 @@ export default function SignInPage() {
           router.push('/dashboard')
         }
       } else {
-        // Register
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -119,7 +119,6 @@ export default function SignInPage() {
             setError(data.error || 'Registration failed. Please try again or contact support.')
           }
         } else {
-          // Auto login after registration
           const result = await signIn('credentials', {
             redirect: false,
             email,
@@ -143,248 +142,266 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <div className="mb-8">
-            <Link href="/" className="text-2xl font-bold">
-              Omnysync
-            </Link>
-          </div>
-
-          <h1 className="text-3xl font-bold mb-2">
-            {isLogin ? 'Welcome back' : 'Create your account'}
-          </h1>
-          <p className="text-muted-foreground mb-8">
-            {isLogin
-              ? 'Sign in to continue syncing your content'
-              : 'Start syncing your content in minutes'}
-          </p>
-
-          <button
-            onClick={signInWithGoogle}
-            className="w-full flex items-center justify-center gap-3 rounded-full border border-input px-6 py-3 text-sm font-medium hover:bg-accent transition-colors mb-6"
+    <div className="grid min-h-screen lg:grid-cols-[1fr_minmax(0,520px)]">
+      {/* Form panel */}
+      <div className="flex flex-col px-6 py-8 sm:px-10 lg:px-16">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2" aria-label="Omnysync home">
+            <span className="grid size-7 place-items-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">
+              O
+            </span>
+            <span className="text-[15px] font-semibold tracking-tight">Omnysync</span>
+          </Link>
+          <Link
+            href="/pricing"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              />
-            </svg>
-            <span>Continue with Google</span>
-          </button>
+            Pricing
+          </Link>
+        </div>
 
-          {/* Divider */}
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-background px-4 text-muted-foreground">or</span>
-            </div>
-          </div>
+        <div className="flex flex-1 items-center py-10">
+          <div className="mx-auto w-full max-w-sm">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {isLogin ? 'Welcome back' : 'Create your account'}
+            </h1>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              {isLogin
+                ? 'Sign in to continue syncing your content.'
+                : 'Start syncing your content across platforms in minutes.'}
+            </p>
 
-          {/* Email/Password Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div>
-                <label htmlFor="name" className="text-sm font-medium mb-1 block">
-                  Name
-                </label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Your name"
-                  value={name}
-                  onChange={handleNameChange}
-                  required={!isLogin}
-                  aria-invalid={!!fieldErrors.name}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={signInWithGoogle}
+              className="mt-7 h-10 w-full gap-2.5"
+            >
+              <svg className="size-4" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 />
-                {fieldErrors.name && (
-                  <p className="text-xs text-destructive mt-1" role="alert">
-                    {fieldErrors.name}
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                />
+              </svg>
+              Continue with Google
+            </Button>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-background px-3 text-xs text-muted-foreground">
+                  or continue with email
+                </span>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              {!isLogin && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Your name"
+                    value={name}
+                    onChange={handleNameChange}
+                    aria-invalid={!!fieldErrors.name}
+                    aria-describedby={fieldErrors.name ? 'name-error' : undefined}
+                    className="h-10"
+                  />
+                  {fieldErrors.name && (
+                    <p id="name-error" className="text-xs text-destructive" role="alert">
+                      {fieldErrors.name}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={handleEmailChange}
+                  required
+                  aria-invalid={!!fieldErrors.email}
+                  aria-describedby={fieldErrors.email ? 'email-error' : undefined}
+                  className="h-10"
+                />
+                {fieldErrors.email && (
+                  <p id="email-error" className="text-xs text-destructive" role="alert">
+                    {fieldErrors.email}
                   </p>
                 )}
               </div>
-            )}
 
-            <div>
-              <label htmlFor="email" className="text-sm font-medium mb-1 block">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@company.com"
-                value={email}
-                onChange={handleEmailChange}
-                required
-                aria-invalid={!!fieldErrors.email}
-              />
-              {fieldErrors.email && (
-                <p className="text-xs text-destructive mt-1" role="alert">
-                  {fieldErrors.email}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Password
-                </label>
-                {isLogin && (
-                  <Link
-                    href="/auth/reset-password"
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Forgot password?
-                  </Link>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  {isLogin && (
+                    <Link
+                      href="/auth/reset-password"
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  )}
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={handlePasswordChange}
+                  required
+                  aria-invalid={!!fieldErrors.password}
+                  aria-describedby={fieldErrors.password ? 'password-error' : undefined}
+                  className="h-10"
+                />
+                {fieldErrors.password && (
+                  <p id="password-error" className="text-xs text-destructive" role="alert">
+                    {fieldErrors.password}
+                  </p>
                 )}
               </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={handlePasswordChange}
-                required
-                aria-invalid={!!fieldErrors.password}
-              />
-              {fieldErrors.password && (
-                <p className="text-xs text-destructive mt-1" role="alert">
-                  {fieldErrors.password}
-                </p>
+
+              {error && (
+                <div
+                  className="flex items-start gap-2.5 rounded-lg border border-destructive/20 bg-destructive-soft p-3 text-sm text-destructive"
+                  role="alert"
+                >
+                  <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
               )}
-            </div>
 
-            {error && (
-              <div
-                className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm"
-                role="alert"
+              <Button type="submit" disabled={loading} className="h-10 w-full">
+                {loading ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Please wait…
+                  </>
+                ) : (
+                  <>
+                    {isLogin ? 'Sign in' : 'Create account'}
+                    <ArrowRight className="size-4" />
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              {isLogin ? "Don't have an account? " : 'Already have an account? '}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLogin(!isLogin)
+                  setFieldErrors({})
+                  setError('')
+                }}
+                className="font-medium text-primary hover:underline"
               >
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
+                {isLogin ? 'Sign up' : 'Sign in'}
+              </button>
+            </p>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-full bg-primary text-primary-foreground font-medium py-3 hover:bg-primary/90 disabled:opacity-50"
-            >
-              {loading ? 'Please wait...' : isLogin ? 'Sign in' : 'Create account'}
-            </button>
-          </form>
-
-          <p className="text-sm text-muted-foreground mt-6 text-center">
-            {isLogin ? "Don't have an account? " : 'Already have an account? '}
-            <button
-              type="button"
-              onClick={() => {
-                setIsLogin(!isLogin)
-                setFieldErrors({})
-                setError('')
-              }}
-              className="text-primary hover:underline font-medium"
-            >
-              {isLogin ? 'Sign up' : 'Sign in'}
-            </button>
-          </p>
-
-          <p className="text-xs text-muted-foreground mt-6 text-center">
-            By continuing, you agree to our{' '}
-            <Link href="#" className="underline">
-              Terms
-            </Link>{' '}
-            and{' '}
-            <Link href="#" className="underline">
-              Privacy Policy
-            </Link>
-          </p>
+            <p className="mt-8 text-center text-xs leading-relaxed text-muted-foreground">
+              By continuing, you agree to our{' '}
+              <Link href="#" className="underline underline-offset-2">
+                Terms
+              </Link>{' '}
+              and{' '}
+              <Link href="#" className="underline underline-offset-2">
+                Privacy Policy
+              </Link>
+              .
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Right side - Benefits */}
-      <div className="hidden lg:flex flex-1 bg-primary text-primary-foreground p-12 items-center justify-center">
-        <div className="max-w-md">
-          <h2 className="text-3xl font-bold mb-6">Sync smarter, not harder</h2>
+      {/* Product panel */}
+      <div className="relative hidden overflow-hidden bg-[#061a33] lg:block">
+        <div
+          className="absolute inset-0 opacity-70"
+          style={{
+            background:
+              'radial-gradient(120% 80% at 85% 0%, #0a3d8f 0%, transparent 60%), radial-gradient(90% 70% at 0% 100%, #063a7a 0%, transparent 55%)',
+          }}
+          aria-hidden="true"
+        />
+        <div className="relative flex h-full flex-col justify-between p-12">
+          <div>
+            <p className="text-sm font-medium text-white/60">Built for content teams</p>
+            <h2 className="mt-3 text-[28px] font-semibold leading-tight tracking-tight text-white">
+              One draft in.
+              <br />
+              Every platform out.
+            </h2>
+          </div>
 
-          <div className="space-y-6">
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
-                <Zap className="w-5 h-5" />
+          {/* Mockup */}
+          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-1.5 shadow-2xl backdrop-blur-sm">
+            <div className="rounded-lg bg-[#0b1220] p-4">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-emerald-400" />
+                  <span className="text-xs font-medium text-white/80">Sync run</span>
+                </div>
+                <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
+                  Completed
+                </span>
               </div>
-              <div>
-                <h3 className="font-semibold mb-1">Save hours every week</h3>
-                <p className="text-sm text-primary-foreground/80">
-                  One publish, everywhere. No more copying and pasting.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
-                <Globe className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-1">All your platforms</h3>
-                <p className="text-sm text-primary-foreground/80">
-                  WordPress, Ghost, Webflow, Shopify & more.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
-                <BarChart3 className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-1">Track everything</h3>
-                <p className="text-sm text-primary-foreground/80">
-                  Analytics across all platforms in one place.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
-                <Shield className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-1">Secure & private</h3>
-                <p className="text-sm text-primary-foreground/80">
-                  Enterprise-grade security. Your data stays yours.
-                </p>
+              <div className="mt-3 space-y-2.5">
+                {[
+                  { name: 'WordPress', meta: 'Published · 2s' },
+                  { name: 'Ghost', meta: 'Published · 1s' },
+                  { name: 'Webflow', meta: 'Published · 3s' },
+                  { name: 'Shopify', meta: 'Published · 2s' },
+                ].map((row) => (
+                  <div key={row.name} className="flex items-center gap-2.5">
+                    <span className="grid size-6 shrink-0 place-items-center rounded-md bg-white/[0.06]">
+                      <Check className="size-3 text-emerald-400" />
+                    </span>
+                    <span className="flex-1 text-xs text-white/80">{row.name}</span>
+                    <span className="text-[10px] text-white/40">{row.meta}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
-          <div className="mt-12 pt-8 border-t border-primary-foreground/20">
-            <div className="flex items-center gap-4">
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="w-8 h-8 rounded-full bg-primary-foreground/30 border-2 border-primary"
-                  />
-                ))}
-              </div>
-              <div className="text-sm">
-                <span className="font-semibold">2,000+</span> creators syncing
+          <div className="space-y-3">
+            <p className="text-sm leading-relaxed text-white/70">
+              &ldquo;We publish to five platforms in the time it used to take to format one
+              draft.&rdquo;
+            </p>
+            <div className="flex items-center gap-3">
+              <span className="grid size-8 place-items-center rounded-full bg-white/10 text-[11px] font-semibold text-white">
+                MC
+              </span>
+              <div className="text-xs">
+                <p className="font-medium text-white">Maya Chen</p>
+                <p className="text-white/50">Head of Content, Northwind</p>
               </div>
             </div>
           </div>

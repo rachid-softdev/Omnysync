@@ -63,25 +63,25 @@ describe('FeatureGuard', () => {
   it('renders PlanBadge with correct variant', () => {
     render(<PlanBadge variant="success" />)
     const badge = screen.getByText('Plan')
-    expect(badge.className).toContain('bg-green-100')
+    expect(badge.className).toContain('bg-success-soft')
   })
 
   it('renders PlanBadge with default variant', () => {
     render(<PlanBadge />)
     const badge = screen.getByText('Plan')
-    expect(badge.className).toContain('bg-gray-100')
+    expect(badge.className).toContain('bg-muted')
   })
 
   it('renders PlanBadge with warning variant', () => {
     render(<PlanBadge variant="warning" />)
     const badge = screen.getByText('Plan')
-    expect(badge.className).toContain('bg-yellow-100')
+    expect(badge.className).toContain('bg-warning-soft')
   })
 
   it('renders PlanBadge with error variant', () => {
     render(<PlanBadge variant="error" />)
     const badge = screen.getByText('Plan')
-    expect(badge.className).toContain('bg-red-100')
+    expect(badge.className).toContain('bg-destructive-soft')
   })
 
   it('applies className to wrapper span', () => {

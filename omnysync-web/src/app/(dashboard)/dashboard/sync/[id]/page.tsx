@@ -5,6 +5,7 @@ import { getUserOrgId } from '@/lib/auth/org'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { PageHeader, PageShell } from '@/components/page-header'
 import {
   ArrowLeft,
   RefreshCw,
@@ -103,241 +104,272 @@ export default async function SyncDetailPage({ params }: PageProps) {
     SHOPIFY: 'Shopify',
   }
 
-  return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard/sync">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold">Sync Details</h1>
-            <p className="text-sm text-muted-foreground mt-1">{document.title}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href={`/dashboard/documents/${document.id}`}>
-            <Button variant="outline" size="sm">
-              <FileText className="w-4 h-4 mr-2" />
-              View document
-            </Button>
-          </Link>
-          <form
-            action={async () => {
-              'use server'
-              // Trigger sync
-              const { performSync } = await import('@omnysync/core/services/sync')
-              await (
-                performSync as (
-                  orgId: string,
-                  documentId: string,
-                  ...args: unknown[]
-                ) => Promise<unknown>
-              )(
-                document.id,
-                document.sourceConnectorId!,
-                document.destConnectorId!,
-                session.user.id
-              )
-            }}
-          >
-            <Button type="submit" size="sm">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Restart
-            </Button>
-          </form>
-        </div>
-      </div>
+  const stepStatusLabels: Record<string, string> = {
+    completed: 'Completed',
+    in_progress: 'In progress...',
+    error: 'Error occurred',
+    pending: 'Pending',
+  }
 
-      {/* Status Card */}
-      <Card className="mb-8">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
+  return (
+    <PageShell>
+      <PageHeader
+        title="Sync Details"
+        description={document.title}
+        actions={
+          <>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/dashboard/sync">
+                <ArrowLeft className="size-4" />
+                Back
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/dashboard/documents/${document.id}`}>
+                <FileText className="size-4" />
+                View document
+              </Link>
+            </Button>
+            <form
+              action={async () => {
+                'use server'
+                // Trigger sync
+                const { performSync } = await import('@omnysync/core/services/sync')
+                await (
+                  performSync as (
+                    orgId: string,
+                    documentId: string,
+                    ...args: unknown[]
+                  ) => Promise<unknown>
+                )(
+                  document.id,
+                  document.sourceConnectorId!,
+                  document.destConnectorId!,
+                  session.user.id
+                )
+              }}
+            >
+              <Button type="submit" size="sm">
+                <RefreshCw className="size-4" />
+                Restart
+              </Button>
+            </form>
+          </>
+        }
+      />
+
+      {/* Status card */}
+      <Card className="mt-6">
+        <CardContent className="p-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              {document.syncStatus === 'SYNCED' ? (
-                <div className="p-2 rounded-full bg-green-500/10">
-                  <CheckCircle className="w-6 h-6 text-green-500" />
-                </div>
-              ) : document.syncStatus === 'FAILED' ? (
-                <div className="p-2 rounded-full bg-red-500/10">
-                  <AlertCircle className="w-6 h-6 text-red-500" />
-                </div>
-              ) : document.syncStatus === 'SYNCING' ? (
-                <div className="p-2 rounded-full bg-blue-500/10">
-                  <RefreshCw className="w-6 h-6 text-blue-500 animate-spin" />
-                </div>
-              ) : (
-                <div className="p-2 rounded-full bg-secondary">
-                  <Clock className="w-6 h-6 text-muted-foreground" />
-                </div>
-              )}
+              <span
+                className={`grid size-10 shrink-0 place-items-center rounded-full ${
+                  document.syncStatus === 'SYNCED'
+                    ? 'bg-success-soft text-success'
+                    : document.syncStatus === 'FAILED'
+                      ? 'bg-destructive-soft text-destructive'
+                      : document.syncStatus === 'SYNCING'
+                        ? 'bg-info-soft text-info'
+                        : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                {document.syncStatus === 'SYNCED' ? (
+                  <CheckCircle className="size-5" />
+                ) : document.syncStatus === 'FAILED' ? (
+                  <AlertCircle className="size-5" />
+                ) : document.syncStatus === 'SYNCING' ? (
+                  <RefreshCw className="size-5 animate-spin" />
+                ) : (
+                  <Clock className="size-5" />
+                )}
+              </span>
               <div>
-                <h2 className="text-lg font-semibold">
+                <h2 className="text-base font-semibold tracking-tight">
                   {statusLabels[document.syncStatus] || document.syncStatus}
                 </h2>
                 {document.lastSyncedAt && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-[13px] text-muted-foreground">
                     Last execution: {formatDateTime(document.lastSyncedAt, locale)}
                   </p>
                 )}
               </div>
             </div>
             <div className="text-right">
-              <p className="text-3xl font-bold">{progress}%</p>
-              <p className="text-sm text-muted-foreground">Progress</p>
+              <p className="text-xs text-muted-foreground">Progress</p>
+              <p className="mt-0.5 text-2xl font-semibold tabular-nums tracking-tight">
+                {progress}%
+              </p>
             </div>
           </div>
-          <Progress value={progress} className="h-3" />
+          <Progress value={progress} className="mt-4 h-1.5" />
         </CardContent>
       </Card>
 
-      {/* Sync Steps */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Sync Steps</CardTitle>
-          <CardDescription>Document processing flow</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {syncSteps.map((step, index) => (
-              <div key={step.id} className="flex items-center gap-4 p-4 rounded-lg border">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    step.status === 'completed'
-                      ? 'bg-green-500/10 text-green-500'
-                      : step.status === 'in_progress'
-                        ? 'bg-blue-500/10 text-blue-500'
-                        : step.status === 'error'
-                          ? 'bg-red-500/10 text-red-500'
-                          : 'bg-secondary text-muted-foreground'
-                  }`}
-                >
-                  {step.status === 'completed' ? (
-                    <CheckCircle className="w-5 h-5" />
-                  ) : step.status === 'in_progress' ? (
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                  ) : step.status === 'error' ? (
-                    <AlertCircle className="w-5 h-5" />
-                  ) : (
-                    <span className="font-bold">{step.id}</span>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">{step.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {step.status === 'completed' && 'Completed'}
-                    {step.status === 'in_progress' && 'In progress...'}
-                    {step.status === 'error' && 'Error occurred'}
-                    {step.status === 'pending' && 'Pending'}
-                  </p>
-                </div>
-                {index < syncSteps.length - 1 && <div className="w-px h-8 bg-border" />}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Connection Info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1.4fr]">
+        {/* Sync steps */}
         <Card>
           <CardHeader>
-            <CardTitle>Source</CardTitle>
+            <CardTitle>Sync Steps</CardTitle>
+            <CardDescription>Document processing flow</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-3">
-              <ConnectorIcon type={document.sourceConnector?.type || ''} className="w-10 h-10" />
-              <div>
-                <p className="font-medium">
-                  {connectorNames[document.sourceConnector?.type || ''] || 'Source'}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {document.sourceConnector?.name || 'Not connected'}
-                </p>
-              </div>
-            </div>
+            <ol>
+              {syncSteps.map((step, index) => {
+                const StepIcon = step.icon
+                return (
+                  <li key={step.id} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <span
+                        className={`grid size-8 shrink-0 place-items-center rounded-full ${
+                          step.status === 'completed'
+                            ? 'bg-success-soft text-success'
+                            : step.status === 'in_progress'
+                              ? 'bg-info-soft text-info'
+                              : step.status === 'error'
+                                ? 'bg-destructive-soft text-destructive'
+                                : 'bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        {step.status === 'completed' ? (
+                          <CheckCircle className="size-4" />
+                        ) : step.status === 'in_progress' ? (
+                          <RefreshCw className="size-4 animate-spin" />
+                        ) : step.status === 'error' ? (
+                          <AlertCircle className="size-4" />
+                        ) : (
+                          <StepIcon className="size-4" />
+                        )}
+                      </span>
+                      {index < syncSteps.length - 1 && (
+                        <span
+                          aria-hidden="true"
+                          className={`my-1 w-px flex-1 ${
+                            step.status === 'completed' ? 'bg-success/30' : 'bg-border'
+                          }`}
+                        />
+                      )}
+                    </div>
+                    <div className={index < syncSteps.length - 1 ? 'pb-4' : ''}>
+                      <p className="text-[13px] font-medium leading-8">{step.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {stepStatusLabels[step.status]}
+                      </p>
+                    </div>
+                  </li>
+                )
+              })}
+            </ol>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Destination</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-3">
-              <ConnectorIcon type={document.destConnector?.type || ''} className="w-10 h-10" />
-              <div>
-                <p className="font-medium">
-                  {connectorNames[document.destConnector?.type || ''] || 'Destination'}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {document.destConnector?.name || 'Not connected'}
-                </p>
+        <div className="space-y-4">
+          {/* Connection info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Connection</CardTitle>
+              <CardDescription>Where this document comes from and goes to</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Source</p>
+                  <div className="mt-2 flex items-center gap-3">
+                    <ConnectorIcon
+                      type={document.sourceConnector?.type || ''}
+                      className="size-9 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-medium">
+                        {connectorNames[document.sourceConnector?.type || ''] || 'Source'}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {document.sourceConnector?.name || 'Not connected'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="border-t border-border pt-4 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
+                  <p className="text-xs text-muted-foreground">Destination</p>
+                  <div className="mt-2 flex items-center gap-3">
+                    <ConnectorIcon
+                      type={document.destConnector?.type || ''}
+                      className="size-9 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-medium">
+                        {connectorNames[document.destConnector?.type || ''] || 'Destination'}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {document.destConnector?.name || 'Not connected'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Error Details */}
+          {document.syncStatus === 'FAILED' && document.lastSyncError && (
+            <Card className="border-destructive/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                  <AlertCircle className="size-4" />
+                  Sync Error
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <pre className="whitespace-pre-wrap rounded-lg bg-destructive-soft p-3 font-mono text-[13px] text-destructive">
+                  {document.lastSyncError}
+                </pre>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Logs Console */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Log Console</CardTitle>
+              <CardDescription>Real-time execution log</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="max-h-96 overflow-y-auto rounded-lg border border-border bg-muted p-4 font-mono text-[13px]">
+                {syncLogs.length === 0 ? (
+                  <p className="text-muted-foreground">No logs available</p>
+                ) : (
+                  syncLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className={`mb-2 ${
+                        log.status === 'ERROR'
+                          ? 'text-destructive'
+                          : log.status === 'SUCCESS'
+                            ? 'text-success'
+                            : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span className="text-xs opacity-60">
+                        [
+                        {formatDateTime(log.createdAt, locale, {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                        })}
+                        ]
+                      </span>{' '}
+                      {log.status === 'SUCCESS' && '✓ '}
+                      {log.status === 'ERROR' && '✗ '}
+                      {log.status === 'INFO' && 'ℹ '}
+                      {log.action}: {log.message}
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      {/* Error Details */}
-      {document.syncStatus === 'FAILED' && document.lastSyncError && (
-        <Card className="mb-8 border-red-200 dark:border-red-900">
-          <CardHeader className="bg-red-50 dark:bg-red-900/20">
-            <CardTitle className="text-red-600">Sync Error</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <pre className="text-sm text-red-600 dark:text-red-400 whitespace-pre-wrap font-mono">
-              {document.lastSyncError}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Logs Console */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Log Console</CardTitle>
-          <CardDescription>Real-time execution log</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-secondary rounded-lg p-4 max-h-96 overflow-y-auto font-mono text-sm">
-            {syncLogs.length === 0 ? (
-              <p className="text-muted-foreground">No logs available</p>
-            ) : (
-              syncLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className={`mb-2 ${
-                    log.status === 'ERROR'
-                      ? 'text-red-500'
-                      : log.status === 'SUCCESS'
-                        ? 'text-green-500'
-                        : 'text-muted-foreground'
-                  }`}
-                >
-                  <span className="text-xs opacity-50">
-                    [
-                    {formatDateTime(log.createdAt, locale, {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit',
-                    })}
-                    ]
-                  </span>{' '}
-                  {log.status === 'SUCCESS' && '✓ '}
-                  {log.status === 'ERROR' && '✗ '}
-                  {log.status === 'INFO' && 'ℹ '}
-                  {log.action}: {log.message}
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    </PageShell>
   )
 }

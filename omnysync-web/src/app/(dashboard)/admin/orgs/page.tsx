@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useMemo, type ChangeEvent } from 'react'
 import Link from 'next/link'
-import { AdminPageHeader } from '@/components/admin/admin-page-header'
+import { PageHeader, PageShell } from '@/components/page-header'
 import { AdminDataTable } from '@/components/admin/admin-data-table'
 import { AdminStatusBadge } from '@/components/admin/admin-status-badge'
 import { Input } from '@/components/ui/input'
-import { Search, Building2 } from 'lucide-react'
+import { AlertCircle, ArrowUpRight, Search } from 'lucide-react'
 import type { Column } from '@/components/admin/admin-data-table'
 import { formatDate, detectClientLocale } from '@/lib/format-date'
 
@@ -70,13 +70,14 @@ export default function AdminOrgsPage() {
     () => [
       {
         key: 'name',
-        header: 'Name',
+        header: 'Organization',
         render: (org) => (
           <Link
             href={`/admin/orgs/${org.id}`}
-            className="font-medium hover:text-primary transition-colors"
+            className="group inline-flex items-center gap-1 font-medium hover:text-primary"
           >
             {org.name}
+            <ArrowUpRight className="size-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
           </Link>
         ),
       },
@@ -84,7 +85,9 @@ export default function AdminOrgsPage() {
         key: 'slug',
         header: 'Slug',
         render: (org) => (
-          <span className="text-muted-foreground">{org.slug ? `/${org.slug}` : '—'}</span>
+          <span className="font-mono text-xs text-muted-foreground">
+            {org.slug ? `/${org.slug}` : '—'}
+          </span>
         ),
       },
       {
@@ -114,15 +117,18 @@ export default function AdminOrgsPage() {
       {
         key: 'createdAt',
         header: 'Created',
-        render: (org) =>
-          formatDate(org.createdAt, locale, {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-          }),
+        render: (org) => (
+          <span className="tabular-nums text-muted-foreground">
+            {formatDate(org.createdAt, locale, {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </span>
+        ),
       },
     ],
-    []
+    [locale]
   )
 
   const pagination = {
@@ -133,40 +139,54 @@ export default function AdminOrgsPage() {
   }
 
   return (
-    <div className="p-8">
-      <AdminPageHeader
+    <PageShell>
+      <PageHeader
         title="Organizations"
-        description={`${orgs.length} organization${orgs.length !== 1 ? 's' : ''} on the platform`}
+        description={
+          loading
+            ? 'Loading organizations…'
+            : `${orgs.length} organization${orgs.length !== 1 ? 's' : ''} on the platform`
+        }
       />
 
-      {/* Search bar */}
-      <div className="relative mb-6 max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by name or slug…"
-          value={search}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-          className="pl-10"
-        />
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="relative w-full max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by name or slug…"
+            value={search}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+            className="pl-9"
+            aria-label="Search organizations"
+          />
+        </div>
+        {!loading && (
+          <p className="ml-auto text-xs tabular-nums text-muted-foreground">
+            {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+          </p>
+        )}
       </div>
 
-      {/* Error state */}
       {error && (
-        <div className="flex items-center gap-3 p-4 mb-6 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive text-sm">
-          <Building2 className="h-5 w-5 flex-shrink-0" />
+        <div
+          role="alert"
+          className="mt-4 flex items-center gap-2.5 rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2.5 text-[13px] text-destructive"
+        >
+          <AlertCircle className="size-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Table */}
-      <AdminDataTable
-        columns={columns}
-        data={paginated}
-        pagination={pagination}
-        onPageChange={setPage}
-        isLoading={loading}
-        keyExtractor={(org) => org.id}
-      />
-    </div>
+      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <AdminDataTable
+          columns={columns}
+          data={paginated}
+          pagination={pagination}
+          onPageChange={setPage}
+          isLoading={loading}
+          keyExtractor={(org) => org.id}
+        />
+      </div>
+    </PageShell>
   )
 }

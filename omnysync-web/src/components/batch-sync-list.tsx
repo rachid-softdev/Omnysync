@@ -1,12 +1,21 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useBatchSelect } from '@/hooks/use-batch-select'
 import { BatchActionBar } from '@/components/batch-action-bar'
-import { RefreshCw, CheckCircle, AlertCircle, Clock, Trash2 } from 'lucide-react'
+import { RefreshCw, Trash2 } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 import { formatDateTime } from '@/lib/format-date'
 import {
@@ -35,18 +44,17 @@ interface BatchSyncListProps {
   locale: string
 }
 
-const statusIcons: Record<string, React.ReactNode> = {
-  INFO: <Clock className="w-4 h-4 text-blue-500" />,
-  SUCCESS: <CheckCircle className="w-4 h-4 text-green-500" />,
-  WARNING: <AlertCircle className="w-4 h-4 text-yellow-500" />,
-  ERROR: <AlertCircle className="w-4 h-4 text-destructive" />,
+const statusVariants: Record<string, 'secondary' | 'success' | 'warning' | 'destructive'> = {
+  INFO: 'secondary',
+  SUCCESS: 'success',
+  WARNING: 'warning',
+  ERROR: 'destructive',
 }
 
-const statusVariants: Record<string, 'secondary' | 'default' | 'destructive' | 'outline'> = {
-  INFO: 'secondary',
-  SUCCESS: 'outline',
-  WARNING: 'default',
-  ERROR: 'destructive',
+const statusDots: Record<string, string> = {
+  SUCCESS: 'bg-success',
+  WARNING: 'bg-warning',
+  ERROR: 'bg-destructive',
 }
 
 export function BatchSyncList({ syncLogs: initialLogs, locale }: BatchSyncListProps) {
@@ -66,18 +74,21 @@ export function BatchSyncList({ syncLogs: initialLogs, locale }: BatchSyncListPr
 
   if (logs.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('UI_RECENT_SYNCS')}</CardTitle>
-          <CardDescription>{t('UI_SYNC_HISTORY_TITLE')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-12 text-muted-foreground">
-            <RefreshCw className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>{t('UI_NO_RECENT_SYNC')}</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <div className="border-b border-border px-4 py-3">
+          <h2 className="text-sm font-semibold">{t('UI_RECENT_SYNCS')}</h2>
+          <p className="text-xs text-muted-foreground">{t('UI_SYNC_HISTORY_TITLE')}</p>
+        </div>
+        <div className="px-6 py-16 text-center">
+          <span className="mx-auto grid size-10 place-items-center rounded-xl bg-muted">
+            <RefreshCw className="size-5 text-muted-foreground" />
+          </span>
+          <p className="mt-4 text-sm font-medium">{t('UI_NO_RECENT_SYNC')}</p>
+          <Button asChild className="mt-6">
+            <Link href="/dashboard/sync/new">{t('UI_NEW_SYNC')}</Link>
+          </Button>
+        </div>
+      </div>
     )
   }
 
@@ -92,7 +103,7 @@ export function BatchSyncList({ syncLogs: initialLogs, locale }: BatchSyncListPr
           actions={[
             {
               label: 'Clear selected logs',
-              icon: <Trash2 className="w-4 h-4 mr-1" />,
+              icon: <Trash2 className="size-4" />,
               variant: 'destructive',
               onClick: () => setClearConfirmOpen(true),
             },
@@ -100,56 +111,76 @@ export function BatchSyncList({ syncLogs: initialLogs, locale }: BatchSyncListPr
         />
       )}
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>{t('UI_RECENT_SYNCS')}</CardTitle>
-              <CardDescription>{t('UI_SYNC_HISTORY_TITLE')}</CardDescription>
-            </div>
-            <Checkbox
-              id="select-all-syncs"
-              aria-label="Select all sync logs"
-              checked={isAllSelected}
-              onCheckedChange={(checked) => {
-                if (checked) selectAll()
-                else clearSelection()
-              }}
-            />
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold">{t('UI_RECENT_SYNCS')}</h2>
+            <p className="text-xs text-muted-foreground">{t('UI_SYNC_HISTORY_TITLE')}</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
+          <Checkbox
+            id="select-all-syncs"
+            aria-label="Select all sync logs"
+            checked={isAllSelected}
+            onCheckedChange={(checked) => {
+              if (checked) selectAll()
+              else clearSelection()
+            }}
+          />
+        </div>
+        <Table>
+          <TableHeader className="bg-muted/50">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-10 pr-0">
+                <span className="sr-only">Select</span>
+              </TableHead>
+              <TableHead>Operation</TableHead>
+              <TableHead className="hidden lg:table-cell">Document</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Time</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {logs.map((log) => (
-              <div
-                key={log.id}
-                className="flex items-center justify-between p-3 border border-border rounded-lg"
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
+              <TableRow key={log.id}>
+                <TableCell className="pr-0">
                   <Checkbox
                     checked={selectedIds.has(log.id)}
                     onCheckedChange={() => toggle(log.id)}
                     aria-label={`Select sync log ${log.action}`}
                   />
-                  {statusIcons[log.status]}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {log.document?.title || log.action}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">{log.message}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge variant={statusVariants[log.status] || 'secondary'}>{log.status}</Badge>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {formatDateTime(log.createdAt, locale)}
+                </TableCell>
+                <TableCell>
+                  <p className="max-w-[28rem] truncate text-[13px] font-medium capitalize">
+                    {log.action}
+                  </p>
+                  <p className="max-w-[28rem] truncate text-xs text-muted-foreground">
+                    {log.message}
+                  </p>
+                </TableCell>
+                <TableCell className="hidden lg:table-cell">
+                  <span className="text-[13px] text-muted-foreground">
+                    {log.document ? log.document.title : '—'}
                   </span>
-                </div>
-              </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={statusVariants[log.status] || 'secondary'}>
+                    {statusDots[log.status] && (
+                      <span
+                        className={`size-1.5 rounded-full ${statusDots[log.status]}`}
+                        aria-hidden="true"
+                      />
+                    )}
+                    {log.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-right text-xs tabular-nums text-muted-foreground">
+                  {formatDateTime(log.createdAt, locale)}
+                </TableCell>
+              </TableRow>
             ))}
-          </div>
-        </CardContent>
-      </Card>
+          </TableBody>
+        </Table>
+      </div>
 
       <AlertDialog open={clearConfirmOpen} onOpenChange={setClearConfirmOpen}>
         <AlertDialogContent>

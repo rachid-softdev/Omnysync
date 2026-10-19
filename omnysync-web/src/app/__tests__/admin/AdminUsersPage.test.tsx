@@ -1,6 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import AdminUsersPage from '../../(dashboard)/admin/users/page'
+
+// AdminDataTable localizes its footer from <html lang>; assertions below use FR.
+beforeAll(() => {
+  document.documentElement.lang = 'fr'
+})
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -226,9 +231,9 @@ describe('AdminUsersPage', () => {
     render(<AdminUsersPage />)
 
     await waitFor(() => {
-      // toLocaleDateString('en-US') → ex: "Jan 1, 2026"
-      expect(screen.getByText(/Jan 1, 2026/)).toBeInTheDocument()
-      expect(screen.getByText(/Jan 2, 2026/)).toBeInTheDocument()
+      // document lang = fr → "1 janv. 2026"
+      expect(screen.getByText(/1 janv\. 2026/)).toBeInTheDocument()
+      expect(screen.getByText(/2 janv\. 2026/)).toBeInTheDocument()
     })
   })
 

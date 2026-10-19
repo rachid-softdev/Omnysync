@@ -39,7 +39,7 @@ const CardTitle = React.memo(
     <h3
       ref={ref}
       className={cn(
-        "text-2xl font-semibold leading-none tracking-tight",
+        "text-base font-semibold leading-none tracking-tight",
         className,
       )}
       {...props}

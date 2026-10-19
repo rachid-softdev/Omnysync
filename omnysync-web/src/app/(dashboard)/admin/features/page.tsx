@@ -7,11 +7,11 @@
 
 import { useState, useEffect, useCallback, type ChangeEvent } from 'react'
 import Link from 'next/link'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus, Loader2, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { AdminPageHeader } from '@/components/admin/admin-page-header'
+import { PageHeader, PageShell } from '@/components/page-header'
 import { AdminEmptyState } from '@/components/admin/admin-empty-state'
 import { AdminDataTable, type Column } from '@/components/admin/admin-data-table'
 
@@ -40,8 +40,8 @@ interface Pagination {
 // Type badge
 // ---------------------------------------------------------------------------
 
-const TYPE_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
-  BOOLEAN: 'default',
+const TYPE_VARIANT: Record<string, 'info' | 'secondary' | 'outline'> = {
+  BOOLEAN: 'info',
   LIMIT: 'outline',
   EXPERIMENT: 'secondary',
 }
@@ -127,13 +127,20 @@ export default function AdminFeaturesPage() {
       key: 'key',
       header: 'Key',
       sortable: true,
-      render: (f) => <span className="font-mono text-sm font-medium">{f.key}</span>,
+      render: (f) => <span className="font-mono text-xs font-medium">{f.key}</span>,
     },
     {
       key: 'name',
       header: 'Name',
       sortable: true,
-      render: (f) => <span>{f.name}</span>,
+      render: (f) => (
+        <div className="min-w-0">
+          <p className="truncate font-medium">{f.name}</p>
+          {f.description && (
+            <p className="truncate text-xs text-muted-foreground">{f.description}</p>
+          )}
+        </div>
+      ),
     },
     {
       key: 'type',
@@ -144,19 +151,20 @@ export default function AdminFeaturesPage() {
     {
       key: 'plans',
       header: 'Plans',
+      className: 'text-right',
       render: (f) => (
-        <span className="text-muted-foreground">
+        <span className="tabular-nums text-muted-foreground">
           {f.plans.length} plan{f.plans.length !== 1 ? 's' : ''}
         </span>
       ),
     },
     {
       key: 'defaultConfig',
-      header: 'Default Config',
-      className: 'max-w-[180px]',
+      header: 'Default config',
+      className: 'max-w-[220px]',
       render: (f) =>
         f.defaultConfig ? (
-          <code className="text-xs text-muted-foreground truncate block">
+          <code className="block truncate rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
             {JSON.stringify(f.defaultConfig)}
           </code>
         ) : (
@@ -171,15 +179,15 @@ export default function AdminFeaturesPage() {
 
   if (error) {
     return (
-      <div className="p-8">
-        <AdminPageHeader title="Features" />
-        <div className="flex flex-col items-center justify-center py-12 text-destructive">
-          <p className="font-medium mb-4">{error}</p>
-          <Button variant="outline" onClick={fetchFeatures}>
+      <PageShell>
+        <PageHeader title="Features" description="Manage feature flags and entitlements" />
+        <div className="mt-10 flex flex-col items-center justify-center text-center">
+          <p className="mb-4 text-sm font-medium text-destructive">{error}</p>
+          <Button variant="outline" size="sm" onClick={fetchFeatures}>
             Retry
           </Button>
         </div>
-      </div>
+      </PageShell>
     )
   }
 
@@ -188,56 +196,66 @@ export default function AdminFeaturesPage() {
   // -----------------------------------------------------------------------
 
   return (
-    <div className="p-8">
-      <AdminPageHeader
+    <PageShell>
+      <PageHeader
         title="Features"
         description="Manage feature flags and entitlements"
         actions={
-          <Link href="/admin/features/new">
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
+          <Button size="sm" asChild>
+            <Link href="/admin/features/new">
+              <Plus className="size-3.5" />
               New Feature
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         }
       />
 
-      {/* Search input */}
-      <div className="mb-6">
-        <Input
-          placeholder="Search features..."
-          value={search}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="relative w-full max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search features..."
+            value={search}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+            className="pl-9"
+            aria-label="Search features"
+          />
+        </div>
+        {!isLoading && (
+          <p className="ml-auto text-xs tabular-nums text-muted-foreground">
+            {filteredData.length} result{filteredData.length !== 1 ? 's' : ''}
+          </p>
+        )}
       </div>
 
-      <AdminDataTable<Feature>
-        columns={columns}
-        data={filteredData}
-        pagination={pagination ?? { page: 1, limit: 20, total: 0, totalPages: 1 }}
-        onPageChange={setPage}
-        isLoading={isLoading}
-        sortBy={sortBy}
-        sortDir={sortDir}
-        onSort={handleSort}
-        keyExtractor={(f) => f.id}
-        emptyState={
-          <AdminEmptyState
-            icon={Loader2}
-            title="No features"
-            description="Create your first feature flag to start managing entitlements."
-            action={
-              <Link href="/admin/features/new">
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Feature
+      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <AdminDataTable<Feature>
+          columns={columns}
+          data={filteredData}
+          pagination={pagination ?? { page: 1, limit: 20, total: 0, totalPages: 1 }}
+          onPageChange={setPage}
+          isLoading={isLoading}
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSort={handleSort}
+          keyExtractor={(f) => f.id}
+          emptyState={
+            <AdminEmptyState
+              icon={Loader2}
+              title="No features"
+              description="Create your first feature flag to start managing entitlements."
+              action={
+                <Button size="sm" asChild>
+                  <Link href="/admin/features/new">
+                    <Plus className="size-3.5" />
+                    New Feature
+                  </Link>
                 </Button>
-              </Link>
-            }
-          />
-        }
-      />
-    </div>
+              }
+            />
+          }
+        />
+      </div>
+    </PageShell>
   )
 }

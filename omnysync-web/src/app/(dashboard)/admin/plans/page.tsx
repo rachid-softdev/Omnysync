@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Plus, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { AdminPageHeader } from '@/components/admin/admin-page-header'
+import { PageHeader, PageShell } from '@/components/page-header'
 import { AdminEmptyState } from '@/components/admin/admin-empty-state'
 import { AdminStatusBadge } from '@/components/admin/admin-status-badge'
 import { AdminDataTable, type Column } from '@/components/admin/admin-data-table'
@@ -94,29 +94,39 @@ export default function AdminPlansPage() {
   const columns: Column<Plan>[] = [
     {
       key: 'key',
-      header: 'Key',
-      render: (p) => <span className="font-mono text-sm font-medium">{p.key}</span>,
-    },
-    {
-      key: 'name',
-      header: 'Name',
-      render: (p) => <span className="font-medium">{p.name}</span>,
+      header: 'Plan',
+      render: (p) => (
+        <div className="flex items-center gap-2.5">
+          <span className="grid size-6 place-items-center rounded-md bg-muted font-mono text-[10px] font-medium text-muted-foreground">
+            {p.key.slice(0, 2).toUpperCase()}
+          </span>
+          <div>
+            <p className="font-medium">{p.name}</p>
+            <p className="font-mono text-[11px] text-muted-foreground">{p.key}</p>
+          </div>
+        </div>
+      ),
     },
     {
       key: 'priceMonthly',
-      header: 'Price Monthly',
-      render: (p) => <span>{formatPrice(p.priceMonthly)}</span>,
+      header: 'Monthly',
+      className: 'text-right',
+      render: (p) => <span className="tabular-nums">{formatPrice(p.priceMonthly)}</span>,
     },
     {
       key: 'priceYearly',
-      header: 'Price Yearly',
-      render: (p) => <span>{formatPrice(p.priceYearly)}</span>,
+      header: 'Yearly',
+      className: 'text-right',
+      render: (p) => (
+        <span className="tabular-nums text-muted-foreground">{formatPrice(p.priceYearly)}</span>
+      ),
     },
     {
       key: 'features',
       header: 'Features',
+      className: 'text-right',
       render: (p) => (
-        <span className="text-muted-foreground">
+        <span className="tabular-nums text-muted-foreground">
           {p.features.length} feature{p.features.length !== 1 ? 's' : ''}
         </span>
       ),
@@ -128,8 +138,9 @@ export default function AdminPlansPage() {
     },
     {
       key: 'sortOrder',
-      header: 'Sort Order',
-      render: (p) => <span className="text-muted-foreground">{p.sortOrder}</span>,
+      header: 'Order',
+      className: 'text-right',
+      render: (p) => <span className="tabular-nums text-muted-foreground">{p.sortOrder}</span>,
     },
   ]
 
@@ -139,15 +150,15 @@ export default function AdminPlansPage() {
 
   if (error) {
     return (
-      <div className="p-8">
-        <AdminPageHeader title="Plans" />
-        <div className="flex flex-col items-center justify-center py-12 text-destructive">
-          <p className="font-medium mb-4">{error}</p>
-          <Button variant="outline" onClick={fetchPlans}>
+      <PageShell>
+        <PageHeader title="Plans" description="Manage subscription plans and pricing" />
+        <div className="mt-10 flex flex-col items-center justify-center text-center">
+          <p className="mb-4 text-sm font-medium text-destructive">{error}</p>
+          <Button variant="outline" size="sm" onClick={fetchPlans}>
             Retry
           </Button>
         </div>
-      </div>
+      </PageShell>
     )
   }
 
@@ -156,43 +167,45 @@ export default function AdminPlansPage() {
   // -----------------------------------------------------------------------
 
   return (
-    <div className="p-8">
-      <AdminPageHeader
+    <PageShell>
+      <PageHeader
         title="Plans"
         description="Manage subscription plans and pricing"
         actions={
-          <Link href="/admin/plans/new">
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
+          <Button size="sm" asChild>
+            <Link href="/admin/plans/new">
+              <Plus className="size-3.5" />
               New Plan
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         }
       />
 
-      <AdminDataTable<Plan>
-        columns={columns}
-        data={data}
-        pagination={pagination ?? { page: 1, limit: 20, total: 0, totalPages: 1 }}
-        onPageChange={setPage}
-        isLoading={isLoading}
-        keyExtractor={(p) => p.id}
-        emptyState={
-          <AdminEmptyState
-            icon={Loader2}
-            title="No plans"
-            description="Create your first subscription plan to define feature entitlements."
-            action={
-              <Link href="/admin/plans/new">
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Plan
+      <div className="mt-6 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <AdminDataTable<Plan>
+          columns={columns}
+          data={data}
+          pagination={pagination ?? { page: 1, limit: 20, total: 0, totalPages: 1 }}
+          onPageChange={setPage}
+          isLoading={isLoading}
+          keyExtractor={(p) => p.id}
+          emptyState={
+            <AdminEmptyState
+              icon={Loader2}
+              title="No plans"
+              description="Create your first subscription plan to define feature entitlements."
+              action={
+                <Button size="sm" asChild>
+                  <Link href="/admin/plans/new">
+                    <Plus className="size-3.5" />
+                    New Plan
+                  </Link>
                 </Button>
-              </Link>
-            }
-          />
-        }
-      />
-    </div>
+              }
+            />
+          }
+        />
+      </div>
+    </PageShell>
   )
 }

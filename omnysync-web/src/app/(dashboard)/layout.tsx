@@ -1,28 +1,15 @@
 import { auth } from '@/lib/auth'
-import { t } from '@/lib/i18n'
+import { getT } from '@/lib/i18n'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Button } from '@/components/ui/button'
-import {
-  LayoutDashboard,
-  FileText,
-  Plug,
-  Settings,
-  LogOut,
-  ArrowRightLeft,
-  BarChart3,
-  Webhook,
-  FileCheck,
-  Zap,
-  Shield,
-  ExternalLink,
-} from 'lucide-react'
-import { logoutAction } from '@/lib/actions'
+import { BookOpen } from 'lucide-react'
 import { MobileNav } from '@/components/mobile-nav'
-import { SidebarNav } from '@/components/sidebar-nav'
+import { SidebarNav, type NavSection } from '@/components/sidebar-nav'
 import { KeyboardShortcuts } from '@/components/keyboard-shortcuts'
 import { CommandPalette, CommandPaletteTrigger } from '@/components/command-palette'
+import { DashboardHeader } from '@/components/dashboard-header'
+import { LogoutButton } from '@/components/logout-button'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -32,87 +19,114 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   const user = session.user
-  const trans = t
+  const t = await getT()
 
-  const navItems = [
-    { href: '/dashboard', icon: LayoutDashboard, label: trans('UI_DASHBOARD') },
-    { href: '/dashboard/documents', icon: FileText, label: trans('UI_DOCS_LABEL') },
-    { href: '/dashboard/connectors', icon: Plug, label: trans('UI_CONNECTORS') },
-    { href: '/dashboard/sync', icon: ArrowRightLeft, label: trans('UI_SYNC') },
+  // Icons are referenced by name so this data can cross the server/client
+  // boundary (component references are not serializable).
+  const sections: NavSection[] = [
     {
-      href: '/dashboard/analytics',
-      icon: BarChart3,
-      label: trans('UI_ANALYTICS'),
+      items: [
+        { href: '/dashboard', icon: 'dashboard', label: t('UI_DASHBOARD') },
+        { href: '/dashboard/documents', icon: 'documents', label: t('UI_DOCS_LABEL') },
+        { href: '/dashboard/connectors', icon: 'connectors', label: t('UI_CONNECTORS') },
+      ],
     },
-    { href: '/dashboard/webhooks', icon: Webhook, label: trans('UI_WEBHOOKS') },
     {
-      href: '/dashboard/approvals',
-      icon: FileCheck,
-      label: trans('UI_APPROVALS'),
+      title: t('UI_NAV_WORKSPACE'),
+      items: [
+        { href: '/dashboard/sync', icon: 'sync', label: t('UI_SYNC') },
+        { href: '/dashboard/analytics', icon: 'analytics', label: t('UI_ANALYTICS') },
+        { href: '/dashboard/webhooks', icon: 'webhooks', label: t('UI_WEBHOOKS') },
+        { href: '/dashboard/approvals', icon: 'approvals', label: t('UI_APPROVALS') },
+      ],
     },
-    { href: '/dashboard/usage', icon: Zap, label: trans('UI_USAGE') },
-    { href: '/dashboard/settings', icon: Settings, label: trans('UI_SETTINGS') },
-    ...(user.role === 'ADMIN' ? [{ href: '/admin', icon: Shield, label: 'Admin' }] : []),
+    {
+      title: t('UI_NAV_ACCOUNT'),
+      items: [
+        { href: '/dashboard/usage', icon: 'usage', label: t('UI_USAGE') },
+        { href: '/dashboard/settings', icon: 'settings', label: t('UI_SETTINGS') },
+        ...(user.role === 'ADMIN'
+          ? [{ href: '/admin', icon: 'admin' as const, label: t('UI_ADMIN') }]
+          : []),
+      ],
+    },
   ]
 
+  const navItems = sections.flatMap((section) => section.items)
+
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen bg-muted/40">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-background focus:text-foreground focus:ring-2 focus:ring-ring focus:rounded-lg"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:ring-2 focus:ring-ring"
       >
         {t('UI_SKIP_TO_CONTENT')}
       </a>
-      {/* Desktop sidebar - hidden on mobile */}
-      <aside className="hidden md:flex w-64 bg-card border-r border-border flex-col">
-        <div className="p-6 border-b border-border">
-          <h1 className="text-xl font-bold">Omnysync</h1>
+
+      {/* Desktop sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-sidebar md:flex">
+        <div className="flex h-14 items-center border-b border-sidebar-border px-5">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <span className="grid size-7 place-items-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">
+              O
+            </span>
+            <span className="text-[15px] font-semibold tracking-tight">Omnysync</span>
+          </Link>
         </div>
-        <SidebarNav items={navItems} />
-        <div className="p-4 border-t border-border">
+
+        <SidebarNav sections={sections} />
+
+        <div className="border-t border-sidebar-border p-3">
+          <CommandPaletteTrigger />
           <Link
             href="https://docs.omnysync.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors mb-2"
+            className="mt-1 flex h-9 items-center gap-2.5 rounded-md px-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
-            <ExternalLink className="w-4 h-4" />
-            <span>Help & Documentation</span>
+            <BookOpen className="size-4 shrink-0" />
+            <span className="truncate">{t('UI_DOCS_LINK')}</span>
           </Link>
-          <div className="flex items-center gap-3 mb-4">
-            {user.image && (
+
+          <div className="mt-3 flex items-center gap-2.5 rounded-lg border border-sidebar-border bg-background p-2">
+            {user.image ? (
               <Image
                 src={user.image}
                 alt={user.name || 'User'}
                 width={32}
                 height={32}
-                className="rounded-full"
+                className="size-8 rounded-full object-cover"
               />
+            ) : (
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                {(user.name || user.email || 'U').slice(0, 1).toUpperCase()}
+              </span>
             )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user.name}</p>
-              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-medium leading-tight">{user.name}</p>
+              <p className="truncate text-[11px] leading-tight text-muted-foreground">
+                {user.email}
+              </p>
             </div>
+            <LogoutButton
+              label={t('UI_LOGOUT')}
+              iconOnly
+              className="shrink-0 text-muted-foreground"
+            />
           </div>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-foreground"
-            size="sm"
-            onClick={() => logoutAction()}
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            {trans('UI_LOGOUT')}
-          </Button>
-          <CommandPaletteTrigger />
         </div>
       </aside>
-      {/* Mobile navigation */}
+
       <MobileNav navItems={navItems} user={user} />
       <CommandPalette />
       <KeyboardShortcuts />
-      <main id="main-content" className="flex-1 bg-background md:pt-0 pt-14">
-        {children}
-      </main>
+
+      <div className="md:pl-64">
+        <DashboardHeader user={{ name: user.name, email: user.email, image: user.image }} />
+        <main id="main-content" className="pt-14">
+          {children}
+        </main>
+      </div>
     </div>
   )
 }

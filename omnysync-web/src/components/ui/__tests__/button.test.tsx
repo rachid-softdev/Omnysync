@@ -130,7 +130,7 @@ describe('Button', () => {
     render(<Button size="icon">+</Button>)
     const button = screen.getByRole('button', { name: '+' })
     expect(button).toHaveAttribute('data-size', 'icon')
-    expect(button).toHaveClass('size-8')
+    expect(button).toHaveClass('size-9')
   })
 
   describe('keyboard interaction', () => {

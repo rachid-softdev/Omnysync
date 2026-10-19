@@ -12,9 +12,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { AdminPageHeader } from '@/components/admin/admin-page-header'
+import { Card, CardContent } from '@/components/ui/card'
+import { PageHeader, PageShell } from '@/components/page-header'
 import { toast } from '@/components/toast-provider'
 
 type ApiError = {
@@ -115,150 +114,165 @@ export default function NewPlanPage() {
   // -----------------------------------------------------------------------
 
   return (
-    <div className="p-8">
-      <AdminPageHeader
+    <PageShell>
+      <PageHeader
         title="New Plan"
         description="Create a new subscription plan"
         actions={
-          <Button variant="outline" onClick={() => router.push('/admin/plans')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={() => router.push('/admin/plans')}>
+            <ArrowLeft className="size-3.5" />
             Back
           </Button>
         }
       />
 
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>Plan Details</CardTitle>
-          <CardDescription>
-            Define a new subscription plan with pricing and feature entitlements.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Key */}
-            <div className="space-y-2">
-              <Label htmlFor="key">
-                Key <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="key"
-                placeholder="pro"
-                value={key}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setKey(e.target.value)}
-                className={errors.key ? 'border-destructive' : ''}
-              />
-              {errors.key && <p className="text-sm text-destructive">{errors.key}</p>}
-              <p className="text-xs text-muted-foreground">
-                Unique identifier (lowercase, no spaces). Cannot be changed later.
+      <Card className="mt-6 max-w-2xl">
+        <form onSubmit={handleSubmit}>
+          <CardContent className="p-0">
+            {/* Identity */}
+            <div className="border-b border-border p-5">
+              <p className="text-[13px] font-semibold">Identity</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                The key is permanent and used in code and API responses.
               </p>
+              <div className="mt-4 space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="key">
+                    Key <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="key"
+                    placeholder="pro"
+                    value={key}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setKey(e.target.value)}
+                    className={errors.key ? 'border-destructive' : ''}
+                    aria-invalid={Boolean(errors.key)}
+                  />
+                  {errors.key ? (
+                    <p className="text-xs text-destructive">{errors.key}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Unique identifier (lowercase, no spaces). Cannot be changed later.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="name">
+                    Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="name"
+                    placeholder="Pro Plan"
+                    value={name}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                    className={errors.name ? 'border-destructive' : ''}
+                    aria-invalid={Boolean(errors.name)}
+                  />
+                  {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+                </div>
+              </div>
             </div>
 
-            <Separator />
-
-            {/* Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">
-                Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="name"
-                placeholder="Pro Plan"
-                value={name}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-                className={errors.name ? 'border-destructive' : ''}
-              />
-              {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+            {/* Pricing */}
+            <div className="border-b border-border p-5">
+              <p className="text-[13px] font-semibold">Pricing</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Leave prices empty for custom or contact-based plans.
+              </p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="priceMonthly">Price Monthly ($)</Label>
+                  <Input
+                    id="priceMonthly"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="29.00"
+                    value={priceMonthly}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setPriceMonthly(e.target.value)
+                    }
+                    className={`tabular-nums ${errors.priceMonthly ? 'border-destructive' : ''}`}
+                  />
+                  {errors.priceMonthly && (
+                    <p className="text-xs text-destructive">{errors.priceMonthly}</p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="priceYearly">Price Yearly ($)</Label>
+                  <Input
+                    id="priceYearly"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="290.00"
+                    value={priceYearly}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setPriceYearly(e.target.value)
+                    }
+                    className={`tabular-nums ${errors.priceYearly ? 'border-destructive' : ''}`}
+                  />
+                  {errors.priceYearly && (
+                    <p className="text-xs text-destructive">{errors.priceYearly}</p>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <Separator />
+            {/* Availability */}
+            <div className="space-y-4 border-b border-border p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <Label htmlFor="isActive">Active</Label>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Inactive plans cannot be selected by new subscribers.
+                  </p>
+                </div>
+                <Switch id="isActive" checked={isActive} onCheckedChange={setIsActive} />
+              </div>
 
-            {/* Pricing row */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="priceMonthly">Price Monthly ($)</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="sortOrder">Sort Order</Label>
                 <Input
-                  id="priceMonthly"
+                  id="sortOrder"
                   type="number"
-                  step="0.01"
                   min="0"
-                  placeholder="29.00"
-                  value={priceMonthly}
+                  placeholder="0"
+                  value={sortOrder}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setPriceMonthly(e.target.value)
+                    setSortOrder(e.target.value)
                   }
-                  className={errors.priceMonthly ? 'border-destructive' : ''}
+                  className={`max-w-[120px] tabular-nums ${errors.sortOrder ? 'border-destructive' : ''}`}
                 />
-                {errors.priceMonthly && (
-                  <p className="text-sm text-destructive">{errors.priceMonthly}</p>
+                {errors.sortOrder ? (
+                  <p className="text-xs text-destructive">{errors.sortOrder}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Lower values appear first in lists.
+                  </p>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="priceYearly">Price Yearly ($)</Label>
-                <Input
-                  id="priceYearly"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="290.00"
-                  value={priceYearly}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setPriceYearly(e.target.value)
-                  }
-                  className={errors.priceYearly ? 'border-destructive' : ''}
-                />
-                {errors.priceYearly && (
-                  <p className="text-sm text-destructive">{errors.priceYearly}</p>
-                )}
-              </div>
             </div>
-
-            <Separator />
-
-            {/* Is Active */}
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="isActive">Active</Label>
-                <p className="text-xs text-muted-foreground">
-                  Inactive plans cannot be selected by new subscribers.
-                </p>
-              </div>
-              <Switch id="isActive" checked={isActive} onCheckedChange={setIsActive} />
-            </div>
-
-            <Separator />
-
-            {/* Sort Order */}
-            <div className="space-y-2">
-              <Label htmlFor="sortOrder">Sort Order</Label>
-              <Input
-                id="sortOrder"
-                type="number"
-                min="0"
-                placeholder="0"
-                value={sortOrder}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSortOrder(e.target.value)}
-                className={`max-w-[120px] ${errors.sortOrder ? 'border-destructive' : ''}`}
-              />
-              {errors.sortOrder && <p className="text-sm text-destructive">{errors.sortOrder}</p>}
-              <p className="text-xs text-muted-foreground">Lower values appear first in lists.</p>
-            </div>
-
-            <Separator />
 
             {/* Actions */}
-            <div className="flex items-center gap-3 pt-2">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <div className="flex items-center gap-2 p-5">
+              <Button type="submit" size="sm" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="size-3.5 animate-spin" />}
                 Create Plan
               </Button>
-              <Button type="button" variant="outline" onClick={() => router.push('/admin/plans')}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => router.push('/admin/plans')}
+              >
                 Cancel
               </Button>
             </div>
-          </form>
-        </CardContent>
+          </CardContent>
+        </form>
       </Card>
-    </div>
+    </PageShell>
   )
 }

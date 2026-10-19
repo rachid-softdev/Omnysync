@@ -1,12 +1,21 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useBatchSelect } from '@/hooks/use-batch-select'
 import { BatchActionBar } from '@/components/batch-action-bar'
-import { Trash2 } from 'lucide-react'
+import { FileText, Trash2 } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 import { formatDate } from '@/lib/format-date'
 import {
@@ -42,11 +51,17 @@ const statusLabels: Record<string, string> = {
   FAILED: 'Failed',
 }
 
-const statusVariants: Record<string, 'secondary' | 'default' | 'destructive' | 'outline'> = {
+const statusVariants: Record<string, 'secondary' | 'info' | 'success' | 'destructive'> = {
   NOT_SYNCED: 'secondary',
-  SYNCING: 'default',
-  SYNCED: 'outline',
+  SYNCING: 'info',
+  SYNCED: 'success',
   FAILED: 'destructive',
+}
+
+const statusDots: Record<string, string> = {
+  SYNCING: 'bg-info',
+  SYNCED: 'bg-success',
+  FAILED: 'bg-destructive',
 }
 
 export function BatchDocumentList({ documents: initialDocuments, locale }: BatchDocumentListProps) {
@@ -66,18 +81,16 @@ export function BatchDocumentList({ documents: initialDocuments, locale }: Batch
 
   if (docs.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('UI_ALL_DOCS')}</CardTitle>
-          <CardDescription>{t('UI_ALL_DOCS_DESC')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-12 text-muted-foreground">
-            <p>{t('UI_NO_DOCS')}</p>
-            <p className="text-sm mt-1 mb-4">{t('UI_IMPORT_DOCS')}</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
+        <span className="mx-auto grid size-10 place-items-center rounded-xl bg-muted">
+          <FileText className="size-5 text-muted-foreground" />
+        </span>
+        <p className="mt-4 text-sm font-medium">{t('UI_NO_DOCS')}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{t('UI_IMPORT_DOCS')}</p>
+        <Button asChild className="mt-6">
+          <Link href="/dashboard/connectors">{t('UI_CONNECT_FIRST')}</Link>
+        </Button>
+      </div>
     )
   }
 
@@ -92,7 +105,7 @@ export function BatchDocumentList({ documents: initialDocuments, locale }: Batch
           actions={[
             {
               label: 'Delete',
-              icon: <Trash2 className="w-4 h-4 mr-1" />,
+              icon: <Trash2 className="size-4" />,
               variant: 'destructive',
               onClick: () => setDeleteConfirmOpen(true),
             },
@@ -100,52 +113,70 @@ export function BatchDocumentList({ documents: initialDocuments, locale }: Batch
         />
       )}
 
-      {/* Hidden select-all checkbox in header area — accessible via label */}
-      <div className="flex items-center gap-2 mb-4">
-        <Checkbox
-          id="select-all-docs"
-          aria-label="Select all documents"
-          checked={isAllSelected}
-          onCheckedChange={(checked) => {
-            if (checked) selectAll()
-            else clearSelection()
-          }}
-        />
-        <label
-          htmlFor="select-all-docs"
-          className="text-sm text-muted-foreground cursor-pointer select-none"
-        >
-          {isAllSelected ? 'All selected' : `${docs.length} documents`}
-        </label>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4">
-        {docs.map((doc) => (
-          <Card key={doc.id}>
-            <CardContent className="flex items-center justify-between p-6">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <Table>
+          <TableHeader className="bg-muted/50">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-10 pr-0">
                 <Checkbox
-                  checked={selectedIds.has(doc.id)}
-                  onCheckedChange={() => toggle(doc.id)}
-                  aria-label={`Select ${doc.title}`}
+                  id="select-all-docs"
+                  aria-label="Select all documents"
+                  checked={isAllSelected}
+                  onCheckedChange={(checked) => {
+                    if (checked) selectAll()
+                    else clearSelection()
+                  }}
                 />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{doc.title}</p>
-                  <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                    <span>{doc.sourceConnector?.type || '—'}</span>
-                    <span>→</span>
-                    <span>{doc.destConnector?.type || '—'}</span>
-                    <span>·</span>
-                    <span>{formatDate(doc.updatedAt, locale)}</span>
-                  </div>
-                </div>
-              </div>
-              <Badge variant={statusVariants[doc.syncStatus] || 'secondary'}>
-                {statusLabels[doc.syncStatus] || doc.syncStatus}
-              </Badge>
-            </CardContent>
-          </Card>
-        ))}
+              </TableHead>
+              <TableHead>Document</TableHead>
+              <TableHead className="hidden md:table-cell">Pipeline</TableHead>
+              <TableHead className="hidden sm:table-cell">Updated</TableHead>
+              <TableHead className="text-right">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {docs.map((doc) => (
+              <TableRow key={doc.id} className="group">
+                <TableCell className="pr-0">
+                  <Checkbox
+                    checked={selectedIds.has(doc.id)}
+                    onCheckedChange={() => toggle(doc.id)}
+                    aria-label={`Select ${doc.title}`}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Link
+                    href={`/dashboard/documents/${doc.id}`}
+                    className="block max-w-[28rem] truncate text-[13px] font-medium outline-none focus-visible:text-primary focus-visible:underline"
+                  >
+                    {doc.title}
+                  </Link>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <span className="text-[13px] text-muted-foreground">
+                    {doc.sourceConnector?.type || '—'}
+                    <span className="mx-1.5 text-muted-foreground/60">→</span>
+                    {doc.destConnector?.type || '—'}
+                  </span>
+                </TableCell>
+                <TableCell className="hidden whitespace-nowrap text-[13px] text-muted-foreground sm:table-cell">
+                  {formatDate(doc.updatedAt, locale)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Badge variant={statusVariants[doc.syncStatus] || 'secondary'}>
+                    {statusDots[doc.syncStatus] && (
+                      <span
+                        className={`size-1.5 rounded-full ${statusDots[doc.syncStatus]}`}
+                        aria-hidden="true"
+                      />
+                    )}
+                    {statusLabels[doc.syncStatus] || doc.syncStatus}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>

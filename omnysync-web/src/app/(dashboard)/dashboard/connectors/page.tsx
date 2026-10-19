@@ -2,10 +2,18 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { PageHeader, PageShell } from '@/components/page-header'
 import { RefreshCw, Loader2, XCircle } from 'lucide-react'
 import { ConnectorIcon } from '@/components/connector-icon'
 import { HelpTooltip } from '@/components/help-tooltip'
@@ -125,170 +133,204 @@ export default function ConnectorsPage() {
     }
   }, [])
 
-  if (loading) {
-    return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            {t('UI_CONNECTORS')}
+    <PageShell>
+      <PageHeader
+        title={t('UI_CONNECTORS')}
+        description={t('UI_MANAGE_CONNECTORS')}
+        actions={
+          <>
             <HelpTooltip text="Connectors link your content platforms (WordPress, Ghost, Webflow, etc.) to Omnysync. Add source connectors to pull content from, and destination connectors to push content to." />
-          </h1>
-          <p className="text-muted-foreground mt-1">{t('UI_MANAGE_CONNECTORS')}</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => fetchConnectors()}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          {t('UI_REFRESH')}
-        </Button>
-      </div>
+            <Button variant="outline" size="sm" onClick={() => fetchConnectors()}>
+              <RefreshCw />
+              {t('UI_REFRESH')}
+            </Button>
+          </>
+        }
+      />
 
       {statusMsg && (
-        <div className="mb-6 p-4 bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/30 rounded-lg text-sm">
+        <div className="mt-6 rounded-lg border border-success/30 bg-success-soft px-4 py-3 text-sm text-success">
           {statusMsg}
         </div>
       )}
       {errorMsg && (
-        <div className="mb-6 p-4 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30 rounded-lg text-sm">
+        <div className="mt-6 rounded-lg border border-destructive/30 bg-destructive-soft px-4 py-3 text-sm text-destructive">
           {errorMsg}
         </div>
       )}
 
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">{t('UI_SOURCES')}</h2>
-        <p className="text-sm text-muted-foreground mb-4">{t('UI_SOURCES_DESC')}</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...sourceTypes].map((type) => {
-            const isConnected = connectedTypesSet.has(type)
-            return (
-              <Card key={type} className="hover:shadow-md transition-shadow">
-                <CardContent className="flex flex-col items-center text-center p-6">
-                  <ConnectorIcon type={type} className="w-14 h-14 mb-3" />
-                  <p className="font-semibold">{connectorNames[type]}</p>
-                  <p className="text-xs text-muted-foreground mt-1 mb-4">
-                    {connectorDescriptions[type]}
-                  </p>
-                  <Button
-                    variant={isConnected ? 'outline' : 'default'}
-                    size="sm"
-                    onClick={() => handleConnect(type)}
-                    className="w-full"
-                  >
-                    {isConnected ? t('UI_CONNECTED') : t('UI_CONNECT')}
-                  </Button>
-                  {isConnected && (
-                    <Badge variant="secondary" className="mt-2">
-                      {t('UI_ACTIVE')}
-                    </Badge>
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })}
+      {loading ? (
+        <div className="flex min-h-[320px] items-center justify-center">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            {/* Sources catalog */}
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+              <div className="border-b border-border px-5 py-3.5">
+                <h2 className="text-sm font-semibold">{t('UI_SOURCES')}</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">{t('UI_SOURCES_DESC')}</p>
+              </div>
+              <ul className="divide-y divide-border">
+                {[...sourceTypes].map((type) => {
+                  const isConnected = connectedTypesSet.has(type)
+                  return (
+                    <li key={type} className="flex items-center gap-4 px-5 py-3.5">
+                      <ConnectorIcon type={type} className="size-9 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-medium">{connectorNames[type]}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {connectorDescriptions[type]}
+                        </p>
+                      </div>
+                      {isConnected && (
+                        <Badge variant="success">
+                          <span className="size-1.5 rounded-full bg-success" aria-hidden="true" />
+                          {t('UI_ACTIVE')}
+                        </Badge>
+                      )}
+                      <Button
+                        variant={isConnected ? 'outline' : 'default'}
+                        size="sm"
+                        onClick={() => handleConnect(type)}
+                      >
+                        {isConnected ? t('UI_CONNECTED') : t('UI_CONNECT')}
+                      </Button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
 
-      <div>
-        <h2 className="text-xl font-semibold mb-4">{t('UI_DESTINATIONS')}</h2>
-        <p className="text-sm text-muted-foreground mb-4">{t('UI_DESTINATIONS_DESC')}</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-          {[...destTypes].map((type) => {
-            const isConnected = connectedTypesSet.has(type)
-            return (
-              <Card key={type} className="hover:shadow-md transition-shadow">
-                <CardContent className="flex flex-col items-center text-center p-6">
-                  <ConnectorIcon type={type} className="w-14 h-14 mb-3" />
-                  <p className="font-semibold">{connectorNames[type]}</p>
-                  <p className="text-xs text-muted-foreground mt-1 mb-4">
-                    {connectorDescriptions[type]}
-                  </p>
-                  <Button
-                    variant={isConnected ? 'outline' : 'default'}
-                    size="sm"
-                    onClick={() => handleConnect(type)}
-                    className="w-full"
-                  >
-                    {isConnected ? t('UI_CONFIGURED') : t('UI_CONFIGURE')}
-                  </Button>
-                  {isConnected && (
-                    <Badge variant="secondary" className="mt-2">
-                      {t('UI_ACTIVE')}
-                    </Badge>
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Already configured connectors */}
-      {connectors.length > 0 && (
-        <div className="mt-8">
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-xl font-semibold">{t('UI_MY_CONNECTORS')}</h2>
-            <Checkbox
-              id="select-all-connectors"
-              aria-label="Select all connectors"
-              checked={isAllSelected}
-              onCheckedChange={(checked) => {
-                if (checked) selectAll()
-                else clearSelection()
-              }}
-              className="ml-auto"
-            />
+            {/* Destinations catalog */}
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+              <div className="border-b border-border px-5 py-3.5">
+                <h2 className="text-sm font-semibold">{t('UI_DESTINATIONS')}</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">{t('UI_DESTINATIONS_DESC')}</p>
+              </div>
+              <ul className="divide-y divide-border">
+                {[...destTypes].map((type) => {
+                  const isConnected = connectedTypesSet.has(type)
+                  return (
+                    <li key={type} className="flex items-center gap-4 px-5 py-3.5">
+                      <ConnectorIcon type={type} className="size-9 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-medium">{connectorNames[type]}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {connectorDescriptions[type]}
+                        </p>
+                      </div>
+                      {isConnected && (
+                        <Badge variant="success">
+                          <span className="size-1.5 rounded-full bg-success" aria-hidden="true" />
+                          {t('UI_ACTIVE')}
+                        </Badge>
+                      )}
+                      <Button
+                        variant={isConnected ? 'outline' : 'default'}
+                        size="sm"
+                        onClick={() => handleConnect(type)}
+                      >
+                        {isConnected ? t('UI_CONFIGURED') : t('UI_CONFIGURE')}
+                      </Button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
           </div>
 
-          {selectedCount > 0 && (
-            <BatchActionBar
-              selectedCount={selectedCount}
-              isAllSelected={isAllSelected}
-              onSelectAll={selectAll}
-              onClearSelection={clearSelection}
-              actions={[
-                {
-                  label: 'Disconnect',
-                  icon: <XCircle className="w-4 h-4 mr-1" />,
-                  variant: 'destructive',
-                  onClick: handleBatchDisconnect,
-                },
-              ]}
-            />
+          {/* Already configured connectors */}
+          {connectors.length > 0 && (
+            <div className="relative mt-8">
+              {selectedCount > 0 && (
+                <BatchActionBar
+                  selectedCount={selectedCount}
+                  isAllSelected={isAllSelected}
+                  onSelectAll={selectAll}
+                  onClearSelection={clearSelection}
+                  actions={[
+                    {
+                      label: 'Disconnect',
+                      icon: <XCircle className="size-4" />,
+                      variant: 'destructive',
+                      onClick: handleBatchDisconnect,
+                    },
+                  ]}
+                />
+              )}
+
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-sm font-semibold">{t('UI_MY_CONNECTORS')}</h2>
+                <p className="text-xs text-muted-foreground">
+                  {connectors.length} {connectors.length === 1 ? 'connector' : 'connectors'}
+                </p>
+              </div>
+
+              <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                <Table>
+                  <TableHeader className="bg-muted/50">
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="w-10 pr-0">
+                        <Checkbox
+                          id="select-all-connectors"
+                          aria-label="Select all connectors"
+                          checked={isAllSelected}
+                          onCheckedChange={(checked) => {
+                            if (checked) selectAll()
+                            else clearSelection()
+                          }}
+                        />
+                      </TableHead>
+                      <TableHead>Connector</TableHead>
+                      <TableHead className="hidden sm:table-cell">Type</TableHead>
+                      <TableHead className="text-right">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {connectors.map((connector) => (
+                      <TableRow key={connector.id}>
+                        <TableCell className="pr-0">
+                          <Checkbox
+                            checked={selectedIds.has(connector.id)}
+                            onCheckedChange={() => toggle(connector.id)}
+                            aria-label={`Select ${connector.name}`}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <ConnectorIcon type={connector.type} className="size-8 shrink-0" />
+                            <p className="max-w-[20rem] truncate text-[13px] font-medium">
+                              {connector.name}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden text-[13px] text-muted-foreground sm:table-cell">
+                          {connectorNames[connector.type]}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Badge
+                            variant={connector.status === 'ACTIVE' ? 'success' : 'destructive'}
+                          >
+                            {connector.status === 'ACTIVE' && (
+                              <span
+                                className="size-1.5 rounded-full bg-success"
+                                aria-hidden="true"
+                              />
+                            )}
+                            {connector.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {connectors.map((connector) => (
-              <Card key={connector.id}>
-                <CardContent className="flex items-center gap-4 p-4">
-                  <Checkbox
-                    checked={selectedIds.has(connector.id)}
-                    onCheckedChange={() => toggle(connector.id)}
-                    aria-label={`Select ${connector.name}`}
-                  />
-                  <ConnectorIcon type={connector.type} className="w-10 h-10 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{connector.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {connectorNames[connector.type]}
-                    </p>
-                  </div>
-                  <Badge
-                    variant={connector.status === 'ACTIVE' ? 'default' : 'destructive'}
-                    className="capitalize"
-                  >
-                    {connector.status.toLowerCase()}
-                  </Badge>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+        </>
       )}
 
       <ConnectorDialog
@@ -297,6 +339,6 @@ export default function ConnectorsPage() {
         onClose={() => setDialogType(null)}
         onSuccess={fetchConnectors}
       />
-    </div>
+    </PageShell>
   )
 }

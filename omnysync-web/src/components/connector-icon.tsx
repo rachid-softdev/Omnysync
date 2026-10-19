@@ -9,43 +9,41 @@ import {
   NewspaperIcon,
 } from 'lucide-react'
 
-const iconMap: Record<string, { icon: typeof FileText; color: string; bg: string }> = {
-  GOOGLE_DOCS: { icon: FileText, color: '#4285F4', bg: '#E8F0FE' },
-  NOTION: { icon: StickyNote, color: '#000000', bg: '#F0F0F0' },
-  WORDPRESS: { icon: Globe, color: '#21759B', bg: '#E8F0F8' },
-  GHOST: { icon: PanelLeft, color: '#15171A', bg: '#F0F0F0' },
-  WEBFLOW: { icon: Globe, color: '#4353FF', bg: '#EDEFFF' },
-  SHOPIFY: { icon: ShoppingBag, color: '#96BF48', bg: '#F4F9ED' },
-  AIRTABLE: { icon: TableIcon, color: '#FF4F00', bg: '#FFF0E6' },
-  CONTENTFUL: { icon: Package, color: '#FFB000', bg: '#FFF7E6' },
-  MEDIUM: { icon: NewspaperIcon, color: '#00AB6C', bg: '#E6F9F1' },
+const iconMap: Record<string, typeof FileText> = {
+  GOOGLE_DOCS: FileText,
+  NOTION: StickyNote,
+  WORDPRESS: Globe,
+  GHOST: PanelLeft,
+  WEBFLOW: Globe,
+  SHOPIFY: ShoppingBag,
+  AIRTABLE: TableIcon,
+  CONTENTFUL: Package,
+  MEDIUM: NewspaperIcon,
 }
 
+/**
+ * Neutral connector chip. Brand glyphs stay recognizable through the icon
+ * shape while all color comes from semantic tokens (light + dark mode safe).
+ */
 export function ConnectorIcon({
   type,
-  className = 'w-10 h-10',
+  className = 'size-10',
 }: {
   type: string
   className?: string
 }) {
-  const config = iconMap[type]
-  if (!config)
-    return (
-      <div
-        className={`${className} rounded-full bg-muted flex items-center justify-center text-lg`}
-      >
-        ?
-      </div>
-    )
+  const Icon = iconMap[type]
 
-  const Icon = config.icon
   return (
     <div
-      className={`${className} rounded-full flex items-center justify-center`}
-      style={{ backgroundColor: config.bg }}
+      className={`${className} grid shrink-0 place-items-center rounded-lg border border-border bg-muted`}
       aria-hidden="true"
     >
-      <Icon className="w-5 h-5" style={{ color: config.color }} />
+      {Icon ? (
+        <Icon className="size-1/2 text-muted-foreground" />
+      ) : (
+        <span className="text-sm text-muted-foreground">?</span>
+      )}
     </div>
   )
 }

@@ -27,7 +27,7 @@ describe('Card', () => {
     )
     const title = screen.getByText('Card Title')
     expect(title.tagName).toBe('H3')
-    expect(title).toHaveClass('text-2xl')
+    expect(title).toHaveClass('text-base')
     expect(title).toHaveClass('font-semibold')
   })
 

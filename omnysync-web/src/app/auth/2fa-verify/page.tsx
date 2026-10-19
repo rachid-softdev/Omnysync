@@ -73,7 +73,7 @@ export default function TwoFactorVerifyPage() {
               />
             </div>
 
-            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+            {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
             <Button type="submit" className="w-full" disabled={loading || code.length !== 6}>
               {loading ? 'Verifying...' : 'Verify'}

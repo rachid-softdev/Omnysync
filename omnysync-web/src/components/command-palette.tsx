@@ -15,7 +15,7 @@ import {
   Webhook,
   Settings,
 } from 'lucide-react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 
 // ---------------------------------------------------------------------------
 // Module-level imperative handle so sibling components (e.g. KeyboardShortcuts,
@@ -194,7 +194,11 @@ export function CommandPalette() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md p-0 overflow-hidden motion-reduce:animate-none [&>button]:hidden">
+      <DialogContent
+        className="max-w-md p-0 overflow-hidden motion-reduce:animate-none [&>button]:hidden"
+        aria-describedby={undefined}
+      >
+        <DialogTitle className="sr-only">Command palette</DialogTitle>
         {/* Search bar */}
         <div
           className="flex items-center gap-3 px-4 border-b border-border"

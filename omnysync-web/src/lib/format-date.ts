@@ -43,12 +43,22 @@ export function formatDateTime(
 }
 
 /**
- * Client-side hook that returns locale-aware formatters.
- * Uses `navigator.language` to detect the user's locale.
+ * Client-side locale detection.
+ *
+ * Reads `<html lang>` (set by the server from `Accept-Language`) so dates match
+ * the page's copy. Falling back to `navigator.language` produced English UI with
+ * French dates (and vice versa) for users whose OS language differed from their
+ * content language.
  */
 export function detectClientLocale(): string {
-  if (typeof navigator === 'undefined') return 'en'
-  return navigator.language.startsWith('fr') ? 'fr' : 'en'
+  if (typeof document !== 'undefined') {
+    const lang = document.documentElement.lang
+    if (lang) return lang.startsWith('fr') ? 'fr' : 'en'
+  }
+  if (typeof navigator !== 'undefined') {
+    return navigator.language.startsWith('fr') ? 'fr' : 'en'
+  }
+  return 'en'
 }
 
 /**

@@ -200,8 +200,8 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
               placeholder="••••••••"
             />
           </div>
-          {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
-          {passwordSuccess && <p className="text-sm text-green-500">Mot de passe mis à jour!</p>}
+          {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
+          {passwordSuccess && <p className="text-sm text-success">Mot de passe mis à jour!</p>}
           <Button onClick={handlePasswordChange} disabled={passwordLoading}>
             {passwordLoading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
           </Button>
@@ -251,9 +251,9 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
       </Card>
 
       {/* Danger Zone - Delete Account */}
-      <Card className="border-red-500">
+      <Card className="border-destructive">
         <CardHeader>
-          <CardTitle className="text-red-500">Zone dangereuse</CardTitle>
+          <CardTitle className="text-destructive">Zone dangereuse</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
@@ -287,7 +287,7 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
             <AlertDialogAction
               onClick={handleDeleteAccount}
               disabled={deleteConfirmText !== 'SUPPRIMER' || deleteLoading}
-              className="bg-red-500 text-white hover:bg-red-600"
+              className="bg-destructive text-white hover:bg-destructive/90"
             >
               {deleteLoading ? 'Suppression...' : 'Supprimer définitivement'}
             </AlertDialogAction>

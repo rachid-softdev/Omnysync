@@ -1,9 +1,8 @@
-import { Check, Zap } from 'lucide-react'
+import { Check, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProCheckoutButton } from '@/components/pro-checkout-button'
 import Link from 'next/link'
-import { t } from '@/lib/i18n'
+import { getT } from '@/lib/i18n'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -12,7 +11,9 @@ export const metadata: Metadata = {
     'Choose the perfect plan for your content sync needs. Start free, scale as you grow.',
 }
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const t = await getT()
+
   const plans = [
     {
       nameKey: 'plan_free_name',
@@ -70,56 +71,99 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 py-24">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold mb-4">{t('pricing_title')}</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">{t('pricing_subtitle')}</p>
+      <div className="mx-auto max-w-6xl px-6 pb-20 pt-28">
+        {/* Header */}
+        <div className="max-w-2xl">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            {t('pricing_title')}
+          </h1>
+          <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+            {t('pricing_subtitle')}
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {plans.map((plan) => (
-            <Card
-              key={plan.nameKey}
-              className={plan.highlighted ? 'border-primary shadow-lg relative' : ''}
-            >
-              {plan.highlighted && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
-                  {t('popular_badge')}
+        {/* Plans: the recommended plan is visually dominant, the others recede. */}
+        <div className="mt-10 grid items-start gap-4 lg:grid-cols-3">
+          {plans.map((plan) => {
+            const isPro = plan.highlighted
+
+            return (
+              <div
+                key={plan.nameKey}
+                className={
+                  isPro
+                    ? 'relative rounded-xl border border-primary/30 bg-card p-6 shadow-lg ring-1 ring-primary/10 lg:-mt-3 lg:pb-8'
+                    : 'rounded-xl border border-border bg-card p-6 shadow-sm'
+                }
+              >
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold tracking-tight">{t(plan.nameKey)}</h2>
+                  {isPro && (
+                    <span className="rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-primary-foreground">
+                      {t('popular_badge')}
+                    </span>
+                  )}
                 </div>
-              )}
-              <CardHeader>
-                <CardTitle className="text-2xl">{t(plan.nameKey)}</CardTitle>
-                <div className="mt-2">
-                  <span className="text-4xl font-bold">{t(plan.priceKey)}</span>
-                  <span className="text-muted-foreground ml-1">/{t(plan.periodKey)}</span>
+
+                <p className="mt-1 text-[13px] text-muted-foreground">{t(plan.descriptionKey)}</p>
+
+                <div className="mt-5 flex items-baseline gap-1">
+                  <span className="text-3xl font-semibold tracking-tight tabular-nums">
+                    {t(plan.priceKey)}
+                  </span>
+                  <span className="text-[13px] text-muted-foreground">/{t(plan.periodKey)}</span>
                 </div>
-                <CardDescription>{t(plan.descriptionKey)}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <ul className="space-y-3">
+
+                <div className="mt-5">
+                  {plan.href.startsWith('/api') ? (
+                    <ProCheckoutButton label={t(plan.ctaKey)} />
+                  ) : (
+                    <Button
+                      asChild
+                      variant={isPro ? 'default' : 'outline'}
+                      className="w-full rounded-full"
+                    >
+                      <Link href={plan.href}>
+                        {t(plan.ctaKey)}
+                        {isPro && <ArrowRight className="size-4" />}
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+
+                <ul className="mt-6 space-y-2.5 border-t border-border pt-5">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2">
-                      <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
-                      <span className="text-sm">{t(feature)}</span>
+                    <li key={feature} className="flex items-start gap-2.5">
+                      <span
+                        className={
+                          isPro
+                            ? 'mt-0.5 grid size-4 shrink-0 place-items-center rounded-full bg-primary/10 text-primary'
+                            : 'mt-0.5 grid size-4 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground'
+                        }
+                      >
+                        <Check className="size-2.5" aria-hidden="true" />
+                      </span>
+                      <span className="text-[13px] leading-snug text-foreground">{t(feature)}</span>
                     </li>
                   ))}
                 </ul>
-                {plan.href.startsWith('/api') ? (
-                  <ProCheckoutButton label={t(plan.ctaKey)} />
-                ) : (
-                  <Link href={plan.href}>
-                    <Button
-                      className="w-full rounded-full"
-                      variant={plan.highlighted ? 'default' : 'outline'}
-                    >
-                      {plan.nameKey === 'plan_business_name' && <Zap className="w-4 h-4 mr-2" />}
-                      {t(plan.ctaKey)}
-                    </Button>
-                  </Link>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Comparison note — answers the question the cards raise. */}
+        <div className="mt-10 flex flex-col items-start justify-between gap-4 rounded-xl border border-border bg-muted/40 p-6 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-sm font-medium">{t('cta_section_title')}</p>
+            <p className="mt-0.5 text-[13px] text-muted-foreground">{t('cta_section_subtitle')}</p>
+          </div>
+          <Button asChild className="shrink-0 rounded-full">
+            <Link href="/auth/signin">
+              {t('cta_final_button')}
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
         </div>
       </div>
     </div>

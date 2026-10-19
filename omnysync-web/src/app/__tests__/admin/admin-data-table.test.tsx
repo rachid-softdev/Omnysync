@@ -1,6 +1,12 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { AdminDataTable, type Column } from '@/components/admin/admin-data-table'
+
+// The table localizes its footer through useTranslations(), which resolves the
+// locale from <html lang>. These assertions are written against the FR copy.
+beforeAll(() => {
+  document.documentElement.lang = 'fr'
+})
 
 // ---------------------------------------------------------------------------
 // Types et données mock

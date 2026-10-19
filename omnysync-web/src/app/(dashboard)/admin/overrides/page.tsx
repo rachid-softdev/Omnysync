@@ -7,11 +7,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Plus, Loader2, Check, X } from 'lucide-react'
+import { Plus, Loader2, Check, X, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { AdminPageHeader } from '@/components/admin/admin-page-header'
+import { PageHeader, PageShell } from '@/components/page-header'
 import { AdminEmptyState } from '@/components/admin/admin-empty-state'
 import { AdminDataTable, type Column } from '@/components/admin/admin-data-table'
 import { formatDate, detectClientLocale } from '@/lib/format-date'
@@ -45,8 +45,8 @@ interface Pagination {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const SCOPE_VARIANT: Record<string, 'default' | 'secondary'> = {
-  ORG: 'default',
+const SCOPE_VARIANT: Record<string, 'info' | 'secondary'> = {
+  ORG: 'info',
   USER: 'secondary',
 }
 
@@ -104,6 +104,18 @@ export default function AdminOverridesPage() {
 
   const columns: Column<Override>[] = [
     {
+      key: 'featureKey',
+      header: 'Feature',
+      render: (o) => (
+        <div className="min-w-0">
+          <p className="truncate font-mono text-xs font-medium">{o.featureKey}</p>
+          {o.feature?.name && (
+            <p className="truncate text-xs text-muted-foreground">{o.feature.name}</p>
+          )}
+        </div>
+      ),
+    },
+    {
       key: 'scope',
       header: 'Scope',
       render: (o) => <Badge variant={SCOPE_VARIANT[o.scope] ?? 'secondary'}>{o.scope}</Badge>,
@@ -111,36 +123,34 @@ export default function AdminOverridesPage() {
     {
       key: 'scopeId',
       header: 'Scope ID',
-      render: (o) => <span className="font-mono text-xs text-muted-foreground">{o.scopeId}</span>,
-    },
-    {
-      key: 'featureKey',
-      header: 'Feature Key',
-      render: (o) => <span className="font-mono text-sm font-medium">{o.featureKey}</span>,
+      render: (o) => (
+        <span className="font-mono text-[11px] text-muted-foreground">{o.scopeId}</span>
+      ),
     },
     {
       key: 'enabled',
       header: 'Enabled',
       render: (o) =>
         o.enabled ? (
-          <Check className="w-4 h-4 text-green-500" />
+          <Check className="size-4 text-success" aria-label="Enabled" />
         ) : (
-          <X className="w-4 h-4 text-destructive" />
+          <X className="size-4 text-destructive" aria-label="Disabled" />
         ),
     },
     {
       key: 'limitValue',
-      header: 'Limit Value',
+      header: 'Limit',
+      className: 'text-right',
       render: (o) =>
         o.limitValue !== null && o.limitValue !== undefined ? (
-          <span>{o.limitValue}</span>
+          <span className="tabular-nums">{o.limitValue}</span>
         ) : (
           <span className="text-muted-foreground">—</span>
         ),
     },
     {
       key: 'expiresAt',
-      header: 'Expires At',
+      header: 'Expires',
       render: (o) => {
         if (!o.expiresAt) return <span className="text-muted-foreground">—</span>
         const expired = isExpired(o.expiresAt)
@@ -155,19 +165,21 @@ export default function AdminOverridesPage() {
     {
       key: 'reason',
       header: 'Reason',
-      className: 'max-w-[200px]',
+      className: 'max-w-[220px]',
       render: (o) =>
         o.reason ? (
-          <span className="text-xs text-muted-foreground truncate block">{o.reason}</span>
+          <span className="block truncate text-xs text-muted-foreground">{o.reason}</span>
         ) : (
           <span className="text-muted-foreground">—</span>
         ),
     },
     {
       key: 'createdAt',
-      header: 'Created At',
+      header: 'Created',
       render: (o) => (
-        <span className="text-xs text-muted-foreground">{formatDate(o.createdAt, locale)}</span>
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {formatDate(o.createdAt, locale)}
+        </span>
       ),
     },
   ]
@@ -178,15 +190,18 @@ export default function AdminOverridesPage() {
 
   if (error) {
     return (
-      <div className="p-8">
-        <AdminPageHeader title="Entitlement Overrides" />
-        <div className="flex flex-col items-center justify-center py-12 text-destructive">
-          <p className="font-medium mb-4">{error}</p>
-          <Button variant="outline" onClick={fetchOverrides}>
+      <PageShell>
+        <PageHeader
+          title="Entitlement Overrides"
+          description="Override feature entitlements for specific organizations or users"
+        />
+        <div className="mt-10 flex flex-col items-center justify-center text-center">
+          <p className="mb-4 text-sm font-medium text-destructive">{error}</p>
+          <Button variant="outline" size="sm" onClick={fetchOverrides}>
             Retry
           </Button>
         </div>
-      </div>
+      </PageShell>
     )
   }
 
@@ -195,60 +210,68 @@ export default function AdminOverridesPage() {
   // -----------------------------------------------------------------------
 
   return (
-    <div className="p-8">
-      <AdminPageHeader
+    <PageShell>
+      <PageHeader
         title="Entitlement Overrides"
         description="Override feature entitlements for specific organizations or users"
         actions={
-          <Link href="/admin/overrides/new">
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
+          <Button size="sm" asChild>
+            <Link href="/admin/overrides/new">
+              <Plus className="size-3.5" />
               New Override
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         }
       />
 
-      {/* Org filter */}
-      <div className="mb-6">
-        <Input
-          placeholder="Filter by Organization ID..."
-          value={orgFilter}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setOrgFilter(e.target.value)
-            setPage(1)
-          }}
-          className="max-w-sm"
-        />
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="relative w-full max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Filter by Organization ID..."
+            value={orgFilter}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              setOrgFilter(e.target.value)
+              setPage(1)
+            }}
+            className="pl-9"
+            aria-label="Filter by organization ID"
+          />
+        </div>
+        <p className="ml-auto text-xs tabular-nums text-muted-foreground">
+          {pagination?.total ?? 0} override{(pagination?.total ?? 0) !== 1 ? 's' : ''}
+        </p>
       </div>
 
-      <AdminDataTable<Override>
-        columns={columns}
-        data={data}
-        pagination={pagination ?? { page: 1, limit: 20, total: 0, totalPages: 1 }}
-        onPageChange={setPage}
-        isLoading={isLoading}
-        keyExtractor={(o) => o.id}
-        emptyState={
-          <AdminEmptyState
-            icon={Loader2}
-            title="No overrides"
-            description={
-              orgFilter
-                ? 'No overrides found for this organization.'
-                : 'Create your first entitlement override to grant or restrict feature access.'
-            }
-            action={
-              <Link href="/admin/overrides/new">
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Override
+      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <AdminDataTable<Override>
+          columns={columns}
+          data={data}
+          pagination={pagination ?? { page: 1, limit: 20, total: 0, totalPages: 1 }}
+          onPageChange={setPage}
+          isLoading={isLoading}
+          keyExtractor={(o) => o.id}
+          emptyState={
+            <AdminEmptyState
+              icon={Loader2}
+              title="No overrides"
+              description={
+                orgFilter
+                  ? 'No overrides found for this organization.'
+                  : 'Create your first entitlement override to grant or restrict feature access.'
+              }
+              action={
+                <Button size="sm" asChild>
+                  <Link href="/admin/overrides/new">
+                    <Plus className="size-3.5" />
+                    New Override
+                  </Link>
                 </Button>
-              </Link>
-            }
-          />
-        }
-      />
-    </div>
+              }
+            />
+          }
+        />
+      </div>
+    </PageShell>
   )
 }

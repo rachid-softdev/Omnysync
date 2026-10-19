@@ -40,32 +40,32 @@ describe('AdminStatusBadge', () => {
     expect(screen.queryByText('Actif')).not.toBeInTheDocument()
   })
 
-  it('applies green background classes for "active" status', () => {
+  it('applies the success variant for "active" status', () => {
     const { container } = render(<AdminStatusBadge status="active" />)
     const badge = container.firstChild as HTMLElement
-    expect(badge.className).toContain('bg-green')
+    expect(badge.className).toContain('bg-success-soft')
   })
 
-  it('applies gray background classes for "inactive" status', () => {
+  it('applies the secondary variant for "inactive" status', () => {
     const { container } = render(<AdminStatusBadge status="inactive" />)
     const badge = container.firstChild as HTMLElement
-    expect(badge.className).toContain('bg-gray')
+    expect(badge.className).toContain('bg-secondary')
   })
 
-  it('applies red background classes for "error" status', () => {
+  it('applies the destructive variant for "error" status', () => {
     const { container } = render(<AdminStatusBadge status="error" />)
     const badge = container.firstChild as HTMLElement
-    expect(badge.className).toContain('bg-red')
+    expect(badge.className).toContain('bg-destructive')
   })
 
-  it('applies blue background classes for "trialing" status', () => {
+  it('applies the info variant for "trialing" status', () => {
     const { container } = render(<AdminStatusBadge status="trialing" />)
     const badge = container.firstChild as HTMLElement
-    expect(badge.className).toContain('bg-blue')
+    expect(badge.className).toContain('bg-info-soft')
   })
 
-  it('renders as a span element', () => {
+  it('renders a badge element', () => {
     const { container } = render(<AdminStatusBadge status="active" />)
-    expect(container.firstChild?.nodeName).toBe('SPAN')
+    expect(container.firstChild?.nodeName).toBe('DIV')
   })
 })

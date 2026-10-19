@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -12,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { PageHeader, PageShell } from '@/components/page-header'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 import { Check, Loader2, Zap, Clock, AlertCircle, ArrowRight } from 'lucide-react'
 
@@ -47,6 +49,13 @@ const connectorNames: Record<string, string> = {
   GHOST: 'Ghost',
   WEBFLOW: 'Webflow',
   SHOPIFY: 'Shopify',
+}
+
+const logStatusClass: Record<LogEntry['status'], string> = {
+  info: 'text-info',
+  success: 'text-success',
+  warning: 'text-warning',
+  error: 'text-destructive',
 }
 
 export default function NewSyncPage() {
@@ -267,57 +276,68 @@ export default function NewSyncPage() {
   const selectedDest = connectors.find((c) => c.id === destination)
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">{t('UI_NEW_SYNC')}</h1>
+    <PageShell>
+      <PageHeader
+        title={t('UI_NEW_SYNC')}
+        description="Move a document from a source platform to a destination, with optional AI enrichment."
+      />
 
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div
-                className={`flex items-center justify-center w-10 h-10 rounded-full ${
-                  step.status === 'completed'
+      {/* Wizard progress */}
+      <ol className="mt-6 flex flex-wrap items-center gap-y-3">
+        {steps.map((step, index) => (
+          <li key={step.id} className="flex items-center">
+            <div className="flex items-center gap-2.5">
+              <span
+                className={`grid size-8 shrink-0 place-items-center rounded-full text-[13px] font-semibold ${
+                  step.status === 'current'
                     ? 'bg-primary text-primary-foreground'
-                    : step.status === 'current'
-                      ? 'bg-primary text-primary-foreground'
+                    : step.status === 'completed'
+                      ? 'bg-success-soft text-success'
                       : 'bg-muted text-muted-foreground'
                 }`}
               >
                 {step.status === 'completed' ? (
-                  <Check className="w-5 h-5" />
-                ) : step.status === 'current' ? (
-                  <span className="text-sm font-bold">{index + 1}</span>
+                  <Check className="size-4" />
                 ) : (
-                  <span className="text-sm">{index + 1}</span>
+                  <span className={step.status === 'pending' ? 'font-normal' : ''}>
+                    {index + 1}
+                  </span>
                 )}
-              </div>
-              <div className="ml-3 hidden sm:block">
-                <p
-                  className={`font-medium ${step.status === 'pending' ? 'text-muted-foreground' : ''}`}
+              </span>
+              <span className="hidden sm:block">
+                <span
+                  className={`block text-[13px] leading-tight ${
+                    step.status === 'pending'
+                      ? 'text-muted-foreground'
+                      : 'font-medium text-foreground'
+                  }`}
                 >
                   {step.title}
-                </p>
-                <p className="text-xs text-muted-foreground">{step.description}</p>
-              </div>
-              {index < steps.length - 1 && (
-                <div
-                  className={`w-8 sm:w-16 h-0.5 mx-2 ${index < currentStep ? 'bg-primary' : 'bg-muted'}`}
-                />
-              )}
+                </span>
+                <span className="block text-xs leading-tight text-muted-foreground">
+                  {step.description}
+                </span>
+              </span>
             </div>
-          ))}
-        </div>
-      </div>
+            {index < steps.length - 1 && (
+              <span
+                aria-hidden="true"
+                className={`mx-3 h-px w-6 ${index < currentStep ? 'bg-primary' : 'bg-border'} sm:w-10`}
+              />
+            )}
+          </li>
+        ))}
+      </ol>
 
       {error && (
-        <div className="mb-6 p-4 border border-destructive/50 bg-destructive/10 text-destructive rounded-lg flex items-center gap-2">
-          <AlertCircle className="w-5 h-5" />
-          <span className="text-sm">{error}</span>
+        <div className="mt-6 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive-soft px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="size-4 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div>
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]">
+        <div className="max-w-xl">
           {/* Step 0: Select Source */}
           {currentStep === 0 && (
             <Card>
@@ -326,15 +346,15 @@ export default function NewSyncPage() {
                 <CardDescription>{t('UI_SOURCE_DESC')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>{t('UI_SOURCE')}</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="sync-source">{t('UI_SOURCE')}</Label>
                   <Select value={source} onValueChange={setSource}>
-                    <SelectTrigger>
+                    <SelectTrigger id="sync-source" className="w-full">
                       <SelectValue placeholder={t('UI_SELECT_SOURCE_PLACEHOLDER')} />
                     </SelectTrigger>
                     <SelectContent>
                       {sourceConnectors.length === 0 && (
-                        <div className="p-3 text-sm text-muted-foreground text-center">
+                        <div className="p-3 text-center text-sm text-muted-foreground">
                           No source connector found. Add one in the Connectors page.
                         </div>
                       )}
@@ -348,7 +368,7 @@ export default function NewSyncPage() {
                 </div>
                 {source && (
                   <Button onClick={handleSourceSelect} className="w-full" disabled={loading}>
-                    {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    {loading ? <Loader2 className="animate-spin" /> : null}
                     {t('UI_CONTINUE')}
                   </Button>
                 )}
@@ -364,10 +384,10 @@ export default function NewSyncPage() {
                 <CardDescription>{t('UI_DOCUMENT_DESC')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>{t('UI_DOCUMENT')}</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="sync-document">{t('UI_DOCUMENT')}</Label>
                   <Select value={sourceDocId} onValueChange={setSourceDocId}>
-                    <SelectTrigger>
+                    <SelectTrigger id="sync-document" className="w-full">
                       <SelectValue placeholder={t('UI_SELECT_DOCUMENT_PLACEHOLDER')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -385,8 +405,8 @@ export default function NewSyncPage() {
                   </Button>
                   {sourceDocId && (
                     <Button onClick={handleDocSelect} className="flex-1">
-                      <ArrowRight className="w-4 h-4 mr-2" />
                       {t('UI_CONTINUE')}
+                      <ArrowRight />
                     </Button>
                   )}
                 </div>
@@ -402,15 +422,15 @@ export default function NewSyncPage() {
                 <CardDescription>{t('UI_DESTINATION_DESC')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>{t('UI_PLATFORM')}</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="sync-destination">{t('UI_PLATFORM')}</Label>
                   <Select value={destination} onValueChange={setDestination}>
-                    <SelectTrigger>
+                    <SelectTrigger id="sync-destination" className="w-full">
                       <SelectValue placeholder={t('UI_SELECT_DESTINATION')} />
                     </SelectTrigger>
                     <SelectContent>
                       {destConnectors.length === 0 && (
-                        <div className="p-3 text-sm text-muted-foreground text-center">
+                        <div className="p-3 text-center text-sm text-muted-foreground">
                           No destination connector found. Add one in the Connectors page.
                         </div>
                       )}
@@ -428,8 +448,8 @@ export default function NewSyncPage() {
                   </Button>
                   {destination && (
                     <Button onClick={handleDestinationSelect} className="flex-1">
-                      <ArrowRight className="w-4 h-4 mr-2" />
                       {t('UI_CONTINUE')}
+                      <ArrowRight />
                     </Button>
                   )}
                 </div>
@@ -445,47 +465,53 @@ export default function NewSyncPage() {
                 <CardDescription>{t('UI_AI_OPTIONS')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3 p-4 bg-muted rounded-lg">
-                  <p className="text-sm font-medium">Summary</p>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <div className="flex justify-between">
-                      <span>Source:</span>
-                      <Badge variant="outline">
-                        {selectedSource ? connectorNames[selectedSource.type] : '—'}
-                      </Badge>
+                <div className="space-y-2.5 rounded-lg bg-muted p-4">
+                  <p className="text-[13px] font-medium">Summary</p>
+                  <dl className="space-y-1.5 text-[13px] text-muted-foreground">
+                    <div className="flex items-center justify-between gap-3">
+                      <dt>Source:</dt>
+                      <dd>
+                        <Badge variant="outline">
+                          {selectedSource ? connectorNames[selectedSource.type] : '—'}
+                        </Badge>
+                      </dd>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Document:</span>
-                      <span className="truncate max-w-[150px]">
+                    <div className="flex items-center justify-between gap-3">
+                      <dt>Document:</dt>
+                      <dd className="max-w-[150px] truncate">
                         {sourceDocuments.find((d) => d.id === sourceDocId)?.title || '—'}
-                      </span>
+                      </dd>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Destination:</span>
-                      <Badge variant="outline">
-                        {selectedDest ? connectorNames[selectedDest.type] : '—'}
-                      </Badge>
+                    <div className="flex items-center justify-between gap-3">
+                      <dt>Destination:</dt>
+                      <dd>
+                        <Badge variant="outline">
+                          {selectedDest ? connectorNames[selectedDest.type] : '—'}
+                        </Badge>
+                      </dd>
                     </div>
+                  </dl>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="seo" defaultChecked />
+                    <Label htmlFor="seo">{t('LABEL_SEO')}</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="images" />
+                    <Label htmlFor="images">{t('LABEL_IA_IMAGES')}</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="links" defaultChecked />
+                    <Label htmlFor="links">{t('LABEL_INTERNAL_LINKS')}</Label>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <input type="checkbox" id="seo" className="rounded" defaultChecked />
-                  <Label htmlFor="seo">{t('LABEL_SEO')}</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input type="checkbox" id="images" className="rounded" />
-                  <Label htmlFor="images">{t('LABEL_IA_IMAGES')}</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input type="checkbox" id="links" className="rounded" defaultChecked />
-                  <Label htmlFor="links">{t('LABEL_INTERNAL_LINKS')}</Label>
-                </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 border-t border-border pt-4">
                   <Button variant="outline" onClick={() => setCurrentStep(2)} className="flex-1">
                     Back
                   </Button>
                   <Button onClick={handleSync} className="flex-1" disabled={isSyncing}>
-                    <Zap className="w-4 h-4 mr-2" />
+                    <Zap />
                     {t('UI_START_SYNC')}
                   </Button>
                 </div>
@@ -500,15 +526,17 @@ export default function NewSyncPage() {
                 <CardTitle>{t('UI_SYNC_IN_PROGRESS')}</CardTitle>
                 <CardDescription>{t('UI_DO_NOT_CLOSE')}</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col items-center justify-center py-8 gap-4">
+              <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
                 {isSyncing ? (
                   <>
-                    <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                    <Loader2 className="size-8 animate-spin text-primary" />
                     <p className="text-sm text-muted-foreground">Syncing via QStash...</p>
                   </>
                 ) : (
                   <>
-                    <Check className="w-12 h-12 text-green-500" />
+                    <span className="grid size-12 place-items-center rounded-xl bg-success-soft text-success">
+                      <Check className="size-6" />
+                    </span>
                     <p className="text-sm text-muted-foreground">Sync complete!</p>
                     <Button
                       variant="outline"
@@ -524,15 +552,15 @@ export default function NewSyncPage() {
         </div>
 
         {/* Log Console */}
-        <Card>
+        <Card className="self-start">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />
+              <Clock className="size-4 text-muted-foreground" />
               {t('UI_LOG_CONSOLE')}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="bg-muted p-4 rounded-lg h-[400px] overflow-y-auto font-mono text-sm border border-border">
+            <div className="h-[400px] overflow-y-auto rounded-lg border border-border bg-muted p-4 font-mono text-[13px]">
               {logs.length === 0 ? (
                 <p className="text-muted-foreground">{t('UI_WAITING')}</p>
               ) : (
@@ -541,19 +569,7 @@ export default function NewSyncPage() {
                     <span className="text-muted-foreground">
                       [{log.timestamp.toLocaleTimeString()}]
                     </span>{' '}
-                    <span
-                      className={
-                        log.status === 'error'
-                          ? 'text-destructive'
-                          : log.status === 'warning'
-                            ? 'text-yellow-500'
-                            : log.status === 'success'
-                              ? 'text-green-500'
-                              : 'text-blue-500'
-                      }
-                    >
-                      {log.message}
-                    </span>
+                    <span className={logStatusClass[log.status]}>{log.message}</span>
                   </div>
                 ))
               )}
@@ -561,6 +577,6 @@ export default function NewSyncPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageShell>
   )
 }

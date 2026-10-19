@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, type ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { AdminPageHeader } from '@/components/admin/admin-page-header'
+import { PageHeader, PageShell } from '@/components/page-header'
 import { AdminDataTable } from '@/components/admin/admin-data-table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -69,39 +69,53 @@ export default function AdminUsersPage() {
     () => [
       {
         key: 'email',
-        header: 'Email',
-        render: (user) => <span className="font-medium">{user.email || '—'}</span>,
-      },
-      {
-        key: 'name',
-        header: 'Name',
-        render: (user) => user.name || '—',
+        header: 'User',
+        render: (user) => (
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-6 shrink-0 place-items-center rounded-full bg-muted text-[10px] font-medium text-muted-foreground">
+              {(user.name || user.email || '?').slice(0, 1).toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate font-medium">{user.name || 'Unnamed'}</p>
+              <p className="truncate text-xs text-muted-foreground">{user.email || '—'}</p>
+            </div>
+          </div>
+        ),
       },
       {
         key: 'role',
         header: 'Role',
         render: (user) => (
-          <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>{user.role}</Badge>
+          <Badge variant={user.role === 'ADMIN' ? 'info' : 'secondary'}>{user.role}</Badge>
         ),
       },
       {
         key: 'createdAt',
         header: 'Created',
-        render: (user) =>
-          formatDate(user.createdAt, locale, {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-          }),
+        render: (user) => (
+          <span className="tabular-nums text-muted-foreground">
+            {formatDate(user.createdAt, locale, {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </span>
+        ),
       },
       {
         key: 'actions',
         header: '',
         render: (user) => (
-          <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/users/${user.id}`)}>
-            <Eye className="h-4 w-4 mr-1" />
-            View
-          </Button>
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push(`/admin/users/${user.id}`)}
+            >
+              <Eye className="size-3.5" />
+              View
+            </Button>
+          </div>
         ),
         className: 'text-right',
       },
@@ -117,40 +131,50 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="p-8">
-      <AdminPageHeader
+    <PageShell>
+      <PageHeader
         title="Users"
         description={`${users.length} user${users.length !== 1 ? 's' : ''} on the platform`}
       />
 
-      {/* Search bar */}
-      <div className="relative mb-6 max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by email or name…"
-          value={search}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-          className="pl-10"
-        />
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="relative w-full max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by email or name…"
+            value={search}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+            className="pl-9"
+            aria-label="Search users"
+          />
+        </div>
+        {!loading && (
+          <p className="ml-auto text-xs tabular-nums text-muted-foreground">
+            {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+          </p>
+        )}
       </div>
 
-      {/* Error state */}
       {error && (
-        <div className="flex items-center gap-3 p-4 mb-6 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive text-sm">
-          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+        <div
+          role="alert"
+          className="mt-4 flex items-center gap-2.5 rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2.5 text-[13px] text-destructive"
+        >
+          <AlertCircle className="size-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Table */}
-      <AdminDataTable
-        columns={columns}
-        data={paginated}
-        pagination={pagination}
-        onPageChange={setPage}
-        isLoading={loading}
-        keyExtractor={(user) => user.id}
-      />
-    </div>
+      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <AdminDataTable
+          columns={columns}
+          data={paginated}
+          pagination={pagination}
+          onPageChange={setPage}
+          isLoading={loading}
+          keyExtractor={(user) => user.id}
+        />
+      </div>
+    </PageShell>
   )
 }

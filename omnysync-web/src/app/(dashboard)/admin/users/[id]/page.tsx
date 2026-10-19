@@ -3,11 +3,20 @@ import { requireAdmin } from '@/lib/auth/require-admin'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { AdminPageHeader } from '@/components/admin/admin-page-header'
+import { PageHeader, PageShell } from '@/components/page-header'
 import { AdminStatusBadge } from '@/components/admin/admin-status-badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Mail, Calendar, Building2, Shield, User as UserIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  Building2,
+  Calendar,
+  Mail,
+  Shield,
+  User as UserIcon,
+} from 'lucide-react'
 import { formatDate, detectClientLocale } from '@/lib/format-date'
 
 export const dynamic = 'force-dynamic'
@@ -53,102 +62,122 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <Link
-          href="/admin/users"
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Retour aux utilisateurs
-        </Link>
+    <PageShell>
+      <div className="mb-4">
+        <Button variant="ghost" size="sm" className="-ml-2 text-muted-foreground" asChild>
+          <Link href="/admin/users">
+            <ArrowLeft className="size-3.5" />
+            Back to users
+          </Link>
+        </Button>
       </div>
 
-      <AdminPageHeader
+      <PageHeader
         title={user.name || 'Utilisateur'}
         description={user.email || 'Aucun email'}
+        actions={
+          user.disabledAt ? (
+            <AdminStatusBadge status="error" label="Désactivé" />
+          ) : (
+            <Badge variant={user.role === 'ADMIN' ? 'info' : 'secondary'}>{user.role}</Badge>
+          )
+        }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* User info card */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserIcon className="h-5 w-5" />
+      <div className="mt-6 grid gap-4 lg:grid-cols-[320px_1fr]">
+        <Card className="self-start">
+          <CardHeader className="border-b border-border px-4 py-3">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <UserIcon className="size-4 text-muted-foreground" />
               Informations
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-accent">
-                <UserIcon className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-medium">{user.name || 'Sans nom'}</p>
-                <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>{user.role}</Badge>
+          <CardContent className="p-0">
+            <div className="flex items-center gap-3 border-b border-border px-4 py-4">
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-muted text-sm font-medium text-muted-foreground">
+                {(user.name || user.email || '?').slice(0, 1).toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{user.name || 'Sans nom'}</p>
+                <p className="truncate text-xs text-muted-foreground">{user.email || '—'}</p>
               </div>
             </div>
 
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center gap-3 text-sm">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{user.email || '—'}</span>
+            <dl className="divide-y divide-border">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <Mail className="size-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0">
+                  <dt className="text-xs text-muted-foreground">Email</dt>
+                  <dd className="truncate text-[13px]">{user.email || '—'}</dd>
+                </div>
               </div>
-              <div className="flex items-center gap-3 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>
-                  Créé le{' '}
-                  {formatDate(user.createdAt, locale, {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                </span>
+              <div className="flex items-center gap-3 px-4 py-3">
+                <Shield className="size-4 shrink-0 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs text-muted-foreground">Role</dt>
+                  <dd className="text-[13px]">{user.role}</dd>
+                </div>
               </div>
-              <div className="flex items-center gap-3 text-sm">
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                <span>Rôle : {user.role}</span>
-              </div>
-              {user.lastLoginAt && (
-                <div className="flex items-center gap-3 text-sm">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>
-                    Dernière connexion :{' '}
-                    {formatDate(user.lastLoginAt, locale, {
+              <div className="flex items-center gap-3 px-4 py-3">
+                <Calendar className="size-4 shrink-0 text-muted-foreground" />
+                <div>
+                  <dt className="text-xs text-muted-foreground">Created</dt>
+                  <dd className="text-[13px]">
+                    {formatDate(user.createdAt, locale, {
                       day: 'numeric',
                       month: 'long',
                       year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
                     })}
-                  </span>
+                  </dd>
+                </div>
+              </div>
+              {user.lastLoginAt && (
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <Calendar className="size-4 shrink-0 text-muted-foreground" />
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Last login</dt>
+                    <dd className="text-[13px]">
+                      {formatDate(user.lastLoginAt, locale, {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </dd>
+                  </div>
                 </div>
               )}
-              {user.disabledAt && (
-                <div className="flex items-center gap-3 text-sm">
-                  <AdminStatusBadge status="error" label="Désactivé" />
-                  <span className="text-destructive text-xs">
-                    Compte désactivé le {formatDate(user.disabledAt, locale)}
-                  </span>
-                </div>
-              )}
-            </div>
+            </dl>
+
+            {user.disabledAt && (
+              <div className="flex items-center gap-2.5 border-t border-border bg-destructive-soft px-4 py-3">
+                <AdminStatusBadge status="error" label="Désactivé" />
+                <span className="text-xs text-destructive">
+                  Compte désactivé le {formatDate(user.disabledAt, locale)}
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Organizations */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Organisations ({user.organizations.length})
+        <Card className="self-start overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border px-4 py-3">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <Building2 className="size-4 text-muted-foreground" />
+              Organizations
+              <span className="text-xs font-normal text-muted-foreground">
+                {user.organizations.length}
+              </span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {user.organizations.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Aucune organisation</p>
+              <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+                Aucune organisation
+              </p>
             ) : (
-              <div className="space-y-3">
+              <div className="divide-y divide-border">
                 {user.organizations.map(
                   ({
                     organization,
@@ -160,17 +189,21 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                     <Link
                       key={organization.id}
                       href={`/admin/orgs/${organization.id}`}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                      className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40"
                     >
-                      <div>
-                        <p className="font-medium">{organization.name}</p>
+                      <span className="grid size-7 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
+                        <Building2 className="size-3.5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-medium">{organization.name}</p>
                         {organization.slug && (
-                          <p className="text-xs text-muted-foreground">/{organization.slug}</p>
+                          <p className="truncate font-mono text-[11px] text-muted-foreground">
+                            /{organization.slug}
+                          </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{role}</Badge>
-                      </div>
+                      <Badge variant="outline">{role}</Badge>
+                      <ArrowUpRight className="size-3.5 text-muted-foreground/60 opacity-0 transition-opacity group-hover:opacity-100" />
                     </Link>
                   )
                 )}
@@ -179,6 +212,6 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageShell>
   )
 }

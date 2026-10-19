@@ -1,11 +1,19 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Dialog,
   DialogContent,
@@ -14,11 +22,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Loader2, FileCheck, Clock, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react'
+import { Loader2, FileCheck, CheckCircle, XCircle, Eye } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 import { formatDateTime, detectClientLocale } from '@/lib/format-date'
 import { useBatchSelect } from '@/hooks/use-batch-select'
 import { BatchActionBar } from '@/components/batch-action-bar'
+import { PageHeader, PageShell } from '@/components/page-header'
 import { toast } from '@/components/toast-provider'
 
 interface ApprovalRequest {
@@ -194,29 +203,29 @@ export default function ApprovalsPage() {
     switch (status) {
       case 'PENDING':
         return (
-          <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500">
-            <Clock className="w-3 h-3 mr-1" />
+          <Badge variant="warning">
+            <span className="size-1.5 rounded-full bg-warning" aria-hidden="true" />
             Pending
           </Badge>
         )
       case 'APPROVED':
         return (
-          <Badge variant="default" className="bg-green-500/10 text-green-500">
-            <CheckCircle className="w-3 h-3 mr-1" />
+          <Badge variant="success">
+            <span className="size-1.5 rounded-full bg-success" aria-hidden="true" />
             Approved
           </Badge>
         )
       case 'REJECTED':
         return (
           <Badge variant="destructive">
-            <XCircle className="w-3 h-3 mr-1" />
+            <span className="size-1.5 rounded-full bg-destructive-foreground" aria-hidden="true" />
             Rejected
           </Badge>
         )
       case 'EXPIRED':
         return (
-          <Badge variant="outline" className="text-muted-foreground">
-            <AlertCircle className="w-3 h-3 mr-1" />
+          <Badge variant="secondary">
+            <span className="size-1.5 rounded-full bg-muted-foreground" aria-hidden="true" />
             Expired
           </Badge>
         )
@@ -227,40 +236,21 @@ export default function ApprovalsPage() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
+      <PageShell>
+        <PageHeader title={t('APPROVALS_TITLE')} description={t('APPROVALS_SUBTITLE')} />
+        <div className="flex min-h-[320px] items-center justify-center">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        </div>
+      </PageShell>
     )
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">{t('APPROVALS_TITLE')}</h1>
-        <p className="text-muted-foreground mt-1">{t('APPROVALS_SUBTITLE')}</p>
-      </div>
+    <PageShell>
+      <PageHeader title={t('APPROVALS_TITLE')} description={t('APPROVALS_SUBTITLE')} />
 
       {/* Pending */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            {t('APPROVALS_PENDING')} ({pendingApprovals.length})
-          </h2>
-          {pendingApprovals.length > 0 && (
-            <Checkbox
-              id="select-all-pending"
-              aria-label="Select all pending approvals"
-              checked={isAllSelected}
-              onCheckedChange={(checked) => {
-                if (checked) selectAll()
-                else clearSelection()
-              }}
-              className="ml-auto"
-            />
-          )}
-        </div>
-
+      <section className="relative mt-6">
         {selectedCount > 0 && (
           <BatchActionBar
             selectedCount={selectedCount}
@@ -270,14 +260,14 @@ export default function ApprovalsPage() {
             actions={[
               {
                 label: 'Approve',
-                icon: <CheckCircle className="w-4 h-4 mr-1" />,
+                icon: <CheckCircle className="size-4" />,
                 variant: 'default',
                 onClick: batchApprove,
                 loading: batchLoading,
               },
               {
                 label: 'Reject',
-                icon: <XCircle className="w-4 h-4 mr-1" />,
+                icon: <XCircle className="size-4" />,
                 variant: 'destructive',
                 onClick: batchReject,
                 loading: batchLoading,
@@ -287,128 +277,157 @@ export default function ApprovalsPage() {
         )}
 
         {pendingApprovals.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <FileCheck className="w-10 h-10 text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">No pending approval requests</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Pending approvals will appear here when documents are submitted for review.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {pendingApprovals.map((approval) => (
-              <Card key={approval.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1">
-                      <Checkbox
-                        checked={selectedIds.has(approval.id)}
-                        onCheckedChange={() => toggle(approval.id)}
-                        aria-label={`Select ${approval.documentTitle}`}
-                        className="mt-1"
-                      />
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold">{approval.documentTitle}</h3>
-                          {getStatusBadge(approval.status)}
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Requested by {approval.requestedBy} •{' '}
-                          {formatDateTime(approval.requestedAt, locale)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Expires on {formatDateTime(approval.expiresAt, locale)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedApproval(approval)}
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
-                      </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => approveRequest(approval.id)}
-                        disabled={actionLoading === approval.id}
-                      >
-                        {actionLoading === approval.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                        ) : (
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                        )}
-                        Approve
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedApproval(approval)
-                          setRejectOpen(true)
-                        }}
-                        disabled={actionLoading === approval.id}
-                      >
-                        <XCircle className="w-4 h-4 mr-1" />
-                        Reject
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
+            <span className="mx-auto grid size-10 place-items-center rounded-xl bg-muted">
+              <FileCheck className="size-5 text-muted-foreground" />
+            </span>
+            <p className="mt-4 text-sm font-medium">No pending approval requests</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Pending approvals will appear here when documents are submitted for review.
+            </p>
+            <Button asChild className="mt-6">
+              <Link href="/dashboard/documents">View documents</Link>
+            </Button>
           </div>
-        )}
-      </div>
-
-      {/* History */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <FileCheck className="w-5 h-5" />
-          {t('APPROVALS_HISTORY')}
-        </h2>
-
-        {historyApprovals.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <p className="text-muted-foreground">No approval history</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Resolved approvals will be listed here for reference.
-              </p>
-            </CardContent>
-          </Card>
         ) : (
-          <div className="space-y-4">
-            {historyApprovals.map((approval) => (
-              <Card key={approval.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-medium">{approval.documentTitle}</h3>
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+              <h2 className="text-sm font-semibold">
+                {t('APPROVALS_PENDING')}{' '}
+                <span className="font-normal text-muted-foreground">
+                  ({pendingApprovals.length})
+                </span>
+              </h2>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="select-all-pending"
+                  className="cursor-pointer select-none text-xs text-muted-foreground"
+                >
+                  Select all
+                </label>
+                <Checkbox
+                  id="select-all-pending"
+                  aria-label="Select all pending approvals"
+                  checked={isAllSelected}
+                  onCheckedChange={(checked) => {
+                    if (checked) selectAll()
+                    else clearSelection()
+                  }}
+                />
+              </div>
+            </div>
+
+            <ul className="divide-y divide-border">
+              {pendingApprovals.map((approval) => (
+                <li
+                  key={approval.id}
+                  className="flex flex-wrap items-start justify-between gap-4 px-4 py-4 transition-colors hover:bg-muted/40"
+                >
+                  <div className="flex min-w-0 items-start gap-3">
+                    <Checkbox
+                      checked={selectedIds.has(approval.id)}
+                      onCheckedChange={() => toggle(approval.id)}
+                      aria-label={`Select ${approval.documentTitle}`}
+                      className="mt-1"
+                    />
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-[13px] font-medium">{approval.documentTitle}</p>
                         {getStatusBadge(approval.status)}
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {approval.status === 'APPROVED'
-                          ? `Approved by ${approval.approvedBy} on ${approval.approvedAt ? formatDateTime(approval.approvedAt, locale) : ''}`
-                          : approval.status === 'REJECTED'
-                            ? `Rejected${approval.comments ? `: ${approval.comments}` : ''}`
-                            : `Expired on ${formatDateTime(approval.expiresAt, locale)}`}
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Requested by {approval.requestedBy} ·{' '}
+                        {formatDateTime(approval.requestedAt, locale)}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Expires on {formatDateTime(approval.expiresAt, locale)}
                       </p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedApproval(approval)}
+                    >
+                      <Eye />
+                      View
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => approveRequest(approval.id)}
+                      disabled={actionLoading === approval.id}
+                    >
+                      {actionLoading === approval.id ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <CheckCircle />
+                      )}
+                      Approve
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedApproval(approval)
+                        setRejectOpen(true)
+                      }}
+                      disabled={actionLoading === approval.id}
+                    >
+                      <XCircle />
+                      Reject
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
-      </div>
+      </section>
+
+      {/* History — only shown once there is something to look back at. */}
+      {historyApprovals.length > 0 && (
+        <section className="mt-8">
+          <h2 className="text-sm font-semibold">{t('APPROVALS_HISTORY')}</h2>
+
+          <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Document</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Resolution</TableHead>
+                  <TableHead className="hidden text-right md:table-cell">Requested</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {historyApprovals.map((approval) => (
+                  <TableRow key={approval.id}>
+                    <TableCell className="max-w-[18rem] truncate text-[13px] font-medium">
+                      {approval.documentTitle}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(approval.status)}</TableCell>
+                    <TableCell className="max-w-[22rem] truncate text-[13px] text-muted-foreground">
+                      {approval.status === 'APPROVED'
+                        ? `Approved by ${approval.approvedBy} on ${
+                            approval.approvedAt ? formatDateTime(approval.approvedAt, locale) : ''
+                          }`
+                        : approval.status === 'REJECTED'
+                          ? `Rejected${approval.comments ? `: ${approval.comments}` : ''}`
+                          : `Expired on ${formatDateTime(approval.expiresAt, locale)}`}
+                    </TableCell>
+                    <TableCell className="hidden whitespace-nowrap text-right text-xs tabular-nums text-muted-foreground md:table-cell">
+                      {formatDateTime(approval.requestedAt, locale)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+      )}
 
       {/* Dialog de rejet */}
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
@@ -435,15 +454,13 @@ export default function ApprovalsPage() {
                 onClick={() => rejectRequest(selectedApproval.id)}
                 disabled={actionLoading === selectedApproval.id}
               >
-                {actionLoading === selectedApproval.id && (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                )}
+                {actionLoading === selectedApproval.id && <Loader2 className="animate-spin" />}
                 Reject
               </Button>
             )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

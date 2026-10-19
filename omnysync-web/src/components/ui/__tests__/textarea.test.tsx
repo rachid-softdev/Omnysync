@@ -67,6 +67,6 @@ describe('Textarea', () => {
   it('has base text size for mobile', () => {
     render(<Textarea placeholder="Text size" />)
     const textarea = screen.getByPlaceholderText('Text size')
-    expect(textarea).toHaveClass('text-base')
+    expect(textarea).toHaveClass('text-sm')
   })
 })

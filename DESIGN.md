@@ -7,41 +7,57 @@ colors:
   primary-soft: "#0091ff"
   on-primary: "#ffffff"
   background: "#ffffff"
-  foreground: "#1c1e21"
+  foreground: "#16181d"
   card: "#ffffff"
-  card-foreground: "#1c1e21"
-  surface-soft: "#f1f4f7"
-  muted: "#f1f4f7"
-  muted-foreground: "#5d6c7b"
-  accent: "#f1f4f7"
-  accent-foreground: "#1c1e21"
-  destructive: "#e41e3f"
+  card-foreground: "#16181d"
+  surface-soft: "#f5f6f8"
+  muted: "#f5f6f8"
+  muted-foreground: "#5c6a79"
+  accent: "#f1f4f8"
+  accent-foreground: "#16181d"
+  destructive: "#e02d47"
   destructive-foreground: "#ffffff"
-  border: "#ced0d4"
-  input: "#ced0d4"
+  destructive-soft: "#fef1f3"
+  border: "#e6e9ee"
+  border-strong: "#d3d9e1"
+  input: "#98a2b0"
   ring: "#0064e0"
-  sidebar-bg: "#f1f4f7"
-  sidebar-foreground: "#1c1e21"
+  success: "#157f43"
+  success-soft: "#ecfdf3"
+  warning: "#a15c07"
+  warning-soft: "#fffaeb"
+  info: "#0064e0"
+  info-soft: "#eef5ff"
+  chart-1: "#0064e0"
+  chart-2: "#16a3d9"
+  chart-3: "#16a34a"
+  chart-4: "#f59e0b"
+  chart-5: "#7c3aed"
+  sidebar-bg: "#f7f8fa"
+  sidebar-foreground: "#16181d"
   sidebar-primary: "#0064e0"
   sidebar-primary-foreground: "#ffffff"
-  sidebar-border: "#ced0d4"
-  dark-background: "#0a1317"
-  dark-foreground: "#ffffff"
-  dark-card: "#1c1e21"
-  dark-surface-soft: "#444950"
-  dark-muted: "#444950"
-  dark-muted-foreground: "#8595a4"
-  dark-accent: "#444950"
-  dark-accent-foreground: "#ffffff"
-  dark-border: "#444950"
-  dark-input: "#444950"
-  dark-ring: "#0091ff"
-  dark-sidebar-bg: "#1c1e21"
-  dark-sidebar-foreground: "#ffffff"
-  dark-sidebar-border: "#444950"
-  success: "#22c55e"
-  warning: "#eab308"
-  error: "#e41e3f"
+  sidebar-accent: "#eef1f5"
+  sidebar-border: "#e6e9ee"
+  dark-background: "#0a0f14"
+  dark-foreground: "#f2f4f7"
+  dark-card: "#10161d"
+  dark-popover: "#121920"
+  dark-surface-soft: "#182029"
+  dark-muted: "#182029"
+  dark-muted-foreground: "#9aa6b4"
+  dark-accent: "#1d2630"
+  dark-accent-foreground: "#f2f4f7"
+  dark-border: "#1f2933"
+  dark-border-strong: "#2b3742"
+  dark-input: "#39434f"
+  dark-ring: "#4da3ff"
+  dark-primary: "#0091ff"
+  dark-primary-hover: "#33a6ff"
+  dark-sidebar-bg: "#0d1319"
+  dark-sidebar-foreground: "#f2f4f7"
+  dark-sidebar-border: "#1c252e"
+  error: "#e02d47"
 typography:
   display:
     fontFamily: Inter, system-ui, -apple-system, sans-serif
@@ -94,11 +110,12 @@ typography:
     fontWeight: 400
     lineHeight: 1.5
 rounded:
-  sm: 8px
-  md: 10px
-  lg: 12px
-  xl: 16px
-  xxl: 22px
+  xs: 4px
+  sm: 6px
+  md: 8px
+  lg: 10px
+  xl: 14px
+  xxl: 18px
   full: 9999px
 spacing:
   xs: 8px
@@ -115,7 +132,7 @@ components:
     textColor: "{colors.on-primary}"
     typography: "{typography.label}"
     rounded: "{rounded.lg}"
-    padding: 12px 24px
+    padding: 8px 14px
   button-primary-hover:
     backgroundColor: "{colors.primary-hover}"
     textColor: "{colors.on-primary}"
@@ -124,20 +141,20 @@ components:
     textColor: "{colors.foreground}"
     typography: "{typography.label}"
     rounded: "{rounded.lg}"
-    padding: 12px 24px
+    padding: 8px 14px
     border: 1px solid '{colors.border}'
   button-ghost:
     backgroundColor: transparent
     textColor: "{colors.foreground}"
     typography: "{typography.label}"
     rounded: "{rounded.lg}"
-    padding: 10px 20px
+    padding: 8px 14px
   button-destructive:
-    backgroundColor: "{colors.destructive}"
-    textColor: "{colors.destructive-foreground}"
+    backgroundColor: "{colors.destructive-soft}"
+    textColor: "{colors.destructive}"
     typography: "{typography.label}"
     rounded: "{rounded.lg}"
-    padding: 12px 24px
+    padding: 8px 14px
   button-pill-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.on-primary}"
@@ -157,18 +174,20 @@ components:
     rounded: "{rounded.lg}"
     padding: 24px
     border: 1px solid '{colors.border}'
+    shadow: 0 1px 2px rgb(16 24 40 / 0.05), 0 1px 3px rgb(16 24 40 / 0.06)
   card-hover:
-    shadow: 0 4px 12px rgba(0, 0, 0, 0.08)
+    shadow: 0 2px 4px -1px rgb(16 24 40 / 0.05), 0 6px 14px -2px rgb(16 24 40 / 0.08)
   input:
     backgroundColor: "{colors.background}"
     textColor: "{colors.foreground}"
-    typography: "{typography.body}"
+    typography: "{typography.body-sm}"
     rounded: "{rounded.lg}"
-    padding: 12px 16px
-    height: 44px
+    padding: 6px 12px
+    height: 36px
     border: 1px solid '{colors.input}'
   input-focused:
-    border: 2px solid '{colors.ring}'
+    border: 1px solid '{colors.ring}'
+    ring: 0 0 0 2px rgba(0, 100, 224, 0.25)
   input-error:
     border: 1px solid '{colors.destructive}'
   badge:
@@ -176,10 +195,19 @@ components:
     textColor: "{colors.foreground}"
     typography: "{typography.caption}"
     rounded: "{rounded.full}"
-    padding: 4px 10px
+    padding: 2px 8px
   badge-default:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.on-primary}"
+  badge-success:
+    backgroundColor: "{colors.success-soft}"
+    textColor: "{colors.success}"
+  badge-warning:
+    backgroundColor: "{colors.warning-soft}"
+    textColor: "{colors.warning}"
+  badge-info:
+    backgroundColor: "{colors.info-soft}"
+    textColor: "{colors.info}"
   badge-destructive:
     backgroundColor: "{colors.destructive}"
     textColor: "{colors.destructive-foreground}"
@@ -197,6 +225,7 @@ components:
     textColor: "{colors.card-foreground}"
     rounded: "{rounded.xl}"
     padding: 24px
+    shadow: 0 4px 8px -2px rgb(16 24 40 / 0.06), 0 20px 40px -6px rgb(16 24 40 / 0.14)
   separator:
     backgroundColor: "{colors.border}"
     height: 1px
@@ -204,15 +233,15 @@ components:
     backgroundColor: transparent
     textColor: "{colors.muted-foreground}"
     typography: "{typography.label}"
-    rounded: "{rounded.lg}"
-    padding: 8px 16px
+    rounded: "{rounded.md}"
+    padding: 4px 12px
   tab-trigger-active:
     backgroundColor: "{colors.background}"
     textColor: "{colors.foreground}"
-    shadow: 0 1px 3px rgba(0, 0, 0, 0.1)
+    shadow: 0 1px 2px rgb(16 24 40 / 0.05)
   skeleton:
     backgroundColor: "{colors.muted}"
-    rounded: "{rounded.sm}"
+    rounded: "{rounded.md}"
   progress:
     backgroundColor: "{colors.muted}"
     rounded: "{rounded.full}"
@@ -223,13 +252,13 @@ components:
   select-trigger:
     backgroundColor: "{colors.background}"
     textColor: "{colors.foreground}"
-    typography: "{typography.body}"
+    typography: "{typography.body-sm}"
     rounded: "{rounded.lg}"
-    padding: 12px 16px
-    height: 44px
+    padding: 6px 12px
+    height: 36px
     border: 1px solid '{colors.input}'
   switch:
-    backgroundColor: "{colors.muted}"
+    backgroundColor: "{colors.input}"
     rounded: "{rounded.full}"
     height: 24px
     width: 44px
@@ -258,10 +287,10 @@ This system explicitly rejects: noisy dashboards with competing visual prioritie
 **Key Characteristics:**
 
 - Cobalt blue (`#0064e0`) as the single accent color, used sparingly for primary actions and interactive state indicators only
-- White canvas (`#ffffff`) as the default background, with a soft gray surface layer (`#f1f4f7`) for sidebars and secondary panels
+- White canvas (`#ffffff`) as the default background, with a cool-gray surface layer (`#f5f6f8`) for sidebars and secondary panels
 - Inter type family throughout — no display/body pairing; one confident sans carries all roles from 48px display to 12px caption
-- Consistent rounded corners (12px default radius) with pill-shaped variants for badges and marketing CTAs
-- Flat-by-default elevation with subtle shadows reserved for interactive feedback
+- Consistent rounded corners (10px default radius) with pill-shaped variants for badges and marketing CTAs
+- Flat-by-default elevation with a refined two-layer shadow scale reserved for interactive feedback and floating surfaces
 - Dark mode as a first-class citizen with full token parity
 - Strong state coverage: loading, empty, error, and success states on every major surface
 
@@ -277,25 +306,30 @@ The palette follows a Restrained strategy: white canvas + single cobalt accent +
 
 ### Semantic
 
-- **Success Green** (`#22c55e`): Sync-completed indicators, "in stock" badges, positive confirmation toasts.
-- **Warning Yellow** (`#eab308`): Medium-priority alerts, near-limit usage warnings.
-- **Error Red** (`#e41e3f`): Destructive actions, sync failure indicators, validation errors.
+- **Success Green** (`#157f43`): Sync-completed indicators, "in stock" badges, positive confirmation toasts. Paired with `#ecfdf3` soft surface. Text-safe on white (4.6:1).
+- **Warning Amber** (`#a15c07`): Medium-priority alerts, near-limit usage warnings. Paired with `#fffaeb` soft surface.
+- **Info Blue** (`#0064e0`): Neutral informational states, "in progress" indicators. Paired with `#eef5ff` soft surface.
+- **Error Red** (`#e02d47`): Destructive actions, sync failure indicators, validation errors.
 
 ### Neutral
 
 - **White** (`#ffffff`): Page canvas and primary card surface.
-- **Soft Gray** (`#f1f4f7`): Sidebar background, muted surface, accent container, thumbnail backgrounds.
-- **Ink** (`#1c1e21`): Primary text color for headings and body copy.
-- **Muted Text** (`#5d6c7b`): Secondary text for descriptions, metadata, and supporting copy.
-- **Border** (`#ced0d4`): Card borders, input strokes, dividers, and separators.
+- **Soft Gray** (`#f5f6f8`): Sidebar background, muted surface, accent container, thumbnail backgrounds.
+- **Ink** (`#16181d`): Primary text color for headings and body copy.
+- **Muted Text** (`#5c6a79`): Secondary text for descriptions, metadata, and supporting copy.
+- **Border** (`#e6e9ee`): Card borders, dividers, and separators — intentionally quiet.
+- **Border Strong** (`#d3d9e1`): Structural borders that need more definition than the default.
+- **Input Border** (`#98a2b0`): Form-control strokes. Darker than the default border so fields stay identifiable (≈2.9:1 against white).
 
 ### Dark Mode
 
-- **Deep Ink** (`#0a1317`): Dark canvas and page background.
-- **Dark Card** (`#1c1e21`): Card and elevated surface backgrounds.
-- **Dark Surface** (`#444950`): Muted surfaces, sidebar backgrounds, secondary containers.
-- **Dark Muted Text** (`#8595a4`): Secondary text on dark surfaces.
-- **Dark Border** (`#444950`): Card borders, input strokes on dark backgrounds.
+- **Deep Ink** (`#0a0f14`): Dark canvas and page background.
+- **Dark Card** (`#10161d`): Card and elevated surface backgrounds.
+- **Dark Popover** (`#121920`): Menus, selects, and dialogs above cards.
+- **Dark Surface** (`#182029`): Muted surfaces, sidebar backgrounds, secondary containers.
+- **Dark Muted Text** (`#9aa6b4`): Secondary text on dark surfaces.
+- **Dark Border** (`#1f2933`): Card borders and dividers on dark backgrounds.
+- **Dark Input** (`#39434f`): Form-control strokes on dark backgrounds.
 
 ### Named Rules
 
@@ -338,14 +372,19 @@ The system is predominantly flat. Depth is conveyed through tonal layering (ligh
 
 ### Shadow Vocabulary
 
-- **Card Hover** (`0 4px 12px rgba(0, 0, 0, 0.08)`): Subtle elevation when hovering over selectable cards. Used on connector cards and document list items.
-- **Active Tab** (`0 1px 3px rgba(0, 0, 0, 0.1)`): Indicates the selected tab is elevated above inactive tabs.
-- **Modal Backdrop** (none; uses `background: rgba(0, 0, 0, 0.5)` overlay instead): Dialogs and modals use a scrim to create depth, not a shadow on the dialog itself.
-- **Sticky Panel** (none for the panel; bottom bar uses `1px solid {colors.border}` top border): Purchase rails and summary panels are distinguished by position and border, not shadow.
+The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfaces read as grounded rather than fuzzy. Dark mode swaps to deeper black alphas at the same geometry.
+
+- **`--shadow-2xs`** (`0 1px 2px rgb(16 24 40 / 0.04)`): Inputs, selects, outline buttons — barely-there grounding.
+- **`--shadow-xs`** (`0 1px 2px / 0.05`): Primary buttons, active tab.
+- **`--shadow-sm`** (`0 1px 2px / 0.05, 0 1px 3px / 0.06`): Cards at rest.
+- **`--shadow-md`** (`0 2px 4px -1px / 0.05, 0 6px 14px -2px / 0.08`): Hovered selectable cards, sticky rails.
+- **`--shadow-lg`** (`0 2px 6px -1px / 0.05, 0 12px 24px -4px / 0.1`): Menus, selects, popovers.
+- **`--shadow-xl`** (`0 4px 8px -2px / 0.06, 0 20px 40px -6px / 0.14`): Dialogs and alert dialogs.
+- **Modal backdrop:** `rgb(0 0 0 / 0.45)` scrim with a 2px blur, deepening to `0.6` in dark mode.
 
 ### Named Rules
 
-**The Flat-by-Default Rule.** Surfaces are flat at rest. No ambient shadows on cards, no elevation for decorative purposes. Shadows appear only as a response to interaction (hover, active, selected).
+**The Grounded Rule.** Every floating surface gets exactly one shadow from the scale. Never stack a card shadow inside a dialog shadow, and never add a hover shadow to something that is already floating.
 
 **The Tonal Layer Rule.** When hierarchy is needed between flat surfaces, use background color contrast (white canvas → soft gray sidebar → deep ink dark mode) rather than shadows. The sidebar, cards, and content area are distinguished by surface color, not z-index.
 
@@ -353,66 +392,71 @@ The system is predominantly flat. Depth is conveyed through tonal layering (ligh
 
 ### Buttons
 
-- **Shape:** 12px rounded corners (`rounded.lg`) for dashboard buttons; pill-shaped (`rounded.full`) for marketing CTAs on landing pages
-- **Primary:** Cobalt blue (`#0064e0`) background, white text. Used for primary actions: "Create", "Save", "Sync", "Connect"
-- **Hover:** Deepens to `#0457cb`
+- **Shape:** 10px rounded corners (`rounded.lg`) for dashboard buttons; pill-shaped (`rounded.full`) for marketing CTAs on landing pages
+- **Sizes:** 36px default height, 32px small, 40px large, 36px square icon buttons
+- **Primary:** Cobalt blue (`#0064e0`) background, white text, `shadow-xs`. Used for primary actions: "Create", "Save", "Sync", "Connect"
+- **Hover:** Deepens to `#0457cb` (never fades to transparency)
 - **Disabled:** Opacity 50%
-- **Secondary:** Transparent background, ink text, `1px solid {colors.border}` stroke. Used for secondary or cancel actions
+- **Secondary:** Muted gray fill (`#f5f6f8`), ink text. Used for secondary actions
+- **Outline:** Transparent background, ink text, `1px solid {colors.border}`, `shadow-2xs`
 - **Ghost:** Transparent, no border. Used for inline toolbar actions and less prominent controls
-- **Destructive:** Red (`#e41e3f`) background, white text. Used for delete, remove, and other destructive confirmations
+- **Destructive:** Soft red (`#fef1f3`) background with red (`#e02d47`) text. Destructive confirms that need full weight use a solid red button inside the confirmation dialog
 - **Loading:** All button variants show a spinner replacing the icon slot during async operations
 
 ### Cards
 
-- **Shape:** 12px rounded corners, `1px solid {colors.border}` stroke
-- **Background:** White (`#ffffff`), or dark card (`#1c1e21`) in dark mode
+- **Shape:** 10px rounded corners, `1px solid {colors.border}` stroke, `shadow-sm`
+- **Background:** White (`#ffffff`), or dark card (`#10161d`) in dark mode
 - **Padding:** 24px standard (`p-6`), 16px compact variant for dense lists
-- **Shadow:** None at rest. On hover for selectable cards: `0 4px 12px rgba(0, 0, 0, 0.08)`
+- **Title:** 16px semibold with tight tracking. Marketing pages may override to 24px
 - **Internal spacing:** 16px between child elements
 - **Nested cards are prohibited.** If a card needs internal grouping, use a border separator or background tint instead
 
 ### Inputs & Form Controls
 
-- **Shape:** 12px rounded corners, `1px solid {colors.input}` stroke
-- **Height:** 44px standard (meets WCAG AAA touch target)
-- **Background:** White (light) or `#1c1e21` (dark)
-- **Focus:** `2px solid {colors.ring}` replaces the stroke on focus-visible. No glow, no shadow
+- **Shape:** 10px rounded corners, `1px solid {colors.input}` stroke, `shadow-2xs`
+- **Height:** 36px standard. Auth and marketing forms may use 40–44px for touch comfort
+- **Background:** White (light) or the card surface (dark)
+- **Focus:** Stroke switches to `{colors.ring}` plus a `2px` 25%-alpha cobalt halo. Keyboard-only (`:focus-visible`)
 - **Error:** Stroke switches to `1px solid {colors.destructive}`; inline error message below in red body-sm
-- **Disabled:** Muted background (`{colors.muted}`) with reduced opacity
-- **Select:** Same shape as inputs, with a chevron icon on the right
-- **Textarea:** Same styling as inputs, minimum 100px height, resizable vertically
+- **Disabled:** Opacity 50% with `cursor-not-allowed`
+- **Select:** Same shape as inputs, with a muted chevron icon on the right
+- **Textarea:** Same styling as inputs, minimum 80px height, resizable vertically
+- **Placeholder:** Uses `muted-foreground` — never a lighter gray, so it keeps 4.5:1 contrast
 
 ### Navigation
 
-- **Desktop Sidebar:** 256px wide, soft gray background (`#f1f4f7`). Icon + text labels, 44px clickable items. Active state uses subtle background tint. Bottom section has user avatar, name, and logout
-- **Mobile Drawer:** Full-height slide-in from left, 280px wide. Overlay backdrop at 50% opacity. Close button top-right. Same nav items as desktop
-- **Top Bar (public pages):** Fixed header with logo left, nav links center (hidden on mobile), CTA buttons right. Background at 80% opacity with `backdrop-blur-sm`
-- **Breadcrumbs:** Body-sm text, steel-gray separators. Used on document detail and sync detail pages
-- **Tab Navigation:** Pill-style tabs for switching between views within a page. Active tab: white background, 12px rounded, subtle shadow
+- **Desktop Sidebar:** 256px wide (`w-64`), `bg-sidebar` surface with a matching `sidebar-border`. Icon + text labels in 36px (`h-9`) rows. Navigation is grouped into an unlabeled primary group, "Workspace", and "Account"; group headings are 11px, medium weight, uppercase, 70% muted. Footer holds the command-palette trigger, docs link, and a user card with icon-only logout
+- **Active state:** Subtle `accent` background + `foreground` text + medium weight. `/dashboard` and `/admin` only match exactly (nested routes must not light up the root entry) — see `isNavItemActive()` in `src/lib/nav.ts`
+- **Mobile Drawer:** Full-height slide-in from left, 288px wide (`w-72`). Overlay backdrop at 50% opacity with a 2px blur. Close button top-right. Same grouped nav as desktop; user + logout pinned at the bottom
+- **Dashboard Top Bar:** Fixed 56px (`h-14`) bar with breadcrumbs (path segments mapped to translated labels, unknown IDs rendered as-is), a search/⌘K trigger, theme toggle, and avatar. It replaces the marketing header on all `/dashboard`, `/admin`, and `/auth` routes
+- **Top Bar (public pages):** Fixed header with logo left, nav links center (hidden on mobile), CTA buttons right. Background at 85% opacity with `backdrop-blur`
+- **Tab Navigation:** Pill-style tabs for switching between views within a page. Active tab: `background` surface, 10px rounded, `shadow-xs`
 
 ### Badges & Status Indicators
 
-- **Shape:** Pill-shaped (`rounded.full`), 4px 10px padding
-- **Default:** Soft gray background, standard text. Used for neutral status ("Member", "Inactive")
-- **Primary:** Cobalt background, white text. Used for active status ("Active", "Pro")
-- **Destructive:** Red background, white text. Used for error states ("Failed", "Error")
+- **Shape:** Pill-shaped (`rounded.full`), 2px 8px padding, 12px medium weight
+- **Default:** Cobalt background, white text. Used for active status ("Active", "Pro")
+- **Secondary:** Muted gray background, ink text. Used for neutral status ("Member", "Inactive")
+- **Success / Warning / Info:** Soft semantic surface + matching text color (`#ecfdf3`/`#157f43`, `#fffaeb`/`#a15c07`, `#eef5ff`/`#0064e0`). Preferred over solid fills — quieter, and text contrast stays above 4.5:1
+- **Destructive:** Solid red background, white text. Used for error states ("Failed", "Error")
 - **Outline:** Transparent with border. Used for secondary status labels
-- **Semantic dot indicators:** Colored dots (green/red/yellow) next to sync log entries for quick status scanning
+- **Semantic dot indicators:** Colored dots (success/warning/info) next to sync log entries for quick status scanning
 
 ### Progress & Loading
 
-- **Progress Bar:** 8px height, pill-shaped (`rounded.full`). Muted gray track, cobalt fill. Used on sync progress and usage limit displays
+- **Progress Bar:** 8px height, pill-shaped (`rounded.full`). Muted gray track, cobalt fill, 300ms transform transition. Used on sync progress and usage limit displays
 - **Loading Spinner:** 32px animated spinner for page-level loading. 16px for inline button loading
 - **Skeleton:** Soft gray rounded rectangles matching the shape of the content being loaded. Used on dashboard cards before data arrives
 - **Empty State:** Centered layout with icon + heading + description + optional action button. Used on all list pages when no data exists
 
 ### Dialogs & Modals
 
-- **Shape:** 16px rounded corners, 24px padding
-- **Backdrop:** `rgba(0, 0, 0, 0.5)` overlay
+- **Shape:** 14px rounded corners, 24px padding, `shadow-xl`
+- **Backdrop:** `rgb(0 0 0 / 0.45)` overlay with a 2px blur (`0.6` in dark mode)
 - **Width:** `max-w-md` (448px) standard, `max-w-lg` (512px) for forms
-- **Header:** Title + description + optional close X button
-- **Footer:** Action buttons right-aligned (primary + cancel)
+- **Header:** Title + description + optional close X button (28px hit area, top-right)
+- **Footer:** Action buttons right-aligned (primary + cancel), stacked reverse on mobile
 - **Dismiss:** Escape key, click-outside, and explicit cancel/close affordance
 
 ### Sync Console
@@ -432,7 +476,7 @@ The system is predominantly flat. Depth is conveyed through tonal layering (ligh
 - **Do** provide loading, empty, error, and success states for every major data-fetching surface
 - **Do** use progressive disclosure for complex workflows — the 5-step sync wizard is the model pattern
 - **Do** maintain dark mode token parity — every surface should work in both modes without layout changes
-- **Do** follow the 12px corner radius for interactive elements (buttons, inputs, cards) and pill shapes for badges
+- **Do** follow the 10px corner radius for interactive elements (buttons, inputs, cards), 14px for floating overlays, and pill shapes for badges
 - **Do** use Inter for all typography — one family, consistent weights, no mixing
 - **Do** keep destructive actions behind confirmation dialogs — delete, remove, and revoke always require a second click
 
@@ -440,7 +484,7 @@ The system is predominantly flat. Depth is conveyed through tonal layering (ligh
 
 - **Don't** introduce additional accent colors beyond cobalt blue — the restrained palette is intentional
 - **Don't** use decorative embellishments (gradient text, glassmorphism, heavy shadows, animated backgrounds) — this is a tool, not a showcase
-- **Don't** mix button shapes on the same surface — all dashboard buttons use 12px corners, all marketing CTAs use pills. Never both on the same page
+- **Don't** mix button shapes on the same surface — all dashboard buttons use 10px corners, all marketing CTAs use pills. Never both on the same page
 - **Don't** nest cards — use borders, background tints, or inline separators instead
 - **Don't** use modals as a first default — exhaust inline expansions, side panels, and progressive disclosure first
 - **Don't** ship with missing states — every list page needs loading, empty, error, and populated states
@@ -449,3 +493,14 @@ The system is predominantly flat. Depth is conveyed through tonal layering (ligh
 - **Don't** use numbered section markers (01/02/03) as generic scaffolding — numbers are reserved for actual sequential processes (like the sync wizard steps)
 - **Don't** use side-stripe borders (border-left/right >1px as colored accents) — use full borders, background tints, or nothing
 - **Don't** use animated page-load sequences — product users are in flow and shouldn't wait for choreography
+
+## 7. Implementation Notes
+
+Non-obvious wiring that future changes must preserve:
+
+- **Tailwind v4 source scanning:** `globals.css` declares `@source '../../../packages/omnysync-core/src'`. Tailwind v4 ignores `tailwind.config.ts` unless pulled in with `@config`, and it never scans `node_modules` (where the workspace package is linked). Removing that directive silently drops every core-only utility — dialog centering, zoom animations, etc.
+- **i18n split:** Server Components resolve the locale from `Accept-Language` via `getT()`; Client Components use `useTranslations()`, which imports the `en`/`fr` dictionaries directly. A fetch-based client dictionary is deliberately avoided: a failed or rate-limited request used to render raw `UI_*` keys.
+- **Locale source of truth:** `useSyncExternalStore` reads `<html lang>` on the client and returns `en` as the server snapshot, so FR visitors hydrate without losing server HTML or flashing a mismatch. `detectClientLocale()` (dates) follows the same rule, which keeps dates and copy in the same language even when the OS locale differs.
+- **Server translations:** Server Components must call `await getT()` rather than the static `t()` — the latter defaults to English and silently produces mixed-language pages.
+- **Serializable nav icons:** The shell is a Server Component, so nav items pass icon _names_ (`'dashboard'`, `'sync'`, …) resolved by `nav-icons.ts`. Component references cannot cross the server/client boundary.
+- **Nav highlight helper:** `isNavItemActive(pathname, href)` lives in `src/lib/nav.ts` and is shared by the desktop sidebar and mobile drawer. `/dashboard` matches exactly (so nested pages don't light up both entries); `/admin` behaves as a section root and stays active across `/admin/*`.

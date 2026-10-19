@@ -39,13 +39,12 @@ vi.mock('@/lib/actions', () => ({
   logoutAction: (...args: any[]) => mockLogoutAction(...args),
 }))
 
-vi.mock('@/lib/i18n', () => ({
-  t: (key: string) => {
-    const translations: Record<string, string> = {
-      UI_LOGOUT: 'Logout',
-    }
-    return translations[key] || key
-  },
+vi.mock('@/lib/i18n/useTranslations', () => ({
+  useTranslations: () => ({
+    t: (key: string) => (key === 'UI_LOGOUT' ? 'Logout' : key),
+    loading: false,
+    locale: 'en',
+  }),
 }))
 
 beforeEach(() => {

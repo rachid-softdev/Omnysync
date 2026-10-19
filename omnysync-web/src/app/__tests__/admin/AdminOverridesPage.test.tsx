@@ -111,9 +111,9 @@ describe('AdminOverridesPage', () => {
     render(<AdminOverridesPage />)
 
     await waitFor(() => {
-      // Le override enabled affiche une coche (Check icon → text-green-500)
+      // Le override enabled affiche une coche (Check icon → text-success)
       // Le override disabled affiche un X (X icon → text-destructive)
-      const checkIcons = document.querySelectorAll('.text-green-500')
+      const checkIcons = document.querySelectorAll('.text-success')
       const xIcons = document.querySelectorAll('.text-destructive')
       expect(checkIcons.length).toBeGreaterThan(0)
       expect(xIcons.length).toBeGreaterThan(0)

@@ -19,9 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { AdminPageHeader } from '@/components/admin/admin-page-header'
+import { Card, CardContent } from '@/components/ui/card'
+import { PageHeader, PageShell } from '@/components/page-header'
 import { toast } from '@/components/toast-provider'
 
 type ApiError = {
@@ -121,136 +120,153 @@ export default function NewFeaturePage() {
   // -----------------------------------------------------------------------
 
   return (
-    <div className="p-8">
-      <AdminPageHeader
+    <PageShell>
+      <PageHeader
         title="New Feature"
         description="Create a new feature flag for entitlements"
         actions={
-          <Button variant="outline" onClick={() => router.push('/admin/features')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={() => router.push('/admin/features')}>
+            <ArrowLeft className="size-3.5" />
             Back
           </Button>
         }
       />
 
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>Feature Details</CardTitle>
-          <CardDescription>
-            Define a new feature that can be assigned to plans and overridden per organization or
-            user.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Key */}
-            <div className="space-y-2">
-              <Label htmlFor="key">
-                Key <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="key"
-                placeholder="EXPORT_PDF"
-                value={key}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setKey(e.target.value)}
-                className={errors.key ? 'border-destructive' : ''}
-              />
-              {errors.key && <p className="text-sm text-destructive">{errors.key}</p>}
-              <p className="text-xs text-muted-foreground">
-                Unique identifier used in code (uppercase, underscores). Cannot be changed later.
+      <Card className="mt-6 max-w-2xl">
+        <form onSubmit={handleSubmit}>
+          <CardContent className="p-0">
+            {/* Identity */}
+            <div className="border-b border-border p-5">
+              <p className="text-[13px] font-semibold">Identity</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Define how this feature is identified in plans, overrides and API responses.
               </p>
+              <div className="mt-4 space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="key">
+                    Key <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="key"
+                    placeholder="EXPORT_PDF"
+                    value={key}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setKey(e.target.value)}
+                    className={errors.key ? 'border-destructive' : ''}
+                    aria-invalid={Boolean(errors.key)}
+                  />
+                  {errors.key ? (
+                    <p className="text-xs text-destructive">{errors.key}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Unique identifier used in code (uppercase, underscores). Cannot be changed
+                      later.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="name">
+                    Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="name"
+                    placeholder="Export to PDF"
+                    value={name}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                    className={errors.name ? 'border-destructive' : ''}
+                    aria-invalid={Boolean(errors.name)}
+                  />
+                  {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+                </div>
+              </div>
             </div>
 
-            <Separator />
-
-            {/* Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">
-                Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="name"
-                placeholder="Export to PDF"
-                value={name}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-                className={errors.name ? 'border-destructive' : ''}
-              />
-              {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-            </div>
-
-            <Separator />
-
-            {/* Type */}
-            <div className="space-y-2">
-              <Label htmlFor="type">
-                Type <span className="text-destructive">*</span>
-              </Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger className={errors.type ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Select a type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="BOOLEAN">BOOLEAN — On/Off toggle</SelectItem>
-                  <SelectItem value="LIMIT">LIMIT — Numeric quota</SelectItem>
-                  <SelectItem value="EXPERIMENT">EXPERIMENT — A/B test</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.type && <p className="text-sm text-destructive">{errors.type}</p>}
-            </div>
-
-            <Separator />
-
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Optional description of what this feature does..."
-                value={description}
-                onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
-
-            <Separator />
-
-            {/* Default Config */}
-            <div className="space-y-2">
-              <Label htmlFor="defaultConfig">Default Configuration (JSON)</Label>
-              <Textarea
-                id="defaultConfig"
-                placeholder='{"quota": 100, "enabled": true}'
-                value={defaultConfig}
-                onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDefaultConfig(e.target.value)}
-                rows={3}
-              />
-              {errors.defaultConfig && (
-                <p className="text-sm text-destructive">{errors.defaultConfig}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Optional JSON configuration applied when no plan or override is set.
+            {/* Classification */}
+            <div className="border-b border-border p-5">
+              <p className="text-[13px] font-semibold">Classification</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                The type determines how the feature is evaluated and displayed.
               </p>
+              <div className="mt-4 space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="type">
+                    Type <span className="text-destructive">*</span>
+                  </Label>
+                  <Select value={type} onValueChange={setType}>
+                    <SelectTrigger
+                      className={`max-w-[280px] ${errors.type ? 'border-destructive' : ''}`}
+                    >
+                      <SelectValue placeholder="Select a type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BOOLEAN">BOOLEAN — On/Off toggle</SelectItem>
+                      <SelectItem value="LIMIT">LIMIT — Numeric quota</SelectItem>
+                      <SelectItem value="EXPERIMENT">EXPERIMENT — A/B test</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.type && <p className="text-xs text-destructive">{errors.type}</p>}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Optional description of what this feature does..."
+                    value={description}
+                    onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                      setDescription(e.target.value)
+                    }
+                    rows={3}
+                  />
+                </div>
+              </div>
             </div>
 
-            <Separator />
+            {/* Default Configuration */}
+            <div className="border-b border-border p-5">
+              <p className="text-[13px] font-semibold">Default Configuration</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Applied when no plan or override is set for an organization or user.
+              </p>
+              <div className="mt-4 space-y-1.5">
+                <Label htmlFor="defaultConfig">Default Configuration (JSON)</Label>
+                <Textarea
+                  id="defaultConfig"
+                  placeholder='{"quota": 100, "enabled": true}'
+                  value={defaultConfig}
+                  onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                    setDefaultConfig(e.target.value)
+                  }
+                  rows={3}
+                  className={`font-mono text-[13px] ${errors.defaultConfig ? 'border-destructive' : ''}`}
+                  aria-invalid={Boolean(errors.defaultConfig)}
+                />
+                {errors.defaultConfig ? (
+                  <p className="text-xs text-destructive">{errors.defaultConfig}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Optional. Must be valid JSON.</p>
+                )}
+              </div>
+            </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3 pt-2">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <div className="flex items-center gap-2 p-5">
+              <Button type="submit" size="sm" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="size-3.5 animate-spin" />}
                 Create Feature
               </Button>
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={() => router.push('/admin/features')}
               >
                 Cancel
               </Button>
             </div>
-          </form>
-        </CardContent>
+          </CardContent>
+        </form>
       </Card>
-    </div>
+    </PageShell>
   )
 }

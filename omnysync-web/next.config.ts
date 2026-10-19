@@ -21,11 +21,10 @@ const nextConfig: NextConfig = {
       {
         source: '/:path*',
         headers: [
-          {
-            key: 'Content-Security-Policy',
-            value:
-              "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:;",
-          },
+          // NOTE: no enforcing CSP here. Next.js injects inline bootstrap
+          // scripts; a static `script-src 'self'` policy blocks hydration.
+          // The middleware emits a Report-Only policy while we migrate to a
+          // per-request nonce (requires dynamic rendering — see the CSP guide).
           {
             key: 'X-Frame-Options',
             value: 'DENY',

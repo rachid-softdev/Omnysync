@@ -1,13 +1,20 @@
 'use client'
 
 import { useState, useEffect, useCallback, type ChangeEvent } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Dialog,
   DialogContent,
@@ -41,6 +48,7 @@ import { useTranslations } from '@/lib/i18n/useTranslations'
 import { formatDateTime, detectClientLocale } from '@/lib/format-date'
 import { useBatchSelect } from '@/hooks/use-batch-select'
 import { BatchActionBar } from '@/components/batch-action-bar'
+import { PageHeader, PageShell } from '@/components/page-header'
 
 interface WebhookEndpoint {
   id: string
@@ -197,111 +205,110 @@ export default function WebhooksPage() {
     toast.success('Secret copied to clipboard')
   }
 
-  if (loading) {
-    return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">{t('WEBHOOKS_TITLE')}</h1>
-          <p className="text-muted-foreground mt-1">{t('WEBHOOKS_SUBTITLE')}</p>
-        </div>
-
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              {t('WEBHOOKS_CREATE')}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('WEBHOOKS_CREATE_TITLE')}</DialogTitle>
-              <DialogDescription>
-                Configure an endpoint to receive notifications from your platforms.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Connector</Label>
-                <Select
-                  value={newWebhook.connectorId}
-                  onValueChange={(v) => setNewWebhook({ ...newWebhook, connectorId: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a connector" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="connector-1">WordPress - mon-site.com</SelectItem>
-                    <SelectItem value="connector-2">Ghost - mon-blog.ghost.io</SelectItem>
-                    <SelectItem value="connector-3">WebFlow - mon-site.webflow.io</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Type</Label>
-                <Select
-                  value={newWebhook.type}
-                  onValueChange={(v) => setNewWebhook({ ...newWebhook, type: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="WORDPRESS">WordPress</SelectItem>
-                    <SelectItem value="GHOST">Ghost</SelectItem>
-                    <SelectItem value="WEBFLOW">Webflow</SelectItem>
-                    <SelectItem value="SHOPIFY">Shopify</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Endpoint URL</Label>
-                <Input
-                  placeholder="https://your-site.com/webhook"
-                  value={newWebhook.url}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setNewWebhook({ ...newWebhook, url: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
+    <PageShell>
+      <PageHeader
+        title={t('WEBHOOKS_TITLE')}
+        description={t('WEBHOOKS_SUBTITLE')}
+        actions={
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus />
+                {t('WEBHOOKS_CREATE')}
               </Button>
-              <Button onClick={createWebhook}>Create</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{t('WEBHOOKS_CREATE_TITLE')}</DialogTitle>
+                <DialogDescription>
+                  Configure an endpoint to receive notifications from your platforms.
+                </DialogDescription>
+              </DialogHeader>
 
-      {webhooks.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <Webhook className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No webhooks configured</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Create your first webhook to receive real-time notifications.
-            </p>
-            <Button onClick={() => setIsCreateOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create webhook
-            </Button>
-          </CardContent>
-        </Card>
+              <div className="space-y-4 py-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="webhook-connector">Connector</Label>
+                  <Select
+                    value={newWebhook.connectorId}
+                    onValueChange={(v) => setNewWebhook({ ...newWebhook, connectorId: v })}
+                  >
+                    <SelectTrigger id="webhook-connector" className="w-full">
+                      <SelectValue placeholder="Select a connector" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="connector-1">WordPress - mon-site.com</SelectItem>
+                      <SelectItem value="connector-2">Ghost - mon-blog.ghost.io</SelectItem>
+                      <SelectItem value="connector-3">WebFlow - mon-site.webflow.io</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="webhook-type">Type</Label>
+                  <Select
+                    value={newWebhook.type}
+                    onValueChange={(v) => setNewWebhook({ ...newWebhook, type: v })}
+                  >
+                    <SelectTrigger id="webhook-type" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="WORDPRESS">WordPress</SelectItem>
+                      <SelectItem value="GHOST">Ghost</SelectItem>
+                      <SelectItem value="WEBFLOW">Webflow</SelectItem>
+                      <SelectItem value="SHOPIFY">Shopify</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="webhook-url">Endpoint URL</Label>
+                  <Input
+                    id="webhook-url"
+                    placeholder="https://your-site.com/webhook"
+                    value={newWebhook.url}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setNewWebhook({ ...newWebhook, url: e.target.value })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Omnysync sends a signed POST request to this URL on every sync event.
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={createWebhook}>Create</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        }
+      />
+
+      {loading ? (
+        <div className="flex min-h-[320px] items-center justify-center">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : webhooks.length === 0 ? (
+        <div className="mt-6 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
+          <span className="mx-auto grid size-10 place-items-center rounded-xl bg-muted">
+            <Webhook className="size-5 text-muted-foreground" />
+          </span>
+          <p className="mt-4 text-sm font-medium">No webhooks configured</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Create your first webhook to receive real-time notifications.
+          </p>
+          <Button className="mt-6" onClick={() => setIsCreateOpen(true)}>
+            <Plus />
+            Create webhook
+          </Button>
+        </div>
       ) : (
-        <div className="relative">
+        <div className="relative mt-6">
           {selectedCount > 0 && (
             <BatchActionBar
               selectedCount={selectedCount}
@@ -311,7 +318,7 @@ export default function WebhooksPage() {
               actions={[
                 {
                   label: 'Delete',
-                  icon: <Trash2 className="w-4 h-4 mr-1" />,
+                  icon: <Trash2 className="size-4" />,
                   variant: 'destructive',
                   onClick: () => setBatchDeleteConfirmOpen(true),
                 },
@@ -319,124 +326,142 @@ export default function WebhooksPage() {
             />
           )}
 
-          {/* Hidden select-all checkbox in header area */}
-          <div className="flex items-center gap-2 mb-4">
-            <Checkbox
-              id="select-all-webhooks"
-              aria-label="Select all webhooks"
-              checked={isAllSelected}
-              onCheckedChange={(checked) => {
-                if (checked) selectAll()
-                else clearSelection()
-              }}
-            />
-            <label
-              htmlFor="select-all-webhooks"
-              className="text-sm text-muted-foreground cursor-pointer select-none"
-            >
-              {isAllSelected ? 'All selected' : `${webhooks.length} webhooks`}
-            </label>
-          </div>
-
-          <div className="space-y-4">
-            {webhooks.map((webhook) => (
-              <Card key={webhook.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-10 pr-0">
+                    <Checkbox
+                      id="select-all-webhooks"
+                      aria-label="Select all webhooks"
+                      checked={isAllSelected}
+                      onCheckedChange={(checked) => {
+                        if (checked) selectAll()
+                        else clearSelection()
+                      }}
+                    />
+                  </TableHead>
+                  <TableHead>Endpoint</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden md:table-cell">Last triggered</TableHead>
+                  <TableHead className="text-right">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {webhooks.map((webhook) => (
+                  <TableRow key={webhook.id}>
+                    <TableCell className="pr-0">
                       <Checkbox
                         checked={selectedIds.has(webhook.id)}
                         onCheckedChange={() => toggle(webhook.id)}
                         aria-label={`Select ${webhook.type}`}
                       />
-                      <div
-                        className={`p-3 rounded-lg ${webhook.isActive ? 'bg-green-500/10' : 'bg-muted'}`}
-                      >
-                        <Webhook
-                          className={`w-5 h-5 ${webhook.isActive ? 'text-green-500' : 'text-muted-foreground'}`}
-                        />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{webhook.type}</p>
-                          <Badge variant={webhook.isActive ? 'default' : 'secondary'}>
-                            {webhook.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{webhook.url}</p>
-                        {webhook.lastTriggeredAt && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Last triggered: {formatDateTime(webhook.lastTriggeredAt, locale)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={webhook.isActive}
-                        onCheckedChange={(checked) => toggleWebhook(webhook.id, checked)}
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => testWebhook(webhook.id)}
-                        disabled={testingId === webhook.id}
-                      >
-                        {testingId === webhook.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Play className="w-4 h-4" />
-                        )}
-                      </Button>
-                      {webhook.secret && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copySecret(webhook.secret!)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`grid size-8 shrink-0 place-items-center rounded-lg ${
+                            webhook.isActive
+                              ? 'bg-success-soft text-success'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
                         >
-                          <Copy className="w-4 h-4" />
+                          <Webhook className="size-4" />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] font-medium">{webhook.type}</p>
+                          <p className="max-w-[24rem] truncate font-mono text-xs text-muted-foreground">
+                            {webhook.url}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={webhook.isActive ? 'success' : 'secondary'}>
+                        {webhook.isActive && (
+                          <span className="size-1.5 rounded-full bg-success" aria-hidden="true" />
+                        )}
+                        {webhook.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden whitespace-nowrap text-xs tabular-nums text-muted-foreground md:table-cell">
+                      {webhook.lastTriggeredAt
+                        ? formatDateTime(webhook.lastTriggeredAt, locale)
+                        : 'Never'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Switch
+                          checked={webhook.isActive}
+                          onCheckedChange={(checked) => toggleWebhook(webhook.id, checked)}
+                          aria-label={`Toggle ${webhook.type} webhook`}
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          onClick={() => testWebhook(webhook.id)}
+                          disabled={testingId === webhook.id}
+                          aria-label="Send test event"
+                        >
+                          {testingId === webhook.id ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <Play />
+                          )}
                         </Button>
-                      )}
-                      <AlertDialog
-                        open={deleteTarget === webhook.id}
-                        onOpenChange={(open) => {
-                          if (!open) setDeleteTarget(null)
-                        }}
-                      >
-                        <AlertDialogTrigger asChild>
+                        {webhook.secret && (
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="text-destructive"
-                            onClick={() => setDeleteTarget(webhook.id)}
+                            size="icon-sm"
+                            onClick={() => copySecret(webhook.secret!)}
+                            aria-label="Copy signing secret"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Copy />
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete webhook</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete this webhook? This action is
-                              irreversible.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
-                              Cancel
-                            </AlertDialogCancel>
-                            <AlertDialogAction onClick={confirmDeleteWebhook}>
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                        )}
+                        <AlertDialog
+                          open={deleteTarget === webhook.id}
+                          onOpenChange={(open) => {
+                            if (!open) setDeleteTarget(null)
+                          }}
+                        >
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-destructive hover:bg-destructive-soft"
+                              onClick={() => setDeleteTarget(webhook.id)}
+                              aria-label="Delete webhook"
+                            >
+                              <Trash2 />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete webhook</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this webhook? This action is
+                                irreversible.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
+                                Cancel
+                              </AlertDialogCancel>
+                              <AlertDialogAction onClick={confirmDeleteWebhook}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
 
           <AlertDialog open={batchDeleteConfirmOpen} onOpenChange={setBatchDeleteConfirmOpen}>
@@ -456,6 +481,6 @@ export default function WebhooksPage() {
           </AlertDialog>
         </div>
       )}
-    </div>
+    </PageShell>
   )
 }

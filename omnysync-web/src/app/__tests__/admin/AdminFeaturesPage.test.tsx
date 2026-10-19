@@ -1,6 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import AdminFeaturesPage from '../../(dashboard)/admin/features/page'
+
+// AdminDataTable localizes its footer from <html lang>; assertions below use FR.
+beforeAll(() => {
+  document.documentElement.lang = 'fr'
+})
 
 // ---------------------------------------------------------------------------
 // Mock data

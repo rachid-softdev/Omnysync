@@ -6,9 +6,28 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
-import { Loader2, Zap, FileText, Users, Image, Link2, BarChart3, Calendar } from 'lucide-react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Loader2,
+  Zap,
+  FileText,
+  Users,
+  Image,
+  Link2,
+  BarChart3,
+  Calendar,
+  Check,
+} from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 import { formatDate, detectClientLocale } from '@/lib/format-date'
+import { PageHeader, PageShell } from '@/components/page-header'
 
 interface UsageData {
   currentPlan: string
@@ -110,56 +129,55 @@ export default function UsagePage() {
   }
 
   const getUsageColor = (percentage: number) => {
-    if (percentage >= 90) return 'text-red-500'
-    if (percentage >= 75) return 'text-yellow-500'
+    if (percentage >= 90) return 'text-destructive'
+    if (percentage >= 75) return 'text-warning'
     return 'text-muted-foreground'
   }
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     )
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">{t('USAGE_TITLE')}</h1>
-        <p className="text-muted-foreground mt-1">{t('USAGE_SUBTITLE')}</p>
-      </div>
+    <PageShell>
+      <PageHeader title={t('USAGE_TITLE')} description={t('USAGE_SUBTITLE')} className="mb-6" />
 
       {isFallbackData && (
-        <div className="mb-6 p-4 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 border border-yellow-500/30 rounded-lg text-sm flex items-center justify-between">
-          <span>Unable to load live data. Showing estimated usage.</span>
+        <div className="mb-6 flex items-center justify-between gap-4 rounded-lg border border-warning/30 bg-warning-soft px-4 py-3 text-sm">
+          <span className="text-warning">Unable to load live data. Showing estimated usage.</span>
           <Button variant="outline" size="sm" onClick={fetchUsage} disabled={loading}>
-            {loading && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+            {loading && <Loader2 className="size-3.5 animate-spin" />}
             Retry
           </Button>
         </div>
       )}
 
       {/* Plan Info */}
-      <Card className="mb-8">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold">Plan {displayUsage.currentPlan}</h2>
-                <Badge variant="default">Active</Badge>
-              </div>
-              <p className="text-muted-foreground mt-1">
-                Billing cycle: {formatDate(displayUsage.billingCycle.start, locale)} -{' '}
-                {formatDate(displayUsage.billingCycle.end, locale)}
-              </p>
+      <Card className="mb-6">
+        <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-lg font-semibold tracking-tight">
+                Plan {displayUsage.currentPlan}
+              </h2>
+              <Badge variant="success">Active</Badge>
             </div>
-            <Button variant="outline">Change plan</Button>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Billing cycle: {formatDate(displayUsage.billingCycle.start, locale)} -{' '}
+              {formatDate(displayUsage.billingCycle.end, locale)}
+            </p>
           </div>
+          <Button variant="outline" size="sm">
+            Change plan
+          </Button>
         </CardContent>
       </Card>
 
-      <Tabs value="overview" className="w-full">
+      <Tabs defaultValue="overview" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="ai">AI</TabsTrigger>
@@ -167,26 +185,26 @@ export default function UsagePage() {
         </TabsList>
 
         <TabsContent value="overview">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Syncs */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardDescription className="flex items-center gap-2">
-                  <Zap className="w-4 h-4" />
-                  Syncs
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold mb-2">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] font-medium text-muted-foreground">Syncs</span>
+                  <Zap className="size-4 text-muted-foreground" />
+                </div>
+                <div className="mt-3 text-2xl font-semibold tracking-tight tabular-nums">
                   {displayUsage.syncUsed}
-                  <span className="text-lg text-muted-foreground">/{displayUsage.syncLimit}</span>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    /{displayUsage.syncLimit}
+                  </span>
                 </div>
                 <Progress
                   value={getUsagePercentage(displayUsage.syncUsed, displayUsage.syncLimit)}
-                  className="h-2"
+                  className="mt-3 h-1.5"
                 />
                 <p
-                  className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.syncUsed, displayUsage.syncLimit))}`}
+                  className={`mt-2 text-xs ${getUsageColor(getUsagePercentage(displayUsage.syncUsed, displayUsage.syncLimit))}`}
                 >
                   {displayUsage.syncLimit - displayUsage.syncUsed} remaining this month
                 </p>
@@ -195,16 +213,14 @@ export default function UsagePage() {
 
             {/* Documents */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardDescription className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Documents
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold mb-2">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] font-medium text-muted-foreground">Documents</span>
+                  <FileText className="size-4 text-muted-foreground" />
+                </div>
+                <div className="mt-3 text-2xl font-semibold tracking-tight tabular-nums">
                   {displayUsage.documentsUsed}
-                  <span className="text-lg text-muted-foreground">
+                  <span className="text-sm font-normal text-muted-foreground">
                     {displayUsage.documentsLimit === -1 ? '/∞' : `/${displayUsage.documentsLimit}`}
                   </span>
                 </div>
@@ -215,10 +231,10 @@ export default function UsagePage() {
                         displayUsage.documentsUsed,
                         displayUsage.documentsLimit
                       )}
-                      className="h-2"
+                      className="mt-3 h-1.5"
                     />
                     <p
-                      className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.documentsUsed, displayUsage.documentsLimit))}`}
+                      className={`mt-2 text-xs ${getUsageColor(getUsagePercentage(displayUsage.documentsUsed, displayUsage.documentsLimit))}`}
                     >
                       {displayUsage.documentsLimit - displayUsage.documentsUsed} remaining
                     </p>
@@ -229,16 +245,14 @@ export default function UsagePage() {
 
             {/* Connectors */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardDescription className="flex items-center gap-2">
-                  <Link2 className="w-4 h-4" />
-                  Connectors
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold mb-2">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] font-medium text-muted-foreground">Connectors</span>
+                  <Link2 className="size-4 text-muted-foreground" />
+                </div>
+                <div className="mt-3 text-2xl font-semibold tracking-tight tabular-nums">
                   {displayUsage.connectorsUsed}
-                  <span className="text-lg text-muted-foreground">
+                  <span className="text-sm font-normal text-muted-foreground">
                     /{displayUsage.connectorsLimit}
                   </span>
                 </div>
@@ -247,10 +261,10 @@ export default function UsagePage() {
                     displayUsage.connectorsUsed,
                     displayUsage.connectorsLimit
                   )}
-                  className="h-2"
+                  className="mt-3 h-1.5"
                 />
                 <p
-                  className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.connectorsUsed, displayUsage.connectorsLimit))}`}
+                  className={`mt-2 text-xs ${getUsageColor(getUsagePercentage(displayUsage.connectorsUsed, displayUsage.connectorsLimit))}`}
                 >
                   {displayUsage.connectorsLimit - displayUsage.connectorsUsed} available
                 </p>
@@ -259,23 +273,23 @@ export default function UsagePage() {
 
             {/* Team */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardDescription className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Team
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold mb-2">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] font-medium text-muted-foreground">Team</span>
+                  <Users className="size-4 text-muted-foreground" />
+                </div>
+                <div className="mt-3 text-2xl font-semibold tracking-tight tabular-nums">
                   {displayUsage.teamUsed}
-                  <span className="text-lg text-muted-foreground">/{displayUsage.teamLimit}</span>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    /{displayUsage.teamLimit}
+                  </span>
                 </div>
                 <Progress
                   value={getUsagePercentage(displayUsage.teamUsed, displayUsage.teamLimit)}
-                  className="h-2"
+                  className="mt-3 h-1.5"
                 />
                 <p
-                  className={`text-sm mt-2 ${getUsageColor(getUsagePercentage(displayUsage.teamUsed, displayUsage.teamLimit))}`}
+                  className={`mt-2 text-xs ${getUsageColor(getUsagePercentage(displayUsage.teamUsed, displayUsage.teamLimit))}`}
                 >
                   {displayUsage.teamLimit - displayUsage.teamUsed} seats remaining
                 </p>
@@ -291,45 +305,66 @@ export default function UsagePage() {
               <CardDescription>Number of AI feature calls this month</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="p-6 rounded-lg border bg-muted/50">
-                  <div className="flex items-center gap-3 mb-4">
-                    <BarChart3 className="w-5 h-5 text-primary" />
-                    <h3 className="font-semibold">SEO</h3>
+              <div className="grid gap-6 md:grid-cols-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="size-4 text-muted-foreground" />
+                    <span className="text-[13px] font-medium">SEO</span>
                   </div>
-                  <p className="text-4xl font-bold">{displayUsage.aiSEO}</p>
-                  <p className="text-sm text-muted-foreground mt-2">SEO metadata generations</p>
+                  <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
+                    {displayUsage.aiSEO}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">SEO metadata generations</p>
                 </div>
 
-                <div className="p-6 rounded-lg border bg-muted/50">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Image className="w-5 h-5 text-primary" />
-                    <h3 className="font-semibold">Images</h3>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Image className="size-4 text-muted-foreground" />
+                    <span className="text-[13px] font-medium">Images</span>
                   </div>
-                  <p className="text-4xl font-bold">{displayUsage.aiImages}</p>
-                  <p className="text-sm text-muted-foreground mt-2">Images generated with DALL-E</p>
+                  <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
+                    {displayUsage.aiImages}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">Images generated with DALL-E</p>
                 </div>
 
-                <div className="p-6 rounded-lg border bg-muted/50">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Link2 className="w-5 h-5 text-primary" />
-                    <h3 className="font-semibold">Interlinking</h3>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Link2 className="size-4 text-muted-foreground" />
+                    <span className="text-[13px] font-medium">Interlinking</span>
                   </div>
-                  <p className="text-4xl font-bold">{displayUsage.aiInterlinking}</p>
-                  <p className="text-sm text-muted-foreground mt-2">Internal link suggestions</p>
+                  <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
+                    {displayUsage.aiInterlinking}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">Internal link suggestions</p>
                 </div>
               </div>
 
-              <div className="mt-8 p-4 rounded-lg bg-muted">
-                <h4 className="font-semibold mb-2">
-                  {' '}
+              <div className="mt-6 border-t border-border pt-4">
+                <p className="text-[13px] font-semibold">
                   AI Features ({displayUsage.currentPlan} Plan)
-                </h4>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>✓ Auto SEO</li>
-                  <li>✓ Image generation</li>
-                  {displayUsage.currentPlan === 'Pro' && <li>✓ Internal interlinking</li>}
-                  {displayUsage.currentPlan !== 'Free' && <li>✓ Content enhancement</li>}
+                </p>
+                <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                  <li className="flex items-center gap-2">
+                    <Check className="size-3.5 text-success" />
+                    Auto SEO
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="size-3.5 text-success" />
+                    Image generation
+                  </li>
+                  {displayUsage.currentPlan === 'Pro' && (
+                    <li className="flex items-center gap-2">
+                      <Check className="size-3.5 text-success" />
+                      Internal interlinking
+                    </li>
+                  )}
+                  {displayUsage.currentPlan !== 'Free' && (
+                    <li className="flex items-center gap-2">
+                      <Check className="size-3.5 text-success" />
+                      Content enhancement
+                    </li>
+                  )}
                 </ul>
               </div>
             </CardContent>
@@ -342,41 +377,39 @@ export default function UsagePage() {
               <CardTitle>Usage History</CardTitle>
               <CardDescription>Your monthly statistics</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium">Month</th>
-                      <th className="text-right py-3 px-4 font-medium">Syncs</th>
-                      <th className="text-right py-3 px-4 font-medium">Documents</th>
-                      <th className="text-right py-3 px-4 font-medium">AI Calls</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {displayUsage.history.map((month) => (
-                      <tr key={month.month} className="border-b">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-muted-foreground" />
-                            {formatDate(month.month + '-01', locale, {
-                              month: 'long',
-                              year: 'numeric',
-                            })}
-                          </div>
-                        </td>
-                        <td className="text-right py-3 px-4 font-medium">{month.syncs}</td>
-                        <td className="text-right py-3 px-4 font-medium">{month.documents}</td>
-                        <td className="text-right py-3 px-4 font-medium">{month.aiCalls}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Month</TableHead>
+                    <TableHead className="text-right">Syncs</TableHead>
+                    <TableHead className="text-right">Documents</TableHead>
+                    <TableHead className="text-right">AI Calls</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {displayUsage.history.map((month) => (
+                    <TableRow key={month.month}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="size-3.5 text-muted-foreground" />
+                          {formatDate(month.month + '-01', locale, {
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{month.syncs}</TableCell>
+                      <TableCell className="text-right tabular-nums">{month.documents}</TableCell>
+                      <TableCell className="text-right tabular-nums">{month.aiCalls}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   )
 }

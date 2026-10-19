@@ -1,19 +1,29 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  Loader2,
-  TrendingUp,
-  TrendingDown,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  FileText,
-  Plug,
-} from 'lucide-react'
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { PageHeader, PageShell } from '@/components/page-header'
+import { Loader2, TrendingUp, TrendingDown, Clock, AlertCircle, FileText } from 'lucide-react'
 import { formatDate, formatDateTime, detectClientLocale } from '@/lib/format-date'
 
 interface AnalyticsData {
@@ -31,6 +41,17 @@ interface AnalyticsData {
   }>
   syncByDay: Array<{ date: string; count: number }>
   connectorsUsage: Array<{ type: string; count: number }>
+}
+
+const activityVariants: Record<string, 'success' | 'destructive' | 'secondary'> = {
+  SUCCESS: 'success',
+  ERROR: 'destructive',
+  INFO: 'secondary',
+}
+
+const activityDots: Record<string, string> = {
+  SUCCESS: 'bg-success',
+  ERROR: 'bg-destructive',
 }
 
 export default function AnalyticsPage() {
@@ -74,175 +95,169 @@ export default function AnalyticsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period])
 
+  const periodLabels: Record<string, string> = {
+    '7': 'Last 7 days',
+    '30': 'Last 30 days',
+    '90': 'Last 90 days',
+  }
+
+  const periodSelect = (
+    <Select value={period} onValueChange={setPeriod}>
+      <SelectTrigger className="w-[150px]" aria-label="Reporting period">
+        <SelectValue>{periodLabels[period]}</SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="7">Last 7 days</SelectItem>
+        <SelectItem value="30">Last 30 days</SelectItem>
+        <SelectItem value="90">Last 90 days</SelectItem>
+      </SelectContent>
+    </Select>
+  )
+
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
+      <PageShell>
+        <PageHeader title="Analytics" description="Track your synchronization performance" />
+        <div className="flex min-h-[320px] items-center justify-center">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        </div>
+      </PageShell>
     )
   }
 
   // Show error state
   if (error) {
     return (
-      <div className="p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Analytics</h1>
-          <Button onClick={fetchAnalytics} variant="outline">
-            Retry
-          </Button>
+      <PageShell>
+        <PageHeader
+          title="Analytics"
+          description="Track your synchronization performance"
+          actions={
+            <Button onClick={fetchAnalytics} variant="outline" size="sm">
+              Retry
+            </Button>
+          }
+        />
+        <div className="mt-6 rounded-xl border border-border bg-card px-6 py-16 text-center shadow-sm">
+          <span className="mx-auto grid size-10 place-items-center rounded-xl bg-destructive-soft text-destructive">
+            <AlertCircle className="size-5" />
+          </span>
+          <p className="mt-4 text-sm font-medium">{error}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Analytics data is not available at this time.
+          </p>
         </div>
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-            <p className="text-lg font-medium">{error}</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Analytics data is not available at this time.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      </PageShell>
     )
   }
 
   // Show empty state when no data
   if (!data || (data.totalSyncs === 0 && data.totalDocuments === 0)) {
     return (
-      <div className="p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Analytics</h1>
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            className="px-3 py-2 border rounded-md"
-          >
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-          </select>
+      <PageShell>
+        <PageHeader
+          title="Analytics"
+          description="Track your synchronization performance"
+          actions={periodSelect}
+        />
+        <div className="mt-6 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
+          <span className="mx-auto grid size-10 place-items-center rounded-xl bg-muted">
+            <FileText className="size-5 text-muted-foreground" />
+          </span>
+          <p className="mt-4 text-sm font-medium">No data available</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Start syncing documents to see your stats.
+          </p>
+          <Button asChild className="mt-6">
+            <Link href="/dashboard/sync/new">Start a sync</Link>
+          </Button>
         </div>
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium">No data available</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Start syncing documents to see your stats.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      </PageShell>
     )
   }
 
   // Use actual data - no fallback
   const displayData = data
+  const healthy = displayData.successRate >= 80
+
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Analytics</h1>
-          <p className="text-muted-foreground mt-1">Track your synchronization performance</p>
+    <PageShell>
+      <PageHeader
+        title="Analytics"
+        description="Track your synchronization performance"
+        actions={periodSelect}
+      />
+
+      {/* Metric strip: one surface, four metrics. */}
+      <div className="mt-6 grid gap-px overflow-hidden rounded-xl border border-border bg-border shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+        <div className="bg-card p-5">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[13px] text-muted-foreground">Total syncs</p>
+            <FileText className="size-4 text-muted-foreground/60" aria-hidden="true" />
+          </div>
+          <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
+            {displayData.totalSyncs}
+          </p>
         </div>
-        <select
-          className="px-3 py-2 rounded-md border bg-background"
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-        >
-          <option value="7">Last 7 days</option>
-          <option value="30">Last 30 days</option>
-          <option value="90">Last 90 days</option>
-        </select>
+
+        <div className="bg-card p-5">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[13px] text-muted-foreground">Success rate</p>
+            <Badge variant={healthy ? 'success' : 'warning'}>
+              {healthy ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
+              {healthy ? 'Healthy' : 'Degraded'}
+            </Badge>
+          </div>
+          <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
+            {displayData.successRate}%
+          </p>
+        </div>
+
+        <div className="bg-card p-5">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[13px] text-muted-foreground">Avg duration (sec)</p>
+            <Clock className="size-4 text-muted-foreground/60" aria-hidden="true" />
+          </div>
+          <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
+            {displayData.avgDuration}s
+          </p>
+        </div>
+
+        <div className="bg-card p-5">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[13px] text-muted-foreground">Active documents</p>
+            <FileText className="size-4 text-muted-foreground/60" aria-hidden="true" />
+          </div>
+          <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
+            {displayData.totalDocuments}
+          </p>
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total syncs</p>
-                <p className="text-3xl font-bold">{displayData.totalSyncs}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-primary/10">
-                <FileText className="w-6 h-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Success rate</p>
-                <p className="text-3xl font-bold">{displayData.successRate}%</p>
-              </div>
-              <div
-                className={`p-3 rounded-lg ${displayData.successRate >= 80 ? 'bg-green-500/10' : 'bg-yellow-500/10'}`}
-              >
-                {displayData.successRate >= 80 ? (
-                  <TrendingUp className="w-6 h-6 text-green-500" />
-                ) : (
-                  <TrendingDown className="w-6 h-6 text-yellow-500" />
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Avg duration (sec)</p>
-                <p className="text-3xl font-bold">{displayData.avgDuration}s</p>
-              </div>
-              <div className="p-3 rounded-lg bg-secondary">
-                <Clock className="w-6 h-6 text-muted-foreground" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Active documents</p>
-                <p className="text-3xl font-bold">{displayData.totalDocuments}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-secondary">
-                <Plug className="w-6 h-6 text-muted-foreground" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs value="overview" className="w-full">
-        <TabsList className="mb-4">
+      <Tabs defaultValue="overview" className="mt-8 w-full">
+        <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="connectors">Connectors</TabsTrigger>
           <TabsTrigger value="activity">Recent activity</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview">
+        <TabsContent value="overview" className="mt-4">
           <Card>
             <CardHeader>
               <CardTitle>Syncs per day</CardTitle>
               <CardDescription>Number of syncs in the period</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-end justify-between gap-2">
+              <div className="flex h-64 items-end justify-between gap-2">
                 {displayData.syncByDay.map((day, index) => {
                   const maxCount = Math.max(...displayData.syncByDay.map((d) => d.count))
                   const height = (day.count / maxCount) * 100
 
                   const dayLabel = formatDate(day.date, locale, { weekday: 'short' })
                   return (
-                    <div key={index} className="flex-1 flex flex-col items-center gap-2">
+                    <div key={index} className="flex flex-1 flex-col items-center gap-2">
                       <div
-                        className="w-full bg-primary rounded-t"
+                        className="w-full rounded-t-sm bg-primary transition-colors hover:bg-primary-hover"
                         style={{ height: `${height}%`, minHeight: '4px' }}
                         role="img"
                         aria-label={`${day.count} sync${day.count !== 1 ? 's' : ''} on ${dayLabel}`}
@@ -258,7 +273,7 @@ export default function AnalyticsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="connectors">
+        <TabsContent value="connectors" className="mt-4">
           <Card>
             <CardHeader>
               <CardTitle>Connector usage</CardTitle>
@@ -272,11 +287,13 @@ export default function AnalyticsPage() {
 
                   return (
                     <div key={index} className="flex items-center gap-4">
-                      <div className="w-32 font-medium">{connector.type}</div>
-                      <div className="flex-1 h-4 bg-secondary rounded-full overflow-hidden">
-                        <div className="h-full bg-primary" style={{ width: `${percentage}%` }} />
-                      </div>
-                      <div className="w-16 text-right text-sm text-muted-foreground">
+                      <div className="w-32 truncate text-[13px] font-medium">{connector.type}</div>
+                      <Progress
+                        value={percentage}
+                        className="h-2 flex-1"
+                        aria-label={`${connector.type} usage`}
+                      />
+                      <div className="w-20 text-right text-[13px] tabular-nums text-muted-foreground">
                         {connector.count} ({percentage}%)
                       </div>
                     </div>
@@ -287,39 +304,45 @@ export default function AnalyticsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="activity">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent activity</CardTitle>
-              <CardDescription>Recent operations</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+        <TabsContent value="activity" className="mt-4">
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <div className="border-b border-border px-4 py-3">
+              <h2 className="text-sm font-semibold">Recent activity</h2>
+              <p className="text-xs text-muted-foreground">Recent operations</p>
+            </div>
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Operation</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Time</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {displayData.recentActivity.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-center justify-between p-3 rounded-lg border"
-                  >
-                    <div className="flex items-center gap-3">
-                      {activity.status === 'SUCCESS' ? (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      ) : activity.status === 'ERROR' ? (
-                        <AlertCircle className="w-4 h-4 text-red-500" />
-                      ) : (
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                      )}
-                      <span className="text-sm">{activity.action}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
+                  <TableRow key={activity.id}>
+                    <TableCell className="text-[13px]">{activity.action}</TableCell>
+                    <TableCell>
+                      <Badge variant={activityVariants[activity.status] || 'secondary'}>
+                        {activityDots[activity.status] && (
+                          <span
+                            className={`size-1.5 rounded-full ${activityDots[activity.status]}`}
+                            aria-hidden="true"
+                          />
+                        )}
+                        {activity.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right text-xs tabular-nums text-muted-foreground">
                       {formatDateTime(activity.createdAt, locale)}
-                    </span>
-                  </div>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   )
 }
