@@ -153,6 +153,7 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
       </div>
 
       <PageHeader
+        eyebrow={`WORKSPACE / ${(org.slug || 'RECORD').toUpperCase()}`}
         title={org.name}
         description={org.slug ? `/${org.slug}` : undefined}
         actions={
@@ -166,7 +167,7 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
       />
 
       {/* Summary strip */}
-      <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-sm sm:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-[3px] border border-border bg-border sm:grid-cols-4">
         <div className="bg-card p-4">
           <p className="text-xs font-medium text-muted-foreground">Current plan</p>
           <p className="mt-1.5 text-xl font-semibold tracking-tight">{planLabel}</p>

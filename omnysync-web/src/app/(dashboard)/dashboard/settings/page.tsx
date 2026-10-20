@@ -84,31 +84,51 @@ export default function SettingsPage() {
 
   return (
     <PageShell>
-      <PageHeader title={t('UI_SETTINGS')} description={t('UI_PREFERENCES')} className="mb-6" />
+      <PageHeader
+        eyebrow="SETTINGS / ACCOUNT"
+        title={t('UI_SETTINGS')}
+        description={t('UI_PREFERENCES')}
+        className="mb-6"
+      />
 
       <Tabs
         defaultValue="profile"
         orientation="vertical"
         className="grid gap-8 lg:grid-cols-[200px_1fr]"
       >
-        <TabsList className="h-auto w-full flex-row justify-start gap-1 overflow-x-auto p-1 lg:sticky lg:top-8 lg:flex-col lg:items-stretch lg:self-start lg:overflow-visible">
-          <TabsTrigger value="profile" className="justify-start gap-2 lg:w-full">
+        <TabsList className="h-auto w-full flex-row flex-wrap justify-start gap-0.5 border border-border bg-card p-0.5 lg:sticky lg:top-8 lg:flex-col lg:items-stretch lg:self-start">
+          <TabsTrigger
+            value="profile"
+            className="justify-start gap-2 rounded-[2px] px-3 py-2 text-[13px] lg:w-full"
+          >
             <User className="size-4" />
             Profile
           </TabsTrigger>
-          <TabsTrigger value="security" className="justify-start gap-2 lg:w-full">
+          <TabsTrigger
+            value="security"
+            className="justify-start gap-2 rounded-[2px] px-3 py-2 text-[13px] lg:w-full"
+          >
             <Shield className="size-4" />
             Security
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="justify-start gap-2 lg:w-full">
+          <TabsTrigger
+            value="notifications"
+            className="justify-start gap-2 rounded-[2px] px-3 py-2 text-[13px] lg:w-full"
+          >
             <Bell className="size-4" />
             Notifications
           </TabsTrigger>
-          <TabsTrigger value="billing" className="justify-start gap-2 lg:w-full">
+          <TabsTrigger
+            value="billing"
+            className="justify-start gap-2 rounded-[2px] px-3 py-2 text-[13px] lg:w-full"
+          >
             <CreditCard className="size-4" />
             Billing
           </TabsTrigger>
-          <TabsTrigger value="api" className="justify-start gap-2 lg:w-full">
+          <TabsTrigger
+            value="api"
+            className="justify-start gap-2 rounded-[2px] px-3 py-2 text-[13px] lg:w-full"
+          >
             <Key className="size-4" />
             API
           </TabsTrigger>
@@ -158,7 +178,7 @@ export default function SettingsPage() {
 
               <div className="space-y-1.5">
                 <Label>Current organization</Label>
-                <div className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2.5">
+                <div className="flex items-center gap-3 rounded-[3px] border border-border bg-muted/40 px-3 py-2.5">
                   <Building className="size-4 text-muted-foreground" />
                   <div>
                     <p className="text-[13px] font-medium">My Organization</p>
@@ -168,7 +188,7 @@ export default function SettingsPage() {
               </div>
 
               {saveError && (
-                <div className="flex items-start gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                <div className="flex items-start gap-2 rounded-[3px] border border-destructive/30 bg-destructive-soft p-3 text-sm text-destructive">
                   <AlertCircle className="mt-0.5 size-4 shrink-0" />
                   <span>{saveError}</span>
                 </div>
@@ -237,7 +257,7 @@ export default function SettingsPage() {
             <CardContent>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-warning-soft p-2">
+                  <div className="rounded-[2px] bg-warning-soft p-2">
                     <Shield className="size-4 text-warning" />
                   </div>
                   <div>
@@ -377,7 +397,7 @@ export default function SettingsPage() {
               <CardDescription>Manage your plan</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg bg-muted/50 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 rounded-[3px] border border-border bg-muted/30 p-4">
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="text-lg font-semibold tracking-tight">Pro Plan</p>
@@ -431,12 +451,18 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="p-0">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">
+                <TableHeader className="bg-muted/40">
+                  <TableRow className="border-border hover:bg-transparent">
+                    <TableHead className="h-9 font-mono text-[9px] uppercase tracking-[0.14em]">
+                      Date
+                    </TableHead>
+                    <TableHead className="h-9 font-mono text-[9px] uppercase tracking-[0.14em]">
+                      Amount
+                    </TableHead>
+                    <TableHead className="h-9 font-mono text-[9px] uppercase tracking-[0.14em]">
+                      Status
+                    </TableHead>
+                    <TableHead className="h-9 text-right font-mono text-[9px] uppercase tracking-[0.14em]">
                       <span className="sr-only">Actions</span>
                     </TableHead>
                   </TableRow>

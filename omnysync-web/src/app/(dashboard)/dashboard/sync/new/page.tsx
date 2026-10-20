@@ -278,6 +278,7 @@ export default function NewSyncPage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow="NEW RUN / ROUTE SETUP"
         title={t('UI_NEW_SYNC')}
         description="Move a document from a source platform to a destination, with optional AI enrichment."
       />
@@ -288,7 +289,7 @@ export default function NewSyncPage() {
           <li key={step.id} className="flex items-center">
             <div className="flex items-center gap-2.5">
               <span
-                className={`grid size-8 shrink-0 place-items-center rounded-full text-[13px] font-semibold ${
+                className={`grid size-8 shrink-0 place-items-center rounded-[3px] text-[13px] font-semibold ${
                   step.status === 'current'
                     ? 'bg-primary text-primary-foreground'
                     : step.status === 'completed'
@@ -330,7 +331,7 @@ export default function NewSyncPage() {
       </ol>
 
       {error && (
-        <div className="mt-6 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive-soft px-4 py-3 text-sm text-destructive">
+        <div className="mt-6 flex items-center gap-2 rounded-[2px] border border-destructive/30 bg-destructive-soft px-4 py-3 text-sm text-destructive">
           <AlertCircle className="size-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -465,7 +466,7 @@ export default function NewSyncPage() {
                 <CardDescription>{t('UI_AI_OPTIONS')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2.5 rounded-lg bg-muted p-4">
+                <div className="space-y-2.5 rounded-[3px] bg-muted p-4">
                   <p className="text-[13px] font-medium">Summary</p>
                   <dl className="space-y-1.5 text-[13px] text-muted-foreground">
                     <div className="flex items-center justify-between gap-3">
@@ -534,7 +535,7 @@ export default function NewSyncPage() {
                   </>
                 ) : (
                   <>
-                    <span className="grid size-12 place-items-center rounded-xl bg-success-soft text-success">
+                    <span className="grid size-12 place-items-center rounded-[3px] bg-success-soft text-success">
                       <Check className="size-6" />
                     </span>
                     <p className="text-sm text-muted-foreground">Sync complete!</p>
@@ -560,7 +561,7 @@ export default function NewSyncPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[400px] overflow-y-auto rounded-lg border border-border bg-muted p-4 font-mono text-[13px]">
+            <div className="h-[400px] overflow-y-auto rounded-[2px] border border-border bg-muted p-4 font-mono text-[13px]">
               {logs.length === 0 ? (
                 <p className="text-muted-foreground">{t('UI_WAITING')}</p>
               ) : (

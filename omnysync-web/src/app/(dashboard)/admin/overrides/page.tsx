@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Plus, Loader2, Check, X, Search } from 'lucide-react'
+import { Plus, SlidersHorizontal, Check, X, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -192,6 +192,7 @@ export default function AdminOverridesPage() {
     return (
       <PageShell>
         <PageHeader
+          eyebrow="ENTITLEMENTS / OVERRIDES"
           title="Entitlement Overrides"
           description="Override feature entitlements for specific organizations or users"
         />
@@ -212,6 +213,7 @@ export default function AdminOverridesPage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow="ENTITLEMENTS / OVERRIDES"
         title="Entitlement Overrides"
         description="Override feature entitlements for specific organizations or users"
         actions={
@@ -243,7 +245,7 @@ export default function AdminOverridesPage() {
         </p>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="mt-4 overflow-hidden rounded-[3px] border border-border bg-card">
         <AdminDataTable<Override>
           columns={columns}
           data={data}
@@ -253,7 +255,7 @@ export default function AdminOverridesPage() {
           keyExtractor={(o) => o.id}
           emptyState={
             <AdminEmptyState
-              icon={Loader2}
+              icon={SlidersHorizontal}
               title="No overrides"
               description={
                 orgFilter

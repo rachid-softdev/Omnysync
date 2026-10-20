@@ -118,6 +118,7 @@ export default function NewOverridePage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow="OVERRIDES / NEW"
         title="New Override"
         description="Override feature entitlements for an organization or user"
         actions={

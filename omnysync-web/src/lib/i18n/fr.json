@@ -195,6 +195,8 @@
   "UI_API_KEYS": "Clés API",
   "UI_API_KEYS_DESC": "Gestion de vos clés API",
   "UI_PREFERENCES": "Gérez vos préférences et configurations",
+  "TEAM_TITLE": "Équipe",
+  "TEAM_SUBTITLE": "Gérez les membres de votre organisation",
   "UI_SAVE": "Enregistrer",
   "UI_SOURCES": "Sources",
   "UI_DESTINATIONS": "Destinations",
@@ -309,5 +311,17 @@
   "UI_STATUS_NOT_SYNCED": "Non synchronisé",
   "UI_PIPELINE": "Pipeline",
   "UI_UPDATED": "Mis à jour",
-  "UI_STATUS": "Statut"
+  "UI_STATUS": "Statut",
+  "UI_OPERATION": "Opération",
+  "UI_TIME": "Heure",
+  "UI_SYNC_LOG_INDEX": "Registre des synchronisations",
+  "UI_STATUS_SUCCESS": "Succès",
+  "UI_STATUS_ERROR": "Erreur",
+  "UI_STATUS_WARNING": "Avertissement",
+  "UI_STATUS_INFO": "Info",
+  "UI_SELECT_ALL": "Tout sélectionner",
+  "UI_CONNECTORS_INDEX": "Registre des connecteurs",
+  "UI_CONNECTOR": "Connecteur",
+  "UI_TYPE": "Type",
+  "UI_INACTIVE": "Inactif"
 }

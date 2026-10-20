@@ -116,6 +116,7 @@ export default function NewPlanPage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow="PLANS / NEW"
         title="New Plan"
         description="Create a new subscription plan"
         actions={

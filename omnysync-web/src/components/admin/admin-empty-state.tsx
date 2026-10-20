@@ -19,7 +19,7 @@ export function AdminEmptyState({
 }: AdminEmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-12">
-      <div className="mb-3 rounded-lg border border-border bg-muted/50 p-2.5">
+      <div className="mb-3 rounded-[3px] border border-border bg-muted/50 p-2.5">
         <Icon className="size-5 text-muted-foreground" />
       </div>
       <h3 className="text-sm font-semibold">{title}</h3>

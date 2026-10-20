@@ -195,6 +195,8 @@
   "UI_API_KEYS": "API Keys",
   "UI_API_KEYS_DESC": "Manage your API keys",
   "UI_PREFERENCES": "Manage your preferences and configurations",
+  "TEAM_TITLE": "Team",
+  "TEAM_SUBTITLE": "Manage your organization members",
   "UI_SAVE": "Save",
   "UI_SOURCES": "Sources",
   "UI_DESTINATIONS": "Destinations",
@@ -309,5 +311,17 @@
   "UI_STATUS_NOT_SYNCED": "Not synced",
   "UI_PIPELINE": "Pipeline",
   "UI_UPDATED": "Updated",
-  "UI_STATUS": "Status"
+  "UI_STATUS": "Status",
+  "UI_OPERATION": "Operation",
+  "UI_TIME": "Time",
+  "UI_SYNC_LOG_INDEX": "Sync ledger",
+  "UI_STATUS_SUCCESS": "Success",
+  "UI_STATUS_ERROR": "Error",
+  "UI_STATUS_WARNING": "Warning",
+  "UI_STATUS_INFO": "Info",
+  "UI_SELECT_ALL": "Select all",
+  "UI_CONNECTORS_INDEX": "Connector registry",
+  "UI_CONNECTOR": "Connector",
+  "UI_TYPE": "Type",
+  "UI_INACTIVE": "Inactive"
 }

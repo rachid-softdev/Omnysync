@@ -72,7 +72,7 @@ export default function AdminUsersPage() {
         header: 'User',
         render: (user) => (
           <div className="flex items-center gap-2.5">
-            <span className="grid size-6 shrink-0 place-items-center rounded-full bg-muted text-[10px] font-medium text-muted-foreground">
+            <span className="grid size-6 shrink-0 place-items-center rounded-[3px] bg-muted text-[10px] font-medium text-muted-foreground">
               {(user.name || user.email || '?').slice(0, 1).toUpperCase()}
             </span>
             <div className="min-w-0">
@@ -133,6 +133,7 @@ export default function AdminUsersPage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow="USERS / DIRECTORY"
         title="Users"
         description={`${users.length} user${users.length !== 1 ? 's' : ''} on the platform`}
       />
@@ -158,14 +159,14 @@ export default function AdminUsersPage() {
       {error && (
         <div
           role="alert"
-          className="mt-4 flex items-center gap-2.5 rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2.5 text-[13px] text-destructive"
+          className="mt-4 flex items-center gap-2.5 rounded-[2px] border border-destructive/30 bg-destructive-soft px-3 py-2.5 text-[13px] text-destructive"
         >
           <AlertCircle className="size-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="mt-4 overflow-hidden rounded-[3px] border border-border bg-card">
         <AdminDataTable
           columns={columns}
           data={paginated}

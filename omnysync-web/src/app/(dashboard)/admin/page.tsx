@@ -105,6 +105,7 @@ export default async function AdminDashboardPage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow="ADMIN / CONTROL"
         title="Administration"
         description="Platform overview, recent activity and admin tools"
         actions={
@@ -118,7 +119,7 @@ export default async function AdminDashboardPage() {
       />
 
       {/* Metric strip */}
-      <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-sm sm:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-[3px] border border-border bg-border sm:grid-cols-4">
         {stats.map((stat) => (
           <Link
             key={stat.label}
@@ -166,7 +167,7 @@ export default async function AdminDashboardPage() {
                     href={`/admin/users/${user.id}`}
                     className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40"
                   >
-                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+                    <span className="grid size-7 shrink-0 place-items-center rounded-[3px] bg-muted text-[11px] font-medium text-muted-foreground">
                       {(user.name || user.email || '?').slice(0, 1).toUpperCase()}
                     </span>
                     <div className="min-w-0 flex-1">

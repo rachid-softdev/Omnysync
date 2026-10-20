@@ -141,6 +141,7 @@ export default function AdminOrgsPage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow="WORKSPACES / REGISTRY"
         title="Organizations"
         description={
           loading
@@ -170,14 +171,14 @@ export default function AdminOrgsPage() {
       {error && (
         <div
           role="alert"
-          className="mt-4 flex items-center gap-2.5 rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2.5 text-[13px] text-destructive"
+          className="mt-4 flex items-center gap-2.5 rounded-[2px] border border-destructive/30 bg-destructive-soft px-3 py-2.5 text-[13px] text-destructive"
         >
           <AlertCircle className="size-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="mt-4 overflow-hidden rounded-[3px] border border-border bg-card">
         <AdminDataTable
           columns={columns}
           data={paginated}

@@ -73,6 +73,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
       </div>
 
       <PageHeader
+        eyebrow="USER / RECORD"
         title={user.name || 'Utilisateur'}
         description={user.email || 'Aucun email'}
         actions={
@@ -94,7 +95,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
           </CardHeader>
           <CardContent className="p-0">
             <div className="flex items-center gap-3 border-b border-border px-4 py-4">
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-muted text-sm font-medium text-muted-foreground">
+              <span className="grid size-10 shrink-0 place-items-center rounded-[3px] bg-muted text-sm font-medium text-muted-foreground">
                 {(user.name || user.email || '?').slice(0, 1).toUpperCase()}
               </span>
               <div className="min-w-0">

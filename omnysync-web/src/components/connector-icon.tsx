@@ -36,7 +36,7 @@ export function ConnectorIcon({
 
   return (
     <div
-      className={`${className} grid shrink-0 place-items-center rounded-lg border border-border bg-muted`}
+      className={`${className} grid shrink-0 place-items-center rounded-[3px] border border-border bg-muted`}
       aria-hidden="true"
     >
       {Icon ? (

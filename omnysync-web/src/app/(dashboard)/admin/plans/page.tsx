@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader, PageShell } from '@/components/page-header'
 import { AdminEmptyState } from '@/components/admin/admin-empty-state'
@@ -151,7 +151,11 @@ export default function AdminPlansPage() {
   if (error) {
     return (
       <PageShell>
-        <PageHeader title="Plans" description="Manage subscription plans and pricing" />
+        <PageHeader
+          eyebrow="BILLING / PLANS"
+          title="Plans"
+          description="Manage subscription plans and pricing"
+        />
         <div className="mt-10 flex flex-col items-center justify-center text-center">
           <p className="mb-4 text-sm font-medium text-destructive">{error}</p>
           <Button variant="outline" size="sm" onClick={fetchPlans}>
@@ -169,6 +173,7 @@ export default function AdminPlansPage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow="BILLING / PLANS"
         title="Plans"
         description="Manage subscription plans and pricing"
         actions={
@@ -181,7 +186,7 @@ export default function AdminPlansPage() {
         }
       />
 
-      <div className="mt-6 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="mt-6 overflow-hidden rounded-[3px] border border-border bg-card">
         <AdminDataTable<Plan>
           columns={columns}
           data={data}
@@ -191,7 +196,7 @@ export default function AdminPlansPage() {
           keyExtractor={(p) => p.id}
           emptyState={
             <AdminEmptyState
-              icon={Loader2}
+              icon={CreditCard}
               title="No plans"
               description="Create your first subscription plan to define feature entitlements."
               action={

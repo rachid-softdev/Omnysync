@@ -434,7 +434,7 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 - **Mobile Drawer:** Full-height slide-in from left, 288px wide (`w-72`). Ink surface and the same sidebar tokens as desktop. Overlay backdrop at 50% opacity with a 2px blur. Close button top-right. Same grouped nav as desktop; user + logout pinned at the bottom
 - **Dashboard Top Bar:** Fixed 56px (`h-14`) bar with breadcrumbs (path segments mapped to translated labels, unknown IDs rendered as-is), a search/⌘K trigger, theme toggle, and avatar. It replaces the marketing header on all `/dashboard`, `/admin`, and `/auth` routes
 - **Top Bar (public pages):** Fixed header with logo left, nav links center (hidden on mobile), CTA buttons right. Background at 85% opacity with `backdrop-blur`
-- **Tab Navigation:** Segmented tabs with 3px corners. Active tab: `background` surface, `shadow-xs`, foreground text
+- **Tab Navigation:** Segmented tabs with 3px corners. Active tab: cobalt fill with `primary-foreground` text. Inactive tabs stay quiet on the card surface
 
 ### Badges & Status Indicators
 
@@ -483,6 +483,16 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 - **Document register:** full-width table with mono column labels, machine IDs under titles, source → destination in the pipeline column and square status markers. A footer rail carries the row count.
 - **Empty states:** left-aligned, one route diagram and one primary next action. Never a centered illustration card.
 - **Onboarding:** numbered route steps in a border-led list with completion markers. Progress is expressed as `n/3`, not a decorative ring.
+- **Sync ledger:** batch table with checkbox rail, source → destination pipeline, square status markers and a footer count. On mobile the secondary metadata collapses under the document title rather than scrolling the actions off-screen.
+- **Connector registry:** source and destination catalogues as border-led lists, configured connectors in a mono table, and alert rails for failed connections. No rounded catalogue cards.
+- **Analytics:** four metric cells in a shared rail, then a bar ledger that fills the whole reporting window (zero days included) and two mono tables for connector mix and recent activity. Tabs use the cobalt active state.
+- **Usage:** ink plan console followed by consumption rows (`used / limit`, progress rule, remaining or over-limit label) and AI/history tables. Over-limit rows read `N over limit` instead of a negative remainder.
+- **Approvals:** pending queue as an actionable table (document, status, requested, approve/reject) plus a resolution log. On mobile the document title links to the record, the view action moves into the title, and the resolution folds under the document name.
+- **Webhooks:** endpoint registry with square provider marks, status dot + label on desktop and dot-only on mobile, a test-event action and a compact footer rail.
+- **Settings and team:** sticky tab rail on desktop, wrapping tab rail on mobile, border-led section cards, and a member registry where the role control is part of the row rather than a separate badge.
+- **Admin:** a control dashboard (metric strip, recent users/workspaces, quick-link index) plus registries built on `AdminDataTable`. Admin table headers and footers use mono labels; admin pages carry `SURFACE / SECTION` eyebrows.
+- **Auth checkpoint:** the 2FA page mirrors the sign-in split. The form stays a single narrow column; the right panel is an access sequence (`verified → waiting → locked`), not a testimonial or illustration.
+- **Detail pages:** document records use a status ledger, sync progress rule and tabs; sync runs use a bordered step trace, connector pair and raw log console. Machine IDs and timestamps stay in mono.
 
 ## 6. Motion
 

@@ -36,11 +36,15 @@ export default async function SyncPage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow={`${t('UI_SYNC_LOG_INDEX')} / ${String(syncLogs.length).padStart(2, '0')}`}
         title={t('UI_SYNC')}
         description={t('UI_SYNC_HISTORY')}
         actions={
           <>
-            <HelpTooltip text="Sync sends your content from source platforms to your connected destinations. Each sync creates a log entry you can review here." />
+            <HelpTooltip
+              side="left"
+              text="Sync sends your content from source platforms to your connected destinations. Each sync creates a log entry you can review here."
+            />
             <Button asChild>
               <Link href="/dashboard/sync/new">
                 {t('UI_NEW_SYNC')}

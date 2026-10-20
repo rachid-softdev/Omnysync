@@ -114,6 +114,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
   return (
     <PageShell>
       <PageHeader
+        eyebrow={`RUN / ${document.id.slice(-6).toUpperCase()}`}
         title="Sync Details"
         description={document.title}
         actions={
@@ -164,7 +165,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span
-                className={`grid size-10 shrink-0 place-items-center rounded-full ${
+                className={`grid size-10 shrink-0 place-items-center rounded-[3px] ${
                   document.syncStatus === 'SYNCED'
                     ? 'bg-success-soft text-success'
                     : document.syncStatus === 'FAILED'
@@ -221,7 +222,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
                   <li key={step.id} className="flex gap-3">
                     <div className="flex flex-col items-center">
                       <span
-                        className={`grid size-8 shrink-0 place-items-center rounded-full ${
+                        className={`grid size-8 shrink-0 place-items-center rounded-[3px] ${
                           step.status === 'completed'
                             ? 'bg-success-soft text-success'
                             : step.status === 'in_progress'
@@ -320,7 +321,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <pre className="whitespace-pre-wrap rounded-lg bg-destructive-soft p-3 font-mono text-[13px] text-destructive">
+                <pre className="whitespace-pre-wrap rounded-[2px] bg-destructive-soft p-3 font-mono text-[13px] text-destructive">
                   {document.lastSyncError}
                 </pre>
               </CardContent>
@@ -334,7 +335,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
               <CardDescription>Real-time execution log</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="max-h-96 overflow-y-auto rounded-lg border border-border bg-muted p-4 font-mono text-[13px]">
+              <div className="max-h-96 overflow-y-auto rounded-[2px] border border-border bg-muted p-4 font-mono text-[13px]">
                 {syncLogs.length === 0 ? (
                   <p className="text-muted-foreground">No logs available</p>
                 ) : (

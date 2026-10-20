@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
@@ -208,6 +207,7 @@ export default function WebhooksPage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow={`WEBHOOKS / ${String(webhooks.length).padStart(2, '0')}`}
         title={t('WEBHOOKS_TITLE')}
         description={t('WEBHOOKS_SUBTITLE')}
         actions={
@@ -290,22 +290,30 @@ export default function WebhooksPage() {
       />
 
       {loading ? (
-        <div className="flex min-h-[320px] items-center justify-center">
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        <div className="mt-6 flex min-h-[320px] items-center justify-center border border-border bg-card">
+          <Loader2 className="size-5 animate-spin text-muted-foreground" />
         </div>
       ) : webhooks.length === 0 ? (
-        <div className="mt-6 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
-          <span className="mx-auto grid size-10 place-items-center rounded-xl bg-muted">
-            <Webhook className="size-5 text-muted-foreground" />
-          </span>
-          <p className="mt-4 text-sm font-medium">No webhooks configured</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Create your first webhook to receive real-time notifications.
-          </p>
-          <Button className="mt-6" onClick={() => setIsCreateOpen(true)}>
-            <Plus />
-            Create webhook
-          </Button>
+        <div className="mt-6 border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+            <span>Endpoint registry</span>
+            <span>00</span>
+          </div>
+          <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:p-8">
+            <span className="grid size-10 shrink-0 place-items-center border border-border bg-muted text-muted-foreground">
+              <Webhook className="size-5" />
+            </span>
+            <div className="max-w-xl">
+              <p className="text-base font-semibold tracking-[-0.02em]">No webhooks configured</p>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                Create your first webhook to receive real-time notifications.
+              </p>
+              <Button className="mt-5" onClick={() => setIsCreateOpen(true)}>
+                <Plus />
+                Create webhook
+              </Button>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="relative mt-6">
@@ -326,11 +334,11 @@ export default function WebhooksPage() {
             />
           )}
 
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+          <div className="border border-border bg-card">
             <Table>
-              <TableHeader className="bg-muted/50">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-10 pr-0">
+              <TableHeader className="bg-muted/40">
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="hidden h-9 w-10 px-2 pr-0 sm:table-cell sm:px-4">
                     <Checkbox
                       id="select-all-webhooks"
                       aria-label="Select all webhooks"
@@ -341,28 +349,34 @@ export default function WebhooksPage() {
                       }}
                     />
                   </TableHead>
-                  <TableHead>Endpoint</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Last triggered</TableHead>
-                  <TableHead className="text-right">
+                  <TableHead className="h-9 px-2 font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
+                    Endpoint
+                  </TableHead>
+                  <TableHead className="h-9 w-8 px-1 font-mono text-[9px] uppercase tracking-[0.14em] sm:w-auto sm:px-4">
+                    <span className="hidden sm:inline">Status</span>
+                  </TableHead>
+                  <TableHead className="hidden h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] md:table-cell">
+                    Last triggered
+                  </TableHead>
+                  <TableHead className="h-9 px-2 text-right font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
                     <span className="sr-only">Actions</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {webhooks.map((webhook) => (
-                  <TableRow key={webhook.id}>
-                    <TableCell className="pr-0">
+                  <TableRow key={webhook.id} className="border-border hover:bg-muted/30">
+                    <TableCell className="hidden px-2 pr-0 sm:table-cell sm:px-4">
                       <Checkbox
                         checked={selectedIds.has(webhook.id)}
                         onCheckedChange={() => toggle(webhook.id)}
                         aria-label={`Select ${webhook.type}`}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-2 py-2.5 sm:px-4">
                       <div className="flex items-center gap-3">
                         <span
-                          className={`grid size-8 shrink-0 place-items-center rounded-lg ${
+                          className={`grid size-8 shrink-0 place-items-center rounded-[3px] ${
                             webhook.isActive
                               ? 'bg-success-soft text-success'
                               : 'bg-muted text-muted-foreground'
@@ -371,27 +385,38 @@ export default function WebhooksPage() {
                           <Webhook className="size-4" />
                         </span>
                         <div className="min-w-0">
-                          <p className="truncate text-[13px] font-medium">{webhook.type}</p>
-                          <p className="max-w-[24rem] truncate font-mono text-xs text-muted-foreground">
+                          <p className="font-mono text-[10px] uppercase tracking-[0.06em]">
+                            {webhook.type}
+                          </p>
+                          <p className="max-w-[8rem] truncate text-xs text-muted-foreground sm:max-w-[24rem]">
                             {webhook.url}
                           </p>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={webhook.isActive ? 'success' : 'secondary'}>
-                        {webhook.isActive && (
-                          <span className="size-1.5 rounded-full bg-success" aria-hidden="true" />
-                        )}
-                        {webhook.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
+                    <TableCell className="w-8 px-1 sm:w-auto sm:px-4">
+                      <span
+                        className={`inline-flex items-center gap-1.5 whitespace-nowrap font-mono text-[9px] uppercase tracking-[0.12em] ${
+                          webhook.isActive ? 'text-success' : 'text-muted-foreground'
+                        }`}
+                      >
+                        <span
+                          className={`size-1.5 ${
+                            webhook.isActive ? 'bg-success' : 'border border-border-strong'
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <span className="hidden sm:inline">
+                          {webhook.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </span>
                     </TableCell>
-                    <TableCell className="hidden whitespace-nowrap text-xs tabular-nums text-muted-foreground md:table-cell">
+                    <TableCell className="hidden whitespace-nowrap px-4 py-2.5 font-mono text-[10px] tabular-nums text-muted-foreground md:table-cell">
                       {webhook.lastTriggeredAt
                         ? formatDateTime(webhook.lastTriggeredAt, locale)
                         : 'Never'}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-2 sm:px-4">
                       <div className="flex items-center justify-end gap-1">
                         <Switch
                           checked={webhook.isActive}
@@ -415,6 +440,7 @@ export default function WebhooksPage() {
                           <Button
                             variant="ghost"
                             size="icon-sm"
+                            className="hidden text-muted-foreground sm:inline-flex"
                             onClick={() => copySecret(webhook.secret!)}
                             aria-label="Copy signing secret"
                           >
@@ -462,6 +488,12 @@ export default function WebhooksPage() {
                 ))}
               </TableBody>
             </Table>
+            <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-2.5 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+              <span>
+                {webhooks.length} endpoint{webhooks.length === 1 ? '' : 's'}
+              </span>
+              <span>{webhooks.filter((webhook) => webhook.isActive).length} active</span>
+            </div>
           </div>
 
           <AlertDialog open={batchDeleteConfirmOpen} onOpenChange={setBatchDeleteConfirmOpen}>

@@ -1,9 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Dialog,
@@ -16,14 +14,16 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Users, UserPlus, Mail, Shield, Crown, User, Trash2, Loader2 } from 'lucide-react'
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Users, UserPlus, Shield, Crown, User, Trash2, Loader2 } from 'lucide-react'
 import { toast } from '@/components/toast-provider'
 import {
   AlertDialog,
@@ -37,6 +37,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { useTranslations } from '@/lib/i18n/useTranslations'
+import { PageHeader, PageShell } from '@/components/page-header'
+import { formatDate, detectClientLocale } from '@/lib/format-date'
 
 interface TeamMember {
   id: string
@@ -49,6 +51,7 @@ interface TeamMember {
 
 export default function TeamSettingsPage() {
   const { t } = useTranslations()
+  const locale = detectClientLocale()
   const [members, setMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
@@ -139,11 +142,11 @@ export default function TeamSettingsPage() {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'OWNER':
-        return <Crown className="w-4 h-4 text-warning" />
+        return <Crown className="size-3.5 text-warning" />
       case 'ADMIN':
-        return <Shield className="w-4 h-4 text-info" />
+        return <Shield className="size-3.5 text-info" />
       default:
-        return <User className="w-4 h-4 text-muted-foreground" />
+        return <User className="size-3.5 text-muted-foreground" />
     }
   }
 
@@ -162,133 +165,181 @@ export default function TeamSettingsPage() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
+      <PageShell>
+        <PageHeader
+          eyebrow="TEAM / LIVE"
+          title={t('TEAM_TITLE') || 'Team'}
+          description={t('TEAM_SUBTITLE') || 'Manage your organization members'}
+        />
+        <div className="mt-6 flex min-h-[320px] items-center justify-center border border-border bg-card">
+          <Loader2 className="size-5 animate-spin text-muted-foreground" />
+        </div>
+      </PageShell>
     )
   }
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">{t('TEAM_TITLE') || 'Team'}</h1>
-          <p className="text-muted-foreground mt-1">
-            {t('TEAM_SUBTITLE') || 'Manage your organization members'}
-          </p>
-        </div>
-        <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="w-4 h-4 mr-2" />
-              Invite member
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Invite member</DialogTitle>
-              <DialogDescription>
-                Send an email invitation to join your organization.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="email@example.com"
-                  value={inviteEmail}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setInviteEmail(e.target.value)
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select value={inviteRole} onValueChange={setInviteRole}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="MEMBER">Member</SelectItem>
-                    <SelectItem value="ADMIN">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
-                Cancel
+    <PageShell>
+      <PageHeader
+        eyebrow={`TEAM / ${String(members.length).padStart(2, '0')}`}
+        title={t('TEAM_TITLE') || 'Team'}
+        description={t('TEAM_SUBTITLE') || 'Manage your organization members'}
+        actions={
+          <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <UserPlus className="size-4" />
+                Invite member
               </Button>
-              <Button onClick={handleInvite} disabled={inviting || !inviteEmail}>
-                {inviting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                Send invitation
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Invite member</DialogTitle>
+                <DialogDescription>
+                  Send an email invitation to join your organization.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="email@example.com"
+                    value={inviteEmail}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setInviteEmail(e.target.value)
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="role">Role</Label>
+                  <Select value={inviteRole} onValueChange={setInviteRole}>
+                    <SelectTrigger id="role" className="w-full">
+                      <span>{inviteRole === 'ADMIN' ? 'Admin' : 'Member'}</span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MEMBER">Member</SelectItem>
+                      <SelectItem value="ADMIN">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleInvite} disabled={inviting || !inviteEmail}>
+                  {inviting ? <Loader2 className="size-4 animate-spin" /> : null}
+                  Send invitation
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        }
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Organization members
-          </CardTitle>
-          <CardDescription>
+      <div className="mt-6 border border-border bg-card">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border px-5 py-3">
+          <div>
+            <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+              Registry / members
+            </p>
+            <h2 className="mt-1 flex items-center gap-2 text-sm font-semibold">
+              <Users className="size-4 text-muted-foreground" />
+              Organization members
+            </h2>
+          </div>
+          <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
             {members.length} member{members.length !== 1 ? 's' : ''}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {members.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No members found</p>
+          </span>
+        </div>
+
+        {members.length === 0 ? (
+          <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:p-8">
+            <span className="grid size-10 shrink-0 place-items-center border border-border bg-muted text-muted-foreground">
+              <Users className="size-5" />
+            </span>
+            <div>
+              <p className="text-base font-semibold tracking-[-0.02em]">No members found</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Invite a teammate to start collaborating.
+              </p>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {members.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between p-4 rounded-lg border"
-                >
-                  <div className="flex items-center gap-4">
-                    <Avatar>
-                      <AvatarImage src={member.image || undefined} />
-                      <AvatarFallback>
-                        {member.name?.charAt(0) || member.email.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{member.name || 'No name'}</p>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
-                        {member.email}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Badge variant={member.role === 'OWNER' ? 'default' : 'secondary'}>
-                      <span className="flex items-center gap-1">
-                        {getRoleIcon(member.role)}
-                        {getRoleLabel(member.role)}
-                      </span>
-                    </Badge>
-                    {member.role !== 'OWNER' && (
-                      <div className="flex items-center gap-2">
+          </div>
+        ) : (
+          <>
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em]">
+                    Member
+                  </TableHead>
+                  <TableHead className="h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em]">
+                    Role
+                  </TableHead>
+                  <TableHead className="hidden h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] md:table-cell">
+                    Joined
+                  </TableHead>
+                  <TableHead className="h-9 px-4 text-right font-mono text-[9px] uppercase tracking-[0.14em]">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {members.map((member) => (
+                  <TableRow key={member.id} className="border-border hover:bg-muted/30">
+                    <TableCell className="px-3 py-2.5 sm:px-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-7 sm:size-8">
+                          <AvatarImage src={member.image || undefined} />
+                          <AvatarFallback className="text-[11px]">
+                            {member.name?.charAt(0) || member.email.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="max-w-[8rem] truncate text-[13px] font-medium sm:max-w-[20rem]">
+                            {member.name || 'No name'}
+                          </p>
+                          <p className="max-w-[8rem] truncate font-mono text-[10px] text-muted-foreground sm:max-w-[20rem]">
+                            {member.email}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5 sm:px-4">
+                      {member.role === 'OWNER' ? (
+                        <span className="inline-flex items-center gap-1.5 whitespace-nowrap font-mono text-[9px] uppercase tracking-[0.12em] text-warning">
+                          {getRoleIcon(member.role)}
+                          {getRoleLabel(member.role)}
+                        </span>
+                      ) : (
                         <Select
                           value={member.role}
                           onValueChange={(newRole) => handleUpdateRole(member.id, newRole)}
                         >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
+                          <SelectTrigger className="h-7 w-[5.5rem] rounded-[2px] border-border bg-transparent px-2 font-mono text-[9px] uppercase tracking-[0.1em] sm:w-[6.5rem]">
+                            <span className="inline-flex items-center gap-1.5">
+                              {getRoleIcon(member.role)}
+                              {getRoleLabel(member.role)}
+                            </span>
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="MEMBER">Member</SelectItem>
                             <SelectItem value="ADMIN">Admin</SelectItem>
                           </SelectContent>
                         </Select>
+                      )}
+                    </TableCell>
+                    <TableCell className="hidden whitespace-nowrap px-4 py-2.5 font-mono text-[10px] tabular-nums text-muted-foreground md:table-cell">
+                      {formatDate(member.joinedAt, locale, {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5 text-right sm:px-4">
+                      {member.role !== 'OWNER' && (
                         <AlertDialog
                           open={deleteTarget === member.id}
                           onOpenChange={(open) => {
@@ -298,12 +349,12 @@ export default function TeamSettingsPage() {
                           <AlertDialogTrigger asChild>
                             <Button
                               variant="ghost"
-                              size="icon"
-                              className="text-destructive"
+                              size="icon-sm"
+                              className="text-destructive hover:bg-destructive-soft"
                               aria-label="Remove member"
                               onClick={() => setDeleteTarget(member.id)}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="size-4" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -324,15 +375,21 @@ export default function TeamSettingsPage() {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-2.5 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+              <span>
+                {members.length} seat{members.length !== 1 ? 's' : ''}
+              </span>
+              <span>Organization</span>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </>
+        )}
+      </div>
+    </PageShell>
   )
 }

@@ -113,13 +113,13 @@ export function AdminDataTable<T>({
   return (
     <div>
       <Table className="text-[13px]">
-        <TableHeader className="bg-muted/50">
+        <TableHeader className="bg-muted/40">
           <TableRow className="border-b border-border hover:bg-transparent">
             {columns.map((col) => (
               <TableHead
                 key={col.key}
                 className={cn(
-                  'h-9 px-4 text-xs font-medium text-muted-foreground',
+                  'h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground',
                   col.className,
                   col.sortable && 'cursor-pointer select-none hover:text-foreground'
                 )}
@@ -143,7 +143,7 @@ export function AdminDataTable<T>({
         <TableBody>{renderBody()}</TableBody>
       </Table>
       {total > 0 && (
-        <div className="flex items-center justify-between border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-2.5 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
           <p className="tabular-nums">
             {total === 1
               ? `1 ${t('UI_ITEM')}`

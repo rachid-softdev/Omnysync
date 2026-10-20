@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, type ChangeEvent } from 'react'
 import Link from 'next/link'
-import { Plus, Loader2, Search } from 'lucide-react'
+import { Plus, Flag, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -180,7 +180,11 @@ export default function AdminFeaturesPage() {
   if (error) {
     return (
       <PageShell>
-        <PageHeader title="Features" description="Manage feature flags and entitlements" />
+        <PageHeader
+          eyebrow="ENTITLEMENTS / FLAGS"
+          title="Features"
+          description="Manage feature flags and entitlements"
+        />
         <div className="mt-10 flex flex-col items-center justify-center text-center">
           <p className="mb-4 text-sm font-medium text-destructive">{error}</p>
           <Button variant="outline" size="sm" onClick={fetchFeatures}>
@@ -198,6 +202,7 @@ export default function AdminFeaturesPage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow="ENTITLEMENTS / FLAGS"
         title="Features"
         description="Manage feature flags and entitlements"
         actions={
@@ -228,7 +233,7 @@ export default function AdminFeaturesPage() {
         )}
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="mt-4 overflow-hidden rounded-[3px] border border-border bg-card">
         <AdminDataTable<Feature>
           columns={columns}
           data={filteredData}
@@ -241,7 +246,7 @@ export default function AdminFeaturesPage() {
           keyExtractor={(f) => f.id}
           emptyState={
             <AdminEmptyState
-              icon={Loader2}
+              icon={Flag}
               title="No features"
               description="Create your first feature flag to start managing entitlements."
               action={
