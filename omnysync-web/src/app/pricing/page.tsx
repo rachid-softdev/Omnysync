@@ -73,33 +73,44 @@ export default async function PricingPage() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-6xl px-6 pb-20 pt-28">
         {/* Header */}
-        <div className="max-w-2xl">
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            {t('pricing_title')}
-          </h1>
-          <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-            {t('pricing_subtitle')}
+        <div className="animate-enter-up flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-2xl">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+              02 / Plans
+            </p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
+              {t('pricing_title')}
+            </h1>
+            <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+              {t('pricing_subtitle')}
+            </p>
+          </div>
+          <p className="max-w-xs font-mono text-[10px] uppercase leading-relaxed tracking-[0.12em] text-muted-foreground">
+            {t('pricing_note_1')}
+            <br />
+            {t('pricing_note_2')}
           </p>
         </div>
 
         {/* Plans: the recommended plan is visually dominant, the others recede. */}
         <div className="mt-10 grid items-start gap-4 lg:grid-cols-3">
-          {plans.map((plan) => {
+          {plans.map((plan, index) => {
             const isPro = plan.highlighted
 
             return (
               <div
                 key={plan.nameKey}
-                className={
+                className={`animate-enter-up transition-[transform,box-shadow,border-color] duration-200 ease-out-quart hover:-translate-y-0.5 ${
                   isPro
-                    ? 'relative rounded-xl border border-primary/30 bg-card p-6 shadow-lg ring-1 ring-primary/10 lg:-mt-3 lg:pb-8'
-                    : 'rounded-xl border border-border bg-card p-6 shadow-sm'
-                }
+                    ? 'relative rounded-xl border border-primary/30 bg-card p-6 shadow-lg ring-1 ring-primary/10 hover:shadow-xl lg:-mt-3 lg:pb-8'
+                    : 'rounded-xl border border-border bg-card p-6 shadow-sm hover:border-border-strong hover:shadow-md'
+                }`}
+                style={{ animationDelay: `${80 + index * 90}ms` }}
               >
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-semibold tracking-tight">{t(plan.nameKey)}</h2>
                   {isPro && (
-                    <span className="rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-primary-foreground">
+                    <span className="rounded-[3px] bg-primary px-2.5 py-0.5 text-[11px] font-medium text-primary-foreground">
                       {t('popular_badge')}
                     </span>
                   )}
@@ -121,7 +132,7 @@ export default async function PricingPage() {
                     <Button
                       asChild
                       variant={isPro ? 'default' : 'outline'}
-                      className="w-full rounded-full"
+                      className="w-full rounded-[3px]"
                     >
                       <Link href={plan.href}>
                         {t(plan.ctaKey)}
@@ -137,8 +148,8 @@ export default async function PricingPage() {
                       <span
                         className={
                           isPro
-                            ? 'mt-0.5 grid size-4 shrink-0 place-items-center rounded-full bg-primary/10 text-primary'
-                            : 'mt-0.5 grid size-4 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground'
+                            ? 'mt-0.5 grid size-4 shrink-0 place-items-center rounded-[3px] bg-primary/10 text-primary'
+                            : 'mt-0.5 grid size-4 shrink-0 place-items-center rounded-[3px] bg-muted text-muted-foreground'
                         }
                       >
                         <Check className="size-2.5" aria-hidden="true" />
@@ -153,12 +164,15 @@ export default async function PricingPage() {
         </div>
 
         {/* Comparison note — answers the question the cards raise. */}
-        <div className="mt-10 flex flex-col items-start justify-between gap-4 rounded-xl border border-border bg-muted/40 p-6 sm:flex-row sm:items-center">
+        <div
+          className="animate-enter-fade mt-10 flex flex-col items-start justify-between gap-4 rounded-xl border border-border bg-muted/40 p-6 sm:flex-row sm:items-center"
+          style={{ animationDelay: '380ms' }}
+        >
           <div>
             <p className="text-sm font-medium">{t('cta_section_title')}</p>
             <p className="mt-0.5 text-[13px] text-muted-foreground">{t('cta_section_subtitle')}</p>
           </div>
-          <Button asChild className="shrink-0 rounded-full">
+          <Button asChild className="shrink-0 rounded-[3px]">
             <Link href="/auth/signin">
               {t('cta_final_button')}
               <ArrowRight className="size-4" />

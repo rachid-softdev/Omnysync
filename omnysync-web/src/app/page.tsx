@@ -7,11 +7,13 @@ import {
   LayoutTemplate,
   RefreshCw,
   ShoppingBag,
-  Sparkles,
   Workflow,
   Zap,
 } from 'lucide-react'
-import { getT } from '@/lib/i18n'
+import { ProductDemo } from '@/components/product-demo'
+import { RouteMap } from '@/components/route-map'
+import { getLocaleFromHeaders, getT } from '@/lib/i18n'
+import { headers } from 'next/headers'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -29,157 +31,93 @@ const PLATFORMS = [
 ]
 
 export default async function Home() {
+  const locale = getLocaleFromHeaders(await headers())
   const t = await getT()
 
   return (
     <div className="min-h-screen bg-background">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden pt-14">
-        {/* Faint grid, clipped to the hero. Adds depth without decoration. */}
+      <section className="relative overflow-hidden border-b border-border pt-14">
+        {/* Blueprint grid, clipped to the hero. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:64px_64px] opacity-[0.35] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,black,transparent)]"
+          className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:56px_56px] opacity-[0.35] [mask-image:radial-gradient(ellipse_70%_60%_at_45%_0%,black,transparent)]"
         />
 
-        <div className="mx-auto max-w-6xl px-6 pb-16 pt-20 text-center sm:pt-28">
-          <p className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-2xs">
-            <Sparkles className="size-3 text-primary" aria-hidden="true" />
-            {t('hero_badge')}
-          </p>
-
-          <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-semibold leading-[1.08] tracking-[-0.03em] text-foreground sm:text-5xl lg:text-6xl">
-            {t('hero_headline')} <span className="text-muted-foreground">{t('hero_tagline')}</span>
-          </h1>
-
-          <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            {t('hero_subtitle')}
-          </p>
-
-          <div className="mt-8 flex flex-col items-center justify-center gap-2.5 sm:flex-row">
-            <Link
-              href="/auth/signin"
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground shadow-xs transition-colors duration-150 hover:bg-primary-hover sm:w-auto"
-            >
-              {t('hero_cta_primary')}
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-            <Link
-              href="#how-it-works"
-              className="inline-flex h-11 w-full items-center justify-center rounded-full border border-border bg-card px-6 text-sm font-medium text-foreground shadow-2xs transition-colors duration-150 hover:bg-muted sm:w-auto"
-            >
-              {t('hero_cta_secondary')}
-            </Link>
-          </div>
-
-          <p className="mt-4 text-xs text-muted-foreground">{t('hero_no_credit_card')}</p>
-        </div>
-
-        {/* Product mockup — built in HTML/CSS, no image asset. */}
-        <div className="mx-auto max-w-5xl px-6 pb-20">
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xl">
-            {/* Window chrome */}
-            <div className="flex h-10 items-center gap-2 border-b border-border bg-muted/50 px-3.5">
-              <span className="size-2.5 rounded-full bg-border-strong" />
-              <span className="size-2.5 rounded-full bg-border-strong" />
-              <span className="size-2.5 rounded-full bg-border-strong" />
-              <div className="mx-auto flex h-6 w-64 items-center justify-center rounded-md border border-border bg-background text-[10px] text-muted-foreground">
-                app.omnysync.com/dashboard
-              </div>
+        <div className="mx-auto grid max-w-[1200px] items-center gap-12 px-6 pb-16 pt-20 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16 lg:pb-24 lg:pt-28">
+          <div>
+            <div className="animate-enter-up flex flex-wrap items-center gap-3" aria-hidden="true">
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                {t('hero_index')}
+              </span>
+              <span className="hidden h-px w-8 bg-border sm:block" />
+              <span className="hidden font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:inline">
+                {t('hero_badge')}
+              </span>
             </div>
 
-            <div className="grid gap-0 sm:grid-cols-[190px_1fr]">
-              {/* Sidebar */}
-              <div className="hidden border-r border-border bg-sidebar p-3 sm:block">
-                <div className="mb-4 flex items-center gap-2 px-1.5">
-                  <span className="grid size-5 place-items-center rounded bg-primary text-[9px] font-bold text-primary-foreground">
-                    O
-                  </span>
-                  <span className="text-xs font-semibold tracking-tight">Omnysync</span>
-                </div>
-                <div className="space-y-0.5">
-                  {['Dashboard', 'Documents', 'Connectors', 'Synchronization', 'Analytics'].map(
-                    (item, index) => (
-                      <div
-                        key={item}
-                        className={`flex h-7 items-center gap-2 rounded-md px-2 text-[11px] ${
-                          index === 0
-                            ? 'bg-background font-medium text-foreground shadow-2xs'
-                            : 'text-muted-foreground'
-                        }`}
-                      >
-                        <span
-                          className={`size-1.5 rounded-full ${index === 0 ? 'bg-primary' : 'bg-border-strong'}`}
-                        />
-                        {item}
-                      </div>
-                    )
-                  )}
-                </div>
-              </div>
+            <h1
+              className="animate-enter-up mt-7 text-[clamp(2.75rem,6vw,5.25rem)] font-semibold leading-[0.96] tracking-[-0.04em] text-foreground"
+              style={{ animationDelay: '90ms' }}
+            >
+              {t('hero_headline')}
+              <br />
+              <span className="text-muted-foreground">{t('hero_tagline')}</span>
+            </h1>
 
-              {/* Main panel */}
-              <div className="p-4 sm:p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-[13px] font-semibold tracking-tight">Synchronization</p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                      Launching an article to 4 destinations
-                    </p>
-                  </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-medium text-success">
-                    <span className="size-1.5 rounded-full bg-success" />
-                    Live
-                  </span>
-                </div>
+            <p
+              className="animate-enter-up mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg"
+              style={{ animationDelay: '170ms' }}
+            >
+              {t('hero_subtitle')}
+            </p>
 
-                <div className="mt-4 space-y-2">
-                  {[
-                    { name: 'WordPress', detail: 'Published · hero image optimized', done: true },
-                    { name: 'Ghost', detail: 'Published · tags mapped', done: true },
-                    { name: 'Webflow', detail: 'Published · CMS fields mapped', done: true },
-                    { name: 'Shopify', detail: 'Publishing · 62%', done: false },
-                  ].map((row) => (
-                    <div
-                      key={row.name}
-                      className="flex items-center gap-2.5 rounded-lg border border-border bg-background px-3 py-2"
-                    >
-                      <span
-                        className={`grid size-5 shrink-0 place-items-center rounded-full ${
-                          row.done ? 'bg-success-soft text-success' : 'bg-info-soft text-info'
-                        }`}
-                      >
-                        {row.done ? (
-                          <Check className="size-3" aria-hidden="true" />
-                        ) : (
-                          <RefreshCw className="size-3 animate-spin" aria-hidden="true" />
-                        )}
-                      </span>
-                      <span className="text-[11px] font-medium">{row.name}</span>
-                      <span className="ml-auto text-[10px] text-muted-foreground">
-                        {row.detail}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+            <div
+              className="animate-enter-up mt-8 flex flex-col items-start gap-2.5 sm:flex-row"
+              style={{ animationDelay: '250ms' }}
+            >
+              <Link
+                href="/auth/signin"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[3px] bg-primary px-6 text-sm font-medium text-primary-foreground shadow-xs transition-[background-color,box-shadow,transform] duration-150 hover:bg-primary-hover hover:shadow-sm active:translate-y-px sm:w-auto"
+              >
+                {t('hero_cta_primary')}
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+              <Link
+                href="#demo"
+                className="inline-flex h-11 w-full items-center justify-center rounded-[3px] border border-border bg-card px-6 text-sm font-medium text-foreground shadow-2xs transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-border-strong hover:bg-muted active:translate-y-px sm:w-auto"
+              >
+                {t('hero_cta_secondary')}
+              </Link>
+            </div>
 
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  {[
-                    { label: 'Sync rate', value: '98%' },
-                    { label: 'Documents', value: '142' },
-                    { label: 'Time saved', value: '6.4h' },
-                  ].map((stat) => (
-                    <div
-                      key={stat.label}
-                      className="rounded-lg border border-border bg-muted/40 p-2.5"
-                    >
-                      <p className="text-[9px] uppercase tracking-wide text-muted-foreground">
-                        {stat.label}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold tabular-nums">{stat.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div
+              className="animate-enter-fade mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-muted-foreground"
+              style={{ animationDelay: '340ms' }}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="size-3.5 text-success" aria-hidden="true" />
+                {t('hero_no_credit_card')}
+              </span>
+              <span className="hidden h-3 w-px bg-border sm:block" aria-hidden="true" />
+              <span className="font-mono uppercase tracking-[0.12em]">{t('hero_stat')}</span>
+            </div>
+          </div>
+
+          <div className="animate-enter-scale relative" style={{ animationDelay: '300ms' }}>
+            {/* Registration marks: the map reads as an instrument panel, not a screenshot. */}
+            <span
+              aria-hidden="true"
+              className="absolute -left-2.5 -top-2.5 z-10 size-5 border-l border-t border-primary/50"
+            />
+            <span
+              aria-hidden="true"
+              className="absolute -bottom-2.5 -right-2.5 z-10 size-5 border-b border-r border-primary/50"
+            />
+            <RouteMap tone="dark" />
+            <div className="mt-3 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+              <span>{t('routing_console')}</span>
+              <span>v2.4</span>
             </div>
           </div>
         </div>
@@ -193,7 +131,7 @@ export default async function Home() {
             {PLATFORMS.map((platform) => (
               <li
                 key={platform.name}
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground"
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
               >
                 <platform.icon className="size-4" aria-hidden="true" />
                 {platform.name}
@@ -203,8 +141,39 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* ── Product demo ────────────────────────────────────────────────── */}
+      <section id="demo" className="scroll-mt-16 border-b border-border py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+              {t('demo_eyebrow')}
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+              {t('demo_title')}
+            </h2>
+            <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+              {t('demo_subtitle')}
+            </p>
+          </div>
+
+          <div className="mt-10">
+            <ProductDemo
+              src={locale === 'fr' ? '/demo-fr.mp4' : '/demo.mp4'}
+              poster={locale === 'fr' ? '/demo-poster-fr.webp' : '/demo-poster-en.webp'}
+              url="app.omnysync.com/dashboard"
+              label={t('demo_video_label')}
+              playLabel={t('demo_play')}
+              pauseLabel={t('demo_pause')}
+              silentLabel={t('demo_silent')}
+              fallbackHref={locale === 'fr' ? '/demo-fr.mp4' : '/demo.mp4'}
+              fallbackLabel={t('demo_fallback')}
+            />
+          </div>
+        </div>
+      </section>
+
       {/* ── Features ────────────────────────────────────────────────────── */}
-      <section id="features" className="py-20">
+      <section id="features" className="scroll-mt-16 py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="max-w-2xl">
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -217,7 +186,7 @@ export default async function Home() {
 
           {/* Asymmetric: one dominant card + two stacked supporting cards. */}
           <div className="mt-10 grid gap-4 lg:grid-cols-2">
-            <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-7 shadow-sm">
+            <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-7 shadow-sm transition-[transform,box-shadow,border-color] duration-200 ease-out-quart hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md">
               <div>
                 <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
                   <RefreshCw className="size-5" aria-hidden="true" />
@@ -287,7 +256,7 @@ export default async function Home() {
               ].map((feature) => (
                 <div
                   key={feature.titleKey}
-                  className="rounded-xl border border-border bg-card p-6 shadow-sm"
+                  className="rounded-xl border border-border bg-card p-6 shadow-sm transition-[transform,box-shadow,border-color] duration-200 ease-out-quart hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md"
                 >
                   <span className="grid size-9 place-items-center rounded-lg bg-muted text-muted-foreground">
                     <feature.icon className="size-4.5" aria-hidden="true" />
@@ -306,7 +275,7 @@ export default async function Home() {
       </section>
 
       {/* ── How it works ────────────────────────────────────────────────── */}
-      <section id="how-it-works" className="border-t border-border bg-muted/40 py-20">
+      <section id="how-it-works" className="scroll-mt-16 border-t border-border bg-muted/40 py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="max-w-2xl">
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -322,9 +291,9 @@ export default async function Home() {
               { titleKey: 'step_2_title', descKey: 'step_2_desc' },
               { titleKey: 'step_3_title', descKey: 'step_3_desc' },
             ].map((step, index) => (
-              <li key={step.titleKey} className="relative sm:pr-8">
+              <li key={step.titleKey} className="group relative sm:pr-8">
                 <div className="flex items-center gap-3">
-                  <span className="grid size-8 shrink-0 place-items-center rounded-full border border-border bg-card text-[13px] font-semibold text-foreground shadow-2xs">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-[3px] border border-border bg-card text-[13px] font-semibold text-foreground shadow-2xs transition-colors duration-200 group-hover:border-primary/40 group-hover:text-primary">
                     {index + 1}
                   </span>
                   {index < 2 && (
@@ -349,7 +318,7 @@ export default async function Home() {
           <div className="relative overflow-hidden rounded-xl border border-border bg-card px-8 py-12 text-center shadow-sm">
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_50%_100%_at_50%_0%,var(--accent),transparent)]"
+              className="animate-drift pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_50%_100%_at_50%_0%,var(--accent),transparent)] will-change-transform"
             />
             <div className="relative">
               <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -361,14 +330,14 @@ export default async function Home() {
               <div className="mt-7 flex flex-col items-center justify-center gap-2.5 sm:flex-row">
                 <Link
                   href="/auth/signin"
-                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground shadow-xs transition-colors duration-150 hover:bg-primary-hover sm:w-auto"
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[3px] bg-primary px-6 text-sm font-medium text-primary-foreground shadow-xs transition-[background-color,box-shadow,transform] duration-150 hover:bg-primary-hover hover:shadow-sm active:translate-y-px sm:w-auto"
                 >
                   {t('cta_final_button')}
                   <ArrowRight className="size-4" aria-hidden="true" />
                 </Link>
                 <Link
                   href="/pricing"
-                  className="inline-flex h-10 w-full items-center justify-center rounded-full border border-border bg-background px-6 text-sm font-medium text-foreground shadow-2xs transition-colors duration-150 hover:bg-muted sm:w-auto"
+                  className="inline-flex h-10 w-full items-center justify-center rounded-[3px] border border-border bg-background px-6 text-sm font-medium text-foreground shadow-2xs transition-[background-color,border-color] duration-150 hover:border-border-strong hover:bg-muted active:translate-y-px sm:w-auto"
                 >
                   {t('nav_pricing')}
                 </Link>

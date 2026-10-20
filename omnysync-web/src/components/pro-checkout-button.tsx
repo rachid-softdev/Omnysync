@@ -27,7 +27,7 @@ export function ProCheckoutButton({ label }: { label: string }) {
   }
 
   return (
-    <Button className="w-full rounded-full" onClick={handleCheckout} disabled={loading}>
+    <Button className="w-full" onClick={handleCheckout} disabled={loading}>
       <Zap className="w-4 h-4 mr-2" />
       {loading ? t('UI_REDIRECTING') : label}
     </Button>

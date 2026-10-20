@@ -52,7 +52,7 @@ describe('ProCheckoutButton', () => {
       render(<ProCheckoutButton label="Upgrade" />)
       const button = screen.getByRole('button', { name: /upgrade/i })
       expect(button).toHaveClass('w-full')
-      expect(button).toHaveClass('rounded-full')
+      expect(button).toHaveClass('rounded-lg')
     })
   })
 

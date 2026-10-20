@@ -44,24 +44,26 @@
   --info: #0064e0;
   --info-foreground: #ffffff;
   --info-soft: #eef5ff;
+  --signal: #0e9fbe;
+  --signal-soft: #e8f8fc;
   --border: #e6e9ee;
   --border-strong: #d3d9e1;
   --input: #98a2b0;
   --ring: #0064e0;
-  --radius: 10px;
+  --radius: 3px;
   --chart-1: #0064e0;
   --chart-2: #16a3d9;
   --chart-3: #16a34a;
   --chart-4: #f59e0b;
   --chart-5: #7c3aed;
-  --sidebar: #f7f8fa;
-  --sidebar-foreground: #16181d;
-  --sidebar-primary: #0064e0;
+  --sidebar: #0b1118;
+  --sidebar-foreground: #e8eef6;
+  --sidebar-primary: #4da3ff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eef1f5;
-  --sidebar-accent-foreground: #16181d;
-  --sidebar-border: #e6e9ee;
-  --sidebar-ring: #0064e0;
+  --sidebar-accent: #151e28;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #1f2a36;
+  --sidebar-ring: #4da3ff;
 }
 
 .dark {
@@ -92,6 +94,8 @@
   --info: #4da3ff;
   --info-foreground: #04203f;
   --info-soft: #0f2237;
+  --signal: #38d6f5;
+  --signal-soft: #0a2630;
   --border: #1f2933;
   --border-strong: #2b3742;
   --input: #39434f;
@@ -101,19 +105,20 @@
   --chart-3: #4ade80;
   --chart-4: #fbbf24;
   --chart-5: #a78bfa;
-  --sidebar: #0d1319;
-  --sidebar-foreground: #f2f4f7;
-  --sidebar-primary: #0091ff;
+  --sidebar: #070c11;
+  --sidebar-foreground: #e8eef6;
+  --sidebar-primary: #4da3ff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1a222b;
-  --sidebar-accent-foreground: #f2f4f7;
-  --sidebar-border: #1c252e;
+  --sidebar-accent: #111923;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #1a2530;
   --sidebar-ring: #4da3ff;
 }
 
 @theme inline {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  --font-sans: var(--font-ui), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:
+    var(--font-mono-ui), ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -142,6 +147,8 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
   --color-info-soft: var(--info-soft);
+  --color-signal: var(--signal);
+  --color-signal-soft: var(--signal-soft);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-input: var(--input);
@@ -160,15 +167,147 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: var(--radius);
-  --radius-xl: 14px;
-  --radius-2xl: 18px;
+  /*
+   * Signal system: sharp by default. No surface may exceed 3px; the only
+   * intentional curves are functional (status dots, switches, radios, spinners).
+   */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
+  --radius-xl: 3px;
+  --radius-2xl: 3px;
 
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /*
+   * Motion tokens. Entrances are one-shot (fill: both) so the final state is
+   * always the visible default; `prefers-reduced-motion` collapses them to
+   * their end state via the global override at the bottom of this file.
+   */
+  --animate-enter-up: enter-up 0.6s var(--ease-out-expo) both;
+  --animate-enter-fade: enter-fade 0.5s var(--ease-out-quart) both;
+  --animate-enter-scale: enter-scale 0.7s var(--ease-out-expo) both;
+  --animate-slide-in-right: slide-in-right 0.7s var(--ease-out-expo) both;
+  --animate-shake: shake 0.4s var(--ease-out-quart) both;
+  --animate-pulse-soft: pulse-soft 2.4s ease-in-out infinite;
+  --animate-drift: drift 20s ease-in-out infinite alternate;
+}
+
+@keyframes enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes enter-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes enter-scale {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(3%, 2%, 0) scale(1.06);
+  }
+}
+
+/* Signal flow: a slow dash travelling along a route. */
+@keyframes route-dash {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+
+.route-dash {
+  animation: route-dash 2.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-dash {
+    animation: none;
+  }
+}
+
+/*
+ * Header state on scroll: transparent over the hero, elevated once the page
+ * moves. Progressive enhancement via a scroll timeline — browsers without
+ * support (or users with reduced motion) simply keep the static header.
+ */
+@keyframes header-elevate {
+  from {
+    border-color: transparent;
+    box-shadow: none;
+  }
+  to {
+    border-color: var(--border);
+    box-shadow: var(--shadow-xs);
+  }
 }
 
 /* Shadows are referenced via var() so the .dark overrides below take effect. */
@@ -195,6 +334,11 @@
   html {
     @apply font-sans;
   }
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
   h1,
   h2,
   h3 {
@@ -202,6 +346,16 @@
   }
   ::selection {
     background-color: color-mix(in oklab, var(--primary) 20%, transparent);
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .site-header {
+      animation: header-elevate linear both;
+      animation-timeline: scroll();
+      animation-range: 0 96px;
+    }
   }
 }
 
@@ -220,6 +374,7 @@
   ::before,
   ::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;

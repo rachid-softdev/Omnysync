@@ -63,14 +63,22 @@ export default function DevBrandPage() {
       <section className="mb-12">
         <h2 className="mb-4 text-lg font-semibold text-[#0f172a]">Typography</h2>
         <div className="rounded-lg border border-[#e2e8f0] bg-white p-6">
-          <p className="font-sans text-4xl font-bold text-[#0f172a]">Inter</p>
+          <p className="font-sans text-4xl font-bold text-[#0f172a]">Schibsted Grotesk</p>
           <p className="mt-2 text-[#64748b]">
-            Primary typeface. Variable weight support from 100 to 900.
+            Primary typeface. Variable weight support from 400 to 900.
+          </p>
+          <p className="mt-8 font-mono text-2xl font-medium text-[#0f172a]">IBM Plex Mono</p>
+          <p className="mt-2 text-[#64748b]">
+            Utility typeface for run IDs, timestamps, status labels and technical metadata.
           </p>
           <div className="mt-4 space-y-2">
             <p className="text-sm text-[#64748b]">
               <span className="font-mono text-xs text-[#0064e0]">--font-sans</span> —
-              &quot;Inter&quot;, system-ui, sans-serif
+              var(--font-ui), system-ui, sans-serif
+            </p>
+            <p className="text-sm text-[#64748b]">
+              <span className="font-mono text-xs text-[#0064e0]">--font-mono</span> —
+              var(--font-mono-ui), ui-monospace, monospace
             </p>
           </div>
         </div>

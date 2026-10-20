@@ -37,7 +37,7 @@ export function SidebarNav({ items, sections }: SidebarNavProps) {
         {resolvedSections.map((section, index) => (
           <div key={section.title ?? `section-${index}`}>
             {section.title && (
-              <p className="mb-1.5 px-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
+              <p className="mb-1.5 px-2.5 font-mono text-[9px] font-medium uppercase tracking-[0.16em] text-sidebar-foreground/35">
                 {section.title}
               </p>
             )}
@@ -52,18 +52,24 @@ export function SidebarNav({ items, sections }: SidebarNavProps) {
                       href={item.href}
                       aria-current={isActive ? 'page' : undefined}
                       className={cn(
-                        'group flex h-9 items-center gap-2.5 rounded-md px-2.5 text-sm transition-colors duration-150',
+                        'group relative flex h-9 items-center gap-2.5 rounded-[3px] px-2.5 text-sm transition-colors duration-150',
                         isActive
-                          ? 'bg-background font-medium text-foreground shadow-2xs'
-                          : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                          ? 'bg-white/[0.06] font-medium text-sidebar-foreground'
+                          : 'text-sidebar-foreground/55 hover:bg-white/[0.04] hover:text-sidebar-foreground'
                       )}
                     >
+                      {isActive && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-y-1.5 left-0 w-0.5 bg-primary"
+                        />
+                      )}
                       <Icon
                         className={cn(
                           'size-4 shrink-0 transition-colors',
                           isActive
                             ? 'text-primary'
-                            : 'text-muted-foreground/80 group-hover:text-foreground'
+                            : 'text-sidebar-foreground/45 group-hover:text-sidebar-foreground'
                         )}
                       />
                       <span className="truncate">{item.label}</span>

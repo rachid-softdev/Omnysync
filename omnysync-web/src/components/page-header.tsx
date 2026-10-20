@@ -22,7 +22,7 @@ export function PageHeader({ title, description, actions, children, className }:
     <div className={cn('flex flex-col gap-4', className)}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
+          <h1 className="text-[28px] font-semibold tracking-[-0.03em] text-foreground">{title}</h1>
           {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
         </div>
         {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
@@ -43,6 +43,8 @@ export function PageShell({
   className?: string
 }) {
   return (
-    <div className={cn('mx-auto w-full max-w-6xl px-6 py-8 lg:px-8', className)}>{children}</div>
+    <div className={cn('mx-auto w-full max-w-[1400px] px-6 py-8 lg:px-8', className)}>
+      {children}
+    </div>
   )
 }

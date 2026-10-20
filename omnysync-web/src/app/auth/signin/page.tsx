@@ -7,7 +7,8 @@ import { signIn } from 'next-auth/react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { AlertCircle, ArrowRight, Check, Loader2 } from 'lucide-react'
+import { RouteMap } from '@/components/route-map'
+import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react'
 
 export default function SignInPage() {
   const router = useRouter()
@@ -145,7 +146,7 @@ export default function SignInPage() {
     <div className="grid min-h-screen lg:grid-cols-[1fr_minmax(0,520px)]">
       {/* Form panel */}
       <div className="flex flex-col px-6 py-8 sm:px-10 lg:px-16">
-        <div className="flex items-center justify-between">
+        <div className="animate-enter-fade flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2" aria-label="Omnysync home">
             <span className="grid size-7 place-items-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">
               O
@@ -162,10 +163,16 @@ export default function SignInPage() {
 
         <div className="flex flex-1 items-center py-10">
           <div className="mx-auto w-full max-w-sm">
-            <h1 className="text-2xl font-semibold tracking-tight">
+            <h1
+              className="animate-enter-up text-2xl font-semibold tracking-tight"
+              style={{ animationDelay: '70ms' }}
+            >
               {isLogin ? 'Welcome back' : 'Create your account'}
             </h1>
-            <p className="mt-1.5 text-sm text-muted-foreground">
+            <p
+              className="animate-enter-up mt-1.5 text-sm text-muted-foreground"
+              style={{ animationDelay: '120ms' }}
+            >
               {isLogin
                 ? 'Sign in to continue syncing your content.'
                 : 'Start syncing your content across platforms in minutes.'}
@@ -175,7 +182,8 @@ export default function SignInPage() {
               type="button"
               variant="outline"
               onClick={signInWithGoogle}
-              className="mt-7 h-10 w-full gap-2.5"
+              className="animate-enter-up mt-7 h-10 w-full gap-2.5"
+              style={{ animationDelay: '170ms' }}
             >
               <svg className="size-4" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -198,7 +206,7 @@ export default function SignInPage() {
               Continue with Google
             </Button>
 
-            <div className="relative my-6">
+            <div className="animate-enter-fade relative my-6" style={{ animationDelay: '220ms' }}>
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-border" />
               </div>
@@ -209,7 +217,12 @@ export default function SignInPage() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <form
+              onSubmit={handleSubmit}
+              className="animate-enter-up space-y-4"
+              style={{ animationDelay: '260ms' }}
+              noValidate
+            >
               {!isLogin && (
                 <div className="space-y-1.5">
                   <Label htmlFor="name">Name</Label>
@@ -286,7 +299,8 @@ export default function SignInPage() {
 
               {error && (
                 <div
-                  className="flex items-start gap-2.5 rounded-lg border border-destructive/20 bg-destructive-soft p-3 text-sm text-destructive"
+                  key={error}
+                  className="animate-shake flex items-start gap-2.5 rounded-lg border border-destructive/20 bg-destructive-soft p-3 text-sm text-destructive"
                   role="alert"
                 >
                   <AlertCircle className="mt-0.5 size-4 shrink-0" />
@@ -309,7 +323,10 @@ export default function SignInPage() {
               </Button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-muted-foreground">
+            <p
+              className="animate-enter-fade mt-6 text-center text-sm text-muted-foreground"
+              style={{ animationDelay: '320ms' }}
+            >
               {isLogin ? "Don't have an account? " : 'Already have an account? '}
               <button
                 type="button"
@@ -324,7 +341,10 @@ export default function SignInPage() {
               </button>
             </p>
 
-            <p className="mt-8 text-center text-xs leading-relaxed text-muted-foreground">
+            <p
+              className="animate-enter-fade mt-8 text-center text-xs leading-relaxed text-muted-foreground"
+              style={{ animationDelay: '370ms' }}
+            >
               By continuing, you agree to our{' '}
               <Link href="#" className="underline underline-offset-2">
                 Terms
@@ -339,71 +359,48 @@ export default function SignInPage() {
         </div>
       </div>
 
-      {/* Product panel */}
-      <div className="relative hidden overflow-hidden bg-[#061a33] lg:block">
+      {/* Product panel — the routing console, not a stock testimonial. */}
+      <div
+        className="animate-enter-fade relative hidden overflow-hidden bg-[#06101b] lg:block"
+        style={{ animationDelay: '120ms' }}
+      >
         <div
-          className="absolute inset-0 opacity-70"
+          className="animate-drift absolute inset-0 opacity-70 will-change-transform"
           style={{
             background:
               'radial-gradient(120% 80% at 85% 0%, #0a3d8f 0%, transparent 60%), radial-gradient(90% 70% at 0% 100%, #063a7a 0%, transparent 55%)',
           }}
           aria-hidden="true"
         />
-        <div className="relative flex h-full flex-col justify-between p-12">
+        <div
+          className="animate-slide-in-right relative flex h-full flex-col justify-between gap-8 p-10 xl:p-12"
+          style={{ animationDelay: '180ms' }}
+        >
           <div>
-            <p className="text-sm font-medium text-white/60">Built for content teams</p>
-            <h2 className="mt-3 text-[28px] font-semibold leading-tight tracking-tight text-white">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
+              Live routing console
+            </p>
+            <h2 className="mt-4 text-[30px] font-semibold leading-[1.02] tracking-[-0.03em] text-white">
               One draft in.
               <br />
               Every platform out.
             </h2>
-          </div>
-
-          {/* Mockup */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-1.5 shadow-2xl backdrop-blur-sm">
-            <div className="rounded-lg bg-[#0b1220] p-4">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-emerald-400" />
-                  <span className="text-xs font-medium text-white/80">Sync run</span>
-                </div>
-                <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
-                  Completed
-                </span>
-              </div>
-              <div className="mt-3 space-y-2.5">
-                {[
-                  { name: 'WordPress', meta: 'Published · 2s' },
-                  { name: 'Ghost', meta: 'Published · 1s' },
-                  { name: 'Webflow', meta: 'Published · 3s' },
-                  { name: 'Shopify', meta: 'Published · 2s' },
-                ].map((row) => (
-                  <div key={row.name} className="flex items-center gap-2.5">
-                    <span className="grid size-6 shrink-0 place-items-center rounded-md bg-white/[0.06]">
-                      <Check className="size-3 text-emerald-400" />
-                    </span>
-                    <span className="flex-1 text-xs text-white/80">{row.name}</span>
-                    <span className="text-[10px] text-white/40">{row.meta}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <p className="text-sm leading-relaxed text-white/70">
-              &ldquo;We publish to five platforms in the time it used to take to format one
-              draft.&rdquo;
+            <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/55">
+              Watch a run move from source to destination, with per-platform status and no
+              copy-paste.
             </p>
-            <div className="flex items-center gap-3">
-              <span className="grid size-8 place-items-center rounded-full bg-white/10 text-[11px] font-semibold text-white">
-                MC
-              </span>
-              <div className="text-xs">
-                <p className="font-medium text-white">Maya Chen</p>
-                <p className="text-white/50">Head of Content, Northwind</p>
-              </div>
-            </div>
+          </div>
+
+          <div className="animate-enter-scale" style={{ animationDelay: '320ms' }}>
+            <RouteMap tone="dark" />
+          </div>
+
+          <div className="flex items-center justify-between border-t border-white/10 pt-4 font-mono text-[9px] uppercase tracking-[0.14em] text-white/35">
+            <span>Omnysync · run #2841</span>
+            <span className="inline-flex items-center gap-1.5 text-emerald-300">
+              <span className="size-1.5 rounded-full bg-emerald-400" />
+              All destinations healthy
+            </span>
           </div>
         </div>
       </div>

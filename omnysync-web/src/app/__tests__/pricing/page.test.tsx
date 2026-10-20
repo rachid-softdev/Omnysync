@@ -6,6 +6,8 @@ const { translations } = vi.hoisted(() => ({
   translations: {
     pricing_title: 'Simple, transparent pricing',
     pricing_subtitle: 'Choose the plan that works for you.',
+    pricing_note_1: 'No hidden seats.',
+    pricing_note_2: 'Cancel anytime.',
     plan_free_name: 'Free',
     plan_free_price: '$0',
     plan_free_period: 'month',

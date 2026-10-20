@@ -141,7 +141,7 @@ describe('MobileNav', () => {
       fireEvent.click(screen.getByLabelText('Open menu'))
 
       const dashboardLink = screen.getByText('Dashboard').closest('a')
-      expect(dashboardLink).toHaveClass('bg-accent')
+      expect(dashboardLink).toHaveClass('bg-white/[0.06]')
     })
 
     it('does not highlight non-active links', () => {
@@ -150,10 +150,10 @@ describe('MobileNav', () => {
       fireEvent.click(screen.getByLabelText('Open menu'))
 
       const documentsLink = screen.getByText('Documents').closest('a')
-      expect(documentsLink).not.toHaveClass('bg-accent')
+      expect(documentsLink).not.toHaveClass('bg-white/[0.06]')
 
       const settingsLink = screen.getByText('Settings').closest('a')
-      expect(settingsLink).not.toHaveClass('bg-accent')
+      expect(settingsLink).not.toHaveClass('bg-white/[0.06]')
     })
 
     it('highlights link when pathname starts with href + slash', () => {
@@ -162,7 +162,7 @@ describe('MobileNav', () => {
       fireEvent.click(screen.getByLabelText('Open menu'))
 
       const documentsLink = screen.getByText('Documents').closest('a')
-      expect(documentsLink).toHaveClass('bg-accent')
+      expect(documentsLink).toHaveClass('bg-white/[0.06]')
     })
   })
 

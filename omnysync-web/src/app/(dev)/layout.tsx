@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
-import { Inter } from 'next/font/google'
+import { Schibsted_Grotesk } from 'next/font/google'
 
-const inter = Inter({ subsets: ['latin'], display: 'swap' })
+const fontSans = Schibsted_Grotesk({ subsets: ['latin'], display: 'swap' })
 
 export default function DevLayout({ children }: { children: React.ReactNode }) {
   if (process.env.NODE_ENV !== 'development') {
@@ -10,7 +10,9 @@ export default function DevLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen bg-white text-[#0f172a]`}>{children}</body>
+      <body className={`${fontSans.className} min-h-screen bg-white text-[#0f172a]`}>
+        {children}
+      </body>
     </html>
   )
 }

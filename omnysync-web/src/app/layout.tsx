@@ -1,11 +1,24 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { IBM_Plex_Mono, Schibsted_Grotesk } from 'next/font/google'
 import { headers } from 'next/headers'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
 
-const inter = Inter({ subsets: ['latin'], display: 'swap' })
+// One display/UI family plus a mono for technical metadata (see DESIGN.md).
+// The CSS variables are consumed by the `--font-sans` and `--font-mono` tokens.
+const fontSans = Schibsted_Grotesk({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-ui',
+})
+
+const fontMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  display: 'swap',
+  variable: '--font-mono-ui',
+})
 
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers()
@@ -54,8 +67,12 @@ export default async function RootLayout({
   const locale = acceptLanguage.split(',')[0]?.split('-')[0] || 'en'
 
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen bg-background`}>
+    <html
+      lang={locale}
+      className={`${fontSans.variable} ${fontMono.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-screen bg-background">
         <Providers>
           <Header />
           {children}

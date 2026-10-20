@@ -12,6 +12,7 @@ import { useTranslations } from '@/lib/i18n/useTranslations'
 import { cn } from '@/lib/utils'
 import { isNavItemActive } from '@/lib/nav'
 import { resolveNavIcon, type NavIcon } from '@/components/nav-icons'
+import { BrandLockup } from '@/components/signal-mark'
 
 interface NavItem {
   href: string
@@ -40,11 +41,8 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
     <>
       {/* Mobile top bar */}
       <header className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur-md md:hidden">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="grid size-7 place-items-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">
-            O
-          </span>
-          <span className="text-[15px] font-semibold tracking-tight">Omnysync</span>
+        <Link href="/dashboard" className="flex items-center">
+          <BrandLockup />
         </Link>
         <Button
           variant="ghost"
@@ -74,12 +72,13 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
         aria-hidden={!isOpen}
       >
         <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
-          <span className="text-[15px] font-semibold tracking-tight">Omnysync</span>
+          <BrandLockup tone="sidebar" />
           <Button
             variant="ghost"
             size="icon-sm"
             onClick={() => setIsOpen(false)}
             aria-label="Close menu"
+            className="text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <X className="size-5" />
           </Button>
@@ -97,13 +96,18 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
                     onClick={() => setIsOpen(false)}
                     aria-current={isActive ? 'page' : undefined}
                     className={cn(
-                      'flex h-9 items-center gap-2.5 rounded-md px-2.5 text-sm transition-colors',
+                      'flex h-9 items-center gap-2.5 rounded-[3px] px-2.5 text-sm transition-colors',
                       isActive
-                        ? 'bg-accent font-medium text-accent-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                        ? 'bg-white/[0.06] font-medium text-sidebar-foreground'
+                        : 'text-sidebar-foreground/55 hover:bg-white/[0.04] hover:text-sidebar-foreground'
                     )}
                   >
-                    <Icon className="size-4 shrink-0" />
+                    <Icon
+                      className={cn(
+                        'size-4 shrink-0',
+                        isActive ? 'text-primary' : 'text-sidebar-foreground/45'
+                      )}
+                    />
                     <span className="truncate">{item.label}</span>
                   </Link>
                 </li>
@@ -113,23 +117,25 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
         </nav>
 
         <div className="border-t border-sidebar-border p-3">
-          <div className="mb-3 flex items-center gap-2.5 rounded-lg border border-sidebar-border bg-background p-2">
+          <div className="mb-3 flex items-center gap-2.5 rounded-[3px] border border-sidebar-border bg-white/[0.04] p-2">
             {user.image ? (
               <Image
                 src={user.image}
                 alt={user.name || 'User'}
                 width={32}
                 height={32}
-                className="size-8 rounded-full object-cover"
+                className="size-8 rounded-[3px] object-cover"
               />
             ) : (
-              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+              <span className="grid size-8 shrink-0 place-items-center rounded-[3px] bg-primary/20 text-xs font-semibold text-primary">
                 {(user.name || user.email || 'U').slice(0, 1).toUpperCase()}
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-medium leading-tight">{user.name}</p>
-              <p className="truncate text-[11px] leading-tight text-muted-foreground">
+              <p className="truncate text-[13px] font-medium leading-tight text-sidebar-foreground">
+                {user.name}
+              </p>
+              <p className="truncate text-[11px] leading-tight text-sidebar-foreground/45">
                 {user.email}
               </p>
             </div>
@@ -138,7 +144,7 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
             variant="ghost"
             size="sm"
             onClick={() => logoutAction()}
-            className="w-full justify-start text-muted-foreground hover:text-foreground"
+            className="w-full justify-start text-sidebar-foreground/55 hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <LogOut className="size-4" />
             {t('UI_LOGOUT')}

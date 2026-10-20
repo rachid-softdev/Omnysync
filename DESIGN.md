@@ -60,47 +60,47 @@ colors:
   error: "#e02d47"
 typography:
   display:
-    fontFamily: Inter, system-ui, -apple-system, sans-serif
+    fontFamily: Schibsted Grotesk, system-ui, -apple-system, sans-serif
     fontSize: 48px
     fontWeight: 700
     lineHeight: 1.1
   heading-1:
-    fontFamily: Inter, system-ui, -apple-system, sans-serif
+    fontFamily: Schibsted Grotesk, system-ui, -apple-system, sans-serif
     fontSize: 36px
     fontWeight: 700
     lineHeight: 1.2
   heading-2:
-    fontFamily: Inter, system-ui, -apple-system, sans-serif
+    fontFamily: Schibsted Grotesk, system-ui, -apple-system, sans-serif
     fontSize: 30px
     fontWeight: 700
     lineHeight: 1.25
   heading-3:
-    fontFamily: Inter, system-ui, -apple-system, sans-serif
+    fontFamily: Schibsted Grotesk, system-ui, -apple-system, sans-serif
     fontSize: 24px
     fontWeight: 600
     lineHeight: 1.3
   heading-4:
-    fontFamily: Inter, system-ui, -apple-system, sans-serif
+    fontFamily: Schibsted Grotesk, system-ui, -apple-system, sans-serif
     fontSize: 20px
     fontWeight: 600
     lineHeight: 1.35
   body:
-    fontFamily: Inter, system-ui, -apple-system, sans-serif
+    fontFamily: Schibsted Grotesk, system-ui, -apple-system, sans-serif
     fontSize: 16px
     fontWeight: 400
     lineHeight: 1.5
   body-sm:
-    fontFamily: Inter, system-ui, -apple-system, sans-serif
+    fontFamily: Schibsted Grotesk, system-ui, -apple-system, sans-serif
     fontSize: 14px
     fontWeight: 400
     lineHeight: 1.43
   caption:
-    fontFamily: Inter, system-ui, -apple-system, sans-serif
+    fontFamily: Schibsted Grotesk, system-ui, -apple-system, sans-serif
     fontSize: 12px
     fontWeight: 400
     lineHeight: 1.33
   label:
-    fontFamily: Inter, system-ui, -apple-system, sans-serif
+    fontFamily: Schibsted Grotesk, system-ui, -apple-system, sans-serif
     fontSize: 14px
     fontWeight: 500
     lineHeight: 1.43
@@ -112,10 +112,10 @@ typography:
 rounded:
   xs: 4px
   sm: 6px
-  md: 8px
-  lg: 10px
-  xl: 14px
-  xxl: 18px
+  md: 3px
+  lg: 3px
+  xl: 3px
+  xxl: 3px
   full: 9999px
 spacing:
   xs: 8px
@@ -155,17 +155,17 @@ components:
     typography: "{typography.label}"
     rounded: "{rounded.lg}"
     padding: 8px 14px
-  button-pill-primary:
+  button-marketing-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.on-primary}"
     typography: "{typography.label}"
-    rounded: "{rounded.full}"
+    rounded: "{rounded.lg}"
     padding: 12px 32px
-  button-pill-secondary:
+  button-marketing-secondary:
     backgroundColor: transparent
     textColor: "{colors.foreground}"
     typography: "{typography.label}"
-    rounded: "{rounded.full}"
+    rounded: "{rounded.lg}"
     padding: 12px 32px
     border: 1px solid '{colors.border}'
   card:
@@ -194,7 +194,7 @@ components:
     backgroundColor: "{colors.surface-soft}"
     textColor: "{colors.foreground}"
     typography: "{typography.caption}"
-    rounded: "{rounded.full}"
+    rounded: "{rounded.sm}"
     padding: 2px 8px
   badge-default:
     backgroundColor: "{colors.primary}"
@@ -244,11 +244,11 @@ components:
     rounded: "{rounded.md}"
   progress:
     backgroundColor: "{colors.muted}"
-    rounded: "{rounded.full}"
+    rounded: "{rounded.xs}"
     height: 8px
   progress-fill:
     backgroundColor: "{colors.primary}"
-    rounded: "{rounded.full}"
+    rounded: "{rounded.xs}"
   select-trigger:
     backgroundColor: "{colors.background}"
     textColor: "{colors.foreground}"
@@ -265,7 +265,7 @@ components:
   switch-checked:
     backgroundColor: "{colors.primary}"
   avatar:
-    rounded: "{rounded.full}"
+    rounded: "{rounded.lg}"
     size: 40px
   alert-dialog:
     backgroundColor: "{colors.card}"
@@ -288,8 +288,8 @@ This system explicitly rejects: noisy dashboards with competing visual prioritie
 
 - Cobalt blue (`#0064e0`) as the single accent color, used sparingly for primary actions and interactive state indicators only
 - White canvas (`#ffffff`) as the default background, with a cool-gray surface layer (`#f5f6f8`) for sidebars and secondary panels
-- Inter type family throughout — no display/body pairing; one confident sans carries all roles from 48px display to 12px caption
-- Consistent rounded corners (10px default radius) with pill-shaped variants for badges and marketing CTAs
+- Schibsted Grotesk for display/UI, IBM Plex Mono for technical metadata - one display family plus a utility mono, no third face
+- Sharp geometry: max 3px radius on every surface, no pill-shaped buttons or badges; circles are reserved for functional status dots, switches, radios and spinners
 - Flat-by-default elevation with a refined two-layer shadow scale reserved for interactive feedback and floating surfaces
 - Dark mode as a first-class citizen with full token parity
 - Strong state coverage: loading, empty, error, and success states on every major surface
@@ -339,11 +339,11 @@ The palette follows a Restrained strategy: white canvas + single cobalt accent +
 
 ## 3. Typography
 
-**Display & Body Font:** Inter (with system-ui, -apple-system, sans-serif fallback). Loaded from Google Fonts via `next/font/google` with `display: swap`.
+**Display & Body Font:** Schibsted Grotesk (with system-ui, -apple-system, sans-serif fallback). Loaded as a variable font from Google Fonts via `next/font/google` with `display: swap`, exposed as `--font-ui` and consumed by the `--font-sans` token.
 
-**Code/Mono Font:** `ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace` — the system monospace stack. Used in log consoles, error detail blocks, and technical displays.
+**Code/Mono Font:** IBM Plex Mono (with `ui-monospace`, `SFMono-Regular`, Menlo fallback). Loaded via `next/font/google` as `--font-mono-ui` and consumed by the `--font-mono` token. Used for run IDs, timestamps, status labels, section indices, table metadata and log consoles.
 
-**Character:** Inter is a workhorse humanist sans-serif — legible, neutral, and unpretentious. It carries the full hierarchy from 48px display headlines to 12px caption text without needing a secondary face. The single-family approach avoids the display/body pairing headache and keeps the interface feeling consistent and tool-like.
+**Character:** Schibsted Grotesk is a contemporary grotesque with a tall x-height and slightly compressed letterforms - precise and technical without feeling anonymous. It carries the full hierarchy from 48px display headlines to 12px caption text. IBM Plex Mono handles run IDs, timestamps and technical metadata, so the interface feels like an instrument rather than a generic SaaS template.
 
 ### Hierarchy
 
@@ -362,7 +362,7 @@ The palette follows a Restrained strategy: white canvas + single cobalt accent +
 
 ### Named Rules
 
-**The One Family Rule.** Inter carries every role. No display font, no editorial serif, no brand face. The product UI confidence comes from consistent weight and size contrast, not from font switching.
+**The Two-Family Rule.** Schibsted Grotesk carries every display and UI role; IBM Plex Mono is a utility face for technical metadata only. No editorial serif, no third family, no display/body pairing inside the UI.
 
 **The Fixed Scale Rule.** Product UI uses fixed px/rem sizes, not fluid clamp(). Users view at consistent DPI; fluid type adds complexity without benefit in a dashboard context.
 
@@ -392,7 +392,7 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 
 ### Buttons
 
-- **Shape:** 10px rounded corners (`rounded.lg`) for dashboard buttons; pill-shaped (`rounded.full`) for marketing CTAs on landing pages
+- **Shape:** 3px rounded corners for dashboard buttons and marketing CTAs. No pill-shaped buttons.
 - **Sizes:** 36px default height, 32px small, 40px large, 36px square icon buttons
 - **Primary:** Cobalt blue (`#0064e0`) background, white text, `shadow-xs`. Used for primary actions: "Create", "Save", "Sync", "Connect"
 - **Hover:** Deepens to `#0457cb` (never fades to transparency)
@@ -405,7 +405,7 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 
 ### Cards
 
-- **Shape:** 10px rounded corners, `1px solid {colors.border}` stroke, `shadow-sm`
+- **Shape:** 3px rounded corners, `1px solid {colors.border}` stroke, `shadow-sm`
 - **Background:** White (`#ffffff`), or dark card (`#10161d`) in dark mode
 - **Padding:** 24px standard (`p-6`), 16px compact variant for dense lists
 - **Title:** 16px semibold with tight tracking. Marketing pages may override to 24px
@@ -414,7 +414,7 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 
 ### Inputs & Form Controls
 
-- **Shape:** 10px rounded corners, `1px solid {colors.input}` stroke, `shadow-2xs`
+- **Shape:** 3px rounded corners, `1px solid {colors.input}` stroke, `shadow-2xs`
 - **Height:** 36px standard. Auth and marketing forms may use 40–44px for touch comfort
 - **Background:** White (light) or the card surface (dark)
 - **Focus:** Stroke switches to `{colors.ring}` plus a `2px` 25%-alpha cobalt halo. Keyboard-only (`:focus-visible`)
@@ -426,16 +426,16 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 
 ### Navigation
 
-- **Desktop Sidebar:** 256px wide (`w-64`), `bg-sidebar` surface with a matching `sidebar-border`. Icon + text labels in 36px (`h-9`) rows. Navigation is grouped into an unlabeled primary group, "Workspace", and "Account"; group headings are 11px, medium weight, uppercase, 70% muted. Footer holds the command-palette trigger, docs link, and a user card with icon-only logout
-- **Active state:** Subtle `accent` background + `foreground` text + medium weight. `/dashboard` and `/admin` only match exactly (nested routes must not light up the root entry) — see `isNavItemActive()` in `src/lib/nav.ts`
-- **Mobile Drawer:** Full-height slide-in from left, 288px wide (`w-72`). Overlay backdrop at 50% opacity with a 2px blur. Close button top-right. Same grouped nav as desktop; user + logout pinned at the bottom
+- **Desktop Sidebar:** 256px wide (`w-64`), ink surface (`#0b1118` light, `#070c11` dark) with a matching `sidebar-border`, `sidebar-foreground` text, and a 2px cobalt signal bar on the active item. Icon + text labels in 36px (`h-9`) rows. Navigation is grouped into an unlabeled primary group, "Workspace", and "Account"; group headings are 9px mono, uppercase, 35% opacity. Footer holds the command-palette trigger, docs link, and a user card with icon-only logout
+- **Active state:** White 6% background + `sidebar-foreground` text + medium weight + left cobalt bar. `/dashboard` and `/admin` only match exactly (nested routes must not light up the root entry) — see `isNavItemActive()` in `src/lib/nav.ts`
+- **Mobile Drawer:** Full-height slide-in from left, 288px wide (`w-72`). Ink surface and the same sidebar tokens as desktop. Overlay backdrop at 50% opacity with a 2px blur. Close button top-right. Same grouped nav as desktop; user + logout pinned at the bottom
 - **Dashboard Top Bar:** Fixed 56px (`h-14`) bar with breadcrumbs (path segments mapped to translated labels, unknown IDs rendered as-is), a search/⌘K trigger, theme toggle, and avatar. It replaces the marketing header on all `/dashboard`, `/admin`, and `/auth` routes
 - **Top Bar (public pages):** Fixed header with logo left, nav links center (hidden on mobile), CTA buttons right. Background at 85% opacity with `backdrop-blur`
-- **Tab Navigation:** Pill-style tabs for switching between views within a page. Active tab: `background` surface, 10px rounded, `shadow-xs`
+- **Tab Navigation:** Segmented tabs with 3px corners. Active tab: `background` surface, `shadow-xs`, foreground text
 
 ### Badges & Status Indicators
 
-- **Shape:** Pill-shaped (`rounded.full`), 2px 8px padding, 12px medium weight
+- **Shape:** 3px corners, 2px 8px padding, 12px medium weight. Metadata reads as a technical tag, not a pill
 - **Default:** Cobalt background, white text. Used for active status ("Active", "Pro")
 - **Secondary:** Muted gray background, ink text. Used for neutral status ("Member", "Inactive")
 - **Success / Warning / Info:** Soft semantic surface + matching text color (`#ecfdf3`/`#157f43`, `#fffaeb`/`#a15c07`, `#eef5ff`/`#0064e0`). Preferred over solid fills — quieter, and text contrast stays above 4.5:1
@@ -445,14 +445,14 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 
 ### Progress & Loading
 
-- **Progress Bar:** 8px height, pill-shaped (`rounded.full`). Muted gray track, cobalt fill, 300ms transform transition. Used on sync progress and usage limit displays
-- **Loading Spinner:** 32px animated spinner for page-level loading. 16px for inline button loading
-- **Skeleton:** Soft gray rounded rectangles matching the shape of the content being loaded. Used on dashboard cards before data arrives
-- **Empty State:** Centered layout with icon + heading + description + optional action button. Used on all list pages when no data exists
+- **Progress Bar:** 8px height, 2px corners. Muted gray track, cobalt fill, 300ms transform transition. Used on sync progress and usage limit displays
+- **Loading Spinner:** 32px animated spinner for page-level loading. 16px for inline button loading. Spinners are the only circular loading shape
+- **Skeleton:** Soft gray rectangles with 3px corners matching the shape of the content being loaded. Used on dashboard cards before data arrives
+- **Empty State:** Left-aligned or centered layout with icon + heading + description + optional action button. Used on all list pages when no data exists
 
 ### Dialogs & Modals
 
-- **Shape:** 14px rounded corners, 24px padding, `shadow-xl`
+- **Shape:** 3px corners, 24px padding, `shadow-xl`
 - **Backdrop:** `rgb(0 0 0 / 0.45)` overlay with a 2px blur (`0.6` in dark mode)
 - **Width:** `max-w-md` (448px) standard, `max-w-lg` (512px) for forms
 - **Header:** Title + description + optional close X button (28px hit area, top-right)
@@ -466,25 +466,45 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 - **Max height:** 400px with overflow-y scroll for long sync sessions
 - **Empty state:** "Waiting for activity..." in muted text
 
-## 6. Do's and Don'ts
+## 6. Motion
+
+Motion is functional first: it confirms state, directs attention, and covers transitions. Product surfaces stay in the 150–250 ms band; marketing surfaces get one rehearsed entrance per page instead of scroll-triggered reveals on every section.
+
+### Tokens
+
+- **Easings:** `--ease-out-quart` (state changes) and `--ease-out-expo` (entrances). No bounce, no elastic.
+- **Entrance utilities:** `animate-enter-up` (0.6s), `animate-enter-fade` (0.5s), `animate-enter-scale` (0.7s, for mockups), `animate-slide-in-right` (0.7s, auth panel), `animate-shake` (0.4s, validation errors), `animate-pulse-soft` (2.4s, live indicators), `animate-drift` (20s, ambient glows).
+- All entrance animations use `fill-mode: both`, so the final state is the visible default. Stagger is applied with an inline `animationDelay`.
+
+### Rules
+
+**The One Entrance Rule.** Each marketing/auth page choreographs one load sequence (hero or form + panel) in reading order; sections encountered while scrolling are static. This keeps pages fast and avoids fade-on-scroll fatigue.
+
+**The Feedback Rule.** Interactive elements use transitions for hover/active feedback (`translate-y-px` on press, shadow lift on cards, border shift on hover) and the 150–250 ms band. Motion never blocks interaction.
+
+**The Reduced Motion Rule.** The global `prefers-reduced-motion: reduce` block collapses every animation and transition to ~0 ms and clears delays, so content renders in its final state. Scroll-driven enhancements (`header-elevate`) are excluded from reduced motion entirely, and `scroll-behavior: smooth` only applies under `no-preference`.
+
+**The Progressive Enhancement Rule.** The header elevation runs on a CSS scroll timeline inside `@supports`; unsupported browsers keep the static header. No content is gated behind JavaScript-triggered reveals.
+
+## 7. Do's and Don'ts
 
 ### Do:
 
 - **Do** use cobalt blue (`#0064e0`) for primary actions only — its visual weight is meaningful because it's rare
-- **Do** use pill-shaped badges for status labels and tags — the pill shape signals "metadata, not action"
+- **Do** use 3px rectangular badges for status labels and tags — the sharp shape signals "metadata, not action"
 - **Do** use the sidebar icon + text pattern consistently — every nav item has both an icon and a text label
 - **Do** provide loading, empty, error, and success states for every major data-fetching surface
 - **Do** use progressive disclosure for complex workflows — the 5-step sync wizard is the model pattern
 - **Do** maintain dark mode token parity — every surface should work in both modes without layout changes
-- **Do** follow the 10px corner radius for interactive elements (buttons, inputs, cards), 14px for floating overlays, and pill shapes for badges
-- **Do** use Inter for all typography — one family, consistent weights, no mixing
+- **Do** keep every surface at 3px radius or less — buttons, inputs, cards, badges, dialogs, avatars. Only status dots, switches, radios and spinners are circular
+- **Do** use Schibsted Grotesk for display/UI and IBM Plex Mono for technical metadata — two families, each with a clear job
 - **Do** keep destructive actions behind confirmation dialogs — delete, remove, and revoke always require a second click
 
 ### Don't:
 
 - **Don't** introduce additional accent colors beyond cobalt blue — the restrained palette is intentional
 - **Don't** use decorative embellishments (gradient text, glassmorphism, heavy shadows, animated backgrounds) — this is a tool, not a showcase
-- **Don't** mix button shapes on the same surface — all dashboard buttons use 10px corners, all marketing CTAs use pills. Never both on the same page
+- **Don't** mix button shapes on the same surface — dashboard buttons and marketing CTAs both use 3px corners. Never use pills
 - **Don't** nest cards — use borders, background tints, or inline separators instead
 - **Don't** use modals as a first default — exhaust inline expansions, side panels, and progressive disclosure first
 - **Don't** ship with missing states — every list page needs loading, empty, error, and populated states
@@ -494,7 +514,7 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 - **Don't** use side-stripe borders (border-left/right >1px as colored accents) — use full borders, background tints, or nothing
 - **Don't** use animated page-load sequences — product users are in flow and shouldn't wait for choreography
 
-## 7. Implementation Notes
+## 8. Implementation Notes
 
 Non-obvious wiring that future changes must preserve:
 

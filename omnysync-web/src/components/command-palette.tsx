@@ -266,10 +266,12 @@ export function CommandPaletteTrigger() {
     <button
       type="button"
       onClick={openCommandPalette}
-      className="mt-3 flex items-center justify-center gap-1.5 w-full px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+      className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-[3px] px-3 py-1.5 text-xs text-sidebar-foreground/45 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
       aria-label="Open command palette"
     >
-      <kbd className="text-[10px] leading-none font-mono bg-muted px-1 py-0.5 rounded">⌘K</kbd>
+      <kbd className="rounded-[2px] bg-white/[0.06] px-1 py-0.5 font-mono text-[10px] leading-none text-sidebar-foreground/60">
+        ⌘K
+      </kbd>
       <span>Commands</span>
     </button>
   )

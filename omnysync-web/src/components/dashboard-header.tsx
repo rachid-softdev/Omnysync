@@ -113,10 +113,10 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
           alt={user.name || 'User'}
           width={28}
           height={28}
-          className="size-7 rounded-full object-cover"
+          className="size-7 rounded-[3px] object-cover"
         />
       ) : (
-        <span className="grid size-7 place-items-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+        <span className="grid size-7 place-items-center rounded-[3px] bg-primary/10 text-[11px] font-semibold text-primary">
           {(user.name || user.email || 'U').slice(0, 1).toUpperCase()}
         </span>
       )}

@@ -45,9 +45,9 @@ export default function TwoFactorVerifyPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+      <Card className="animate-enter-up w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[3px] bg-primary/10">
             <Shield className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-2xl">Two-Factor Authentication</CardTitle>
@@ -73,7 +73,11 @@ export default function TwoFactorVerifyPage() {
               />
             </div>
 
-            {error && <p className="text-sm text-destructive text-center">{error}</p>}
+            {error && (
+              <p key={error} className="animate-shake text-center text-sm text-destructive">
+                {error}
+              </p>
+            )}
 
             <Button type="submit" className="w-full" disabled={loading || code.length !== 6}>
               {loading ? 'Verifying...' : 'Verify'}

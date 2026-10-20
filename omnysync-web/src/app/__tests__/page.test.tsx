@@ -11,7 +11,18 @@ const { translations } = vi.hoisted(() => ({
     hero_cta_primary: 'Start Free',
     hero_cta_secondary: 'See how it works',
     hero_no_credit_card: 'No credit card required',
+    hero_index: '01 / Content routing',
+    hero_stat: '5 sources · 20 destinations',
+    routing_console: 'Routing console',
     hero_platforms: 'Works with your favorite platforms',
+    demo_eyebrow: 'Product tour',
+    demo_title: 'See Omnysync in action',
+    demo_subtitle: 'Watch a real sync.',
+    demo_play: 'Play demo',
+    demo_pause: 'Pause demo',
+    demo_silent: 'Silent demo',
+    demo_video_label: 'Product demo video',
+    demo_fallback: 'Download the video',
     features_title: 'Everything you need',
     features_subtitle: 'Powerful features for content creators.',
     feature_two_way_title: 'Two-Way Sync',
@@ -44,6 +55,7 @@ vi.mock('@/lib/i18n', () => {
     t: translate,
     // The page resolves its locale per request; the mock keeps the same strings.
     getT: async () => translate,
+    getLocaleFromHeaders: () => 'en',
   }
 })
 
@@ -90,6 +102,17 @@ describe('Home page', () => {
     for (const platform of ['WordPress', 'Ghost', 'Webflow', 'Shopify', 'Notion']) {
       expect(screen.getAllByText(platform).length).toBeGreaterThan(0)
     }
+  })
+
+  it('renders product demo section', async () => {
+    const { container } = render(await Home())
+    const demo = container.querySelector('#demo')
+
+    expect(demo).not.toBeNull()
+    expect(screen.getByText('Product tour')).toBeInTheDocument()
+    expect(screen.getByText('See Omnysync in action')).toBeInTheDocument()
+    expect(demo?.querySelector('video source')?.getAttribute('src')).toMatch(/\/demo(-fr)?\.mp4$/)
+    expect(screen.getByRole('button', { name: 'Play demo' })).toBeInTheDocument()
   })
 
   it('renders footer with links', async () => {

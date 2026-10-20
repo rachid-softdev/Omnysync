@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { BrandLockup } from '@/components/signal-mark'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 
 /** Routes that own their own chrome (app shell, auth split-screen). */
@@ -19,13 +20,10 @@ export function Header() {
   const isHome = pathname === '/'
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/70 bg-background/80 backdrop-blur-md">
+    <header className="site-header fixed top-0 left-0 right-0 z-50 border-b border-border/70 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-6">
-        <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Omnysync home">
-          <span className="grid size-6 place-items-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">
-            O
-          </span>
-          <span className="text-[15px] font-semibold tracking-tight">Omnysync</span>
+        <Link href="/" className="group flex shrink-0 items-center" aria-label="Omnysync home">
+          <BrandLockup className="transition-opacity duration-200 group-hover:opacity-80" />
         </Link>
 
         {isHome && (
@@ -56,14 +54,14 @@ export function Header() {
         <div className="ml-auto flex items-center gap-1.5">
           <Link
             href="/auth/signin"
-            className="rounded-md px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="hidden rounded-md px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:inline-flex"
           >
             {t('UI_SIGN_IN')}
           </Link>
           <ThemeToggle />
           <Link
             href="/auth/signin"
-            className="ml-1 inline-flex h-8 items-center justify-center rounded-full bg-primary px-4 text-[13px] font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary-hover"
+            className="ml-1 inline-flex h-8 items-center justify-center whitespace-nowrap rounded-[3px] bg-primary px-3 text-[13px] font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary-hover sm:px-4"
           >
             {t('UI_GET_STARTED')}
           </Link>
