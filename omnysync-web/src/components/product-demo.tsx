@@ -1,7 +1,8 @@
 'use client'
 
-import { Pause, Play } from 'lucide-react'
+import { ArrowUpRight, Pause, Play } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { cn } from '@/lib/utils'
 
 type ProductDemoProps = {
   src: string
@@ -13,6 +14,8 @@ type ProductDemoProps = {
   silentLabel: string
   fallbackHref: string
   fallbackLabel: string
+  /** Drop the outer frame when the video is embedded in a larger panel. */
+  flush?: boolean
 }
 
 export function ProductDemo({
@@ -25,6 +28,7 @@ export function ProductDemo({
   silentLabel,
   fallbackHref,
   fallbackLabel,
+  flush = false,
 }: ProductDemoProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const userPaused = useRef(false)
@@ -78,22 +82,32 @@ export function ProductDemo({
   }
 
   return (
-    <figure>
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xl">
-        {/* Window chrome, matching the hero mockup. */}
-        <div className="flex h-10 items-center gap-2 border-b border-border bg-muted/50 px-3.5">
-          <span className="size-2.5 rounded-full bg-border-strong" />
-          <span className="size-2.5 rounded-full bg-border-strong" />
-          <span className="size-2.5 rounded-full bg-border-strong" />
-          <div className="mx-auto flex h-6 w-64 items-center justify-center rounded-md border border-border bg-background text-[10px] text-muted-foreground">
-            {url}
-          </div>
+    <figure className={cn('w-full', flush && 'h-full')}>
+      <div
+        className={cn(
+          'flex flex-col overflow-hidden border border-border bg-card',
+          flush ? 'h-full border-0' : 'shadow-sm'
+        )}
+      >
+        {/* Recording chrome: the demo reads as captured product evidence. */}
+        <div className="flex h-9 items-center gap-3 border-b border-border bg-muted/40 px-3.5">
+          <span className="relative flex size-1.5" aria-hidden="true">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-destructive opacity-40" />
+            <span className="relative inline-flex size-1.5 rounded-full bg-destructive" />
+          </span>
+          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+            REC
+          </span>
+          <span className="mx-auto truncate font-mono text-[9px] text-muted-foreground">{url}</span>
+          <span className="hidden font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground sm:inline">
+            {silentLabel}
+          </span>
         </div>
 
-        <div className="relative aspect-video bg-muted">
+        <div className={cn('relative bg-muted', flush ? 'min-h-[280px] flex-1' : 'aspect-video')}>
           <video
             ref={videoRef}
-            className="size-full object-cover"
+            className="absolute inset-0 size-full object-cover"
             muted
             loop
             playsInline
@@ -108,12 +122,18 @@ export function ProductDemo({
         </div>
 
         <div className="flex h-10 items-center justify-between border-t border-border px-3.5">
-          <span className="text-xs text-muted-foreground">{silentLabel}</span>
+          <a
+            href={fallbackHref}
+            className="inline-flex items-center gap-1 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground underline-offset-4 transition-colors duration-150 hover:text-foreground hover:underline"
+          >
+            {fallbackLabel}
+            <ArrowUpRight className="size-2.5" aria-hidden="true" />
+          </a>
           <button
             type="button"
             onClick={togglePlayback}
             aria-label={playing ? pauseLabel : playLabel}
-            className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex size-7 items-center justify-center rounded-[2px] border border-border bg-background text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {playing ? (
               <Pause className="size-3.5" aria-hidden="true" />
@@ -122,15 +142,6 @@ export function ProductDemo({
             )}
           </button>
         </div>
-      </div>
-
-      <div className="mt-3 flex justify-center">
-        <a
-          href={fallbackHref}
-          className="text-xs text-muted-foreground underline-offset-4 transition-colors duration-150 hover:text-foreground hover:underline"
-        >
-          {fallbackLabel}
-        </a>
       </div>
 
       <figcaption className="sr-only">{label}</figcaption>

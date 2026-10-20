@@ -4,10 +4,20 @@ import PricingPage from '../../pricing/page'
 
 const { translations } = vi.hoisted(() => ({
   translations: {
-    pricing_title: 'Simple, transparent pricing',
-    pricing_subtitle: 'Choose the plan that works for you.',
+    pricing_title: 'Plans for every route.',
+    pricing_subtitle: 'Start free, then scale the same routing engine as volume grows.',
     pricing_note_1: 'No hidden seats.',
     pricing_note_2: 'Cancel anytime.',
+    pricing_matrix_label: 'Plan / capability',
+    pricing_matrix_eyebrow: 'Comparison',
+    pricing_matrix_title: 'The full route, side by side.',
+    pricing_matrix_subtitle: 'Same product surface. Different limits.',
+    pricing_matrix_meta: '3 plans · 10 capabilities',
+    value_included: 'Included',
+    compare_syncs: 'Syncs per month',
+    compare_platforms: 'Platforms',
+    compare_ai: 'AI enrichment',
+    compare_support: 'Support',
     plan_free_name: 'Free',
     plan_free_price: '$0',
     plan_free_period: 'month',
@@ -62,10 +72,10 @@ vi.mock('@/components/pro-checkout-button', () => ({
 describe('PricingPage', () => {
   it('renders pricing title', async () => {
     render(await PricingPage())
-    expect(screen.getByText('Simple, transparent pricing')).toBeInTheDocument()
+    expect(screen.getByText('Plans for every route.')).toBeInTheDocument()
   })
 
-  it('renders all plan cards', async () => {
+  it('renders all plans', async () => {
     render(await PricingPage())
     expect(screen.getByText('Free')).toBeInTheDocument()
     expect(screen.getByText('Pro')).toBeInTheDocument()
@@ -82,5 +92,14 @@ describe('PricingPage', () => {
   it('renders popular badge on Pro plan', async () => {
     render(await PricingPage())
     expect(screen.getByText('Most Popular')).toBeInTheDocument()
+  })
+
+  it('renders the comparison matrix', async () => {
+    render(await PricingPage())
+
+    expect(screen.getByText('The full route, side by side.')).toBeInTheDocument()
+    expect(screen.getByText('Syncs per month')).toBeInTheDocument()
+    expect(screen.getByText('Platforms')).toBeInTheDocument()
+    expect(screen.getAllByText('Included').length).toBeGreaterThan(0)
   })
 })

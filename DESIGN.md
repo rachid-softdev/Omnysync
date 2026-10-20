@@ -33,12 +33,12 @@ colors:
   chart-3: "#16a34a"
   chart-4: "#f59e0b"
   chart-5: "#7c3aed"
-  sidebar-bg: "#f7f8fa"
-  sidebar-foreground: "#16181d"
-  sidebar-primary: "#0064e0"
+  sidebar-bg: "#0b1118"
+  sidebar-foreground: "#e8eef6"
+  sidebar-primary: "#4da3ff"
   sidebar-primary-foreground: "#ffffff"
-  sidebar-accent: "#eef1f5"
-  sidebar-border: "#e6e9ee"
+  sidebar-accent: "#151e28"
+  sidebar-border: "#1f2a36"
   dark-background: "#0a0f14"
   dark-foreground: "#f2f4f7"
   dark-card: "#10161d"
@@ -54,9 +54,9 @@ colors:
   dark-ring: "#4da3ff"
   dark-primary: "#0091ff"
   dark-primary-hover: "#33a6ff"
-  dark-sidebar-bg: "#0d1319"
-  dark-sidebar-foreground: "#f2f4f7"
-  dark-sidebar-border: "#1c252e"
+  dark-sidebar-bg: "#070c11"
+  dark-sidebar-foreground: "#e8eef6"
+  dark-sidebar-border: "#1a2530"
   error: "#e02d47"
 typography:
   display:
@@ -105,13 +105,13 @@ typography:
     fontWeight: 500
     lineHeight: 1.43
   code:
-    fontFamily: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace
+    fontFamily: IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace
     fontSize: 14px
     fontWeight: 400
     lineHeight: 1.5
 rounded:
-  xs: 4px
-  sm: 6px
+  xs: 2px
+  sm: 3px
   md: 3px
   lg: 3px
   xl: 3px
@@ -278,20 +278,23 @@ components:
 
 ## 1. Overview
 
-**Creative North Star: "The Reliable Publisher"**
+**Creative North Star: "Signal / Routing"**
 
-Omnysync is a workman's tool for content operations — the interface should feel like a well-organized workshop, not a showroom. Every pixel earns its place by helping the user publish, sync, and manage content across platforms with confidence. The aesthetic is restrained, functional, and technically credible: clean white surfaces, a single cobalt accent for primary actions, generous whitespace around decision points, and the familiar comfort of shadcn/ui's proven component vocabulary.
+Omnysync is the routing layer between a draft and every place it needs to live. The interface should feel like an operations instrument: one source, visible paths, and a clear record of what reached where. Marketing pages borrow the language of the product — source and destination nodes, run manifests, capability ledgers, spec-sheet pricing — instead of generic SaaS card grids.
 
-This system explicitly rejects: noisy dashboards with competing visual priorities, decorative embellishments that don't serve the task, "SaaS-cream" warm-neutral backgrounds that say nothing, and the generic card-grid-as-default layout pattern. The interface should disappear into the task — users should think about their content, not about the tool.
+The aesthetic is editorial but technical: asymmetric layouts, ink panels, thin rules, mono metadata, and a single cobalt signal. White space is structural, not decorative. The interface should make the route legible before it tries to be beautiful.
+
+This system explicitly rejects: centered hero-plus-three-cards templates, repeated feature tiles, decorative gradients and glassmorphism, oversized rounded surfaces, faux testimonials, and invented customer logos.
 
 **Key Characteristics:**
 
-- Cobalt blue (`#0064e0`) as the single accent color, used sparingly for primary actions and interactive state indicators only
-- White canvas (`#ffffff`) as the default background, with a cool-gray surface layer (`#f5f6f8`) for sidebars and secondary panels
+- Cobalt blue (`#0064e0`) as the single accent color, used as a signal for primary actions, active routes and live state only
+- White canvas (`#ffffff`) as the default background, with ink panels (`#0b1118`) for route consoles, the app sidebar and the flow band
 - Schibsted Grotesk for display/UI, IBM Plex Mono for technical metadata - one display family plus a utility mono, no third face
 - Sharp geometry: max 3px radius on every surface, no pill-shaped buttons or badges; circles are reserved for functional status dots, switches, radios and spinners
-- Flat-by-default elevation with a refined two-layer shadow scale reserved for interactive feedback and floating surfaces
-- Dark mode as a first-class citizen with full token parity
+- Table-first and ledger-first composition: connector rails, run manifests, capability rows and pricing matrices before card grids
+- Flat-by-default elevation with tonal layering; shadows only for interactive feedback and floating surfaces
+- Dark mode as a control room with full token parity
 - Strong state coverage: loading, empty, error, and success states on every major surface
 
 ## 2. Colors
@@ -314,7 +317,7 @@ The palette follows a Restrained strategy: white canvas + single cobalt accent +
 ### Neutral
 
 - **White** (`#ffffff`): Page canvas and primary card surface.
-- **Soft Gray** (`#f5f6f8`): Sidebar background, muted surface, accent container, thumbnail backgrounds.
+- **Soft Gray** (`#f5f6f8`): Muted surface, accent container, thumbnails, and quiet section bands.
 - **Ink** (`#16181d`): Primary text color for headings and body copy.
 - **Muted Text** (`#5c6a79`): Secondary text for descriptions, metadata, and supporting copy.
 - **Border** (`#e6e9ee`): Card borders, dividers, and separators — intentionally quiet.
@@ -326,7 +329,7 @@ The palette follows a Restrained strategy: white canvas + single cobalt accent +
 - **Deep Ink** (`#0a0f14`): Dark canvas and page background.
 - **Dark Card** (`#10161d`): Card and elevated surface backgrounds.
 - **Dark Popover** (`#121920`): Menus, selects, and dialogs above cards.
-- **Dark Surface** (`#182029`): Muted surfaces, sidebar backgrounds, secondary containers.
+- **Ink Sidebar** (`#070c11` in dark, `#0b1118` in light): Navigation rail, route consoles and the flow band. This is an ink surface in both themes, not a neutral inversion.
 - **Dark Muted Text** (`#9aa6b4`): Secondary text on dark surfaces.
 - **Dark Border** (`#1f2933`): Card borders and dividers on dark backgrounds.
 - **Dark Input** (`#39434f`): Form-control strokes on dark backgrounds.
@@ -347,24 +350,24 @@ The palette follows a Restrained strategy: white canvas + single cobalt accent +
 
 ### Hierarchy
 
-| Token      | Size | Weight | Line Height | Use                                           |
-| ---------- | ---- | ------ | ----------- | --------------------------------------------- |
-| Display    | 48px | 700    | 1.1         | Landing page hero headlines, section openers  |
-| Heading 1  | 36px | 700    | 1.2         | Page titles, section headers                  |
-| Heading 2  | 30px | 700    | 1.25        | Dashboard page titles, modal headers          |
-| Heading 3  | 24px | 600    | 1.3         | Card titles, subsection headers               |
-| Heading 4  | 20px | 600    | 1.35        | Feature tile titles, form section labels      |
-| Body       | 16px | 400    | 1.5         | Primary reading text, 65–75ch max line length |
-| Body Small | 14px | 400    | 1.43        | Secondary text, descriptions, metadata        |
-| Caption    | 12px | 400    | 1.33        | Timestamps, badge labels, footer fine print   |
-| Label      | 14px | 500    | 1.43        | Button labels, form labels, tab text          |
-| Code       | 14px | 400    | 1.5         | Log consoles, error messages, code displays   |
+| Token      | Size    | Weight | Line Height | Use                                           |
+| ---------- | ------- | ------ | ----------- | --------------------------------------------- |
+| Display    | 48–84px | 600    | 0.96        | Landing hero and closing statement (clamp)    |
+| Heading 1  | 36px    | 700    | 1.2         | Page titles, section headers                  |
+| Heading 2  | 30px    | 700    | 1.25        | Dashboard page titles, modal headers          |
+| Heading 3  | 24px    | 600    | 1.3         | Card titles, subsection headers               |
+| Heading 4  | 20px    | 600    | 1.35        | Feature tile titles, form section labels      |
+| Body       | 16px    | 400    | 1.5         | Primary reading text, 65–75ch max line length |
+| Body Small | 14px    | 400    | 1.43        | Secondary text, descriptions, metadata        |
+| Caption    | 12px    | 400    | 1.33        | Timestamps, badge labels, footer fine print   |
+| Label      | 14px    | 500    | 1.43        | Button labels, form labels, tab text          |
+| Code       | 14px    | 400    | 1.5         | Log consoles, error messages, code displays   |
 
 ### Named Rules
 
 **The Two-Family Rule.** Schibsted Grotesk carries every display and UI role; IBM Plex Mono is a utility face for technical metadata only. No editorial serif, no third family, no display/body pairing inside the UI.
 
-**The Fixed Scale Rule.** Product UI uses fixed px/rem sizes, not fluid clamp(). Users view at consistent DPI; fluid type adds complexity without benefit in a dashboard context.
+**The Fixed Scale Rule.** Product UI uses fixed px/rem sizes, not fluid clamp(). Marketing display type may use clamp() for the hero and closing statement; every other marketing label stays on the fixed scale.
 
 ## 4. Elevation
 
@@ -386,7 +389,7 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 
 **The Grounded Rule.** Every floating surface gets exactly one shadow from the scale. Never stack a card shadow inside a dialog shadow, and never add a hover shadow to something that is already floating.
 
-**The Tonal Layer Rule.** When hierarchy is needed between flat surfaces, use background color contrast (white canvas → soft gray sidebar → deep ink dark mode) rather than shadows. The sidebar, cards, and content area are distinguished by surface color, not z-index.
+**The Tonal Layer Rule.** When hierarchy is needed between flat surfaces, use background color contrast (white canvas → soft gray bands → ink consoles/sidebar) rather than shadows. The sidebar, route consoles, cards, and content area are distinguished by surface color, not z-index.
 
 ## 5. Components
 
@@ -459,6 +462,17 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 - **Footer:** Action buttons right-aligned (primary + cancel), stacked reverse on mobile
 - **Dismiss:** Escape key, click-outside, and explicit cancel/close affordance
 
+### Marketing Surfaces
+
+- **Hero:** asymmetric two-column composition. Left: mono route index, display headline, single primary CTA. Right: `RouteMap` in an ink console with registration marks; a thin blueprint grid is clipped to the hero and never used as a page background.
+- **Connector rail:** a horizontal, scrollable ledger of supported sources and destinations, each labelled `SOURCE` or `DESTINATION` in mono. Replaces logo strips and trust-bar clichés.
+- **Run record / demo:** a split panel. Left: the real product recording with a REC chrome and square play control. Right: `RunManifest`, an ink ledger of source → parse → enrich → publish → destinations, with latency and error metadata.
+- **Capability ledger:** a sticky editorial heading beside full-width rows. Each row carries a mono index, icon, title, description and one small product diagram (two-way route, sync bars, schedule timeline). No repeated card grid.
+- **Flow band:** full-bleed ink section with a blueprint wash, three numbered steps, mono source/document/destination metadata and no card containers.
+- **Closing CTA:** oversized two-line statement (`Draft once.` / `Publish everywhere.`) with the action rail aligned to the baseline on the right. No centered card or ambient glow.
+- **Pricing matrix:** one spec-sheet table. The Pro column is the signal column: ink surface, cobalt top rule, included badge and primary CTA. The capability column is sticky on horizontal scroll. Rows use explicit limits instead of decorative checkmarks.
+- **Footer:** four-column index (brand, product, account, system) with mono column labels and a legal rail. No newsletter form or invented social proof.
+
 ### Sync Console
 
 - **Background:** Muted surface (`{colors.muted}`), monospace font, 14px
@@ -498,6 +512,8 @@ Motion is functional first: it confirms state, directs attention, and covers tra
 - **Do** maintain dark mode token parity — every surface should work in both modes without layout changes
 - **Do** keep every surface at 3px radius or less — buttons, inputs, cards, badges, dialogs, avatars. Only status dots, switches, radios and spinners are circular
 - **Do** use Schibsted Grotesk for display/UI and IBM Plex Mono for technical metadata — two families, each with a clear job
+- **Do** compose marketing with asymmetric grids, ledger rows and ink consoles; let tables and mono metadata carry the product story
+- **Do** make the recommended plan the signal column in pricing, with explicit limits rather than decorative checkmarks
 - **Do** keep destructive actions behind confirmation dialogs — delete, remove, and revoke always require a second click
 
 ### Don't:
@@ -510,8 +526,10 @@ Motion is functional first: it confirms state, directs attention, and covers tra
 - **Don't** ship with missing states — every list page needs loading, empty, error, and populated states
 - **Don't** hardcode French labels in English UI (or vice versa) — use the i18n translation system for all user-facing text
 - **Don't** add keyboard shortcuts without documenting them — power features should be discoverable
-- **Don't** use numbered section markers (01/02/03) as generic scaffolding — numbers are reserved for actual sequential processes (like the sync wizard steps)
+- **Don't** use numbered markers as generic decoration — numbers must index a real route, sequence or ledger row, never arbitrary feature cards
 - **Don't** use side-stripe borders (border-left/right >1px as colored accents) — use full borders, background tints, or nothing
+- **Don't** repeat the same card three times and call it a features section; use a ledger, a matrix or one dominant surface
+- **Don't** center every marketing section — centered layouts flatten the route and read as a template
 - **Don't** use animated page-load sequences — product users are in flow and shouldn't wait for choreography
 
 ## 8. Implementation Notes
