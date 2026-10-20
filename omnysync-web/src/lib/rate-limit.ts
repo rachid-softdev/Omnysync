@@ -14,18 +14,50 @@ const rateLimitMap = new Map<string, RateLimitRecord>()
 // Timer reference for cleanup interval
 let cleanupInterval: ReturnType<typeof setInterval> | null = null
 
+// IPv4 pattern: quatre octets séparés par des points (0-255)
+const IPV4_PATTERN = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/
+
+/**
+ * Valide une adresse IPv6, y compris les formes compressées (`::1`,
+ * `2001:db8::1`) et les suffixes IPv4 embarqués (`::ffff:192.0.2.1`).
+ *
+ * L'ancienne regex à huit groupes fixes rejetait toutes les formes
+ * compressées : la boucle locale `::1` et les clients IPv6 réels tombaient
+ * alors sur la clé partagée "unknown", ce qui faussait le rate limiting.
+ */
+function isValidIpv6(ip: string): boolean {
+  // L'identifiant de zone (ex. fe80::1%eth0) ne fait pas partie de l'adresse
+  const zoneIndex = ip.indexOf('%')
+  let address = zoneIndex === -1 ? ip : ip.slice(0, zoneIndex)
+  if (!address.includes(':')) return false
+
+  // Un suffixe IPv4 (ex. ::ffff:192.0.2.1) compte pour deux groupes
+  const ipv4Suffix = address.match(/(\d{1,3}(?:\.\d{1,3}){3})$/)
+  const ipv4Tail = ipv4Suffix?.[1]
+  if (ipv4Tail) {
+    if (!IPV4_PATTERN.test(ipv4Tail)) return false
+    address = address.slice(0, -ipv4Tail.length) + '0:0'
+  }
+
+  const halves = address.split('::')
+  if (halves.length > 2) return false
+
+  const groups = [
+    ...(halves[0] ? halves[0].split(':') : []),
+    ...(halves[1] ? halves[1].split(':') : []),
+  ]
+  if (!groups.every((group) => /^[0-9a-fA-F]{1,4}$/.test(group))) return false
+
+  // "::" remplace au moins un groupe nul
+  return halves.length === 2 ? groups.length <= 7 : groups.length === 8
+}
+
 /**
  * Valide une adresse IPv4 ou IPv6.
  * Retourne true si l'adresse est syntaxiquement valide.
  */
 export function isValidIp(ip: string): boolean {
-  // IPv4 pattern: quatre octets séparés par des points (0-255)
-  const ipv4Pattern = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/
-
-  // IPv6 pattern: huit groupes hexadécimaux (simplifié)
-  const ipv6Pattern = /^(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}$/
-
-  return ipv4Pattern.test(ip) || ipv6Pattern.test(ip)
+  return IPV4_PATTERN.test(ip) || isValidIpv6(ip)
 }
 
 /**

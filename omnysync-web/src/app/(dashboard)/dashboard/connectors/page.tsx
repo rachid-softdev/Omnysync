@@ -140,7 +140,10 @@ export default function ConnectorsPage() {
         description={t('UI_MANAGE_CONNECTORS')}
         actions={
           <>
-            <HelpTooltip text="Connectors link your content platforms (WordPress, Ghost, Webflow, etc.) to Omnysync. Add source connectors to pull content from, and destination connectors to push content to." />
+            <HelpTooltip
+              side="left"
+              text="Connectors link your content platforms (WordPress, Ghost, Webflow, etc.) to Omnysync. Add source connectors to pull content from, and destination connectors to push content to."
+            />
             <Button variant="outline" size="sm" onClick={() => fetchConnectors()}>
               <RefreshCw />
               {t('UI_REFRESH')}

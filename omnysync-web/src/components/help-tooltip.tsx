@@ -19,7 +19,7 @@ export function HelpTooltip({ text, side = 'right' }: HelpTooltipProps) {
       <span className="sr-only">Help: {text}</span>
       <span
         role="tooltip"
-        className={`pointer-events-none absolute ${sideClasses[side]} w-56 rounded-md border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-50`}
+        className={`pointer-events-none absolute ${sideClasses[side]} hidden sm:block w-56 rounded-md border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-50`}
       >
         {text}
       </span>

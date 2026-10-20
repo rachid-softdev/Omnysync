@@ -170,7 +170,7 @@ export default function TeamSettingsPage() {
 
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold">{t('TEAM_TITLE') || 'Team'}</h1>
           <p className="text-muted-foreground mt-1">
@@ -251,7 +251,7 @@ export default function TeamSettingsPage() {
               {members.map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between p-4 rounded-lg border"
+                  className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg border"
                 >
                   <div className="flex items-center gap-4">
                     <Avatar>

@@ -40,7 +40,10 @@ export default async function SyncPage() {
         description={t('UI_SYNC_HISTORY')}
         actions={
           <>
-            <HelpTooltip text="Sync sends your content from source platforms to your connected destinations. Each sync creates a log entry you can review here." />
+            <HelpTooltip
+              side="left"
+              text="Sync sends your content from source platforms to your connected destinations. Each sync creates a log entry you can review here."
+            />
             <Button asChild>
               <Link href="/dashboard/sync/new">
                 {t('UI_NEW_SYNC')}

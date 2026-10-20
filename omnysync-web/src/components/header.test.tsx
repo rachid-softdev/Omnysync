@@ -50,11 +50,14 @@ describe('Header', () => {
     expect(container.innerHTML).toBe('')
   })
 
-  it('does not render inside the app shell (dashboard owns its chrome)', () => {
-    mockUsePathname.mockReturnValue('/dashboard')
-    const { container } = render(<Header />)
-    expect(container.innerHTML).toBe('')
-  })
+  it.each(['/dashboard', '/dashboard/settings', '/admin', '/auth/2fa-verify'])(
+    'returns null on app page %s',
+    (pathname) => {
+      mockUsePathname.mockReturnValue(pathname)
+      const { container } = render(<Header />)
+      expect(container.innerHTML).toBe('')
+    }
+  )
 
   it('renders ThemeToggle component', () => {
     render(<Header />)

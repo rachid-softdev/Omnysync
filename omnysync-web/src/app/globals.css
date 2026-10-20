@@ -225,3 +225,11 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Sonner 2.0.7 applies `width: 100%` together with the mobile left/right
+   offsets, which pushes error toasts past the viewport edge on small screens. */
+@media (max-width: 600px) {
+  [data-sonner-toaster] {
+    width: calc(100% - var(--mobile-offset-left) - var(--mobile-offset-right)) !important;
+  }
+}

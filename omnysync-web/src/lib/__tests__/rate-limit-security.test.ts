@@ -84,9 +84,25 @@ describe('isValidIp', () => {
     expect(isValidIp('2001:0db8:85a3:0000:0000:8a2e:0370:7334')).toBe(true)
   })
 
-  it('rejette une IPv6 tronquée', async () => {
+  it('valide une IPv6 compressée', async () => {
     const { isValidIp } = await getModule()
-    expect(isValidIp('2001:db8::1')).toBe(false) // forme abrégée non supportée ici
+    expect(isValidIp('2001:db8::1')).toBe(true)
+    expect(isValidIp('::1')).toBe(true)
+    expect(isValidIp('::')).toBe(true)
+  })
+
+  it('valide une IPv6 avec suffixe IPv4 et identifiant de zone', async () => {
+    const { isValidIp } = await getModule()
+    expect(isValidIp('::ffff:192.0.2.1')).toBe(true)
+    expect(isValidIp('fe80::1%eth0')).toBe(true)
+  })
+
+  it('rejette une IPv6 malformée', async () => {
+    const { isValidIp } = await getModule()
+    expect(isValidIp('1::2::3')).toBe(false)
+    expect(isValidIp(':::')).toBe(false)
+    expect(isValidIp('12345::1')).toBe(false)
+    expect(isValidIp('2001:db8::1:2:3:4:5:6:7:8')).toBe(false)
   })
 })
 
