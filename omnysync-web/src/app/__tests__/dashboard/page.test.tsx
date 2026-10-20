@@ -26,6 +26,13 @@ vi.mock('@/lib/i18n', async (importOriginal) => {
     UI_NO_ACTIVITY: 'No activity yet',
     UI_GETTING_STARTED: 'Getting Started',
     UI_FIRST_STEPS: 'First steps',
+    UI_CONSOLE: 'Operations console',
+    UI_CONSOLE_META: 'Live · all systems nominal',
+    UI_SYNC_RATE_META: 'Synced / total documents',
+    UI_RUN_LOG: 'Run log',
+    UI_RUN_LOG_META: 'Latest events across your routes',
+    UI_ROUTE_SETUP: 'Route setup',
+    UI_ROUTE_SETUP_META: 'Three steps to the first sync',
     UI_DOCS_MARKETING: 'Create a document',
     UI_DESTINATIONS_SETUP: 'Set up destinations',
     UI_FIRST_SYNC: 'Run your first sync',
@@ -79,11 +86,11 @@ describe('DashboardPage', () => {
     render(Component)
     expect(screen.getByText('10')).toBeInTheDocument() // doc count
     const threes = screen.getAllByText('3')
-    expect(threes.length).toBeGreaterThanOrEqual(1) // connector count + step numbers
+    expect(threes.length).toBeGreaterThanOrEqual(1) // connector count
     expect(threes[0]).toBeInTheDocument()
-    expect(screen.getByText('5')).toBeInTheDocument() // synced
+    expect(screen.getAllByText(/5 \/ 10/).length).toBeGreaterThan(0) // synced / total
     const ones = screen.getAllByText('1')
-    expect(ones.length).toBeGreaterThanOrEqual(1) // errors count + step numbers
+    expect(ones.length).toBeGreaterThanOrEqual(1) // errors count
   })
 
   it('renders new sync button', async () => {
@@ -92,17 +99,18 @@ describe('DashboardPage', () => {
     expect(screen.getByText('New Sync')).toBeInTheDocument()
   })
 
-  it('renders recent activity section', async () => {
+  it('renders the run log', async () => {
     const Component = await DashboardPage()
     render(Component)
-    expect(screen.getByText('Recent Activity')).toBeInTheDocument()
+    expect(screen.getByText('Run log')).toBeInTheDocument()
     expect(screen.getByText('Document synced')).toBeInTheDocument()
     expect(screen.getByText('Sync failed')).toBeInTheDocument()
   })
 
-  it('renders getting started section', async () => {
+  it('renders route setup progress', async () => {
     const Component = await DashboardPage()
     render(Component)
-    expect(screen.getByText('Getting Started')).toBeInTheDocument()
+    expect(screen.getByText('Route setup')).toBeInTheDocument()
+    expect(screen.getByText('3/3')).toBeInTheDocument()
   })
 })

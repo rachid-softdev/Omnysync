@@ -473,12 +473,16 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 - **Pricing matrix:** one spec-sheet table. The Pro column is the signal column: ink surface, cobalt top rule, included badge and primary CTA. The capability column is sticky on horizontal scroll. Rows use explicit limits instead of decorative checkmarks.
 - **Footer:** four-column index (brand, product, account, system) with mono column labels and a legal rail. No newsletter form or invented social proof.
 
-### Sync Console
+### App Surfaces
 
-- **Background:** Muted surface (`{colors.muted}`), monospace font, 14px
-- **Log format:** `[timestamp] ✓/✗/ℹ action: message` with color-coding (green = success, red = error, blue = info, yellow = warning)
-- **Max height:** 400px with overflow-y scroll for long sync sessions
-- **Empty state:** "Waiting for activity..." in muted text
+- **Shell:** ink sidebar (`{colors.sidebar}`), mono breadcrumb rail, solid top bar. Navigation is a list of routes, not a stack of cards. Active state is a cobalt left indicator plus a quiet surface shift.
+- **Page header:** mono eyebrow (`SURFACE / NN`), display title, one-line description, action rail, closed by a full-width border. Pages without an eyebrow still share the same rhythm.
+- **Dashboard:** the operations console. A status line (`LIVE · ALL SYSTEMS NOMINAL`), a sync-rate panel on an ink blueprint grid, three metric rows in a shared ledger, a run-log table and a route-setup column. No four-card KPI grid.
+- **Sync rate:** one dominant percentage with a thin cobalt progress rule and mono bounds. Metadata sits in the panel, not in a floating badge.
+- **Run log:** timestamped rows with a square status marker, event message, document ID and right-aligned time. Header labels are mono and uppercase.
+- **Document register:** full-width table with mono column labels, machine IDs under titles, source → destination in the pipeline column and square status markers. A footer rail carries the row count.
+- **Empty states:** left-aligned, one route diagram and one primary next action. Never a centered illustration card.
+- **Onboarding:** numbered route steps in a border-led list with completion markers. Progress is expressed as `n/3`, not a decorative ring.
 
 ## 6. Motion
 

@@ -294,5 +294,20 @@
   "UI_OF": "of",
   "UI_PAGE": "Page",
   "UI_PREVIOUS_PAGE": "Previous page",
-  "UI_NEXT_PAGE": "Next page"
+  "UI_NEXT_PAGE": "Next page",
+  "UI_CONSOLE": "Operations console",
+  "UI_CONSOLE_META": "Live · all systems nominal",
+  "UI_SYNC_RATE_META": "Synced / total documents",
+  "UI_RUN_LOG": "Run log",
+  "UI_RUN_LOG_META": "Latest events across your routes",
+  "UI_ROUTE_SETUP": "Route setup",
+  "UI_ROUTE_SETUP_META": "Three steps to the first sync",
+  "UI_DOCS_INDEX": "Document register",
+  "UI_STATUS_SYNCED": "Synced",
+  "UI_STATUS_SYNCING": "Syncing",
+  "UI_STATUS_FAILED": "Failed",
+  "UI_STATUS_NOT_SYNCED": "Not synced",
+  "UI_PIPELINE": "Pipeline",
+  "UI_UPDATED": "Updated",
+  "UI_STATUS": "Status"
 }

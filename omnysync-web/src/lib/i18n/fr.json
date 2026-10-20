@@ -294,5 +294,20 @@
   "UI_OF": "sur",
   "UI_PAGE": "Page",
   "UI_PREVIOUS_PAGE": "Page précédente",
-  "UI_NEXT_PAGE": "Page suivante"
+  "UI_NEXT_PAGE": "Page suivante",
+  "UI_CONSOLE": "Console d’opérations",
+  "UI_CONSOLE_META": "En direct · tous les systèmes opérationnels",
+  "UI_SYNC_RATE_META": "Synchronisés / total des documents",
+  "UI_RUN_LOG": "Journal d’exécution",
+  "UI_RUN_LOG_META": "Derniers événements sur vos routes",
+  "UI_ROUTE_SETUP": "Mise en route",
+  "UI_ROUTE_SETUP_META": "Trois étapes avant la première synchro",
+  "UI_DOCS_INDEX": "Registre des documents",
+  "UI_STATUS_SYNCED": "Synchronisé",
+  "UI_STATUS_SYNCING": "Synchronisation",
+  "UI_STATUS_FAILED": "Échec",
+  "UI_STATUS_NOT_SYNCED": "Non synchronisé",
+  "UI_PIPELINE": "Pipeline",
+  "UI_UPDATED": "Mis à jour",
+  "UI_STATUS": "Statut"
 }

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { ChevronRight, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { openCommandPalette } from '@/components/command-palette'
 import { useTranslations } from '@/lib/i18n/useTranslations'
@@ -60,21 +60,20 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
     <header className="fixed left-0 right-0 top-0 z-20 hidden h-14 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur-md md:left-64 md:flex md:px-6">
       {/* Breadcrumbs */}
       <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
-        <ol className="flex items-center gap-1.5 text-sm">
+        <ol className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em]">
           {crumbs.map((crumb, index) => {
             const isLast = index === crumbs.length - 1
             const label = crumb.labelKey ? t(crumb.labelKey) : crumb.segment
 
             return (
-              <li key={crumb.href} className="flex min-w-0 items-center gap-1.5">
+              <li key={crumb.href} className="flex min-w-0 items-center gap-2">
                 {index > 0 && (
-                  <ChevronRight
-                    className="size-3.5 shrink-0 text-muted-foreground/50"
-                    aria-hidden="true"
-                  />
+                  <span className="shrink-0 text-border-strong" aria-hidden="true">
+                    /
+                  </span>
                 )}
                 {isLast ? (
-                  <span className="truncate font-medium text-foreground" aria-current="page">
+                  <span className="truncate text-foreground" aria-current="page">
                     {label}
                   </span>
                 ) : (
@@ -95,12 +94,12 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
       <button
         type="button"
         onClick={openCommandPalette}
-        className="hidden h-8 items-center gap-2 rounded-md border border-border bg-background px-2.5 text-xs text-muted-foreground shadow-2xs transition-colors hover:bg-accent hover:text-foreground sm:flex"
+        className="hidden h-8 items-center gap-2 rounded-[2px] border border-border bg-card px-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:flex"
         aria-label={t('UI_SEARCH_COMMANDS')}
       >
         <Search className="size-3.5" />
         <span>{t('UI_SEARCH')}</span>
-        <kbd className="ml-1 rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px] leading-none">
+        <kbd className="ml-1 rounded-[2px] border border-border bg-muted px-1 py-0.5 font-mono text-[9px] leading-none">
           ⌘K
         </kbd>
       </button>
