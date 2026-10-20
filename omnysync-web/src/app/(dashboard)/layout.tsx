@@ -34,25 +34,54 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const user = session.user
   const trans = t
 
+  // Les icônes sont rendues ici (Server Component) : passer la référence d'un
+  // composant à un Client Component n'est pas sérialisable et fait échouer le
+  // rendu de toutes les pages du dashboard.
   const navItems = [
-    { href: '/dashboard', icon: LayoutDashboard, label: trans('UI_DASHBOARD') },
-    { href: '/dashboard/documents', icon: FileText, label: trans('UI_DOCS_LABEL') },
-    { href: '/dashboard/connectors', icon: Plug, label: trans('UI_CONNECTORS') },
-    { href: '/dashboard/sync', icon: ArrowRightLeft, label: trans('UI_SYNC') },
+    {
+      href: '/dashboard',
+      icon: <LayoutDashboard className="w-5 h-5" />,
+      label: trans('UI_DASHBOARD'),
+    },
+    {
+      href: '/dashboard/documents',
+      icon: <FileText className="w-5 h-5" />,
+      label: trans('UI_DOCS_LABEL'),
+    },
+    {
+      href: '/dashboard/connectors',
+      icon: <Plug className="w-5 h-5" />,
+      label: trans('UI_CONNECTORS'),
+    },
+    {
+      href: '/dashboard/sync',
+      icon: <ArrowRightLeft className="w-5 h-5" />,
+      label: trans('UI_SYNC'),
+    },
     {
       href: '/dashboard/analytics',
-      icon: BarChart3,
+      icon: <BarChart3 className="w-5 h-5" />,
       label: trans('UI_ANALYTICS'),
     },
-    { href: '/dashboard/webhooks', icon: Webhook, label: trans('UI_WEBHOOKS') },
+    {
+      href: '/dashboard/webhooks',
+      icon: <Webhook className="w-5 h-5" />,
+      label: trans('UI_WEBHOOKS'),
+    },
     {
       href: '/dashboard/approvals',
-      icon: FileCheck,
+      icon: <FileCheck className="w-5 h-5" />,
       label: trans('UI_APPROVALS'),
     },
-    { href: '/dashboard/usage', icon: Zap, label: trans('UI_USAGE') },
-    { href: '/dashboard/settings', icon: Settings, label: trans('UI_SETTINGS') },
-    ...(user.role === 'ADMIN' ? [{ href: '/admin', icon: Shield, label: 'Admin' }] : []),
+    { href: '/dashboard/usage', icon: <Zap className="w-5 h-5" />, label: trans('UI_USAGE') },
+    {
+      href: '/dashboard/settings',
+      icon: <Settings className="w-5 h-5" />,
+      label: trans('UI_SETTINGS'),
+    },
+    ...(user.role === 'ADMIN'
+      ? [{ href: '/admin', icon: <Shield className="w-5 h-5" />, label: 'Admin' }]
+      : []),
   ]
 
   return (
@@ -94,15 +123,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-foreground"
-            size="sm"
-            onClick={() => logoutAction()}
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            {trans('UI_LOGOUT')}
-          </Button>
+          <form action={logoutAction}>
+            <Button
+              type="submit"
+              variant="ghost"
+              className="w-full justify-start text-muted-foreground hover:text-foreground"
+              size="sm"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              {trans('UI_LOGOUT')}
+            </Button>
+          </form>
           <CommandPaletteTrigger />
         </div>
       </aside>
@@ -110,7 +141,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <MobileNav navItems={navItems} user={user} />
       <CommandPalette />
       <KeyboardShortcuts />
-      <main id="main-content" className="flex-1 bg-background md:pt-0 pt-14">
+      <main id="main-content" className="flex-1 min-w-0 bg-background md:pt-0 pt-14">
         {children}
       </main>
     </div>

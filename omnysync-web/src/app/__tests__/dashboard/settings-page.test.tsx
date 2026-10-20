@@ -1,59 +1,7 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import SettingsPage from '../../(dashboard)/dashboard/settings/page'
-
-// Mock Radix UI Tabs to support click-based tab switching in jsdom
-vi.mock('@/components/ui/tabs', () => {
-  const React = require('react')
-  const { createContext, useContext, useState } = React
-
-  const TabsContext = createContext<{
-    value: string
-    onChange: (v: string) => void
-  }>({ value: 'profile', onChange: () => {} })
-
-  return {
-    Tabs: ({ value, defaultValue, children, className, ...props }: any) => {
-      const [current, onChange] = useState(value ?? defaultValue ?? 'profile')
-      return (
-        <TabsContext.Provider value={{ value: current, onChange }}>
-          <div className={className} data-orientation="horizontal" {...props}>
-            {children}
-          </div>
-        </TabsContext.Provider>
-      )
-    },
-    TabsList: ({ children, className, ...props }: any) => (
-      <div role="tablist" className={className} aria-orientation="horizontal" {...props}>
-        {children}
-      </div>
-    ),
-    TabsTrigger: ({ value: tabValue, children, className, ...props }: any) => {
-      const { value, onChange } = useContext(TabsContext)
-      return (
-        <button
-          role="tab"
-          className={className}
-          data-state={value === tabValue ? 'active' : 'inactive'}
-          onClick={() => onChange(tabValue)}
-          {...props}
-        >
-          {children}
-        </button>
-      )
-    },
-    TabsContent: ({ value: tabValue, children, className, ...props }: any) => {
-      const { value } = useContext(TabsContext)
-      if (value !== tabValue) return null
-      return (
-        <div className={className} {...props}>
-          {children}
-        </div>
-      )
-    },
-  }
-})
 
 vi.mock('@/lib/i18n/useTranslations', () => ({
   useTranslations: vi.fn(() => ({
@@ -96,6 +44,16 @@ describe('SettingsPage', () => {
     expect(screen.getByLabelText('Email')).toBeInTheDocument()
   })
 
+  it('switches to the security tab when clicked', async () => {
+    const user = userEvent.setup()
+    render(<SettingsPage />)
+
+    await user.click(screen.getByRole('tab', { name: /security/i }))
+
+    expect(screen.getByText('Two-factor authentication')).toBeInTheDocument()
+    expect(screen.queryByText('Profile Information')).not.toBeInTheDocument()
+  })
+
   it('renders Danger Zone section', () => {
     render(<SettingsPage />)
     expect(screen.getByText('Danger Zone')).toBeInTheDocument()
@@ -118,12 +76,12 @@ describe('SettingsPage', () => {
     })
   })
 
-  it('renders notification switches', () => {
+  it('renders notification switches', async () => {
+    const user = userEvent.setup()
     render(<SettingsPage />)
 
     // Switch to notifications tab
-    const notifTab = screen.getByText('Notifications')
-    fireEvent.click(notifTab)
+    await user.click(screen.getByRole('tab', { name: /notifications/i }))
 
     expect(screen.getByText('Sync successful')).toBeInTheDocument()
     expect(screen.getByText('Sync failure')).toBeInTheDocument()
@@ -131,11 +89,11 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Team invites')).toBeInTheDocument()
   })
 
-  it('renders billing tab with plan info', () => {
+  it('renders billing tab with plan info', async () => {
+    const user = userEvent.setup()
     render(<SettingsPage />)
 
-    const billingTab = screen.getByText('Billing')
-    fireEvent.click(billingTab)
+    await user.click(screen.getByRole('tab', { name: /billing/i }))
 
     expect(screen.getByText('Current plan')).toBeInTheDocument()
     expect(screen.getByText('Pro Plan')).toBeInTheDocument()

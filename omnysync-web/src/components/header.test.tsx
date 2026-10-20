@@ -49,13 +49,14 @@ describe('Header', () => {
     expect(container.innerHTML).toBe('')
   })
 
-  it('does not show nav links on dashboard page', () => {
-    mockUsePathname.mockReturnValue('/dashboard')
-    render(<Header />)
-    expect(screen.getByText('Omnysync')).toBeInTheDocument()
-    expect(screen.queryByText('Features')).not.toBeInTheDocument()
-    expect(screen.queryByText('How it works')).not.toBeInTheDocument()
-  })
+  it.each(['/dashboard', '/dashboard/settings', '/admin', '/auth/2fa-verify'])(
+    'returns null on app page %s',
+    (pathname) => {
+      mockUsePathname.mockReturnValue(pathname)
+      const { container } = render(<Header />)
+      expect(container.innerHTML).toBe('')
+    }
+  )
 
   it('renders ThemeToggle component', () => {
     render(<Header />)

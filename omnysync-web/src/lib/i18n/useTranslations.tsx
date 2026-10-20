@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import enJson from './en.json'
+
+const en: Record<string, string> = enJson
 
 const TranslationCache: Record<string, Record<string, string>> = {}
 
@@ -41,7 +44,9 @@ export function useTranslations(locale?: string) {
 
   const t = useCallback(
     (key: string): string => {
-      return translations[key] || key
+      // Until the locale finishes loading, fall back to English rather than
+      // rendering raw keys (UI_SETTINGS, TEAM_TITLE, ...) in the UI.
+      return translations[key] || en[key] || key
     },
     [translations]
   )

@@ -5,9 +5,9 @@ import { MobileNav } from './mobile-nav'
 import { LayoutDashboard, FileText, Settings } from 'lucide-react'
 
 const mockNavItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/dashboard/documents', icon: FileText, label: 'Documents' },
-  { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
+  { href: '/dashboard', icon: <LayoutDashboard />, label: 'Dashboard' },
+  { href: '/dashboard/documents', icon: <FileText />, label: 'Documents' },
+  { href: '/dashboard/settings', icon: <Settings />, label: 'Settings' },
 ]
 
 const mockUser = {

@@ -9,8 +9,17 @@ export function Header() {
   const { t } = useTranslations()
   const pathname = usePathname()
 
-  // Auth pages have their own layout
-  if (pathname === '/auth/signin') return null
+  // Auth and app pages have their own chrome: the marketing header is fixed
+  // and would overlap the dashboard/admin navigation.
+  if (
+    pathname.startsWith('/auth/') ||
+    pathname === '/dashboard' ||
+    pathname.startsWith('/dashboard/') ||
+    pathname === '/admin' ||
+    pathname.startsWith('/admin/')
+  ) {
+    return null
+  }
 
   const isHome = pathname === '/'
 

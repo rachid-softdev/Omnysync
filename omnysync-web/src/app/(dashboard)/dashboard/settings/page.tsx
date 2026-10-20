@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 import {
@@ -79,8 +79,8 @@ export default function SettingsPage() {
         <p className="text-muted-foreground mt-1">{t('UI_PREFERENCES')}</p>
       </div>
 
-      <Tabs value="profile" className="w-full">
-        <TabsList className="mb-6">
+      <Tabs defaultValue="profile" className="w-full">
+        <TabsList className="mb-6 w-full justify-start overflow-x-auto">
           <TabsTrigger value="profile">
             <User className="w-4 h-4 mr-2" />
             Profile
@@ -114,8 +114,9 @@ export default function SettingsPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-6 mb-6">
                   <Avatar className="w-20 h-20">
-                    <AvatarImage src="/placeholder-avatar.jpg" />
-                    <AvatarFallback className="text-2xl">U</AvatarFallback>
+                    <AvatarFallback className="text-2xl">
+                      {name ? name.charAt(0).toUpperCase() : 'U'}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
                     <Button variant="outline" size="sm">
@@ -125,7 +126,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full name</Label>
                     <Input

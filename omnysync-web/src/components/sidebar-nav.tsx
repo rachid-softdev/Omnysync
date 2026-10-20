@@ -5,7 +5,9 @@ import { usePathname } from 'next/navigation'
 
 interface NavItem {
   href: string
-  icon: React.ComponentType<{ className?: string }>
+  // Élément déjà rendu côté serveur : une référence de composant ne peut pas
+  // traverser la frontière Server → Client Component.
+  icon: React.ReactNode
   label: string
 }
 
@@ -31,7 +33,7 @@ export function SidebarNav({ items }: SidebarNavProps) {
                     : 'hover:bg-accent text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <item.icon className="w-5 h-5" />
+                {item.icon}
                 {item.label}
               </Link>
             </li>

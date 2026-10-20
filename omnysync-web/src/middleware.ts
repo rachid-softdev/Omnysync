@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { checkRateLimitRedis } from '@/lib/rate-limit-redis'
+import { resolveRequestOrigin, toOrigin } from '@/lib/request-origin'
 
 // 🔒 Liste des origines autorisées (CSRF protection)
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim()) ?? []
@@ -37,15 +38,6 @@ function createErrorResponse(status: number, error: string): NextResponse {
 
 // Exact origin comparison: a prefix match would accept
 // `https://app.omnysync.com.evil.com` as a trusted origin.
-function toOrigin(value: string | null): string | null {
-  if (!value) return null
-  try {
-    return new URL(value).origin
-  } catch {
-    return null
-  }
-}
-
 function isTrustedOrigin(value: string | null, requestOrigin: string): boolean {
   const origin = toOrigin(value)
   if (!origin) return false
@@ -74,7 +66,7 @@ function checkCsrfOrigin(request: NextRequest): NextResponse | null {
 
   const origin = request.headers.get('origin')
   const referer = request.headers.get('referer')
-  const requestOrigin = request.nextUrl.origin
+  const requestOrigin = resolveRequestOrigin(request)
 
   // Si Origin est présent, il doit correspondre exactement.
   if (origin) {

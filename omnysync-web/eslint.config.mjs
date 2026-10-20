@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'next-env.d.ts',
+    // Generated Prisma client (gitignored, not part of the source tree)
+    'prisma/generated/**',
     // Node.js scripts (CommonJS) — tsconfig.json already excludes these
     'scripts/**',
   ]),

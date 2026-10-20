@@ -23,8 +23,14 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
+            // Next.js renders inline <script> tags (RSC flight data, theme bootstrap).
+            // A script-src without 'unsafe-inline' blocks them, which breaks hydration
+            // entirely: no client interactivity and Suspense boundaries never resolve.
+            // 'unsafe-eval' is only required by the development toolchain.
             value:
-              "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:;",
+              process.env.NODE_ENV === 'production'
+                ? "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:;"
+                : "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:;",
           },
           {
             key: 'X-Frame-Options',
