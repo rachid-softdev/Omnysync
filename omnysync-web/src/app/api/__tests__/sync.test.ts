@@ -20,6 +20,8 @@ vi.mock('@/lib/prisma', () => ({
       findMany: vi.fn(),
       findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
     connector: {
       findUnique: vi.fn(),
@@ -38,6 +40,9 @@ vi.mock('@/lib/auth/org', () => ({
 vi.mock('@/lib/auth/subscription', () => ({
   checkAndIncrementQuota: vi.fn(),
   checkDocumentLimit: vi.fn(),
+  checkPlanFeature: vi.fn(),
+  getPlanLimits: vi.fn(),
+  getUserPlan: vi.fn(),
 }))
 
 vi.mock('@/lib/validations', () => ({
@@ -64,6 +69,12 @@ vi.mock('@omnysync/core/services/queue', () => ({
 
 vi.mock('@omnysync/core/services/scheduler', () => ({
   handleScheduledSyncRun: vi.fn(),
+  scheduleSync: vi.fn(),
+  disableScheduledSync: vi.fn(),
+}))
+
+vi.mock('@omnysync/core/services/sync', () => ({
+  performSync: vi.fn(),
 }))
 
 // ── Imports ──────────────────────────────────────────────────────────────────
@@ -71,11 +82,22 @@ vi.mock('@omnysync/core/services/scheduler', () => ({
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
-import { checkAndIncrementQuota, checkDocumentLimit } from '@/lib/auth/subscription'
+import {
+  checkAndIncrementQuota,
+  checkDocumentLimit,
+  checkPlanFeature,
+  getPlanLimits,
+  getUserPlan,
+} from '@/lib/auth/subscription'
 import { createSyncSchema } from '@/lib/validations'
 import { apiError } from '@/lib/api-error'
 import { enqueueSyncJob, enqueueChangeDetection } from '@omnysync/core/services/queue'
-import { handleScheduledSyncRun } from '@omnysync/core/services/scheduler'
+import {
+  handleScheduledSyncRun,
+  scheduleSync,
+  disableScheduledSync,
+} from '@omnysync/core/services/scheduler'
+import { performSync } from '@omnysync/core/services/sync'
 
 // ============================================================================
 // GET /api/sync
@@ -352,10 +374,7 @@ describe('POST /api/sync', () => {
     const response = await POST(makeRequest(validBody))
 
     expect(response.status).toBe(400)
-    expect(apiError).toHaveBeenCalledWith(
-      'WORDPRESS cannot be used as a source connector',
-      400
-    )
+    expect(apiError).toHaveBeenCalledWith('WORDPRESS cannot be used as a source connector', 400)
   })
 
   it('should reject a connector that cannot be used as a destination', async () => {
@@ -530,6 +549,27 @@ describe('POST /api/sync/[id]/run', () => {
     expect(data.success).toBe(true)
     expect(handleScheduledSyncRun).toHaveBeenCalledWith('sync-1')
   })
+
+  // ── Erreur d'exécution capturée → 500 ────────────────────────────────────
+
+  it('should return 500 when sync execution throws', async () => {
+    vi.stubEnv('CRON_SECRET', 'my-cron-secret')
+    vi.stubEnv('NODE_ENV', 'production')
+
+    vi.mocked(handleScheduledSyncRun).mockRejectedValue(new Error('boom'))
+
+    const { POST } = await import('@/app/api/sync/[id]/run/route')
+    const req = new NextRequest('http://localhost:3000/api/sync/sync-1/run', {
+      method: 'POST',
+      headers: { authorization: 'Bearer my-cron-secret' },
+    })
+    const response = await POST(req, { params: Promise.resolve({ id: 'sync-1' }) })
+    const data = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(data.error).toMatch(/failed/i)
+    expect(handleScheduledSyncRun).toHaveBeenCalledWith('sync-1')
+  })
 })
 
 // ============================================================================
@@ -614,6 +654,454 @@ describe('POST /api/sync/[id]/check', () => {
       method: 'POST',
     })
     const response = await POST(req, { params: Promise.resolve({ id: 'doc-other' }) })
+
+    expect(response.status).toBe(404)
+  })
+})
+
+// ============================================================================
+// GET /api/sync — empty list
+// ============================================================================
+
+describe('GET /api/sync — empty list', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1', email: 't@o.com' } } as any)
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+  })
+
+  it('should return an empty array when the organization has no syncs', async () => {
+    vi.mocked(prisma.document.findMany).mockResolvedValue([])
+
+    const { GET } = await import('@/app/api/sync/route')
+    const response = await GET()
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data).toEqual([])
+  })
+})
+
+// ============================================================================
+// POST /api/sync — default title
+// ============================================================================
+
+describe('POST /api/sync — default title', () => {
+  const makeRequest = (body: any) =>
+    new NextRequest('http://localhost:3000/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any)
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+    vi.mocked(createSyncSchema.safeParse).mockReturnValue({
+      success: true,
+      data: { sourceConnectorId: 'c1', destConnectorId: 'c2', sourceDocumentId: 'd1' },
+    } as any)
+    vi.mocked(checkAndIncrementQuota).mockResolvedValue({ allowed: true } as any)
+    vi.mocked(checkDocumentLimit).mockResolvedValue({
+      allowed: true,
+      current: 0,
+      limit: 50,
+    } as any)
+    vi.mocked(prisma.connector.findFirst).mockImplementation(
+      async ({ where }: any) =>
+        ({
+          id: where.id,
+          type: where.id === 'c1' ? 'NOTION' : 'WORDPRESS',
+        }) as any
+    )
+    vi.mocked(prisma.document.create).mockResolvedValue({
+      id: 'doc-new',
+      title: 'New Document',
+    } as any)
+    vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any)
+    vi.mocked(enqueueSyncJob).mockResolvedValue(undefined)
+  })
+
+  it('should default the title to "New Document" when title is omitted', async () => {
+    const { POST } = await import('@/app/api/sync/route')
+    const response = await POST(
+      makeRequest({ sourceConnectorId: 'c1', destConnectorId: 'c2', sourceDocumentId: 'd1' })
+    )
+
+    expect(response.status).toBe(200)
+    expect(prisma.document.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ title: 'New Document' }),
+      })
+    )
+  })
+})
+
+// ============================================================================
+// POST /api/sync/[id]/run — secret set but header missing
+// ============================================================================
+
+describe('POST /api/sync/[id]/run — secret set but header missing', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('should reject the request in development when a secret is set but the header is missing', async () => {
+    vi.stubEnv('CRON_SECRET', 'my-cron-secret')
+    vi.stubEnv('NODE_ENV', 'development')
+
+    const { POST } = await import('@/app/api/sync/[id]/run/route')
+    const req = new NextRequest('http://localhost:3000/api/sync/sync-1/run', {
+      method: 'POST',
+    })
+    const response = await POST(req, { params: Promise.resolve({ id: 'sync-1' }) })
+
+    expect(response.status).toBe(401)
+    expect(handleScheduledSyncRun).not.toHaveBeenCalled()
+  })
+})
+
+// ============================================================================
+// GET /api/sync/[id]
+// ============================================================================
+
+describe('GET /api/sync/[id]', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any)
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+  })
+
+  const buildDoc = (overrides: any = {}) => ({
+    id: 'doc-1',
+    title: 'My Doc',
+    syncStatus: 'FAILED',
+    userId: 'user-1',
+    organizationId: 'org-1',
+    content: 'x'.repeat(600),
+    autoSyncEnabled: true,
+    syncFrequency: 'DAILY',
+    nextSyncAt: new Date('2026-07-20'),
+    lastSyncedAt: new Date('2026-07-19'),
+    lastSyncError: 'boom',
+    sourceConnector: { id: 's1', type: 'WORDPRESS' },
+    destConnector: { id: 'd1', type: 'GHOST' },
+    syncLogs: [{ status: 'ERROR', message: 'boom', createdAt: new Date('2026-07-18') }],
+    ...overrides,
+  })
+
+  it('should return the sync with logs, scheduled info, and truncated content', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(buildDoc() as any)
+
+    const { GET } = await import('@/app/api/sync/[id]/route')
+    const response = await GET(new NextRequest('http://localhost:3000/api/sync/doc-1'), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.id).toBe('doc-1')
+    expect(data.syncStatus).toBe('FAILED')
+    expect(data.autoSyncEnabled).toBe(true)
+    expect(data.syncFrequency).toBe('DAILY')
+    expect(data.lastSyncError).toBe('boom')
+    expect(typeof data.content).toBe('string')
+    expect(data.content.length).toBe(500)
+    expect(Array.isArray(data.logs)).toBe(true)
+    expect(data.logs[0].status).toBe('ERROR')
+
+    expect(prisma.document.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'doc-1' },
+        include: expect.objectContaining({
+          syncLogs: expect.objectContaining({
+            orderBy: { createdAt: 'desc' },
+            take: 5,
+          }),
+        }),
+      })
+    )
+  })
+
+  it('should return 404 when the document does not exist', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/sync/[id]/route')
+    const response = await GET(new NextRequest('http://localhost:3000/api/sync/doc-x'), {
+      params: Promise.resolve({ id: 'doc-x' }),
+    })
+
+    expect(response.status).toBe(404)
+  })
+})
+
+// ============================================================================
+// DELETE /api/sync/[id]
+// ============================================================================
+
+describe('DELETE /api/sync/[id]', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any)
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+  })
+
+  it('should disable scheduled sync and delete the document', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({
+      id: 'doc-1',
+      userId: 'user-1',
+      organizationId: 'org-1',
+    } as any)
+    vi.mocked(prisma.document.delete).mockResolvedValue({} as any)
+    vi.mocked(disableScheduledSync).mockResolvedValue(undefined)
+
+    const { DELETE } = await import('@/app/api/sync/[id]/route')
+    const response = await DELETE(new NextRequest('http://localhost:3000/api/sync/doc-1'), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.success).toBe(true)
+    expect(disableScheduledSync).toHaveBeenCalledWith('doc-1')
+    expect(prisma.document.delete).toHaveBeenCalledWith({ where: { id: 'doc-1' } })
+  })
+
+  it('should return 404 when the document does not exist', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(null)
+
+    const { DELETE } = await import('@/app/api/sync/[id]/route')
+    const response = await DELETE(new NextRequest('http://localhost:3000/api/sync/doc-x'), {
+      params: Promise.resolve({ id: 'doc-x' }),
+    })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 404 when the document belongs to another user', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({
+      id: 'doc-2',
+      userId: 'user-other',
+    } as any)
+
+    const { DELETE } = await import('@/app/api/sync/[id]/route')
+    const response = await DELETE(new NextRequest('http://localhost:3000/api/sync/doc-2'), {
+      params: Promise.resolve({ id: 'doc-2' }),
+    })
+
+    expect(response.status).toBe(404)
+    expect(prisma.document.delete).not.toHaveBeenCalled()
+  })
+})
+
+// ============================================================================
+// PATCH /api/sync/[id]
+// ============================================================================
+
+describe('PATCH /api/sync/[id]', () => {
+  const makeRequest = (body: any) =>
+    new NextRequest('http://localhost:3000/api/sync/doc-1', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any)
+    vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+    vi.mocked(checkAndIncrementQuota).mockResolvedValue({ allowed: true } as any)
+    vi.mocked(checkPlanFeature).mockResolvedValue({ allowed: true } as any)
+    vi.mocked(getUserPlan).mockResolvedValue('pro' as any)
+    vi.mocked(getPlanLimits).mockReturnValue({ aiFeatures: false } as any)
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({
+      id: 'doc-1',
+      userId: 'user-1',
+      organizationId: 'org-1',
+      syncStatus: 'FAILED',
+      sourceConnectorId: 's1',
+      destConnectorId: 'd1',
+    } as any)
+    vi.mocked(prisma.document.update).mockResolvedValue({} as any)
+    vi.mocked(performSync).mockResolvedValue({ success: true, message: 'done' } as any)
+    vi.mocked(scheduleSync).mockResolvedValue({
+      success: true,
+      nextSyncAt: new Date('2026-08-01').toISOString(),
+    } as any)
+    vi.mocked(disableScheduledSync).mockResolvedValue(undefined)
+  })
+
+  it('should return 401 when unauthenticated', async () => {
+    vi.mocked(auth).mockResolvedValue(null)
+
+    const { PATCH } = await import('@/app/api/sync/[id]/route')
+    const response = await PATCH(makeRequest({ action: 'retry' }), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+
+    expect(response.status).toBe(401)
+  })
+
+  it('should return 404 when the document does not exist', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(null)
+
+    const { PATCH } = await import('@/app/api/sync/[id]/route')
+    const response = await PATCH(makeRequest({ action: 'retry' }), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should reject retry when the sync status is not FAILED', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({
+      id: 'doc-1',
+      userId: 'user-1',
+      organizationId: 'org-1',
+      syncStatus: 'SYNCED',
+      sourceConnectorId: 's1',
+      destConnectorId: 'd1',
+    } as any)
+
+    const { PATCH } = await import('@/app/api/sync/[id]/route')
+    const response = await PATCH(makeRequest({ action: 'retry' }), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+
+    expect(response.status).toBe(400)
+    expect(performSync).not.toHaveBeenCalled()
+  })
+
+  it('should reset a FAILED sync and re-execute it on retry', async () => {
+    const { PATCH } = await import('@/app/api/sync/[id]/route')
+    const response = await PATCH(makeRequest({ action: 'retry' }), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.success).toBe(true)
+    expect(prisma.document.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'doc-1' },
+        data: { syncStatus: 'NOT_SYNCED', lastSyncError: null },
+      })
+    )
+    expect(performSync).toHaveBeenCalledWith(
+      'doc-1',
+      's1',
+      'd1',
+      'user-1',
+      expect.objectContaining({ ai: false })
+    )
+  })
+
+  it('should return 403 QUOTA_EXCEEDED when retry is over quota', async () => {
+    vi.mocked(checkAndIncrementQuota).mockResolvedValue({
+      allowed: false,
+      upgradeUrl: '/pricing',
+    } as any)
+
+    const { PATCH } = await import('@/app/api/sync/[id]/route')
+    const response = await PATCH(makeRequest({ action: 'retry' }), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.code).toBe('QUOTA_EXCEEDED')
+    expect(performSync).not.toHaveBeenCalled()
+  })
+
+  it('should schedule a sync with a valid DAILY frequency', async () => {
+    const { PATCH } = await import('@/app/api/sync/[id]/route')
+    const response = await PATCH(makeRequest({ action: 'schedule', frequency: 'DAILY' }), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.autoSyncEnabled).toBe(true)
+    expect(data.syncFrequency).toBe('DAILY')
+    expect(scheduleSync).toHaveBeenCalledWith('doc-1', 'DAILY')
+  })
+
+  it('should return 400 for an invalid schedule frequency', async () => {
+    const { PATCH } = await import('@/app/api/sync/[id]/route')
+    const response = await PATCH(makeRequest({ action: 'schedule', frequency: 'HOURLY' }), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+
+    expect(response.status).toBe(400)
+    expect(scheduleSync).not.toHaveBeenCalled()
+  })
+
+  it('should disable the schedule on disable_schedule', async () => {
+    const { PATCH } = await import('@/app/api/sync/[id]/route')
+    const response = await PATCH(makeRequest({ action: 'disable_schedule' }), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.autoSyncEnabled).toBe(false)
+    expect(data.syncFrequency).toBe('MANUAL')
+    expect(disableScheduledSync).toHaveBeenCalledWith('doc-1')
+  })
+
+  it('should return 400 for an unknown action', async () => {
+    const { PATCH } = await import('@/app/api/sync/[id]/route')
+    const response = await PATCH(makeRequest({ action: 'frobnicate' }), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
+
+    expect(response.status).toBe(400)
+  })
+})
+
+// ============================================================================
+// GET /api/sync/[id] — edge cases (path traversal, non-UUID, cross-user)
+// TAE5 #29 — these ids must resolve to 404, never a crash / 500.
+// ============================================================================
+
+describe('GET /api/sync/[id] — edge cases', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any)
+  })
+
+  it('should return 404 (not crash) for a path-traversal id', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/sync/[id]/route')
+    const response = await GET(new NextRequest('http://localhost:3000/api/sync/x'), {
+      params: Promise.resolve({ id: '../../etc/passwd' }),
+    })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 404 (not crash) for a non-UUID id', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/sync/[id]/route')
+    const response = await GET(new NextRequest('http://localhost:3000/api/sync/x'), {
+      params: Promise.resolve({ id: 'not-a-uuid!!' }),
+    })
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return 404 when the document belongs to another user', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({
+      userId: 'user-other',
+    } as any)
+
+    const { GET } = await import('@/app/api/sync/[id]/route')
+    const response = await GET(new NextRequest('http://localhost:3000/api/sync/x'), {
+      params: Promise.resolve({ id: 'doc-1' }),
+    })
 
     expect(response.status).toBe(404)
   })

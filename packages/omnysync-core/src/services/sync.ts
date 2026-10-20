@@ -366,7 +366,7 @@ export async function performSync(
         userId: document.userId,
         action: "fetch_content_completed",
         status: "INFO",
-        message: `Contenu récupéré (${content.length} caractères)`,
+        message: `Contenu récupéré (${content?.length ?? 0} caractères)`,
       },
     });
 
@@ -384,7 +384,7 @@ export async function performSync(
 
     const { parseMarkdownToHtml, parseGoogleDocToHtml } =
       await import("./html-parser");
-    let htmlContent = content;
+    let htmlContent = content ?? "";
 
     if (document.sourceConnector?.type === "NOTION") {
       htmlContent = parseMarkdownToHtml(content);
@@ -657,7 +657,8 @@ async function publishToDestination(
     // A Webflow item always belongs to a collection. When none is configured
     // (the connector dialog does not ask for one yet), resolve the site's
     // first collection instead of calling the API with `undefined`.
-    const collectionId = config.collectionId || (await client.getCollections()).collections[0]?.id;
+    const collectionId =
+      config.collectionId || (await client.getCollections()).collections[0]?.id;
 
     if (!collectionId) {
       throw new Error("No Webflow collection found for this site");
@@ -773,7 +774,8 @@ async function publishToDestination(
 
   // Medium integration
   if (document.destConnector.type === "MEDIUM") {
-    const { createMediumPost, createMediumPublicationPost } = await import("./medium");
+    const { createMediumPost, createMediumPublicationPost } =
+      await import("./medium");
     // Medium connectors store their config as a JSON string
     // ({ userId, username, publicationId? }).
     const mediumConfig: Record<string, string> =
@@ -796,7 +798,11 @@ async function publishToDestination(
       };
 
       const result = mediumConfig.publicationId
-        ? await createMediumPublicationPost(rawCredentials, mediumConfig.publicationId, post)
+        ? await createMediumPublicationPost(
+            rawCredentials,
+            mediumConfig.publicationId,
+            post,
+          )
         : await createMediumPost(rawCredentials, mediumConfig.userId, post);
 
       await prisma.document.update({

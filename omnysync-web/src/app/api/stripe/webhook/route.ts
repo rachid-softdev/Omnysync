@@ -24,11 +24,6 @@ import { prisma } from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { getFeatureGateService } from '@/lib/entitlements/FeatureGateService'
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2026-05-27.dahlia',
-}) as unknown as StripeInstance
-
 // Local type workaround for missing stripe .d.ts files
 type StripeInstance = {
   subscriptions: { retrieve: (id: string) => Promise<Record<string, any>> }
@@ -48,22 +43,38 @@ type StripeCheckoutSession = Record<string, any>
 type StripeSubscription = Record<string, any>
 type StripeInvoice = Record<string, any>
 
+// Lazily initialize Stripe so this route module can be imported at build time
+// (Next.js evaluates route modules during `next build`) without a valid key.
+let stripeInstance: StripeInstance | null = null
+function getStripe(): StripeInstance {
+  if (!stripeInstance) {
+    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+      apiVersion: '2026-05-27.dahlia',
+    }) as unknown as StripeInstance
+  }
+  return stripeInstance
+}
+
 // Price ID to plan key mapping
 // In production, these should be in env vars or DB.
 // Only configured price IDs are registered: using `env || ''` as a key would
 // create an '' entry, making every event with an empty/unknown price resolve to
-// the last plan declared here (previously: 'business').
-const PRICE_ID_TO_PLAN: Record<string, string> = {}
+// the last plan declared here (previously: 'business'). Resolve at call time so
+// the mapping reflects the current environment (and is testable).
+function getPriceIdToPlan(): Record<string, string> {
+  const priceIdToPlan: Record<string, string> = {}
+  const entries: Array<[priceId: string | undefined, planKey: string]> = [
+    [process.env.STRIPE_PRICE_PRO_MONTHLY, 'pro'],
+    [process.env.STRIPE_PRICE_PRO_YEARLY, 'pro'],
+    [process.env.STRIPE_PRICE_BUSINESS_MONTHLY, 'business'],
+    [process.env.STRIPE_PRICE_BUSINESS_YEARLY, 'business'],
+  ]
 
-const PRICE_ENV_ENTRIES: Array<[priceId: string | undefined, planKey: string]> = [
-  [process.env.STRIPE_PRICE_PRO_MONTHLY, 'pro'],
-  [process.env.STRIPE_PRICE_PRO_YEARLY, 'pro'],
-  [process.env.STRIPE_PRICE_BUSINESS_MONTHLY, 'business'],
-  [process.env.STRIPE_PRICE_BUSINESS_YEARLY, 'business'],
-]
+  for (const [priceId, planKey] of entries) {
+    if (priceId) priceIdToPlan[priceId] = planKey
+  }
 
-for (const [priceId, planKey] of PRICE_ENV_ENTRIES) {
-  if (priceId) PRICE_ID_TO_PLAN[priceId] = planKey
+  return priceIdToPlan
 }
 
 // Default plan when no match found
@@ -87,7 +98,7 @@ type SupportedEventType =
 // ============================================================================
 
 function getPlanFromPriceId(priceId: string): string {
-  return PRICE_ID_TO_PLAN[priceId] || DEFAULT_PLAN
+  return getPriceIdToPlan()[priceId] || DEFAULT_PLAN
 }
 
 function getStatusFromStripeStatus(status: string): SubscriptionStatus {
@@ -149,7 +160,7 @@ async function handleCheckoutSessionCompleted(event: StripeEvent): Promise<void>
   }
 
   // Get full subscription details from Stripe
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+  const subscription = await getStripe().subscriptions.retrieve(subscriptionId)
 
   const priceId = subscription.items.data[0]?.price?.id || ''
   const planKey = getPlanFromPriceId(priceId)
@@ -351,7 +362,7 @@ async function handleInvoicePaymentSucceeded(event: StripeEvent): Promise<void> 
   }
 
   // Get updated subscription from Stripe
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+  const subscription = await getStripe().subscriptions.retrieve(subscriptionId)
 
   await prisma.subscription.update({
     where: { organizationId: orgId },
@@ -439,7 +450,11 @@ export async function POST(req: NextRequest) {
   let event: StripeEvent
 
   try {
-    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET || '')
+    event = getStripe().webhooks.constructEvent(
+      body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET || ''
+    )
   } catch (err) {
     console.error('[StripeWebhook] Invalid signature:', err)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })

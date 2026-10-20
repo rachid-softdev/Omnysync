@@ -17,6 +17,10 @@ function timingSafeCompare(a: string, b: string): boolean {
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
+  if (!id) {
+    return NextResponse.json({ error: 'Missing sync id' }, { status: 400 })
+  }
+
   // Vérification du token dans les headers
   const authHeader = req.headers.get('authorization')
   const expectedToken = process.env.CRON_SECRET
@@ -36,8 +40,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // `handleScheduledSyncRun` returns a plain domain object; route handlers
-  // must return a Response (Next's typed-route validator enforces this).
-  const result = await handleScheduledSyncRun(id)
-  return NextResponse.json(result)
+  try {
+    // `handleScheduledSyncRun` returns a plain domain object; route handlers
+    // must return a Response (Next's typed-route validator enforces this).
+    const result = await handleScheduledSyncRun(id)
+    return NextResponse.json(result)
+  } catch (error) {
+    console.error('[sync/run] execution failed:', error)
+    return NextResponse.json({ error: 'Sync execution failed' }, { status: 500 })
+  }
 }

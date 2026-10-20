@@ -42,7 +42,16 @@ export async function GET() {
     },
   })
 
-  return NextResponse.json(connectors, {
+  // Defense in depth: never expose stored credentials to clients, even if the
+  // projection above changes. (The `select` already omits them in production;
+  // this also covers callers/mocks that return full rows.)
+  const safeConnectors = connectors.map((connector) => {
+    const safe: Record<string, unknown> = { ...connector }
+    delete safe.credentials
+    return safe
+  })
+
+  return NextResponse.json(safeConnectors, {
     headers: {
       'Cache-Control': 'private, max-age=30, stale-while-revalidate=60',
     },

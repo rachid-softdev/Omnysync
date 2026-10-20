@@ -210,6 +210,8 @@ export function parseGoogleDocToHtml(
 }
 
 export function parseMarkdownToHtml(markdown: string): string {
+  if (!markdown) return "";
+
   let html = markdown;
 
   html = html.replace(/^### (.*)$/gm, "<h3>$1</h3>");
@@ -246,6 +248,8 @@ export function parseMarkdownToHtml(markdown: string): string {
 }
 
 export function cleanHtml(html: string): string {
+  if (!html) return "";
+
   let cleaned = html;
 
   cleaned = cleaned.replace(/\s+/g, " ");
