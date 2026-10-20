@@ -5,10 +5,7 @@ import { hasPermission } from '@/lib/auth/permissions'
 import { checkPlanFeature } from '@/lib/auth/subscription'
 import { respondToApprovalById } from '@/lib/approvals/respond'
 
-export async function POST(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
 
   if (!session?.user?.id) {

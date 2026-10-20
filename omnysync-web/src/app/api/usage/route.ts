@@ -2,11 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
-import {
-  getCurrentMonth,
-  getPlanLimits,
-  getUserPlan,
-} from '@/lib/auth/subscription'
+import { getCurrentMonth, getPlanLimits, getUserPlan } from '@/lib/auth/subscription'
 
 const AI_ACTIONS = ['ai_seo_completed', 'ai_image_generated', 'ai_interlinking_found'] as const
 const HISTORY_ACTIONS = ['sync_started', ...AI_ACTIONS] as const
@@ -44,28 +40,35 @@ export async function GET() {
   const now = new Date()
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
 
-  const [subscription, quotaUsage, documentsUsed, connectorsUsed, teamUsed, recentLogs, recentDocuments] =
-    await Promise.all([
-      prisma.subscription.findUnique({ where: { organizationId: orgId } }),
-      prisma.quotaUsage.findUnique({
-        where: { userId_month: { userId, month: getCurrentMonth() } },
-      }),
-      prisma.document.count({ where: { organizationId: orgId } }),
-      prisma.connector.count({ where: { organizationId: orgId } }),
-      prisma.userOrganization.count({ where: { organizationId: orgId } }),
-      prisma.syncLog.findMany({
-        where: {
-          organizationId: orgId,
-          action: { in: [...HISTORY_ACTIONS] },
-          createdAt: { gte: sixMonthsAgo },
-        },
-        select: { action: true, createdAt: true },
-      }),
-      prisma.document.findMany({
-        where: { organizationId: orgId, createdAt: { gte: sixMonthsAgo } },
-        select: { createdAt: true },
-      }),
-    ])
+  const [
+    subscription,
+    quotaUsage,
+    documentsUsed,
+    connectorsUsed,
+    teamUsed,
+    recentLogs,
+    recentDocuments,
+  ] = await Promise.all([
+    prisma.subscription.findUnique({ where: { organizationId: orgId } }),
+    prisma.quotaUsage.findUnique({
+      where: { userId_month: { userId, month: getCurrentMonth() } },
+    }),
+    prisma.document.count({ where: { organizationId: orgId } }),
+    prisma.connector.count({ where: { organizationId: orgId } }),
+    prisma.userOrganization.count({ where: { organizationId: orgId } }),
+    prisma.syncLog.findMany({
+      where: {
+        organizationId: orgId,
+        action: { in: [...HISTORY_ACTIONS] },
+        createdAt: { gte: sixMonthsAgo },
+      },
+      select: { action: true, createdAt: true },
+    }),
+    prisma.document.findMany({
+      where: { organizationId: orgId, createdAt: { gte: sixMonthsAgo } },
+      select: { createdAt: true },
+    }),
+  ])
 
   // Billing cycle: the subscription period when known, otherwise the current
   // calendar month (matches how the monthly sync quota is tracked).
@@ -76,11 +79,7 @@ export async function GET() {
 
   const aiCount = (action: string) =>
     recentLogs.filter((log) => {
-      return (
-        log.action === action &&
-        log.createdAt >= billingStart &&
-        log.createdAt < billingEnd
-      )
+      return log.action === action && log.createdAt >= billingStart && log.createdAt < billingEnd
     }).length
 
   const history: Array<{ month: string; syncs: number; documents: number; aiCalls: number }> = []
@@ -96,8 +95,7 @@ export async function GET() {
         .length,
       documents: recentDocuments.filter((doc) => inRange(doc.createdAt)).length,
       aiCalls: recentLogs.filter(
-        (log) =>
-          (AI_ACTIONS as readonly string[]).includes(log.action) && inRange(log.createdAt)
+        (log) => (AI_ACTIONS as readonly string[]).includes(log.action) && inRange(log.createdAt)
       ).length,
     })
   }

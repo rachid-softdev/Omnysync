@@ -66,9 +66,7 @@ vi.mock('@omnysync/core/services/password-reset', () => ({
 }))
 
 const mockTotpValidate = vi.hoisted(() => vi.fn())
-const mockPendingSecrets = vi.hoisted(
-  () => new Map<string, { secret: string; expiresAt: Date }>()
-)
+const mockPendingSecrets = vi.hoisted(() => new Map<string, { secret: string; expiresAt: Date }>())
 
 vi.mock('@omnysync/core/services/two-factor', () => ({
   generateTotpSecret: vi.fn().mockReturnValue({

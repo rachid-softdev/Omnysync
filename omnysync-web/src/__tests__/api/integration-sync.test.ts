@@ -210,12 +210,9 @@ describe('Integration Sync API', () => {
       expect(response.status).toBe(200)
       expect(data.id).toBe('doc-1')
       expect(data.status).toBe('DRAFT')
-      expect(enqueueSyncJob).toHaveBeenCalledWith(
-        'doc-1',
-        'connector-1',
-        'connector-2',
-        { userId: 'test-user-1' }
-      )
+      expect(enqueueSyncJob).toHaveBeenCalledWith('doc-1', 'connector-1', 'connector-2', {
+        userId: 'test-user-1',
+      })
     })
 
     // ========================================================================

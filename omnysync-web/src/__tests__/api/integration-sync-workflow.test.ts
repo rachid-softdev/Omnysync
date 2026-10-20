@@ -229,12 +229,9 @@ describe('Integration Sync Workflow API', () => {
           }),
         })
       )
-      expect(enqueueSyncJob).toHaveBeenCalledWith(
-        'doc-1',
-        'connector-1',
-        'connector-2',
-        { userId: 'test-user-1' }
-      )
+      expect(enqueueSyncJob).toHaveBeenCalledWith('doc-1', 'connector-1', 'connector-2', {
+        userId: 'test-user-1',
+      })
     })
 
     it('should return 401 when unauthenticated', async () => {

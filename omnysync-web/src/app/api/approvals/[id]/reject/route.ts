@@ -10,10 +10,7 @@ const rejectSchema = z.object({
   comments: z.string().max(500).optional(),
 })
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
 
   if (!session?.user?.id) {

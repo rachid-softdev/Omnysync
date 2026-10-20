@@ -107,7 +107,11 @@ export async function POST(req: NextRequest) {
     })
     const ownedIds = new Set(ownedConnectors.map((connector) => connector.id))
 
-    if (typeof sourceConnectorId === 'string' && sourceConnectorId && !ownedIds.has(sourceConnectorId)) {
+    if (
+      typeof sourceConnectorId === 'string' &&
+      sourceConnectorId &&
+      !ownedIds.has(sourceConnectorId)
+    ) {
       return apiError('Source connector not found', 404)
     }
     if (typeof destConnectorId === 'string' && destConnectorId && !ownedIds.has(destConnectorId)) {

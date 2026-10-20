@@ -37,11 +37,9 @@ async function fetchRemoteContent(
   switch (connector.type) {
     case 'WORDPRESS': {
       const creds = Buffer.from(credentials, 'base64').toString().split(':')
-      const client = createWordPressClient(
-        config.siteUrl!,
-        creds[0]!,
-        creds[1]!
-      ) as unknown as { getPost: (id: number) => Promise<unknown> }
+      const client = createWordPressClient(config.siteUrl!, creds[0]!, creds[1]!) as unknown as {
+        getPost: (id: number) => Promise<unknown>
+      }
       const post = (await client.getPost(parseInt(externalId))) as unknown as {
         content?: { rendered?: string }
         title?: { rendered?: string }

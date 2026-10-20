@@ -79,9 +79,7 @@ describe('PUT /api/user/password', () => {
     vi.mocked(verifyPassword).mockResolvedValue(false)
 
     const { PUT } = await importRoute()
-    const response = await PUT(
-      makeRequest({ currentPassword: 'wrong', newPassword: 'NewPass123' })
-    )
+    const response = await PUT(makeRequest({ currentPassword: 'wrong', newPassword: 'NewPass123' }))
     const data = await response.json()
 
     expect(response.status).toBe(400)

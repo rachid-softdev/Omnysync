@@ -4,7 +4,12 @@ import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { performSync } from '@omnysync/core/services/sync'
 import { scheduleSync, disableScheduledSync } from '@omnysync/core/services/scheduler'
-import { checkAndIncrementQuota, checkPlanFeature, getPlanLimits, getUserPlan } from '@/lib/auth/subscription'
+import {
+  checkAndIncrementQuota,
+  checkPlanFeature,
+  getPlanLimits,
+  getUserPlan,
+} from '@/lib/auth/subscription'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()

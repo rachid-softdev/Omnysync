@@ -10,16 +10,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
-          cache: "npm"
-      - run: npm ci
-      - run: cd packages/omnysync-core && npx prisma generate --schema=../../omnysync-web/prisma/schema.prisma
-      # Why: Next.js forces NODE_ENV=production during next build, so the
-      # env.ts Zod validation runs its production checks. All required
-      # env vars must be present at build time.
-      - run: npm run build
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        # prisma CLI is a devDependency of @omnysync/core; the schema lives in
+        # omnysync-web.
+        run: pnpm --filter @omnysync/core exec prisma generate --schema=../../omnysync-web/prisma/schema.prisma
+
+      - name: Sync core's Prisma Client copy
+        # pnpm keeps separate @prisma/client instances for core and web. Mirror
+        # the generated shared client into core's copy so tsup can resolve it.
+        run: |
+          CORE_CLIENT=$(node -e "console.log(require('path').dirname(require.resolve('@prisma/client/package.json',{paths:['packages/omnysync-core']})))")
+          SHARED_CLIENT="$PWD/omnysync-web/prisma/generated/client"
+          rm -rf "$CORE_CLIENT/.prisma"
+          mkdir -p "$CORE_CLIENT/.prisma/client"
+          cp -r "$SHARED_CLIENT/." "$CORE_CLIENT/.prisma/client/"
+          echo "Synced @prisma/client: $SHARED_CLIENT -> $CORE_CLIENT/.prisma/client"
+
+      - name: Build
+        # Why: Next.js forces NODE_ENV=production during next build, so the
+        # env.ts Zod validation runs its production checks. All required
+        # env vars must be present at build time.
+        run: pnpm run build
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
           NEXTAUTH_SECRET: ci-build-secret-not-for-production-min-32-chars!
