@@ -63,7 +63,7 @@ export function ListSkeleton({ items = 5 }: { items?: number }) {
     <div className="space-y-2">
       {Array.from({ length: items }).map((_, i) => (
         <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
-          <Skeleton className="h-10 w-10 rounded-full" />
+          <Skeleton className="h-10 w-10 rounded-[3px]" />
           <div className="space-y-2 flex-1">
             <Skeleton className="h-4 w-1/3" />
             <Skeleton className="h-3 w-1/2" />

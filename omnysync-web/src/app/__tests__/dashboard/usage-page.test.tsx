@@ -55,20 +55,6 @@ vi.mock('@/components/ui/tabs', () => {
   }
 })
 
-vi.mock('@/lib/i18n/useTranslations', () => ({
-  useTranslations: vi.fn(() => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        USAGE_TITLE: 'Usage',
-        USAGE_SUBTITLE: 'Monitor your usage and limits',
-      }
-      return translations[key] || key
-    },
-    loading: false,
-    locale: 'en',
-  })),
-}))
-
 beforeEach(() => {
   vi.clearAllMocks()
   global.fetch = vi.fn()

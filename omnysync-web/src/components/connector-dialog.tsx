@@ -204,7 +204,7 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
 
             {error && (
               <div
-                className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg"
+                className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-[2px]"
                 role="alert"
               >
                 <CircleX className="w-4 h-4" aria-hidden="true" />

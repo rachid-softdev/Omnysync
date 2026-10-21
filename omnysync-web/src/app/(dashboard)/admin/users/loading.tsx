@@ -23,7 +23,7 @@ export default function AdminUsersLoading() {
                   <Skeleton className="h-4 w-48" />
                   <Skeleton className="h-3 w-32" />
                 </div>
-                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-5 w-16 rounded-[2px]" />
                 <Skeleton className="h-5 w-24" />
               </div>
             ))}

@@ -85,7 +85,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-b border-border pt-14">
+      <section className="relative overflow-hidden border-b border-border pt-16">
         {/* Blueprint grid, clipped to the hero. */}
         <div
           aria-hidden="true"
@@ -232,7 +232,7 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="mt-8 grid overflow-hidden border border-border bg-card shadow-sm lg:grid-cols-[1.55fr_0.85fr]">
+          <div className="mt-8 grid overflow-hidden border border-border bg-card lg:grid-cols-[1.55fr_0.85fr]">
             <ProductDemo
               flush
               src={locale === 'fr' ? '/demo-fr.mp4' : '/demo.mp4'}

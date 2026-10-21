@@ -22,6 +22,7 @@ import {
 import { PageHeader, PageShell } from '@/components/page-header'
 import { Loader2, TrendingUp, TrendingDown, Clock, AlertCircle, FileText } from 'lucide-react'
 import { formatDate, formatDateTime, detectClientLocale } from '@/lib/format-date'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 interface AnalyticsData {
   totalSyncs: number
@@ -54,6 +55,7 @@ const activityTones: Record<string, string> = {
 
 export default function AnalyticsPage() {
   const locale = detectClientLocale()
+  const { t } = useTranslations()
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -68,20 +70,14 @@ export default function AnalyticsPage() {
         const data = await res.json()
         setData(data)
       } else if (res.status === 404) {
-        setError(
-          'Analytics data is not available yet. Start syncing documents to generate reports.'
-        )
+        setError(t('ANALYTICS_ERR_404'))
       } else if (res.status >= 500) {
-        setError(
-          'The analytics server is temporarily unavailable. Please try again in a few minutes.'
-        )
+        setError(t('ANALYTICS_ERR_SERVER'))
       } else {
-        setError(`Failed to load analytics (${res.status}). If this persists, contact support.`)
+        setError(`${t('ANALYTICS_ERR_GENERIC')} (${res.status})`)
       }
     } catch (e) {
-      setError(
-        'Unable to connect to the analytics service. Check your internet connection and try again.'
-      )
+      setError(t('ANALYTICS_ERR_CONNECT'))
       console.error(e)
     } finally {
       setLoading(false)
@@ -94,23 +90,23 @@ export default function AnalyticsPage() {
   }, [period])
 
   const periodLabels: Record<string, string> = {
-    '7': 'Last 7 days',
-    '30': 'Last 30 days',
-    '90': 'Last 90 days',
+    '7': t('ANALYTICS_LAST_7'),
+    '30': t('ANALYTICS_LAST_30'),
+    '90': t('ANALYTICS_LAST_90'),
   }
 
   const periodSelect = (
     <Select value={period} onValueChange={setPeriod}>
       <SelectTrigger
         className="w-[150px] rounded-[2px] font-mono text-[10px] uppercase tracking-[0.1em]"
-        aria-label="Reporting period"
+        aria-label={t('ANALYTICS_PERIOD')}
       >
         <SelectValue>{periodLabels[period]}</SelectValue>
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="7">Last 7 days</SelectItem>
-        <SelectItem value="30">Last 30 days</SelectItem>
-        <SelectItem value="90">Last 90 days</SelectItem>
+        <SelectItem value="7">{t('ANALYTICS_LAST_7')}</SelectItem>
+        <SelectItem value="30">{t('ANALYTICS_LAST_30')}</SelectItem>
+        <SelectItem value="90">{t('ANALYTICS_LAST_90')}</SelectItem>
       </SelectContent>
     </Select>
   )
@@ -120,8 +116,8 @@ export default function AnalyticsPage() {
       <PageShell>
         <PageHeader
           eyebrow={`ANALYTICS / ${period}D`}
-          title="Analytics"
-          description="Track your synchronization performance"
+          title={t('ANALYTICS_TITLE')}
+          description={t('ANALYTICS_SUBTITLE')}
         />
         <div className="mt-6 flex min-h-[320px] items-center justify-center border border-border bg-card">
           <Loader2 className="size-5 animate-spin text-muted-foreground" />
@@ -135,17 +131,17 @@ export default function AnalyticsPage() {
       <PageShell>
         <PageHeader
           eyebrow={`ANALYTICS / ${period}D`}
-          title="Analytics"
-          description="Track your synchronization performance"
+          title={t('ANALYTICS_TITLE')}
+          description={t('ANALYTICS_SUBTITLE')}
           actions={
             <Button onClick={fetchAnalytics} variant="outline" size="sm">
-              Retry
+              {t('ANALYTICS_RETRY')}
             </Button>
           }
         />
         <div className="mt-6 border border-border bg-card">
           <div className="flex items-center justify-between border-b border-border px-5 py-3 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-            <span>Report / unavailable</span>
+            <span>{t('ANALYTICS_REPORT_UNAVAILABLE')}</span>
             <span>ERR</span>
           </div>
           <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:p-8">
@@ -155,7 +151,7 @@ export default function AnalyticsPage() {
             <div className="max-w-xl">
               <p className="text-sm font-medium">{error}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Analytics data is not available at this time.
+                {t('ANALYTICS_UNAVAILABLE_NOTE')}
               </p>
             </div>
           </div>
@@ -169,13 +165,13 @@ export default function AnalyticsPage() {
       <PageShell>
         <PageHeader
           eyebrow={`ANALYTICS / ${period}D`}
-          title="Analytics"
-          description="Track your synchronization performance"
+          title={t('ANALYTICS_TITLE')}
+          description={t('ANALYTICS_SUBTITLE')}
           actions={periodSelect}
         />
         <div className="mt-6 border border-border bg-card">
           <div className="flex items-center justify-between border-b border-border px-5 py-3 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-            <span>Report / empty</span>
+            <span>{t('ANALYTICS_REPORT_EMPTY')}</span>
             <span>00</span>
           </div>
           <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:p-8">
@@ -183,12 +179,12 @@ export default function AnalyticsPage() {
               <FileText className="size-5" />
             </span>
             <div className="max-w-xl">
-              <p className="text-base font-semibold tracking-[-0.02em]">No data available</p>
+              <p className="text-base font-semibold tracking-[-0.02em]">{t('ANALYTICS_NO_DATA')}</p>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                Start syncing documents to see your stats.
+                {t('ANALYTICS_NO_DATA_DESC')}
               </p>
               <Button asChild className="mt-5">
-                <Link href="/dashboard/sync/new">Start a sync</Link>
+                <Link href="/dashboard/sync/new">{t('ANALYTICS_START_SYNC')}</Link>
               </Button>
             </div>
           </div>
@@ -221,8 +217,8 @@ export default function AnalyticsPage() {
     <PageShell>
       <PageHeader
         eyebrow={`ANALYTICS / ${period}D`}
-        title="Analytics"
-        description="Track your synchronization performance"
+        title={t('ANALYTICS_TITLE')}
+        description={t('ANALYTICS_SUBTITLE')}
         actions={periodSelect}
       />
 
@@ -231,7 +227,7 @@ export default function AnalyticsPage() {
         <div className="bg-card p-5">
           <div className="flex items-center justify-between gap-2">
             <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
-              Total syncs
+              {t('ANALYTICS_TOTAL_SYNCS')}
             </p>
             <FileText className="size-4 text-muted-foreground/60" aria-hidden="true" />
           </div>
@@ -239,14 +235,14 @@ export default function AnalyticsPage() {
             {displayData.totalSyncs}
           </p>
           <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground/70">
-            {displayData.failedSyncs} failed
+            {displayData.failedSyncs} {t('ANALYTICS_FAILED')}
           </p>
         </div>
 
         <div className="bg-card p-5">
           <div className="flex items-center justify-between gap-2">
             <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
-              Success rate
+              {t('ANALYTICS_SUCCESS_RATE')}
             </p>
             <span
               className={`flex items-center gap-1 font-mono text-[9px] uppercase tracking-[0.12em] ${
@@ -258,7 +254,7 @@ export default function AnalyticsPage() {
               ) : (
                 <TrendingDown className="size-3" aria-hidden="true" />
               )}
-              {healthy ? 'Healthy' : 'Degraded'}
+              {healthy ? t('ANALYTICS_HEALTHY') : t('ANALYTICS_DEGRADED')}
             </span>
           </div>
           <p className="mt-3 text-3xl font-semibold tabular-nums tracking-[-0.04em]">
@@ -275,7 +271,7 @@ export default function AnalyticsPage() {
         <div className="bg-card p-5">
           <div className="flex items-center justify-between gap-2">
             <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
-              Avg duration
+              {t('ANALYTICS_AVG_DURATION')}
             </p>
             <Clock className="size-4 text-muted-foreground/60" aria-hidden="true" />
           </div>
@@ -283,14 +279,14 @@ export default function AnalyticsPage() {
             {displayData.avgDuration}s
           </p>
           <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground/70">
-            Per sync
+            {t('ANALYTICS_PER_SYNC')}
           </p>
         </div>
 
         <div className="bg-card p-5">
           <div className="flex items-center justify-between gap-2">
             <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
-              Active documents
+              {t('ANALYTICS_ACTIVE_DOCUMENTS')}
             </p>
             <FileText className="size-4 text-muted-foreground/60" aria-hidden="true" />
           </div>
@@ -298,16 +294,31 @@ export default function AnalyticsPage() {
             {displayData.totalDocuments}
           </p>
           <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground/70">
-            {displayData.activeConnectors} connectors
+            {displayData.activeConnectors} {t('ANALYTICS_CONNECTORS')}
           </p>
         </div>
       </div>
 
       <Tabs defaultValue="overview" className="mt-8 w-full">
-        <TabsList className="rounded-[3px] border border-border bg-card p-0.5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="connectors">Connectors</TabsTrigger>
-          <TabsTrigger value="activity">Recent activity</TabsTrigger>
+        <TabsList className="w-full max-w-full justify-start overflow-x-auto rounded-[3px] border border-border bg-card p-0.5 sm:w-auto sm:justify-center">
+          <TabsTrigger
+            value="overview"
+            className="flex-1 px-2 text-[12px] sm:flex-none sm:px-3 sm:text-sm"
+          >
+            {t('ANALYTICS_OVERVIEW')}
+          </TabsTrigger>
+          <TabsTrigger
+            value="connectors"
+            className="flex-1 px-2 text-[12px] sm:flex-none sm:px-3 sm:text-sm"
+          >
+            {t('ANALYTICS_CONNECTORS_TAB')}
+          </TabsTrigger>
+          <TabsTrigger
+            value="activity"
+            className="flex-1 px-2 text-[12px] sm:flex-none sm:px-3 sm:text-sm"
+          >
+            {t('ANALYTICS_ACTIVITY')}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -315,16 +326,16 @@ export default function AnalyticsPage() {
             <div className="flex items-end justify-between gap-3 border-b border-border px-5 py-3">
               <div>
                 <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-                  Volume / {period}d
+                  {t('ANALYTICS_VOLUME')} / {period}d
                 </p>
-                <h2 className="mt-1 text-sm font-semibold">Syncs per day</h2>
+                <h2 className="mt-1 text-sm font-semibold">{t('ANALYTICS_SYNCS_PER_DAY')}</h2>
               </div>
               <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
-                {displayData.totalSyncs} total
+                {displayData.totalSyncs} {t('ANALYTICS_TOTAL')}
               </span>
             </div>
             <div className="p-5">
-              <div className="relative flex h-64 items-end gap-2 border-b border-border">
+              <div className="relative flex h-64 items-end gap-[2px] border-b border-border sm:gap-2">
                 <div aria-hidden="true" className="pointer-events-none absolute inset-0">
                   <div className="absolute inset-x-0 top-1/3 border-t border-dashed border-border/40" />
                   <div className="absolute inset-x-0 top-2/3 border-t border-dashed border-border/40" />
@@ -336,19 +347,23 @@ export default function AnalyticsPage() {
                   return (
                     <div
                       key={day.date}
-                      className="relative z-10 flex h-full flex-1 flex-col items-center justify-end gap-2"
+                      className="relative z-10 flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2"
                     >
                       <div className="relative w-full flex-1">
                         <div
                           className="absolute inset-x-0 bottom-0 rounded-t-[2px] bg-primary transition-colors hover:bg-primary-hover"
                           style={{ height: `${height}%`, minHeight: day.count > 0 ? '2px' : '0px' }}
                           role="img"
-                          aria-label={`${day.count} sync${day.count !== 1 ? 's' : ''} on ${dayLabel}`}
-                          title={`${day.count} sync${day.count !== 1 ? 's' : ''} on ${dayLabel}`}
+                          aria-label={`${day.count} ${t('ANALYTICS_SYNCS')} · ${dayLabel}`}
+                          title={`${day.count} ${t('ANALYTICS_SYNCS')} · ${dayLabel}`}
                         />
                       </div>
                       <span
-                        className="h-3 whitespace-nowrap font-mono text-[9px] uppercase tracking-[0.08em] text-muted-foreground"
+                        className={`h-3 whitespace-nowrap font-mono text-[9px] uppercase tracking-[0.08em] text-muted-foreground ${
+                          showLabel && (index === 0 || index === dailySeries.length - 1)
+                            ? ''
+                            : 'hidden sm:block'
+                        }`}
                         aria-hidden="true"
                       >
                         {showLabel ? dayLabel : ''}
@@ -366,12 +381,12 @@ export default function AnalyticsPage() {
             <div className="flex items-end justify-between gap-3 border-b border-border px-5 py-3">
               <div>
                 <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-                  Mix / {period}d
+                  {t('ANALYTICS_MIX')} / {period}d
                 </p>
-                <h2 className="mt-1 text-sm font-semibold">Connector usage</h2>
+                <h2 className="mt-1 text-sm font-semibold">{t('ANALYTICS_CONNECTOR_USAGE')}</h2>
               </div>
               <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
-                {displayData.connectorsUsage.length} active
+                {displayData.connectorsUsage.length} {t('ANALYTICS_ACTIVE')}
               </span>
             </div>
             <div className="divide-y divide-border">
@@ -410,25 +425,25 @@ export default function AnalyticsPage() {
             <div className="flex items-end justify-between gap-3 border-b border-border px-5 py-3">
               <div>
                 <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-                  Event log / {period}d
+                  {t('ANALYTICS_EVENT_LOG')} / {period}d
                 </p>
-                <h2 className="mt-1 text-sm font-semibold">Recent activity</h2>
+                <h2 className="mt-1 text-sm font-semibold">{t('ANALYTICS_ACTIVITY')}</h2>
               </div>
               <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
-                {displayData.recentActivity.length} events
+                {displayData.recentActivity.length} {t('ANALYTICS_EVENTS')}
               </span>
             </div>
             <Table>
               <TableHeader className="bg-muted/40">
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead className="h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em]">
-                    Operation
+                    {t('UI_OPERATION')}
                   </TableHead>
                   <TableHead className="h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em]">
-                    Status
+                    {t('UI_STATUS')}
                   </TableHead>
                   <TableHead className="h-9 px-4 text-right font-mono text-[9px] uppercase tracking-[0.14em]">
-                    Time
+                    {t('UI_TIME')}
                   </TableHead>
                 </TableRow>
               </TableHeader>

@@ -6,17 +6,19 @@ import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 import { AlertCircle, ArrowLeft, ArrowRight, Loader2, ShieldCheck } from 'lucide-react'
 
 const steps = [
-  { label: 'Identity verified', state: 'done' },
-  { label: 'Second factor required', state: 'current' },
-  { label: 'Dashboard access', state: 'pending' },
+  { labelKey: 'auth_2fa_step_identity', state: 'done' },
+  { labelKey: 'auth_2fa_step_second', state: 'current' },
+  { labelKey: 'auth_2fa_step_dashboard', state: 'pending' },
 ] as const
 
 export default function TwoFactorVerifyPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t } = useTranslations()
   const continueTo = searchParams.get('continue') || '/dashboard'
 
   const [code, setCode] = useState('')
@@ -40,10 +42,10 @@ export default function TwoFactorVerifyPage() {
       if (res.ok && data.success) {
         router.push(continueTo)
       } else {
-        setError(data.error || 'Invalid code')
+        setError(data.error || t('auth_2fa_invalid_code'))
       }
     } catch {
-      setError('Connection error')
+      setError(t('auth_2fa_connection_error'))
     } finally {
       setLoading(false)
     }
@@ -53,7 +55,7 @@ export default function TwoFactorVerifyPage() {
     <div className="grid min-h-screen lg:grid-cols-[1fr_minmax(0,520px)]">
       <div className="flex flex-col px-6 py-8 sm:px-10 lg:px-16">
         <div className="animate-enter-fade flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2" aria-label="Omnysync home">
+          <Link href="/" className="flex items-center gap-2" aria-label={t('auth_home')}>
             <span className="grid size-7 place-items-center rounded-[3px] bg-primary text-[13px] font-bold text-primary-foreground">
               O
             </span>
@@ -64,7 +66,7 @@ export default function TwoFactorVerifyPage() {
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="size-3.5" />
-            Sign in
+            {t('auth_sign_in')}
           </Link>
         </div>
 
@@ -79,10 +81,10 @@ export default function TwoFactorVerifyPage() {
               </span>
               <div>
                 <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
-                  Security checkpoint
+                  {t('auth_2fa_security_checkpoint')}
                 </p>
                 <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em]">
-                  Two-Factor Authentication
+                  {t('auth_2fa_title')}
                 </h1>
               </div>
             </div>
@@ -91,7 +93,7 @@ export default function TwoFactorVerifyPage() {
               className="animate-enter-up mt-4 text-sm leading-relaxed text-muted-foreground"
               style={{ animationDelay: '120ms' }}
             >
-              Enter the 6-digit code from your authenticator app to finish signing in.
+              {t('auth_2fa_desc')}
             </p>
 
             <form
@@ -100,7 +102,7 @@ export default function TwoFactorVerifyPage() {
               style={{ animationDelay: '170ms' }}
             >
               <div className="space-y-2">
-                <Label htmlFor="2fa-code">Authenticator code</Label>
+                <Label htmlFor="2fa-code">{t('auth_2fa_code_label')}</Label>
                 <Input
                   id="2fa-code"
                   type="text"
@@ -116,10 +118,10 @@ export default function TwoFactorVerifyPage() {
                   required
                 />
                 <label htmlFor="2fa-code" className="sr-only">
-                  6-digit code
+                  {t('auth_2fa_code_sr')}
                 </label>
                 <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground/70">
-                  6 digits · refreshes every 30s
+                  {t('auth_2fa_hint')}
                 </p>
               </div>
 
@@ -138,11 +140,11 @@ export default function TwoFactorVerifyPage() {
                 {loading ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
-                    Verifying…
+                    {t('auth_2fa_verifying')}
                   </>
                 ) : (
                   <>
-                    Verify
+                    {t('auth_2fa_verify')}
                     <ArrowRight className="size-4" />
                   </>
                 )}
@@ -154,9 +156,9 @@ export default function TwoFactorVerifyPage() {
               style={{ animationDelay: '220ms' }}
             >
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Open Google Authenticator, Authy, or any TOTP app. Lost access to your device?{' '}
+                {t('auth_2fa_app_help')}{' '}
                 <Link href="/auth/signin" className="font-medium text-primary hover:underline">
-                  Use a recovery method
+                  {t('auth_2fa_recovery')}
                 </Link>
                 .
               </p>
@@ -165,7 +167,7 @@ export default function TwoFactorVerifyPage() {
         </div>
 
         <p className="animate-enter-fade font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground/50">
-          Omnysync · secure session
+          {t('auth_2fa_secure_session')}
         </p>
       </div>
 
@@ -185,14 +187,13 @@ export default function TwoFactorVerifyPage() {
         >
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/40">
-              Access sequence
+              {t('auth_2fa_access_sequence')}
             </p>
             <h2 className="mt-4 max-w-sm text-[30px] font-semibold leading-[1.02] tracking-[-0.03em] text-white">
-              One more check before your workspace opens.
+              {t('auth_2fa_aside_title')}
             </h2>
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/55">
-              A second factor keeps scheduled runs, connected accounts and publishing keys behind
-              your control.
+              {t('auth_2fa_aside_body')}
             </p>
           </div>
 
@@ -202,7 +203,7 @@ export default function TwoFactorVerifyPage() {
               const isCurrent = step.state === 'current'
               return (
                 <li
-                  key={step.label}
+                  key={step.labelKey}
                   className={`flex items-center gap-4 border-b border-white/10 py-4 last:border-b-0 ${
                     isDone ? 'text-white/45' : isCurrent ? 'text-white' : 'text-white/30'
                   }`}
@@ -218,9 +219,13 @@ export default function TwoFactorVerifyPage() {
                   >
                     {isDone ? '✓' : String(index + 1).padStart(2, '0')}
                   </span>
-                  <span className="flex-1 text-[13px] font-medium">{step.label}</span>
+                  <span className="flex-1 text-[13px] font-medium">{t(step.labelKey)}</span>
                   <span className="font-mono text-[9px] uppercase tracking-[0.12em]">
-                    {isDone ? 'Verified' : isCurrent ? 'Waiting' : 'Locked'}
+                    {isDone
+                      ? t('auth_2fa_verified')
+                      : isCurrent
+                        ? t('auth_2fa_waiting')
+                        : t('auth_2fa_locked')}
                   </span>
                 </li>
               )
@@ -231,7 +236,7 @@ export default function TwoFactorVerifyPage() {
             <span>2FA / TOTP</span>
             <span className="inline-flex items-center gap-1.5 text-emerald-300">
               <span className="size-1.5 rounded-full bg-emerald-400" />
-              Secure channel
+              {t('auth_2fa_secure_channel')}
             </span>
           </div>
         </div>

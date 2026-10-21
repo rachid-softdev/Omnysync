@@ -1,10 +1,12 @@
 ﻿import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
+import Resend from 'next-auth/providers/resend'
 import Credentials from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import { withOAuthEncryption } from './adapter-encryption'
-import { sendWelcomeEmail } from '@/lib/email'
+import { ensureUserOrg } from './org'
+import { sendMagicLinkEmail, sendWelcomeEmail } from '@/lib/email'
 import { verifyPassword } from '@/lib/auth/password'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -13,6 +15,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+    Resend({
+      apiKey: process.env.RESEND_API_KEY ?? '',
+      from: process.env.RESEND_FROM_EMAIL ?? 'Omnysync <noreply@omnysync.com>',
+      maxAge: 15 * 60,
+      async sendVerificationRequest({ identifier, url, provider, request }) {
+        const locale = request.headers.get('accept-language')?.toLowerCase().includes('fr')
+          ? 'fr'
+          : 'en'
+        await sendMagicLinkEmail({ to: identifier, url, from: provider.from, locale })
+      },
     }),
     Credentials({
       name: 'credentials',
@@ -64,7 +77,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   pages: {
     signIn: '/auth/signin',
     error: '/auth/error',
-    verifyRequest: '/auth/2fa-verify',
+    verifyRequest: '/auth/verify-request',
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
@@ -102,8 +115,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           // Password was changed after this JWT was issued → invalidate
           if (
             token.passwordChangedAt &&
-            (userStatus.passwordChangedAt?.getTime() ?? 0) >
-              (token.passwordChangedAt as number)
+            (userStatus.passwordChangedAt?.getTime() ?? 0) > (token.passwordChangedAt as number)
           ) {
             return { ...token, exp: Math.floor(Date.now() / 1000) - 1 }
           }
@@ -142,8 +154,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return session
     },
-    async signIn({ user, account }) {
+    async signIn({ user, email }) {
       if (!user?.id) return true
+
+      // A magic-link request has not authenticated anyone yet: the user is a
+      // temporary object with a random id. Only run 2FA/provisioning after the
+      // link is consumed and a real user exists.
+      if (email?.verificationRequest) return true
 
       // 🔒 2FA check applies to ALL providers, not just credentials.
       // Previously only credentials provider was checked, allowing Google OAuth
@@ -156,24 +173,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return '/auth/2fa-verify?continue=true'
       }
 
-      // Auto-create a "Personal" organization on first sign-in for OAuth
-      if (account?.provider === 'google') {
+      return true
+    },
+  },
+  events: {
+    async signIn({ user, account }) {
+      if (!user?.id) return
+
+      // Runs after the user exists, including first-time magic-link accounts.
+      // The signIn callback runs before Auth.js persists a new email user, so
+      // organization provisioning must live here.
+      if (account?.provider === 'google' || account?.type === 'email') {
         const existingMembership = await prisma.userOrganization.findFirst({
           where: { userId: user.id },
         })
 
         if (!existingMembership) {
-          await prisma.organization.create({
-            data: {
-              name: 'Personal',
-              users: {
-                create: {
-                  userId: user.id,
-                  role: 'OWNER',
-                },
-              },
-            },
-          })
+          await ensureUserOrg(user.id)
 
           if (user.email) {
             sendWelcomeEmail(user.email, user.name || 'Utilisateur').catch((e) =>
@@ -183,15 +199,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
       }
 
-      // Update last login
       await prisma.user
         .update({
           where: { id: user.id },
           data: { lastLoginAt: new Date() },
         })
         .catch(() => {})
-
-      return true
     },
   },
 })

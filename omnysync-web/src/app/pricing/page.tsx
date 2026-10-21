@@ -129,7 +129,7 @@ export default async function PricingPage() {
         <p className="mt-3 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground lg:hidden">
           {t('pricing_matrix_hint')}
         </p>
-        <div className="mt-6 overflow-x-auto border border-border bg-card shadow-sm lg:mt-6">
+        <div className="mt-6 overflow-x-auto border border-border bg-card lg:mt-6">
           <table
             className="w-full min-w-[820px] border-separate border-spacing-0 text-left"
             aria-label={t('pricing_matrix_title')}

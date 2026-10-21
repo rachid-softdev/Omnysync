@@ -1,3 +1,5 @@
+'use client'
+
 import {
   Check,
   FileText,
@@ -8,6 +10,7 @@ import {
   Workflow,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 type Tone = 'light' | 'dark'
 
@@ -31,6 +34,7 @@ const ROUTES = [
  */
 export function RouteMap({ tone = 'light', className }: { tone?: Tone; className?: string }) {
   const dark = tone === 'dark'
+  const { t } = useTranslations()
 
   return (
     <div
@@ -53,7 +57,7 @@ export function RouteMap({ tone = 'light', className }: { tone?: Tone; className
               dark ? 'text-white/50' : 'text-muted-foreground'
             )}
           >
-            Live run
+            {t('route_live_run')}
           </span>
         </div>
         <span
@@ -124,7 +128,7 @@ export function RouteMap({ tone = 'light', className }: { tone?: Tone; className
                   dark ? 'text-white/35' : 'text-muted-foreground'
                 )}
               >
-                Google Docs · 1,284w
+                Google Docs · {t('route_words')}
               </p>
             </div>
           </div>
@@ -135,7 +139,7 @@ export function RouteMap({ tone = 'light', className }: { tone?: Tone; className
                 dark ? 'text-white/35' : 'text-muted-foreground'
               )}
             >
-              Source
+              {t('route_source')}
             </span>
           </div>
         </div>
@@ -196,8 +200,10 @@ export function RouteMap({ tone = 'light', className }: { tone?: Tone; className
           dark ? 'border-white/10 text-white/35' : 'border-border text-muted-foreground'
         )}
       >
-        <span>4 destinations · 12.4s</span>
-        <span className="text-success">0 errors</span>
+        <span>
+          4 {t('route_destinations')} · {t('route_duration')}
+        </span>
+        <span className="text-success">{t('route_errors')}</span>
       </div>
     </div>
   )

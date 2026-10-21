@@ -295,17 +295,18 @@
 }
 
 /*
- * Header state on scroll: transparent over the hero, elevated once the page
- * moves. Progressive enhancement via a scroll timeline — browsers without
- * support (or users with reduced motion) simply keep the static header.
+ * Header state on scroll: the bar stays opaque and its rule stays crisp, then a
+ * shallow shadow appears once the page moves. Progressive enhancement via a
+ * scroll timeline — browsers without support (or users with reduced motion)
+ * simply keep the static header.
  */
 @keyframes header-elevate {
   from {
-    border-color: transparent;
+    border-color: var(--border-strong);
     box-shadow: none;
   }
   to {
-    border-color: var(--border);
+    border-color: var(--border-strong);
     box-shadow: var(--shadow-xs);
   }
 }

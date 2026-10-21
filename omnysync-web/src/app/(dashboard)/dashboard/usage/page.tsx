@@ -148,32 +148,32 @@ export default function UsagePage() {
 
   const usageRows = [
     {
-      label: 'Syncs',
+      label: t('USAGE_SYNCS'),
       icon: Zap,
       used: displayUsage.syncUsed,
       limit: displayUsage.syncLimit,
-      remainingLabel: 'remaining this month',
+      remainingLabel: t('USAGE_REMAINING_MONTH'),
     },
     {
-      label: 'Documents',
+      label: t('USAGE_DOCUMENTS'),
       icon: FileText,
       used: displayUsage.documentsUsed,
       limit: displayUsage.documentsLimit,
-      remainingLabel: 'remaining',
+      remainingLabel: t('USAGE_REMAINING'),
     },
     {
-      label: 'Connectors',
+      label: t('USAGE_CONNECTORS'),
       icon: Link2,
       used: displayUsage.connectorsUsed,
       limit: displayUsage.connectorsLimit,
-      remainingLabel: 'available',
+      remainingLabel: t('USAGE_AVAILABLE'),
     },
     {
-      label: 'Team',
+      label: t('USAGE_TEAM'),
       icon: Users,
       used: displayUsage.teamUsed,
       limit: displayUsage.teamLimit,
-      remainingLabel: 'seats remaining',
+      remainingLabel: t('USAGE_SEATS_REMAINING'),
     },
   ]
 
@@ -187,10 +187,10 @@ export default function UsagePage() {
 
       {isFallbackData && (
         <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border border-warning/30 bg-warning-soft px-4 py-3 text-sm">
-          <span className="text-warning">Unable to load live data. Showing estimated usage.</span>
+          <span className="text-warning">{t('USAGE_UNABLE_LIVE')}</span>
           <Button variant="outline" size="sm" onClick={fetchUsage} disabled={loading}>
             {loading && <Loader2 className="size-3.5 animate-spin" />}
-            Retry
+            {t('USAGE_RETRY')}
           </Button>
         </div>
       )}
@@ -200,19 +200,19 @@ export default function UsagePage() {
         <div className="flex flex-wrap items-center justify-between gap-4 p-5">
           <div>
             <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-sidebar-foreground/40">
-              Plan / current
+              {t('USAGE_PLAN_CURRENT')}
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-3">
               <h2 className="text-xl font-semibold tracking-[-0.03em]">
-                Plan {displayUsage.currentPlan}
+                {t('USAGE_PLAN')} {displayUsage.currentPlan}
               </h2>
               <span className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-success">
                 <span className="size-1.5 bg-success" aria-hidden="true" />
-                Active
+                {t('USAGE_ACTIVE')}
               </span>
             </div>
             <p className="mt-1.5 font-mono text-[10px] text-sidebar-foreground/50">
-              Billing cycle: {formatDate(displayUsage.billingCycle.start, locale)} -{' '}
+              {t('USAGE_BILLING_CYCLE')}: {formatDate(displayUsage.billingCycle.start, locale)} -{' '}
               {formatDate(displayUsage.billingCycle.end, locale)}
             </p>
           </div>
@@ -221,16 +221,16 @@ export default function UsagePage() {
             size="sm"
             className="border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
-            Change plan
+            {t('USAGE_CHANGE_PLAN')}
           </Button>
         </div>
       </section>
 
       <Tabs defaultValue="overview" className="mt-6 w-full">
         <TabsList className="mb-4 rounded-[3px] border border-border bg-card p-0.5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="ai">AI</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
+          <TabsTrigger value="overview">{t('USAGE_OVERVIEW')}</TabsTrigger>
+          <TabsTrigger value="ai">{t('USAGE_AI')}</TabsTrigger>
+          <TabsTrigger value="history">{t('USAGE_HISTORY')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -238,19 +238,19 @@ export default function UsagePage() {
             <div className="flex items-end justify-between gap-3 border-b border-border px-5 py-3">
               <div>
                 <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-                  Limits / current cycle
+                  {t('USAGE_LIMITS_CYCLE')}
                 </p>
-                <h2 className="mt-1 text-sm font-semibold">Resource consumption</h2>
+                <h2 className="mt-1 text-sm font-semibold">{t('USAGE_RESOURCE_CONSUMPTION')}</h2>
               </div>
               <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
-                {usageRows.length} resources
+                {usageRows.length} {t('USAGE_RESOURCES')}
               </span>
             </div>
 
             <div className="hidden grid-cols-[10rem_1fr_8rem] gap-4 border-b border-border bg-muted/40 px-5 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground sm:grid">
-              <span>Resource</span>
-              <span>Consumption</span>
-              <span className="text-right">Used / limit</span>
+              <span>{t('USAGE_RESOURCE')}</span>
+              <span>{t('USAGE_CONSUMPTION')}</span>
+              <span className="text-right">{t('USAGE_USED_LIMIT')}</span>
             </div>
 
             <ul className="divide-y divide-border">
@@ -294,9 +294,9 @@ export default function UsagePage() {
                         } ${unlimited ? '' : 'mt-1.5'}`}
                       >
                         {unlimited
-                          ? 'Unlimited'
+                          ? t('USAGE_UNLIMITED')
                           : overLimit
-                            ? `${Math.abs(remaining)} over limit`
+                            ? `${Math.abs(remaining)} ${t('USAGE_OVER_LIMIT')}`
                             : `${remaining} ${row.remainingLabel}`}
                       </p>
                     </div>
@@ -319,12 +319,13 @@ export default function UsagePage() {
             <div className="flex items-end justify-between gap-3 border-b border-border px-5 py-3">
               <div>
                 <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-                  AI / current cycle
+                  {t('USAGE_AI_CYCLE')}
                 </p>
-                <h2 className="mt-1 text-sm font-semibold">AI Usage</h2>
+                <h2 className="mt-1 text-sm font-semibold">{t('USAGE_AI_USAGE')}</h2>
               </div>
               <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
-                {displayUsage.aiSEO + displayUsage.aiImages + displayUsage.aiInterlinking} calls
+                {displayUsage.aiSEO + displayUsage.aiImages + displayUsage.aiInterlinking}{' '}
+                {t('USAGE_CALLS')}
               </span>
             </div>
 
@@ -339,7 +340,7 @@ export default function UsagePage() {
                 <p className="mt-3 text-3xl font-semibold tabular-nums tracking-[-0.04em]">
                   {displayUsage.aiSEO}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">SEO metadata generations</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('USAGE_SEO_METADATA')}</p>
               </div>
 
               <div className="bg-card p-5">
@@ -352,46 +353,46 @@ export default function UsagePage() {
                 <p className="mt-3 text-3xl font-semibold tabular-nums tracking-[-0.04em]">
                   {displayUsage.aiImages}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">Images generated with DALL-E</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('USAGE_IMAGES_GENERATED')}</p>
               </div>
 
               <div className="bg-card p-5">
                 <div className="flex items-center gap-2">
                   <Link2 className="size-4 text-muted-foreground" />
                   <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
-                    Interlinking
+                    {t('USAGE_INTERLINKING')}
                   </span>
                 </div>
                 <p className="mt-3 text-3xl font-semibold tabular-nums tracking-[-0.04em]">
                   {displayUsage.aiInterlinking}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">Internal link suggestions</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t('USAGE_INTERNAL_LINKS')}</p>
               </div>
             </div>
 
             <div className="px-5 py-4">
               <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
-                Included / {displayUsage.currentPlan} plan
+                {t('USAGE_INCLUDED')} {displayUsage.currentPlan}
               </p>
               <ul className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
                 <li className="flex items-center gap-2">
                   <Check className="size-3.5 text-success" />
-                  Auto SEO
+                  {t('USAGE_AUTO_SEO')}
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="size-3.5 text-success" />
-                  Image generation
+                  {t('USAGE_IMAGE_GENERATION')}
                 </li>
                 {displayUsage.currentPlan === 'Pro' && (
                   <li className="flex items-center gap-2">
                     <Check className="size-3.5 text-success" />
-                    Internal interlinking
+                    {t('USAGE_INTERNAL_INTERLINKING')}
                   </li>
                 )}
                 {displayUsage.currentPlan !== 'Free' && (
                   <li className="flex items-center gap-2">
                     <Check className="size-3.5 text-success" />
-                    Content enhancement
+                    {t('USAGE_CONTENT_ENHANCEMENT')}
                   </li>
                 )}
               </ul>
@@ -404,28 +405,28 @@ export default function UsagePage() {
             <div className="flex items-end justify-between gap-3 border-b border-border px-5 py-3">
               <div>
                 <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-                  Ledger / monthly
+                  {t('USAGE_LEDGER_MONTHLY')}
                 </p>
-                <h2 className="mt-1 text-sm font-semibold">Usage History</h2>
+                <h2 className="mt-1 text-sm font-semibold">{t('USAGE_HISTORY_TITLE')}</h2>
               </div>
               <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
-                {displayUsage.history.length} months
+                {displayUsage.history.length} {t('USAGE_MONTHS')}
               </span>
             </div>
             <Table>
               <TableHeader className="bg-muted/40">
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead className="h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em]">
-                    Month
+                    {t('USAGE_MONTH')}
                   </TableHead>
                   <TableHead className="h-9 px-4 text-right font-mono text-[9px] uppercase tracking-[0.14em]">
-                    Syncs
+                    {t('USAGE_SYNCS')}
                   </TableHead>
                   <TableHead className="h-9 px-4 text-right font-mono text-[9px] uppercase tracking-[0.14em]">
-                    Documents
+                    {t('USAGE_DOCUMENTS')}
                   </TableHead>
                   <TableHead className="h-9 px-4 text-right font-mono text-[9px] uppercase tracking-[0.14em]">
-                    AI Calls
+                    {t('USAGE_AI_CALLS')}
                   </TableHead>
                 </TableRow>
               </TableHeader>
