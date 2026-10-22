@@ -104,9 +104,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const document = await prisma.document.findUnique({
     where: { id },
-    include: {
-      sourceConnector: true,
-      destConnector: true,
+    select: {
+      organizationId: true,
+      syncStatus: true,
+      sourceConnectorId: true,
+      destConnectorId: true,
     },
   })
 

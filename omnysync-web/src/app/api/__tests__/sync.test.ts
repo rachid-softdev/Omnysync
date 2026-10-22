@@ -138,8 +138,18 @@ describe('GET /api/sync', () => {
         status: 'DRAFT',
         syncStatus: 'NOT_SYNCED',
         organizationId: 'org-1',
-        sourceConnector: { id: 'c1', type: 'WORDPRESS', name: 'Source WP' },
-        destConnector: { id: 'c2', type: 'GHOST', name: 'Dest Ghost' },
+        sourceConnector: {
+          id: 'c1',
+          type: 'WORDPRESS',
+          name: 'Source WP',
+          credentials: 'encrypted-source',
+        },
+        destConnector: {
+          id: 'c2',
+          type: 'GHOST',
+          name: 'Dest Ghost',
+          credentials: 'encrypted-dest',
+        },
         syncLogs: [
           { id: 'log-1', status: 'INFO', message: 'Started', createdAt: new Date(createdAt) },
         ],
@@ -150,8 +160,18 @@ describe('GET /api/sync', () => {
         status: 'PUBLISHED',
         syncStatus: 'SYNCED',
         organizationId: 'org-1',
-        sourceConnector: { id: 'c3', type: 'NOTION', name: 'Source Notion' },
-        destConnector: { id: 'c4', type: 'WEBFLOW', name: 'Dest Webflow' },
+        sourceConnector: {
+          id: 'c3',
+          type: 'NOTION',
+          name: 'Source Notion',
+          credentials: 'encrypted-source-2',
+        },
+        destConnector: {
+          id: 'c4',
+          type: 'WEBFLOW',
+          name: 'Dest Webflow',
+          credentials: 'encrypted-dest-2',
+        },
         syncLogs: [],
       },
     ]
@@ -160,9 +180,15 @@ describe('GET /api/sync', () => {
     const expectedDocuments = [
       {
         ...mockDocuments[0],
+        sourceConnector: { id: 'c1', type: 'WORDPRESS', name: 'Source WP' },
+        destConnector: { id: 'c2', type: 'GHOST', name: 'Dest Ghost' },
         syncLogs: [{ id: 'log-1', status: 'INFO', message: 'Started', createdAt }],
       },
-      mockDocuments[1],
+      {
+        ...mockDocuments[1],
+        sourceConnector: { id: 'c3', type: 'NOTION', name: 'Source Notion' },
+        destConnector: { id: 'c4', type: 'WEBFLOW', name: 'Dest Webflow' },
+      },
     ]
 
     vi.mocked(prisma.document.findMany).mockResolvedValue(mockDocuments as any)
@@ -177,8 +203,8 @@ describe('GET /api/sync', () => {
       expect.objectContaining({
         where: { organizationId: 'org-1' },
         include: {
-          sourceConnector: true,
-          destConnector: true,
+          sourceConnector: { select: expect.objectContaining({ id: true, type: true }) },
+          destConnector: { select: expect.objectContaining({ id: true, type: true }) },
           syncLogs: expect.objectContaining({
             orderBy: { createdAt: 'desc' },
             take: 5,

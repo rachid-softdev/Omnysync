@@ -105,6 +105,21 @@ describe('DocumentsPage', () => {
     expect(screen.getByText('Failed')).toBeInTheDocument()
   })
 
+  it('selects only the connector fields used by the client list', async () => {
+    const { prisma } = await import('@/lib/prisma')
+
+    await DocumentsPage()
+
+    expect(prisma.document.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          sourceConnector: { select: { type: true } },
+          destConnector: { select: { type: true } },
+        }),
+      })
+    )
+  })
+
   it('returns null when no user session', async () => {
     const mockAuth = vi.mocked((await import('@/lib/auth')).auth)
     mockAuth.mockResolvedValueOnce({ user: { id: null } } as any)

@@ -54,8 +54,8 @@ export default async function SyncDetailPage({ params }: PageProps) {
   const document = await prisma.document.findUnique({
     where: { id, organizationId: orgId },
     include: {
-      sourceConnector: true,
-      destConnector: true,
+      sourceConnector: { select: { type: true, name: true } },
+      destConnector: { select: { type: true, name: true } },
     },
   })
 

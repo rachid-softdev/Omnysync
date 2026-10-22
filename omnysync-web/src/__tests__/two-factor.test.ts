@@ -147,9 +147,9 @@ describe('two-factor service', () => {
       expect(result.success).toBe(true)
       expect(result.backupCodes).toBeDefined()
       expect(result.backupCodes!.length).toBe(10)
-      // Each backup code should be 8 hex chars
+      // Each backup code should be 16 hex chars (64 bits of entropy)
       result.backupCodes!.forEach((code) => {
-        expect(code).toMatch(/^[0-9A-F]{8}$/)
+        expect(code).toMatch(/^[0-9A-F]{16}$/)
       })
     })
 
@@ -240,10 +240,10 @@ describe('two-factor service', () => {
         expect(code).toMatch(/^[a-f0-9]{64}$/)
       })
 
-      // The plaintext backup codes returned should be 8 hex chars
+      // The plaintext backup codes returned should be 16 hex chars
       const result = await setupTwoFactor(userId, secret)
       result.backupCodes!.forEach((code) => {
-        expect(code).toMatch(/^[0-9A-F]{8}$/)
+        expect(code).toMatch(/^[0-9A-F]{16}$/)
       })
     })
   })

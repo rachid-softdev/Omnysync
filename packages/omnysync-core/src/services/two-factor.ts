@@ -113,9 +113,11 @@ export async function setupTwoFactor(
   secret: string,
 ): Promise<{ success: boolean; backupCodes?: string[]; error?: string }> {
   try {
-    // Générer les backup codes (10 codes de 8 caractères)
+    // Générer les backup codes (10 codes de 16 caractères hexadécimaux, 64 bits
+    // d'entropie chacun). Huit caractères (32 bits) sont brute-forçables hors
+    // ligne à partir d'une copie de la base.
     const backupCodes = Array.from({ length: 10 }, () =>
-      randomBytes(4).toString("hex").toUpperCase(),
+      randomBytes(8).toString("hex").toUpperCase(),
     );
 
     // Hasher les backup codes avec un salt utilisateur-spécifique
@@ -164,8 +166,15 @@ export async function setupTwoFactor(
       return { success: false, error: "Échec de la configuration du 2FA" };
     }
   } finally {
-    // Nettoyer le secret temporaire en mémoire quoi qu'il arrive
-    pendingSecrets.delete(userId);
+    // Nettoyer le secret temporaire (Redis + mémoire) quoi qu'il arrive.
+    // Ne supprimer que la Map laissait une copie du secret dans Redis jusqu'à
+    // l'expiration du TTL après l'activation.
+    try {
+      await removePendingSecret(userId);
+    } catch (error) {
+      console.error("Failed to clear pending 2FA secret:", error);
+      pendingSecrets.delete(userId);
+    }
   }
 }
 

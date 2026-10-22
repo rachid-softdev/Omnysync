@@ -6,6 +6,7 @@ import { getUserOrgId } from '@/lib/auth/org'
 import { checkDocumentLimit } from '@/lib/auth/subscription'
 import { apiError } from '@/lib/api-error'
 import { paginationSchema } from '@/lib/validations'
+import { PUBLIC_CONNECTOR_SELECT, sanitizeDocumentConnectors } from '@/lib/public-connector'
 
 const DOCUMENT_STATUSES: string[] = Object.values(DocumentStatus)
 
@@ -39,8 +40,8 @@ export async function GET(req: NextRequest) {
   const documents = await prisma.document.findMany({
     where,
     include: {
-      sourceConnector: true,
-      destConnector: true,
+      sourceConnector: { select: PUBLIC_CONNECTOR_SELECT },
+      destConnector: { select: PUBLIC_CONNECTOR_SELECT },
     },
     orderBy: { updatedAt: 'desc' },
     skip: (page - 1) * limit,
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json(
     {
-      documents,
+      documents: documents.map(sanitizeDocumentConnectors),
       pagination: {
         page,
         limit,

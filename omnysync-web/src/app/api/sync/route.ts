@@ -6,6 +6,7 @@ import { enqueueSyncJob } from '@omnysync/core/services/queue'
 import { checkAndIncrementQuota, checkDocumentLimit } from '@/lib/auth/subscription'
 import { createSyncSchema } from '@/lib/validations'
 import { apiError } from '@/lib/api-error'
+import { PUBLIC_CONNECTOR_SELECT, sanitizeDocumentConnectors } from '@/lib/public-connector'
 
 // A sync has a direction. Connectors that the sync engine cannot read from (or
 // write to) must be rejected here: accepting them created a document that
@@ -34,8 +35,8 @@ export async function GET() {
       organizationId: orgId,
     },
     include: {
-      sourceConnector: true,
-      destConnector: true,
+      sourceConnector: { select: PUBLIC_CONNECTOR_SELECT },
+      destConnector: { select: PUBLIC_CONNECTOR_SELECT },
       syncLogs: {
         orderBy: {
           createdAt: 'desc',
@@ -48,7 +49,7 @@ export async function GET() {
     },
   })
 
-  return NextResponse.json(documents)
+  return NextResponse.json(documents.map(sanitizeDocumentConnectors))
 }
 
 export async function POST(req: NextRequest) {

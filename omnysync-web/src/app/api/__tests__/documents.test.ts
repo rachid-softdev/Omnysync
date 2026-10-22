@@ -106,10 +106,46 @@ describe('GET /api/documents', () => {
     expect(prisma.document.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { organizationId: 'org-1' },
-        include: { sourceConnector: true, destConnector: true },
+        include: {
+          sourceConnector: { select: expect.objectContaining({ id: true, type: true }) },
+          destConnector: { select: expect.objectContaining({ id: true, type: true }) },
+        },
         orderBy: { updatedAt: 'desc' },
       })
     )
+  })
+
+  it('should never expose connector credentials', async () => {
+    const mockDocs = [
+      {
+        id: 'doc-1',
+        title: 'Doc 1',
+        sourceConnector: {
+          id: 'c1',
+          type: 'WORDPRESS',
+          name: 'Source',
+          credentials: 'encrypted-source',
+        },
+        destConnector: {
+          id: 'c2',
+          type: 'GHOST',
+          name: 'Dest',
+          credentials: 'encrypted-dest',
+        },
+      },
+    ]
+
+    vi.mocked(prisma.document.findMany).mockResolvedValue(mockDocs as any)
+    vi.mocked(prisma.document.count).mockResolvedValue(1)
+
+    const { GET } = await import('@/app/api/documents/route')
+    const req = new NextRequest('http://localhost:3000/api/documents')
+    const response = await GET(req)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.documents[0].sourceConnector).not.toHaveProperty('credentials')
+    expect(data.documents[0].destConnector).not.toHaveProperty('credentials')
   })
 
   // ── Pagination ───────────────────────────────────────────────────────────

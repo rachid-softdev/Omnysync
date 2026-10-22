@@ -216,9 +216,9 @@ describe("Integration Auth", () => {
       expect(result.success).toBe(true);
       expect(result.backupCodes).toBeDefined();
       expect(result.backupCodes!.length).toBe(10);
-      // All backup codes should be 8-char hex strings
+      // All backup codes should be 16-char hex strings (64 bits of entropy)
       result.backupCodes!.forEach((code: string) => {
-        expect(code.length).toBe(8);
+        expect(code.length).toBe(16);
         expect(/^[0-9A-F]+$/.test(code)).toBe(true);
       });
       expect(prisma.twoFactorAuth.upsert).toHaveBeenCalledWith({

@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { apiError } from '@/lib/api-error'
+import { PUBLIC_CONNECTOR_SELECT, sanitizeDocumentConnectors } from '@/lib/public-connector'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -21,8 +22,8 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   const document = await prisma.document.findUnique({
     where: { id, organizationId: orgId },
     include: {
-      sourceConnector: true,
-      destConnector: true,
+      sourceConnector: { select: PUBLIC_CONNECTOR_SELECT },
+      destConnector: { select: PUBLIC_CONNECTOR_SELECT },
       syncLogs: {
         orderBy: { createdAt: 'desc' },
         take: 20,
@@ -34,7 +35,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     return apiError('Document not found', 404)
   }
 
-  return NextResponse.json(document)
+  return NextResponse.json(sanitizeDocumentConnectors(document))
 }
 
 export async function PUT(req: NextRequest, { params }: RouteParams) {

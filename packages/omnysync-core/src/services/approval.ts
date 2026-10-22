@@ -108,9 +108,11 @@ export async function getApprovalByToken(token: string) {
     where: { token },
     include: {
       document: {
-        include: {
-          sourceConnector: true,
-          destConnector: true,
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          organizationId: true,
         },
       },
     },
@@ -343,9 +345,10 @@ export async function canSubmitForApproval(documentId: string): Promise<{
 }> {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
-    include: {
-      sourceConnector: true,
-      destConnector: true,
+    select: {
+      status: true,
+      sourceConnector: { select: { id: true } },
+      destConnector: { select: { id: true } },
     },
   });
 

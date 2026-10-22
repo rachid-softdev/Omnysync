@@ -24,9 +24,13 @@ export default async function DocumentsPage() {
 
   const documents = await prisma.document.findMany({
     where: { organizationId: orgId },
-    include: {
-      sourceConnector: true,
-      destConnector: true,
+    select: {
+      id: true,
+      title: true,
+      syncStatus: true,
+      updatedAt: true,
+      sourceConnector: { select: { type: true } },
+      destConnector: { select: { type: true } },
     },
     orderBy: { updatedAt: 'desc' },
   })

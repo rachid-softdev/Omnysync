@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
   // Connector usage
   const documents = await prisma.document.findMany({
     where: { organizationId: orgId },
-    include: { sourceConnector: true, destConnector: true },
+    select: { destConnector: { select: { type: true } } },
   })
 
   const connectorsUsage: Record<string, number> = {}

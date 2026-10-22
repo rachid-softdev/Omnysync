@@ -60,8 +60,13 @@ const mockDocument = {
   syncStatus: 'NOT_SYNCED',
   organizationId: 'org-1',
   userId: 'user-1',
-  sourceConnector: { id: 'c1', type: 'WORDPRESS', name: 'Source' },
-  destConnector: { id: 'c2', type: 'GHOST', name: 'Dest' },
+  sourceConnector: {
+    id: 'c1',
+    type: 'WORDPRESS',
+    name: 'Source',
+    credentials: 'encrypted-source',
+  },
+  destConnector: { id: 'c2', type: 'GHOST', name: 'Dest', credentials: 'encrypted-dest' },
   syncLogs: [],
   createdAt: new Date('2026-01-01').toISOString(),
   updatedAt: new Date('2026-06-01').toISOString(),
@@ -111,14 +116,16 @@ describe('GET /api/documents/[id]', () => {
     expect(data.title).toBe('Test Document')
     expect(data.sourceConnector).toBeDefined()
     expect(data.destConnector).toBeDefined()
+    expect(data.sourceConnector).not.toHaveProperty('credentials')
+    expect(data.destConnector).not.toHaveProperty('credentials')
     expect(data.syncLogs).toBeDefined()
 
     expect(prisma.document.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'doc-1', organizationId: 'org-1' },
         include: {
-          sourceConnector: true,
-          destConnector: true,
+          sourceConnector: { select: expect.objectContaining({ id: true, type: true }) },
+          destConnector: { select: expect.objectContaining({ id: true, type: true }) },
           syncLogs: {
             orderBy: { createdAt: 'desc' },
             take: 20,

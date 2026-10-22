@@ -51,6 +51,7 @@ describe("Two-Factor Authentication", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCache.isAvailable.mockReturnValue(false);
   });
 
   describe("generateTotpSecret", () => {
@@ -108,7 +109,7 @@ describe("Two-Factor Authentication", () => {
       expect(prisma.auditLog.create).not.toHaveBeenCalled();
     });
 
-    it("should generate exactly 10 backup codes (8 hex chars each)", async () => {
+    it("should generate exactly 10 backup codes (16 hex chars each)", async () => {
       vi.mocked(prisma.twoFactorAuth.upsert).mockResolvedValue({} as any);
       vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null);
 
@@ -117,7 +118,7 @@ describe("Two-Factor Authentication", () => {
       expect(result.backupCodes).toBeDefined();
       expect(result.backupCodes!.length).toBe(10);
       for (const code of result.backupCodes!) {
-        expect(code).toMatch(/^[0-9A-F]{8}$/);
+        expect(code).toMatch(/^[0-9A-F]{16}$/);
       }
     });
 
@@ -136,6 +137,17 @@ describe("Two-Factor Authentication", () => {
 
       // Pending secret should be cleared in the finally block
       expect(pendingSecrets.has(userId)).toBe(false);
+    });
+
+    it("should remove the Redis pending secret after setup", async () => {
+      mockCache.isAvailable.mockReturnValue(true);
+      vi.mocked(prisma.twoFactorAuth.upsert).mockResolvedValue({} as any);
+      vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null);
+
+      await setupTwoFactor(userId, secret);
+
+      expect(mockCache.del).toHaveBeenCalledWith(`2fa:pending:${userId}`);
+      mockCache.isAvailable.mockReturnValue(false);
     });
 
     it("should generate unique backup codes each time (no duplicates)", async () => {

@@ -49,8 +49,8 @@ export default async function DocumentDetailPage({ params }: PageProps) {
   const document = await prisma.document.findUnique({
     where: { id, organizationId: orgId },
     include: {
-      sourceConnector: true,
-      destConnector: true,
+      sourceConnector: { select: { type: true } },
+      destConnector: { select: { type: true } },
       syncLogs: {
         orderBy: { createdAt: 'desc' },
         take: 10,
