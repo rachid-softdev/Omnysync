@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Search, Eye, AlertCircle } from 'lucide-react'
 import type { Column } from '@/components/admin/admin-data-table'
 import { formatDate, detectClientLocale } from '@/lib/format-date'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 interface User {
   id: string
@@ -22,6 +23,7 @@ interface User {
 export default function AdminUsersPage() {
   const router = useRouter()
   const locale = detectClientLocale()
+  const { t } = useTranslations()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -39,7 +41,7 @@ export default function AdminUsersPage() {
     setError(null)
     fetch('/api/admin/users')
       .then((res) => {
-        if (!res.ok) throw new Error('Failed to load users')
+        if (!res.ok) throw new Error(t('admin_users_load_error'))
         return res.json()
       })
       .then((json) => {
@@ -49,7 +51,7 @@ export default function AdminUsersPage() {
         setError(err.message)
       })
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return users
@@ -69,14 +71,14 @@ export default function AdminUsersPage() {
     () => [
       {
         key: 'email',
-        header: 'User',
+        header: t('admin_users_col_user'),
         render: (user) => (
           <div className="flex items-center gap-2.5">
             <span className="grid size-6 shrink-0 place-items-center rounded-[3px] bg-muted text-[10px] font-medium text-muted-foreground">
               {(user.name || user.email || '?').slice(0, 1).toUpperCase()}
             </span>
             <div className="min-w-0">
-              <p className="truncate font-medium">{user.name || 'Unnamed'}</p>
+              <p className="truncate font-medium">{user.name || t('admin_unnamed')}</p>
               <p className="truncate text-xs text-muted-foreground">{user.email || '—'}</p>
             </div>
           </div>
@@ -84,14 +86,16 @@ export default function AdminUsersPage() {
       },
       {
         key: 'role',
-        header: 'Role',
+        header: t('admin_users_col_role'),
         render: (user) => (
-          <Badge variant={user.role === 'ADMIN' ? 'info' : 'secondary'}>{user.role}</Badge>
+          <Badge variant={user.role === 'ADMIN' ? 'info' : 'secondary'}>
+            {t(user.role === 'ADMIN' ? 'admin_role_admin' : 'admin_role_user')}
+          </Badge>
         ),
       },
       {
         key: 'createdAt',
-        header: 'Created',
+        header: t('admin_created'),
         render: (user) => (
           <span className="tabular-nums text-muted-foreground">
             {formatDate(user.createdAt, locale, {
@@ -113,14 +117,14 @@ export default function AdminUsersPage() {
               onClick={() => router.push(`/admin/users/${user.id}`)}
             >
               <Eye className="size-3.5" />
-              View
+              {t('admin_users_view')}
             </Button>
           </div>
         ),
         className: 'text-right',
       },
     ],
-    [router, locale]
+    [router, locale, t]
   )
 
   const pagination = {
@@ -133,25 +137,27 @@ export default function AdminUsersPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="USERS / DIRECTORY"
-        title="Users"
-        description={`${users.length} user${users.length !== 1 ? 's' : ''} on the platform`}
+        eyebrow={t('admin_users_eyebrow')}
+        title={t('UI_USERS')}
+        description={`${users.length} ${
+          users.length === 1 ? t('admin_user') : t('admin_users')
+        } ${t('admin_users_desc')}`}
       />
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <div className="relative w-full max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by email or name…"
+            placeholder={t('admin_users_search')}
             value={search}
             onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
             className="pl-9"
-            aria-label="Search users"
+            aria-label={t('admin_users_search_aria')}
           />
         </div>
         {!loading && (
           <p className="ml-auto text-xs tabular-nums text-muted-foreground">
-            {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+            {filtered.length} {filtered.length === 1 ? t('admin_result') : t('admin_results')}
           </p>
         )}
       </div>

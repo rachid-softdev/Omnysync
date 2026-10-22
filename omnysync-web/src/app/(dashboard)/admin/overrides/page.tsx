@@ -15,6 +15,7 @@ import { PageHeader, PageShell } from '@/components/page-header'
 import { AdminEmptyState } from '@/components/admin/admin-empty-state'
 import { AdminDataTable, type Column } from '@/components/admin/admin-data-table'
 import { formatDate, detectClientLocale } from '@/lib/format-date'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -61,6 +62,7 @@ function isExpired(expiresAt: string | null): boolean {
 
 export default function AdminOverridesPage() {
   const locale = detectClientLocale()
+  const { t } = useTranslations()
   const [data, setData] = useState<Override[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -81,17 +83,17 @@ export default function AdminOverridesPage() {
       const res = await fetch(`/api/admin/overrides?${params.toString()}`)
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.message ?? 'Failed to fetch overrides')
+        throw new Error(err.message ?? t('admin_fetch_overrides_error'))
       }
       const json = await res.json()
       setData(json.data)
       setPagination(json.pagination)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      setError(err instanceof Error ? err.message : t('admin_unexpected_error'))
     } finally {
       setIsLoading(false)
     }
-  }, [page, orgFilter])
+  }, [page, orgFilter, t])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -105,7 +107,7 @@ export default function AdminOverridesPage() {
   const columns: Column<Override>[] = [
     {
       key: 'featureKey',
-      header: 'Feature',
+      header: t('admin_overrides_col_feature'),
       render: (o) => (
         <div className="min-w-0">
           <p className="truncate font-mono text-xs font-medium">{o.featureKey}</p>
@@ -117,29 +119,29 @@ export default function AdminOverridesPage() {
     },
     {
       key: 'scope',
-      header: 'Scope',
+      header: t('admin_overrides_col_scope'),
       render: (o) => <Badge variant={SCOPE_VARIANT[o.scope] ?? 'secondary'}>{o.scope}</Badge>,
     },
     {
       key: 'scopeId',
-      header: 'Scope ID',
+      header: t('admin_overrides_col_scope_id'),
       render: (o) => (
         <span className="font-mono text-[11px] text-muted-foreground">{o.scopeId}</span>
       ),
     },
     {
       key: 'enabled',
-      header: 'Enabled',
+      header: t('admin_overrides_col_enabled'),
       render: (o) =>
         o.enabled ? (
-          <Check className="size-4 text-success" aria-label="Enabled" />
+          <Check className="size-4 text-success" aria-label={t('admin_overrides_aria_enabled')} />
         ) : (
-          <X className="size-4 text-destructive" aria-label="Disabled" />
+          <X className="size-4 text-destructive" aria-label={t('admin_overrides_aria_disabled')} />
         ),
     },
     {
       key: 'limitValue',
-      header: 'Limit',
+      header: t('admin_overrides_col_limit'),
       className: 'text-right',
       render: (o) =>
         o.limitValue !== null && o.limitValue !== undefined ? (
@@ -150,21 +152,21 @@ export default function AdminOverridesPage() {
     },
     {
       key: 'expiresAt',
-      header: 'Expires',
+      header: t('admin_overrides_col_expires'),
       render: (o) => {
         if (!o.expiresAt) return <span className="text-muted-foreground">—</span>
         const expired = isExpired(o.expiresAt)
         return (
           <Badge variant={expired ? 'destructive' : 'outline'}>
             {formatDate(o.expiresAt, locale)}
-            {expired ? ' (expired)' : ''}
+            {expired ? t('admin_overrides_expired_suffix') : ''}
           </Badge>
         )
       },
     },
     {
       key: 'reason',
-      header: 'Reason',
+      header: t('admin_overrides_col_reason'),
       className: 'max-w-[220px]',
       render: (o) =>
         o.reason ? (
@@ -175,7 +177,7 @@ export default function AdminOverridesPage() {
     },
     {
       key: 'createdAt',
-      header: 'Created',
+      header: t('admin_created'),
       render: (o) => (
         <span className="text-xs tabular-nums text-muted-foreground">
           {formatDate(o.createdAt, locale)}
@@ -192,14 +194,14 @@ export default function AdminOverridesPage() {
     return (
       <PageShell>
         <PageHeader
-          eyebrow="ENTITLEMENTS / OVERRIDES"
-          title="Entitlement Overrides"
-          description="Override feature entitlements for specific organizations or users"
+          eyebrow={t('admin_overrides_eyebrow')}
+          title={t('admin_overrides_title')}
+          description={t('admin_overrides_desc')}
         />
-        <div className="mt-10 flex flex-col items-center justify-center text-center">
-          <p className="mb-4 text-sm font-medium text-destructive">{error}</p>
+        <div className="mt-10 flex flex-col items-start gap-4">
+          <p className="text-sm font-medium text-destructive">{error}</p>
           <Button variant="outline" size="sm" onClick={fetchOverrides}>
-            Retry
+            {t('admin_retry')}
           </Button>
         </div>
       </PageShell>
@@ -213,14 +215,14 @@ export default function AdminOverridesPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="ENTITLEMENTS / OVERRIDES"
-        title="Entitlement Overrides"
-        description="Override feature entitlements for specific organizations or users"
+        eyebrow={t('admin_overrides_eyebrow')}
+        title={t('admin_overrides_title')}
+        description={t('admin_overrides_desc')}
         actions={
           <Button size="sm" asChild>
             <Link href="/admin/overrides/new">
               <Plus className="size-3.5" />
-              New Override
+              {t('admin_overrides_new')}
             </Link>
           </Button>
         }
@@ -230,18 +232,19 @@ export default function AdminOverridesPage() {
         <div className="relative w-full max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Filter by Organization ID..."
+            placeholder={t('admin_overrides_filter')}
             value={orgFilter}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               setOrgFilter(e.target.value)
               setPage(1)
             }}
             className="pl-9"
-            aria-label="Filter by organization ID"
+            aria-label={t('admin_overrides_filter_aria')}
           />
         </div>
         <p className="ml-auto text-xs tabular-nums text-muted-foreground">
-          {pagination?.total ?? 0} override{(pagination?.total ?? 0) !== 1 ? 's' : ''}
+          {pagination?.total ?? 0}{' '}
+          {(pagination?.total ?? 0) === 1 ? t('admin_override') : t('admin_override_plural')}
         </p>
       </div>
 
@@ -256,17 +259,15 @@ export default function AdminOverridesPage() {
           emptyState={
             <AdminEmptyState
               icon={SlidersHorizontal}
-              title="No overrides"
+              title={t('admin_overrides_empty_title')}
               description={
-                orgFilter
-                  ? 'No overrides found for this organization.'
-                  : 'Create your first entitlement override to grant or restrict feature access.'
+                orgFilter ? t('admin_overrides_empty_filtered') : t('admin_overrides_empty_desc')
               }
               action={
                 <Button size="sm" asChild>
                   <Link href="/admin/overrides/new">
                     <Plus className="size-3.5" />
-                    New Override
+                    {t('admin_overrides_new')}
                   </Link>
                 </Button>
               }

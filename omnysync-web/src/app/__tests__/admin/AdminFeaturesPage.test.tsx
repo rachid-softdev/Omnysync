@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import AdminFeaturesPage from '../../(dashboard)/admin/features/page'
 
-// AdminDataTable localizes its footer from <html lang>; assertions below use FR.
+// AdminDataTable localizes its footer from <html lang>; assertions below use EN.
 beforeAll(() => {
-  document.documentElement.lang = 'fr'
+  document.documentElement.lang = 'en'
 })
 
 // ---------------------------------------------------------------------------
@@ -269,7 +269,7 @@ describe('AdminFeaturesPage', () => {
     render(<AdminFeaturesPage />)
 
     await waitFor(() => {
-      expect(screen.getByText(/sur 2/)).toBeInTheDocument()
+      expect(screen.getByText(/of 2/)).toBeInTheDocument()
     })
   })
 

@@ -72,11 +72,7 @@ export default function SettingsPage() {
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
-      setSaveError(
-        err instanceof Error
-          ? err.message
-          : 'Unable to save changes. Check your connection and try again.'
-      )
+      setSaveError(err instanceof Error ? err.message : t('settings_save_error'))
     } finally {
       setLoading(false)
     }
@@ -85,7 +81,7 @@ export default function SettingsPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="SETTINGS / ACCOUNT"
+        eyebrow={t('settings_eyebrow')}
         title={t('UI_SETTINGS')}
         description={t('UI_PREFERENCES')}
         className="mb-6"
@@ -102,35 +98,35 @@ export default function SettingsPage() {
             className="justify-start gap-2 rounded-[2px] px-3 py-2 text-[13px] lg:w-full"
           >
             <User className="size-4" />
-            Profile
+            {t('settings_tab_profile')}
           </TabsTrigger>
           <TabsTrigger
             value="security"
             className="justify-start gap-2 rounded-[2px] px-3 py-2 text-[13px] lg:w-full"
           >
             <Shield className="size-4" />
-            Security
+            {t('settings_tab_security')}
           </TabsTrigger>
           <TabsTrigger
             value="notifications"
             className="justify-start gap-2 rounded-[2px] px-3 py-2 text-[13px] lg:w-full"
           >
             <Bell className="size-4" />
-            Notifications
+            {t('settings_tab_notifications')}
           </TabsTrigger>
           <TabsTrigger
             value="billing"
             className="justify-start gap-2 rounded-[2px] px-3 py-2 text-[13px] lg:w-full"
           >
             <CreditCard className="size-4" />
-            Billing
+            {t('settings_tab_billing')}
           </TabsTrigger>
           <TabsTrigger
             value="api"
             className="justify-start gap-2 rounded-[2px] px-3 py-2 text-[13px] lg:w-full"
           >
             <Key className="size-4" />
-            API
+            {t('settings_tab_api')}
           </TabsTrigger>
         </TabsList>
 
@@ -138,8 +134,8 @@ export default function SettingsPage() {
         <TabsContent value="profile" className="max-w-2xl space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>Manage your personal information</CardDescription>
+              <CardTitle>{t('settings_profile_title')}</CardTitle>
+              <CardDescription>{t('settings_profile_desc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="flex items-center gap-4">
@@ -148,24 +144,24 @@ export default function SettingsPage() {
                 </Avatar>
                 <div>
                   <Button variant="outline" size="sm">
-                    Change photo
+                    {t('settings_change_photo')}
                   </Button>
-                  <p className="mt-1 text-xs text-muted-foreground">JPG, PNG, or GIF. Max 2MB.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t('settings_photo_hint')}</p>
                 </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="name">Full name</Label>
+                  <Label htmlFor="name">{t('settings_full_name')}</Label>
                   <Input
                     id="name"
                     value={name}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-                    placeholder="Your name"
+                    placeholder={t('settings_name_placeholder')}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('settings_email')}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -177,12 +173,12 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label>Current organization</Label>
+                <Label>{t('settings_current_org')}</Label>
                 <div className="flex items-center gap-3 rounded-[3px] border border-border bg-muted/40 px-3 py-2.5">
                   <Building className="size-4 text-muted-foreground" />
                   <div>
-                    <p className="text-[13px] font-medium">My Organization</p>
-                    <p className="text-xs text-muted-foreground">Pro Plan</p>
+                    <p className="text-[13px] font-medium">{t('settings_org_name')}</p>
+                    <p className="text-xs text-muted-foreground">{t('settings_plan_pro')}</p>
                   </div>
                 </div>
               </div>
@@ -197,7 +193,7 @@ export default function SettingsPage() {
                 <Button size="sm" onClick={handleSaveProfile} disabled={loading}>
                   {loading && <Loader2 className="size-3.5 animate-spin" />}
                   {saved && <CheckCircle className="size-3.5" />}
-                  {saved ? 'Saved!' : 'Save'}
+                  {saved ? t('settings_saved') : t('settings_save')}
                 </Button>
               </div>
             </CardContent>
@@ -205,20 +201,20 @@ export default function SettingsPage() {
 
           <Card className="border-destructive/40">
             <CardHeader>
-              <CardTitle className="text-destructive">Danger Zone</CardTitle>
-              <CardDescription>Irreversible actions</CardDescription>
+              <CardTitle className="text-destructive">{t('settings_danger_zone')}</CardTitle>
+              <CardDescription>{t('settings_irreversible')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <p className="text-[13px] font-medium">Delete my account</p>
+                  <p className="text-[13px] font-medium">{t('settings_delete_account')}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    This action is irreversible. All your data will be lost.
+                    {t('settings_delete_account_desc')}
                   </p>
                 </div>
                 <Button variant="destructive" size="sm">
                   <Trash2 className="size-3.5" />
-                  Delete
+                  {t('settings_delete')}
                 </Button>
               </div>
             </CardContent>
@@ -229,30 +225,30 @@ export default function SettingsPage() {
         <TabsContent value="security" className="max-w-2xl space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Password</CardTitle>
-              <CardDescription>Change your password</CardDescription>
+              <CardTitle>{t('settings_password_title')}</CardTitle>
+              <CardDescription>{t('settings_password_desc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="current-password">Current password</Label>
+                <Label htmlFor="current-password">{t('settings_current_password')}</Label>
                 <Input id="current-password" type="password" placeholder="••••••••" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="new-password">New password</Label>
+                <Label htmlFor="new-password">{t('settings_new_password')}</Label>
                 <Input id="new-password" type="password" placeholder="••••••••" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="confirm-password">Confirm password</Label>
+                <Label htmlFor="confirm-password">{t('settings_confirm_password')}</Label>
                 <Input id="confirm-password" type="password" placeholder="••••••••" />
               </div>
-              <Button size="sm">Update password</Button>
+              <Button size="sm">{t('settings_update_password')}</Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Two-factor authentication</CardTitle>
-              <CardDescription>Add an extra layer of security</CardDescription>
+              <CardTitle>{t('settings_2fa_title')}</CardTitle>
+              <CardDescription>{t('settings_2fa_desc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap items-center justify-between gap-4">
@@ -261,14 +257,14 @@ export default function SettingsPage() {
                     <Shield className="size-4 text-warning" />
                   </div>
                   <div>
-                    <p className="text-[13px] font-medium">2FA disabled</p>
+                    <p className="text-[13px] font-medium">{t('settings_2fa_disabled')}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Protect your account with authentication
+                      {t('settings_2fa_disabled_desc')}
                     </p>
                   </div>
                 </div>
                 <Button variant="outline" size="sm">
-                  Enable
+                  {t('settings_enable')}
                 </Button>
               </div>
             </CardContent>
@@ -276,8 +272,8 @@ export default function SettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Active sessions</CardTitle>
-              <CardDescription>Manage your login sessions</CardDescription>
+              <CardTitle>{t('settings_sessions_title')}</CardTitle>
+              <CardDescription>{t('settings_sessions_desc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="divide-y divide-border">
@@ -287,11 +283,11 @@ export default function SettingsPage() {
                     <div>
                       <p className="text-[13px] font-medium">Chrome - Windows</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        Last activity: 5 minutes ago
+                        {t('settings_last_activity_5m')}
                       </p>
                     </div>
                   </div>
-                  <Badge variant="outline">Current</Badge>
+                  <Badge variant="outline">{t('settings_current')}</Badge>
                 </div>
                 <div className="flex items-center justify-between gap-4 py-3 last:pb-0">
                   <div className="flex items-center gap-3">
@@ -299,17 +295,17 @@ export default function SettingsPage() {
                     <div>
                       <p className="text-[13px] font-medium">Safari - macOS</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        Last activity: 3 days ago
+                        {t('settings_last_activity_3d')}
                       </p>
                     </div>
                   </div>
                   <Button variant="ghost" size="sm" className="text-destructive">
-                    Revoke
+                    {t('settings_revoke')}
                   </Button>
                 </div>
               </div>
               <Button variant="outline" size="sm" className="mt-5 w-full">
-                Sign out all other sessions
+                {t('settings_sign_out_all')}
               </Button>
             </CardContent>
           </Card>
@@ -319,16 +315,16 @@ export default function SettingsPage() {
         <TabsContent value="notifications" className="max-w-2xl space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Email notifications</CardTitle>
-              <CardDescription>Choose what you want to receive</CardDescription>
+              <CardTitle>{t('settings_email_notifications')}</CardTitle>
+              <CardDescription>{t('settings_email_notifications_desc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="divide-y divide-border">
                 <div className="flex items-center justify-between gap-4 py-4 first:pt-0">
                   <div>
-                    <p className="text-[13px] font-medium">Sync successful</p>
+                    <p className="text-[13px] font-medium">{t('settings_sync_success')}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Receive an email when a document is synced
+                      {t('settings_sync_success_desc')}
                     </p>
                   </div>
                   <Switch
@@ -340,9 +336,9 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex items-center justify-between gap-4 py-4">
                   <div>
-                    <p className="text-[13px] font-medium">Sync failure</p>
+                    <p className="text-[13px] font-medium">{t('settings_sync_failure')}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Be notified immediately in case of error
+                      {t('settings_sync_failure_desc')}
                     </p>
                   </div>
                   <Switch
@@ -354,9 +350,9 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex items-center justify-between gap-4 py-4">
                   <div>
-                    <p className="text-[13px] font-medium">Weekly digest</p>
+                    <p className="text-[13px] font-medium">{t('settings_weekly_digest')}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Receive a weekly activity summary
+                      {t('settings_weekly_digest_desc')}
                     </p>
                   </div>
                   <Switch
@@ -368,9 +364,9 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex items-center justify-between gap-4 py-4 last:pb-0">
                   <div>
-                    <p className="text-[13px] font-medium">Team invites</p>
+                    <p className="text-[13px] font-medium">{t('settings_team_invites')}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Notifications when someone joins your organization
+                      {t('settings_team_invites_desc')}
                     </p>
                   </div>
                   <Switch
@@ -383,7 +379,7 @@ export default function SettingsPage() {
               </div>
               <Button size="sm" className="mt-6" onClick={handleSaveProfile} disabled={loading}>
                 {loading && <Loader2 className="size-3.5 animate-spin" />}
-                Save preferences
+                {t('settings_save_preferences')}
               </Button>
             </CardContent>
           </Card>
@@ -393,22 +389,20 @@ export default function SettingsPage() {
         <TabsContent value="billing" className="max-w-2xl space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Current plan</CardTitle>
-              <CardDescription>Manage your plan</CardDescription>
+              <CardTitle>{t('settings_current_plan')}</CardTitle>
+              <CardDescription>{t('settings_current_plan_desc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap items-center justify-between gap-4 rounded-[3px] border border-border bg-muted/30 p-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="text-lg font-semibold tracking-tight">Pro Plan</p>
-                    <Badge variant="success">Active</Badge>
+                    <p className="text-lg font-semibold tracking-tight">{t('settings_plan_pro')}</p>
+                    <Badge variant="success">{t('settings_active')}</Badge>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    $29/month - renews June 15, 2026
-                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">{t('settings_plan_meta')}</p>
                 </div>
                 <Button variant="outline" size="sm">
-                  Change plan
+                  {t('settings_change_plan')}
                 </Button>
               </div>
             </CardContent>
@@ -416,27 +410,27 @@ export default function SettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Usage</CardTitle>
-              <CardDescription>Your consumption this month</CardDescription>
+              <CardTitle>{t('settings_usage_title')}</CardTitle>
+              <CardDescription>{t('settings_usage_desc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Documents</span>
+                  <span>{t('settings_documents')}</span>
                   <span className="tabular-nums text-muted-foreground">45 / 100</span>
                 </div>
                 <Progress value={45} className="h-1.5" />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Syncs</span>
+                  <span>{t('settings_syncs')}</span>
                   <span className="tabular-nums text-muted-foreground">67 / 100</span>
                 </div>
                 <Progress value={67} className="h-1.5" />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Connectors</span>
+                  <span>{t('settings_connectors')}</span>
                   <span className="tabular-nums text-muted-foreground">6 / 10</span>
                 </div>
                 <Progress value={60} className="h-1.5" />
@@ -446,32 +440,32 @@ export default function SettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Invoice history</CardTitle>
-              <CardDescription>Download your invoices</CardDescription>
+              <CardTitle>{t('settings_invoice_history')}</CardTitle>
+              <CardDescription>{t('settings_invoice_history_desc')}</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader className="bg-muted/40">
                   <TableRow className="border-border hover:bg-transparent">
                     <TableHead className="h-9 font-mono text-[9px] uppercase tracking-[0.14em]">
-                      Date
+                      {t('settings_date')}
                     </TableHead>
                     <TableHead className="h-9 font-mono text-[9px] uppercase tracking-[0.14em]">
-                      Amount
+                      {t('settings_amount')}
                     </TableHead>
                     <TableHead className="h-9 font-mono text-[9px] uppercase tracking-[0.14em]">
-                      Status
+                      {t('settings_status')}
                     </TableHead>
                     <TableHead className="h-9 text-right font-mono text-[9px] uppercase tracking-[0.14em]">
-                      <span className="sr-only">Actions</span>
+                      <span className="sr-only">{t('settings_actions')}</span>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {[
-                    { date: 'May 15, 2026', amount: '$29.00', status: 'Paid' },
-                    { date: 'April 15, 2026', amount: '$29.00', status: 'Paid' },
-                    { date: 'March 15, 2026', amount: '$29.00', status: 'Paid' },
+                    { date: 'May 15, 2026', amount: '$29.00', status: t('settings_paid') },
+                    { date: 'April 15, 2026', amount: '$29.00', status: t('settings_paid') },
+                    { date: 'March 15, 2026', amount: '$29.00', status: t('settings_paid') },
                   ].map((invoice, i) => (
                     <TableRow key={i}>
                       <TableCell>{invoice.date}</TableCell>
@@ -483,7 +477,7 @@ export default function SettingsPage() {
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          aria-label={`Open invoice ${invoice.date}`}
+                          aria-label={`${t('settings_open_invoice')} ${invoice.date}`}
                         >
                           <ExternalLink className="size-4" />
                         </Button>
@@ -500,17 +494,15 @@ export default function SettingsPage() {
         <TabsContent value="api" className="max-w-2xl space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>API Keys</CardTitle>
-              <CardDescription>Manage keys for external integration</CardDescription>
+              <CardTitle>{t('settings_api_keys_title')}</CardTitle>
+              <CardDescription>{t('settings_api_keys_desc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground">
-                  Use API keys to integrate Omnysync with your own applications.
-                </p>
+                <p className="text-sm text-muted-foreground">{t('settings_api_keys_intro')}</p>
                 <Button size="sm">
                   <Key className="size-3.5" />
-                  Generate a key
+                  {t('settings_generate_key')}
                 </Button>
               </div>
 
@@ -521,18 +513,19 @@ export default function SettingsPage() {
                   <div>
                     <p className="text-[13px] font-medium">{key.name}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Created on {key.createdAt} - Last used: {key.lastUsed}
+                      {t('settings_created_on')} {key.createdAt} - {t('settings_last_used')}:{' '}
+                      {key.lastUsed}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm">
-                      Copy
+                      {t('settings_copy')}
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon-sm"
                       className="text-destructive"
-                      aria-label={`Delete ${key.name}`}
+                      aria-label={`${t('settings_delete_key')} ${key.name}`}
                     >
                       <Trash2 className="size-4" />
                     </Button>
@@ -544,16 +537,14 @@ export default function SettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>API Documentation</CardTitle>
-              <CardDescription>Complete endpoint reference</CardDescription>
+              <CardTitle>{t('settings_api_docs_title')}</CardTitle>
+              <CardDescription>{t('settings_api_docs_desc')}</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Full API documentation is available on our developer site.
-              </p>
+              <p className="text-sm text-muted-foreground">{t('settings_api_docs_intro')}</p>
               <Button variant="outline" size="sm" className="mt-4">
                 <ExternalLink className="size-3.5" />
-                View documentation
+                {t('settings_view_docs')}
               </Button>
             </CardContent>
           </Card>

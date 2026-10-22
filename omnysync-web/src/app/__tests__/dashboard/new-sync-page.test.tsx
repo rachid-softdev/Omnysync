@@ -7,6 +7,8 @@ vi.mock('@/lib/i18n/useTranslations', () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
         UI_NEW_SYNC: 'New Sync',
+        sync_new_desc:
+          'Move a document from a source platform to a destination, with optional AI enrichment.',
         UI_STEP_SOURCE: 'Source',
         UI_STEP_SOURCE_DESC: 'Select content source',
         UI_STEP_DOCUMENT: 'Document',

@@ -280,11 +280,11 @@ export default function NewSyncPage() {
       <PageHeader
         eyebrow="NEW RUN / ROUTE SETUP"
         title={t('UI_NEW_SYNC')}
-        description="Move a document from a source platform to a destination, with optional AI enrichment."
+        description={t('sync_new_desc')}
       />
 
       {/* Wizard progress */}
-      <ol className="mt-6 flex flex-wrap items-center gap-y-3">
+      <ol className="mt-6 flex flex-nowrap items-center overflow-x-auto pb-1">
         {steps.map((step, index) => (
           <li key={step.id} className="flex items-center">
             <div className="flex items-center gap-2.5">
@@ -323,7 +323,7 @@ export default function NewSyncPage() {
             {index < steps.length - 1 && (
               <span
                 aria-hidden="true"
-                className={`mx-3 h-px w-6 ${index < currentStep ? 'bg-primary' : 'bg-border'} sm:w-10`}
+                className={`mx-2 h-px w-4 ${index < currentStep ? 'bg-primary' : 'bg-border'} sm:mx-3 sm:w-10`}
               />
             )}
           </li>

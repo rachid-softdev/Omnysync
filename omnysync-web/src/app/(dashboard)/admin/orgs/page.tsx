@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { AlertCircle, ArrowUpRight, Search } from 'lucide-react'
 import type { Column } from '@/components/admin/admin-data-table'
 import { formatDate, detectClientLocale } from '@/lib/format-date'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 interface OrgSubscription {
   planKey: string
@@ -25,6 +26,7 @@ interface Organization {
 
 export default function AdminOrgsPage() {
   const locale = detectClientLocale()
+  const { t } = useTranslations()
   const [orgs, setOrgs] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +44,7 @@ export default function AdminOrgsPage() {
     setError(null)
     fetch('/api/admin/orgs')
       .then((res) => {
-        if (!res.ok) throw new Error('Failed to load organizations')
+        if (!res.ok) throw new Error(t('admin_orgs_load_error'))
         return res.json()
       })
       .then((json) => {
@@ -52,7 +54,7 @@ export default function AdminOrgsPage() {
         setError(err.message)
       })
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return orgs
@@ -70,7 +72,7 @@ export default function AdminOrgsPage() {
     () => [
       {
         key: 'name',
-        header: 'Organization',
+        header: t('admin_orgs_col_org'),
         render: (org) => (
           <Link
             href={`/admin/orgs/${org.id}`}
@@ -83,7 +85,7 @@ export default function AdminOrgsPage() {
       },
       {
         key: 'slug',
-        header: 'Slug',
+        header: t('admin_orgs_col_slug'),
         render: (org) => (
           <span className="font-mono text-xs text-muted-foreground">
             {org.slug ? `/${org.slug}` : '—'}
@@ -92,7 +94,7 @@ export default function AdminOrgsPage() {
       },
       {
         key: 'plan',
-        header: 'Plan',
+        header: t('admin_orgs_col_plan'),
         render: (org) => {
           const sub = org.subscriptions?.[0]
           if (!sub) return <span className="text-muted-foreground">—</span>
@@ -116,7 +118,7 @@ export default function AdminOrgsPage() {
       },
       {
         key: 'createdAt',
-        header: 'Created',
+        header: t('admin_created'),
         render: (org) => (
           <span className="tabular-nums text-muted-foreground">
             {formatDate(org.createdAt, locale, {
@@ -128,7 +130,7 @@ export default function AdminOrgsPage() {
         ),
       },
     ],
-    [locale]
+    [locale, t]
   )
 
   const pagination = {
@@ -141,12 +143,14 @@ export default function AdminOrgsPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="WORKSPACES / REGISTRY"
-        title="Organizations"
+        eyebrow={t('admin_orgs_eyebrow')}
+        title={t('UI_ORGS')}
         description={
           loading
-            ? 'Loading organizations…'
-            : `${orgs.length} organization${orgs.length !== 1 ? 's' : ''} on the platform`
+            ? t('admin_orgs_loading')
+            : `${orgs.length} ${
+                orgs.length === 1 ? t('admin_org') : t('admin_orgs')
+              } ${t('admin_orgs_desc')}`
         }
       />
 
@@ -154,16 +158,16 @@ export default function AdminOrgsPage() {
         <div className="relative w-full max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by name or slug…"
+            placeholder={t('admin_orgs_search')}
             value={search}
             onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
             className="pl-9"
-            aria-label="Search organizations"
+            aria-label={t('admin_orgs_search_aria')}
           />
         </div>
         {!loading && (
           <p className="ml-auto text-xs tabular-nums text-muted-foreground">
-            {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+            {filtered.length} {filtered.length === 1 ? t('admin_result') : t('admin_results')}
           </p>
         )}
       </div>

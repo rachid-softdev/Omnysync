@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import SettingsPage from '../../(dashboard)/dashboard/settings/page'
+
+beforeAll(() => {
+  document.documentElement.lang = 'en'
+})
 
 // Mock Radix UI Tabs to support click-based tab switching in jsdom
 vi.mock('@/components/ui/tabs', () => {
@@ -55,20 +59,6 @@ vi.mock('@/components/ui/tabs', () => {
   }
 })
 
-vi.mock('@/lib/i18n/useTranslations', () => ({
-  useTranslations: vi.fn(() => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        UI_SETTINGS: 'Settings',
-        UI_PREFERENCES: 'Manage your preferences',
-      }
-      return translations[key] || key
-    },
-    loading: false,
-    locale: 'en',
-  })),
-}))
-
 beforeEach(() => {
   vi.clearAllMocks()
 })
@@ -77,7 +67,7 @@ describe('SettingsPage', () => {
   it('renders title and description', () => {
     render(<SettingsPage />)
     expect(screen.getByText('Settings')).toBeInTheDocument()
-    expect(screen.getByText('Manage your preferences')).toBeInTheDocument()
+    expect(screen.getByText('Manage your preferences and configurations')).toBeInTheDocument()
   })
 
   it('renders all tab triggers', () => {

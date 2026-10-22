@@ -1,8 +1,8 @@
 import { FileText } from 'lucide-react'
 
 /**
- * État vide centré pour les pages admin.
- * Affiche une icône, un titre, une description optionnelle et une action optionnelle.
+ * État vide aligné à gauche pour les pages admin.
+ * Respecte la règle Signal : pas d'illustration centrée, une action claire.
  */
 interface AdminEmptyStateProps {
   icon?: React.ComponentType<{ className?: string }>
@@ -18,15 +18,17 @@ export function AdminEmptyState({
   action,
 }: AdminEmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center px-4 py-12">
-      <div className="mb-3 rounded-[3px] border border-border bg-muted/50 p-2.5">
+    <div className="flex items-start gap-3 px-4 py-10 text-left">
+      <div className="shrink-0 rounded-[3px] border border-border bg-muted/50 p-2.5">
         <Icon className="size-5 text-muted-foreground" />
       </div>
-      <h3 className="text-sm font-semibold">{title}</h3>
-      {description && (
-        <p className="mt-1 max-w-sm text-center text-xs text-muted-foreground">{description}</p>
-      )}
-      {action && <div className="mt-4">{action}</div>}
+      <div className="min-w-0">
+        <h3 className="text-sm font-semibold">{title}</h3>
+        {description && (
+          <p className="mt-1 max-w-sm text-xs text-muted-foreground">{description}</p>
+        )}
+        {action && <div className="mt-4">{action}</div>}
+      </div>
     </div>
   )
 }
