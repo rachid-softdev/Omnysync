@@ -48,6 +48,7 @@ import { formatDateTime, detectClientLocale } from '@/lib/format-date'
 import { useBatchSelect } from '@/hooks/use-batch-select'
 import { BatchActionBar } from '@/components/batch-action-bar'
 import { PageHeader, PageShell } from '@/components/page-header'
+import { PlanGate } from '@/components/plan-gate'
 
 interface WebhookEndpoint {
   id: string
@@ -69,6 +70,7 @@ export default function WebhooksPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [testingId, setTestingId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [planGate, setPlanGate] = useState<string | null>(null)
 
   const [batchDeleteConfirmOpen, setBatchDeleteConfirmOpen] = useState(false)
 
@@ -108,6 +110,14 @@ export default function WebhooksPage() {
         const data = await res.json()
         setWebhooks(data.webhooks || [])
       } else {
+        const payload = (await res.json().catch(() => null)) as {
+          code?: string
+          upgradeUrl?: string
+        } | null
+        if (res.status === 403 && payload?.code === 'PLAN_FEATURE_REQUIRED') {
+          setPlanGate(payload.upgradeUrl || '/pricing')
+          return
+        }
         toast.error(`Failed to load webhooks (${res.status}). Refresh the page to try again.`)
       }
     } catch (e) {
@@ -202,6 +212,24 @@ export default function WebhooksPage() {
   const copySecret = (secret: string) => {
     navigator.clipboard.writeText(secret)
     toast.success('Secret copied to clipboard')
+  }
+
+  if (planGate) {
+    return (
+      <PageShell>
+        <PageHeader
+          eyebrow={`WEBHOOKS / ${String(webhooks.length).padStart(2, '0')}`}
+          title={t('WEBHOOKS_TITLE')}
+          description={t('WEBHOOKS_SUBTITLE')}
+        />
+        <PlanGate
+          title={t('plan_gate_webhooks_title')}
+          description={t('plan_gate_webhooks_desc')}
+          upgradeUrl={planGate}
+          className="mt-6"
+        />
+      </PageShell>
+    )
   }
 
   return (

@@ -27,6 +27,7 @@ import { formatDateTime, detectClientLocale } from '@/lib/format-date'
 import { useBatchSelect } from '@/hooks/use-batch-select'
 import { BatchActionBar } from '@/components/batch-action-bar'
 import { PageHeader, PageShell } from '@/components/page-header'
+import { PlanGate } from '@/components/plan-gate'
 import { toast } from '@/components/toast-provider'
 
 interface ApprovalRequest {
@@ -51,6 +52,7 @@ export default function ApprovalsPage() {
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectComment, setRejectComment] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [planGate, setPlanGate] = useState<string | null>(null)
 
   const pendingApprovals = approvals.filter((a) => a.status === 'PENDING')
   const historyApprovals = approvals.filter((a) => a.status !== 'PENDING')
@@ -132,6 +134,14 @@ export default function ApprovalsPage() {
         const data = await res.json()
         setApprovals(data.approvals || [])
       } else {
+        const payload = (await res.json().catch(() => null)) as {
+          code?: string
+          upgradeUrl?: string
+        } | null
+        if (res.status === 403 && payload?.code === 'PLAN_FEATURE_REQUIRED') {
+          setPlanGate(payload.upgradeUrl || '/pricing')
+          return
+        }
         toast.error(`Failed to load approvals (${res.status}). Refresh the page to try again.`)
       }
     } catch (e) {
@@ -247,6 +257,24 @@ export default function ApprovalsPage() {
         <div className="mt-6 flex min-h-[320px] items-center justify-center border border-border bg-card">
           <Loader2 className="size-5 animate-spin text-muted-foreground" />
         </div>
+      </PageShell>
+    )
+  }
+
+  if (planGate) {
+    return (
+      <PageShell>
+        <PageHeader
+          eyebrow={`APPROVALS / ${String(pendingApprovals.length).padStart(2, '0')} PENDING`}
+          title={t('APPROVALS_TITLE')}
+          description={t('APPROVALS_SUBTITLE')}
+        />
+        <PlanGate
+          title={t('plan_gate_approvals_title')}
+          description={t('plan_gate_approvals_desc')}
+          upgradeUrl={planGate}
+          className="mt-6"
+        />
       </PageShell>
     )
   }

@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import ApprovalsPage from '../../(dashboard)/dashboard/approvals/page'
+import { toast } from '@/components/toast-provider'
+
+vi.mock('@/components/toast-provider', () => ({
+  toast: {
+    success: vi.fn(),
+    warning: vi.fn(),
+    error: vi.fn(),
+  },
+}))
 
 vi.mock('@/lib/i18n/useTranslations', () => ({
   useTranslations: vi.fn(() => ({
@@ -10,6 +19,12 @@ vi.mock('@/lib/i18n/useTranslations', () => ({
         APPROVALS_SUBTITLE: 'Manage approval requests',
         APPROVALS_PENDING: 'Pending',
         APPROVALS_HISTORY: 'History',
+        plan_gate_eyebrow: 'PLAN / ACCESS',
+        plan_gate_badge: 'UPGRADE REQUIRED',
+        plan_gate_cta: 'View plans',
+        plan_gate_approvals_title: 'Approvals require the Business plan',
+        plan_gate_approvals_desc:
+          'Upgrade to Business to route documents through a review queue before publishing.',
       }
       return translations[key] || key
     },
@@ -78,6 +93,22 @@ describe('ApprovalsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('No pending approval requests')).toBeInTheDocument()
     })
+  })
+
+  it('renders a plan gate when the plan lacks the approval portal', async () => {
+    ;(global.fetch as any).mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      json: async () => ({ code: 'PLAN_FEATURE_REQUIRED', upgradeUrl: '/pricing' }),
+    })
+
+    render(<ApprovalsPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Approvals require the Business plan')).toBeInTheDocument()
+    })
+    expect(screen.queryByText('No pending approval requests')).not.toBeInTheDocument()
+    expect(vi.mocked(toast.error)).not.toHaveBeenCalled()
   })
 
   it('renders pending approval requests with approve/reject buttons', async () => {

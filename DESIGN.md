@@ -452,6 +452,7 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 - **Loading Spinner:** 32px animated spinner for page-level loading. 16px for inline button loading. Spinners are the only circular loading shape
 - **Skeleton:** Soft gray rectangles with 3px corners matching the shape of the content being loaded. Used on dashboard cards before data arrives
 - **Empty State:** Left-aligned or centered layout with icon + heading + description + optional action button. Used on all list pages when no data exists
+- **Plan-gated state:** Left-aligned panel with a mono `PLAN / ACCESS` rail, lock mark, feature title, upgrade explanation and a single pricing CTA. Used when an API returns `PLAN_FEATURE_REQUIRED`; never surface the raw 403 as a toast.
 
 ### Dialogs & Modals
 
