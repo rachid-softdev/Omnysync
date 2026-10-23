@@ -26,7 +26,7 @@ export default function GlobalError({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-3 bg-muted rounded-lg">
+              <div className="p-3 bg-muted rounded-[3px]">
                 <p className="text-sm font-mono text-muted-foreground">{error.message}</p>
                 {error.digest && (
                   <p className="text-xs text-muted-foreground mt-2">ID: {error.digest}</p>

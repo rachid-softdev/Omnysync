@@ -71,3 +71,6 @@ omnysync-web/prisma/generated/
 
 # husky
 .husky/
+
+# demo video render artifacts
+omnysync-web/demo-render/

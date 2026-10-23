@@ -14,14 +14,14 @@ export default function NotFound() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             href="/"
-            className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-[3px] bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             <Home className="w-4 h-4 mr-2" />
             Go back home
           </Link>
           <Link
             href="/auth/signin"
-            className="inline-flex items-center justify-center rounded-full border border-input px-6 py-3 text-sm font-medium hover:bg-accent"
+            className="inline-flex items-center justify-center rounded-[3px] border border-input px-6 py-3 text-sm font-medium hover:bg-accent"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Sign in

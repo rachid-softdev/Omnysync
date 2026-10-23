@@ -36,6 +36,7 @@ export default async function SyncPage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow={`${t('UI_SYNC_LOG_INDEX')} / ${String(syncLogs.length).padStart(2, '0')}`}
         title={t('UI_SYNC')}
         description={t('UI_SYNC_HISTORY')}
         actions={

@@ -1,43 +1,54 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { AdminStatusBadge } from '@/components/admin/admin-status-badge'
 
+beforeAll(() => {
+  document.documentElement.lang = 'en'
+})
+
 describe('AdminStatusBadge', () => {
-  it('displays "Actif" for status "active"', () => {
+  it('displays "Active" for status "active"', () => {
     render(<AdminStatusBadge status="active" />)
-    expect(screen.getByText('Actif')).toBeInTheDocument()
+    expect(screen.getByText('Active')).toBeInTheDocument()
   })
 
-  it('displays "Inactif" for status "inactive"', () => {
+  it('displays "Inactive" for status "inactive"', () => {
     render(<AdminStatusBadge status="inactive" />)
-    expect(screen.getByText('Inactif')).toBeInTheDocument()
+    expect(screen.getByText('Inactive')).toBeInTheDocument()
   })
 
-  it('displays "Essai" for status "trialing"', () => {
+  it('displays "Trialing" for status "trialing"', () => {
     render(<AdminStatusBadge status="trialing" />)
-    expect(screen.getByText('Essai')).toBeInTheDocument()
+    expect(screen.getByText('Trialing')).toBeInTheDocument()
   })
 
-  it('displays "Expiré" for status "expired"', () => {
+  it('displays "Expired" for status "expired"', () => {
     render(<AdminStatusBadge status="expired" />)
-    expect(screen.getByText('Expiré')).toBeInTheDocument()
+    expect(screen.getByText('Expired')).toBeInTheDocument()
   })
 
-  it('displays "En attente" for status "pending"', () => {
+  it('displays "Pending" for status "pending"', () => {
     render(<AdminStatusBadge status="pending" />)
-    expect(screen.getByText('En attente')).toBeInTheDocument()
+    expect(screen.getByText('Pending')).toBeInTheDocument()
   })
 
-  it('displays "Erreur" for status "error"', () => {
+  it('displays "Error" for status "error"', () => {
     render(<AdminStatusBadge status="error" />)
-    expect(screen.getByText('Erreur')).toBeInTheDocument()
+    expect(screen.getByText('Error')).toBeInTheDocument()
   })
 
   it('displays a custom label when provided', () => {
     render(<AdminStatusBadge status="active" label="Custom Label" />)
     expect(screen.getByText('Custom Label')).toBeInTheDocument()
     // Default label should not appear
-    expect(screen.queryByText('Actif')).not.toBeInTheDocument()
+    expect(screen.queryByText('Active')).not.toBeInTheDocument()
+  })
+
+  it('displays French labels when the document language is French', () => {
+    document.documentElement.lang = 'fr'
+    render(<AdminStatusBadge status="active" />)
+    expect(screen.getByText('Actif')).toBeInTheDocument()
+    document.documentElement.lang = 'en'
   })
 
   it('applies the success variant for "active" status', () => {

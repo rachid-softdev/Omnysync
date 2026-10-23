@@ -27,7 +27,7 @@ describe('Card', () => {
     )
     const title = screen.getByText('Card Title')
     expect(title.tagName).toBe('H3')
-    expect(title).toHaveClass('text-base')
+    expect(title).toHaveClass('text-sm')
     expect(title).toHaveClass('font-semibold')
   })
 
@@ -104,11 +104,11 @@ describe('Card', () => {
     expect(screen.getByText('Footer')).toHaveClass('footer-custom')
   })
 
-  it('has border and shadow classes', () => {
+  it('has border and 3px radius without shadow', () => {
     const { container } = render(<Card>Bordered</Card>)
     const card = container.firstChild as HTMLElement
     expect(card).toHaveClass('border')
-    expect(card).toHaveClass('shadow-sm')
-    expect(card).toHaveClass('rounded-lg')
+    expect(card).not.toHaveClass('shadow-sm')
+    expect(card).toHaveClass('rounded-[3px]')
   })
 })

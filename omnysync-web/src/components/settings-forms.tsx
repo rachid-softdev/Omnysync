@@ -219,7 +219,7 @@ export function SettingsForms({ initialApiKeys = [] }: SettingsFormsProps) {
               {apiKeys.map((key) => (
                 <div
                   key={key.id}
-                  className="flex items-center justify-between p-3 rounded-lg border"
+                  className="flex items-center justify-between p-3 rounded-[3px] border"
                 >
                   <div>
                     <p className="font-medium">{key.name}</p>

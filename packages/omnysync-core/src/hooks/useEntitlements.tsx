@@ -237,9 +237,9 @@ export function UsageBar({
         </span>
         <span>{percentage}%</span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
+      <div className="w-full bg-gray-200 rounded-[1px] h-2">
         <div
-          className={`h-2 rounded-full ${isAtLimit ? "bg-red-500" : "bg-blue-500"}`}
+          className={`h-2 rounded-[1px] ${isAtLimit ? "bg-red-500" : "bg-blue-500"}`}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         />
       </div>

@@ -16,6 +16,7 @@ import {
   Settings,
 } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 // ---------------------------------------------------------------------------
 // Module-level imperative handle so sibling components (e.g. KeyboardShortcuts,
@@ -34,7 +35,7 @@ export function openCommandPalette() {
 interface Command {
   id: string
   icon: React.ComponentType<{ className?: string }>
-  label: string
+  labelKey: string
   shortcut: string
   href: string
 }
@@ -43,70 +44,70 @@ const COMMANDS: Command[] = [
   {
     id: 'dashboard',
     icon: LayoutDashboard,
-    label: 'Dashboard',
+    labelKey: 'UI_DASHBOARD',
     shortcut: '⌘G',
     href: '/dashboard',
   },
   {
     id: 'documents',
     icon: FileText,
-    label: 'Documents',
+    labelKey: 'UI_DOCUMENTS',
     shortcut: '⌘D',
     href: '/dashboard/documents',
   },
   {
     id: 'connectors',
     icon: Plug,
-    label: 'Connectors',
+    labelKey: 'UI_CONNECTORS',
     shortcut: '⌘C',
     href: '/dashboard/connectors',
   },
   {
     id: 'sync',
     icon: ArrowRightLeft,
-    label: 'Sync',
+    labelKey: 'UI_SYNC',
     shortcut: '⌘S',
     href: '/dashboard/sync',
   },
   {
     id: 'new-sync',
     icon: Plus,
-    label: 'New Sync',
+    labelKey: 'UI_NEW_SYNC',
     shortcut: '⌘N',
     href: '/dashboard/sync/new',
   },
   {
     id: 'analytics',
     icon: BarChart3,
-    label: 'Analytics',
+    labelKey: 'UI_ANALYTICS',
     shortcut: '⌘⇧A',
     href: '/dashboard/analytics',
   },
   {
     id: 'approvals',
     icon: FileCheck,
-    label: 'Approvals',
+    labelKey: 'UI_APPROVALS',
     shortcut: '⌘⇧P',
     href: '/dashboard/approvals',
   },
   {
     id: 'usage',
     icon: Zap,
-    label: 'Usage',
+    labelKey: 'UI_USAGE',
     shortcut: '⌘U',
     href: '/dashboard/usage',
   },
   {
     id: 'webhooks',
     icon: Webhook,
-    label: 'Webhooks',
+    labelKey: 'UI_WEBHOOKS',
     shortcut: '⌘W',
     href: '/dashboard/webhooks',
   },
   {
     id: 'settings',
     icon: Settings,
-    label: 'Settings',
+    labelKey: 'UI_SETTINGS',
     shortcut: '⌘,',
     href: '/dashboard/settings',
   },
@@ -117,6 +118,7 @@ const COMMANDS: Command[] = [
 // ---------------------------------------------------------------------------
 export function CommandPalette() {
   const router = useRouter()
+  const { t } = useTranslations()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
@@ -151,7 +153,7 @@ export function CommandPalette() {
   }, [open])
 
   const filteredCommands = query
-    ? COMMANDS.filter((cmd) => cmd.label.toLowerCase().includes(query.toLowerCase()))
+    ? COMMANDS.filter((cmd) => t(cmd.labelKey).toLowerCase().includes(query.toLowerCase()))
     : COMMANDS
 
   const executeCommand = useCallback(
@@ -198,7 +200,7 @@ export function CommandPalette() {
         className="max-w-md p-0 overflow-hidden motion-reduce:animate-none [&>button]:hidden"
         aria-describedby={undefined}
       >
-        <DialogTitle className="sr-only">Command palette</DialogTitle>
+        <DialogTitle className="sr-only">{t('UI_COMMAND_PALETTE')}</DialogTitle>
         {/* Search bar */}
         <div
           className="flex items-center gap-3 px-4 border-b border-border"
@@ -209,9 +211,10 @@ export function CommandPalette() {
             ref={inputRef}
             type="text"
             role="combobox"
-            aria-expanded="true"
+            aria-expanded={filteredCommands.length > 0}
+            aria-controls={filteredCommands.length > 0 ? 'command-palette-list' : undefined}
             aria-haspopup="listbox"
-            placeholder="Search commands…"
+            placeholder={`${t('UI_SEARCH_COMMANDS')}…`}
             value={query}
             onChange={(e) => {
               setQuery(e.target.value)
@@ -224,9 +227,9 @@ export function CommandPalette() {
         {/* Results list */}
         <div className="max-h-80 overflow-y-auto p-2">
           {filteredCommands.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No results found</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{t('UI_NO_RESULTS')}</p>
           ) : (
-            <ul role="listbox" aria-label="Commands">
+            <ul id="command-palette-list" role="listbox" aria-label={t('UI_COMMANDS')}>
               {filteredCommands.map((cmd, index) => {
                 const Icon = cmd.icon
                 const isActive = index === activeIndex
@@ -242,7 +245,7 @@ export function CommandPalette() {
                       onMouseEnter={() => setActiveIndex(index)}
                     >
                       <Icon className="w-4 h-4 shrink-0 text-muted-foreground" />
-                      <span className="flex-1 text-left">{cmd.label}</span>
+                      <span className="flex-1 text-left">{t(cmd.labelKey)}</span>
                       <kbd className="text-[10px] leading-none font-mono text-muted-foreground bg-muted px-1.5 py-1 rounded">
                         {cmd.shortcut}
                       </kbd>
@@ -262,15 +265,18 @@ export function CommandPalette() {
 // CommandPaletteTrigger – small ⌘K badge for the sidebar footer.
 // ---------------------------------------------------------------------------
 export function CommandPaletteTrigger() {
+  const { t } = useTranslations()
   return (
     <button
       type="button"
       onClick={openCommandPalette}
-      className="mt-3 flex items-center justify-center gap-1.5 w-full px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-      aria-label="Open command palette"
+      className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-[3px] px-3 py-1.5 text-xs text-sidebar-foreground/45 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      aria-label={t('UI_OPEN_COMMAND_PALETTE')}
     >
-      <kbd className="text-[10px] leading-none font-mono bg-muted px-1 py-0.5 rounded">⌘K</kbd>
-      <span>Commands</span>
+      <kbd className="rounded-[2px] bg-white/[0.06] px-1 py-0.5 font-mono text-[10px] leading-none text-sidebar-foreground/60">
+        ⌘K
+      </kbd>
+      <span>{t('UI_COMMANDS')}</span>
     </button>
   )
 }

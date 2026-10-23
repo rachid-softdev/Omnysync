@@ -104,6 +104,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
   return (
     <PageShell>
       <PageHeader
+        eyebrow={`DOCUMENT / ${sourceName.toUpperCase()} → ${destName.toUpperCase()}`}
         title={document.title}
         description={`${sourceName} → ${destName} · Created on ${formatDate(document.createdAt, locale)}`}
         actions={
@@ -141,7 +142,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-start gap-3">
                 <span
-                  className={`grid size-9 shrink-0 place-items-center rounded-lg ${
+                  className={`grid size-9 shrink-0 place-items-center rounded-[3px] ${
                     document.status === 'PUBLISHED'
                       ? 'bg-success-soft text-success'
                       : 'bg-muted text-muted-foreground'
@@ -352,11 +353,11 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                   ).map((log) => (
                     <li
                       key={log.id}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5"
+                      className="flex items-center justify-between gap-3 rounded-[3px] border border-border px-3 py-2.5"
                     >
                       <div className="flex min-w-0 items-center gap-2.5">
                         <span
-                          className={`grid size-6 shrink-0 place-items-center rounded-full ${
+                          className={`grid size-6 shrink-0 place-items-center rounded-[3px] ${
                             log.status === 'SUCCESS'
                               ? 'bg-success-soft text-success'
                               : log.status === 'ERROR'

@@ -149,6 +149,7 @@ export default function AdminDowngradePreviewPage({ params }: { params: Promise<
       </div>
 
       <PageHeader
+        eyebrow="PLANS / DOWNGRADE"
         title="Downgrade Preview"
         description="Prévisualisez l'impact d'un changement de plan avant de l'appliquer"
       />
@@ -203,7 +204,7 @@ export default function AdminDowngradePreviewPage({ params }: { params: Promise<
       {error && (
         <div
           role="alert"
-          className="mt-4 flex items-center gap-2.5 rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2.5 text-[13px] text-destructive"
+          className="mt-4 flex items-center gap-2.5 rounded-[2px] border border-destructive/30 bg-destructive-soft px-3 py-2.5 text-[13px] text-destructive"
         >
           <AlertTriangle className="size-4 shrink-0" />
           <span>{error}</span>
@@ -218,7 +219,7 @@ export default function AdminDowngradePreviewPage({ params }: { params: Promise<
             <CardContent className="flex flex-wrap items-center gap-3 p-4">
               {data.canProceed ? (
                 <>
-                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-success-soft text-success">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-[3px] bg-success-soft text-success">
                     <CheckCircle2 className="size-4" />
                   </span>
                   <div className="min-w-0">
@@ -232,7 +233,7 @@ export default function AdminDowngradePreviewPage({ params }: { params: Promise<
                 </>
               ) : (
                 <>
-                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-destructive-soft text-destructive">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-[3px] bg-destructive-soft text-destructive">
                     <XCircle className="size-4" />
                   </span>
                   <div className="min-w-0">
@@ -402,7 +403,7 @@ export default function AdminDowngradePreviewPage({ params }: { params: Promise<
       {/* Initial empty state */}
       {!data && !loading && !error && !selectedPlan && (
         <div className="mt-10 flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
-          <div className="mb-3 rounded-lg border border-border bg-muted/50 p-2.5">
+          <div className="mb-3 rounded-[3px] border border-border bg-muted/50 p-2.5">
             <Shield className="size-5" />
           </div>
           <p className="text-sm font-semibold text-foreground">Sélectionnez un plan</p>

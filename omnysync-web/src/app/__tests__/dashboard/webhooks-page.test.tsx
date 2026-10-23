@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import WebhooksPage from '../../(dashboard)/dashboard/webhooks/page'
+import { toast } from '@/components/toast-provider'
 
 vi.mock('@/lib/i18n/useTranslations', () => ({
   useTranslations: vi.fn(() => ({
@@ -10,6 +11,11 @@ vi.mock('@/lib/i18n/useTranslations', () => ({
         WEBHOOKS_SUBTITLE: 'Manage webhook endpoints',
         WEBHOOKS_CREATE: 'Create webhook',
         WEBHOOKS_CREATE_TITLE: 'New webhook',
+        plan_gate_eyebrow: 'PLAN / ACCESS',
+        plan_gate_badge: 'UPGRADE REQUIRED',
+        plan_gate_cta: 'View plans',
+        plan_gate_webhooks_title: 'Webhooks require the Pro plan',
+        plan_gate_webhooks_desc: 'Upgrade to Pro to send signed sync events to your endpoints.',
       }
       return translations[key] || key
     },
@@ -76,6 +82,22 @@ describe('WebhooksPage', () => {
       // "Create webhook" appears in both the header button and the empty state card
       expect(screen.getAllByText('Create webhook').length).toBeGreaterThanOrEqual(1)
     })
+  })
+
+  it('renders a plan gate when the plan lacks webhooks', async () => {
+    ;(global.fetch as any).mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      json: async () => ({ code: 'PLAN_FEATURE_REQUIRED', upgradeUrl: '/pricing' }),
+    })
+
+    render(<WebhooksPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Webhooks require the Pro plan')).toBeInTheDocument()
+    })
+    expect(screen.getByRole('link', { name: /view plans/i })).toHaveAttribute('href', '/pricing')
+    expect(vi.mocked(toast.error)).not.toHaveBeenCalled()
   })
 
   it('renders webhook list with type and URL', async () => {

@@ -2,12 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import SignInPage from '../../auth/signin/page'
 
-const mockPush = vi.fn()
 const mockSignIn = vi.fn()
-
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush }),
-}))
 
 vi.mock('next-auth/react', () => ({
   signIn: (...args: any[]) => mockSignIn(...args),
@@ -15,69 +10,93 @@ vi.mock('next-auth/react', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
-  global.fetch = vi.fn()
 })
 
 describe('SignInPage', () => {
-  it('renders sign-in form by default', () => {
+  it('renders the magic-link form by default', () => {
     render(<SignInPage />)
     expect(screen.getByText('Welcome back')).toBeInTheDocument()
-    expect(screen.getByText('Sign in')).toBeInTheDocument()
     expect(screen.getByLabelText('Email')).toBeInTheDocument()
-    expect(screen.getByLabelText('Password')).toBeInTheDocument()
+    expect(screen.getByText('Send sign-in link')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Password')).not.toBeInTheDocument()
   })
 
-  it('switches to registration form', () => {
-    render(<SignInPage />)
-    fireEvent.click(screen.getByText('Sign up'))
-    expect(screen.getByText('Create your account')).toBeInTheDocument()
-    expect(screen.getByText('Create account')).toBeInTheDocument()
-  })
-
-  it('shows name field in registration mode', () => {
-    render(<SignInPage />)
-    fireEvent.click(screen.getByText('Sign up'))
-    expect(screen.getByLabelText('Name')).toBeInTheDocument()
-  })
-
-  it('shows forgot password link in login mode', () => {
-    render(<SignInPage />)
-    expect(screen.getByText('Forgot password?')).toBeInTheDocument()
-  })
-
-  it('shows error on login failure', async () => {
-    mockSignIn.mockResolvedValueOnce({ error: 'CredentialsSignin' })
-
-    render(<SignInPage />)
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@test.com' } })
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } })
-    fireEvent.click(screen.getByText('Sign in'))
-
-    await waitFor(() => {
-      expect(screen.getByText(/Invalid email or password/)).toBeInTheDocument()
-    })
-  })
-
-  it('renders Google sign-in button', () => {
+  it('renders the Google sign-in button', () => {
     render(<SignInPage />)
     expect(screen.getByText('Continue with Google')).toBeInTheDocument()
   })
 
-  it('renders omnysync brand link', () => {
+  it('requires an email address before sending a link', () => {
     render(<SignInPage />)
-    expect(screen.getByText('Omnysync')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Send sign-in link'))
+    expect(screen.getByText('Email is required')).toBeInTheDocument()
+    expect(mockSignIn).not.toHaveBeenCalled()
   })
 
-  it('redirects to dashboard on successful login', async () => {
+  it('rejects an invalid email address', () => {
+    render(<SignInPage />)
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'not-an-email' } })
+    fireEvent.click(screen.getByText('Send sign-in link'))
+    expect(screen.getByText('Enter a valid email address')).toBeInTheDocument()
+    expect(mockSignIn).not.toHaveBeenCalled()
+  })
+
+  it('sends a magic link and shows the inbox confirmation', async () => {
     mockSignIn.mockResolvedValueOnce({ ok: true, error: undefined })
 
     render(<SignInPage />)
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@test.com' } })
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } })
-    fireEvent.click(screen.getByText('Sign in'))
+    fireEvent.click(screen.getByText('Send sign-in link'))
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/dashboard')
+      expect(mockSignIn).toHaveBeenCalledWith('resend', {
+        email: 'test@test.com',
+        redirect: false,
+        callbackUrl: '/dashboard',
+      })
     })
+
+    expect(await screen.findByText('Check your inbox')).toBeInTheDocument()
+    expect(screen.getByText('test@test.com')).toBeInTheDocument()
+  })
+
+  it('shows an error when the magic link cannot be sent', async () => {
+    mockSignIn.mockResolvedValueOnce({ error: 'Configuration' })
+
+    render(<SignInPage />)
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@test.com' } })
+    fireEvent.click(screen.getByText('Send sign-in link'))
+
+    expect(
+      await screen.findByText('Unable to send the sign-in link. Please try again.')
+    ).toBeInTheDocument()
+  })
+
+  it('lets the user try another email after sending', async () => {
+    mockSignIn.mockResolvedValueOnce({ ok: true, error: undefined })
+
+    render(<SignInPage />)
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@test.com' } })
+    fireEvent.click(screen.getByText('Send sign-in link'))
+
+    expect(await screen.findByText('Check your inbox')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Use another address'))
+
+    expect(screen.getByText('Send sign-in link')).toBeInTheDocument()
+    expect(screen.getByLabelText('Email')).toHaveValue('')
+  })
+
+  it('starts Google OAuth with the dashboard callback', async () => {
+    render(<SignInPage />)
+    fireEvent.click(screen.getByText('Continue with Google'))
+
+    await waitFor(() => {
+      expect(mockSignIn).toHaveBeenCalledWith('google', { callbackUrl: '/dashboard' })
+    })
+  })
+
+  it('renders the Omnysync brand link', () => {
+    render(<SignInPage />)
+    expect(screen.getByText('Omnysync')).toBeInTheDocument()
   })
 })

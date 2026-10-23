@@ -37,9 +37,9 @@ describe('Badge', () => {
     expect(badge).toHaveClass('custom-class')
   })
 
-  it('has rounded-full class', () => {
+  it('has sharp 3px radius', () => {
     render(<Badge>Rounded</Badge>)
-    expect(screen.getByText('Rounded')).toHaveClass('rounded-full')
+    expect(screen.getByText('Rounded')).toHaveClass('rounded-[3px]')
   })
 
   it('renders with inline-flex layout', () => {

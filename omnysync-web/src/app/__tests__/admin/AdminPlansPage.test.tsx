@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import AdminPlansPage from '../../(dashboard)/admin/plans/page'
 
-// AdminDataTable localizes its footer from <html lang>; assertions below use FR.
+// AdminDataTable localizes its footer from <html lang>; assertions below use EN.
 beforeAll(() => {
-  document.documentElement.lang = 'fr'
+  document.documentElement.lang = 'en'
 })
 
 // ---------------------------------------------------------------------------
@@ -55,9 +55,13 @@ describe('AdminPlansPage', () => {
 
     render(<AdminPlansPage />)
 
-    await waitFor(() => {
-      expect(screen.getByText('Plans')).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByText('Plans')).toBeInTheDocument()
+        expect(screen.getByText('Free')).toBeInTheDocument()
+      },
+      { timeout: 10000 }
+    )
   })
 
   it('affiche la description du header', async () => {
@@ -142,9 +146,9 @@ describe('AdminPlansPage', () => {
     render(<AdminPlansPage />)
 
     await waitFor(() => {
-      // AdminStatusBadge avec status='active' → label par défaut 'Actif'
-      const actifBadges = screen.getAllByText('Actif')
-      expect(actifBadges.length).toBe(2)
+      // AdminStatusBadge avec status='active' → label par défaut 'Active'
+      const activeBadges = screen.getAllByText('Active')
+      expect(activeBadges.length).toBe(2)
     })
   })
 
@@ -259,7 +263,7 @@ describe('AdminPlansPage', () => {
     render(<AdminPlansPage />)
 
     await waitFor(() => {
-      expect(screen.getByText(/sur 2/)).toBeInTheDocument()
+      expect(screen.getByText(/of 2/)).toBeInTheDocument()
     })
   })
 
@@ -319,7 +323,7 @@ describe('AdminPlansPage', () => {
     render(<AdminPlansPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Inactif')).toBeInTheDocument()
+      expect(screen.getByText('Inactive')).toBeInTheDocument()
     })
   })
 

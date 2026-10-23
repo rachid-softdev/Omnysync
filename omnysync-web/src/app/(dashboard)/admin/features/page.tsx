@@ -7,13 +7,14 @@
 
 import { useState, useEffect, useCallback, type ChangeEvent } from 'react'
 import Link from 'next/link'
-import { Plus, Loader2, Search } from 'lucide-react'
+import { Plus, Flag, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { PageHeader, PageShell } from '@/components/page-header'
 import { AdminEmptyState } from '@/components/admin/admin-empty-state'
 import { AdminDataTable, type Column } from '@/components/admin/admin-data-table'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -56,6 +57,7 @@ function TypeBadge({ type }: { type: string }) {
 // ---------------------------------------------------------------------------
 
 export default function AdminFeaturesPage() {
+  const { t } = useTranslations()
   const [data, setData] = useState<Feature[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -75,17 +77,17 @@ export default function AdminFeaturesPage() {
       const res = await fetch(`/api/admin/features?page=${page}&limit=20&sort=${sortBy}:${sortDir}`)
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.message ?? 'Failed to fetch features')
+        throw new Error(err.message ?? t('admin_fetch_features_error'))
       }
       const json = await res.json()
       setData(json.data)
       setPagination(json.pagination)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      setError(err instanceof Error ? err.message : t('admin_unexpected_error'))
     } finally {
       setIsLoading(false)
     }
-  }, [page, sortBy, sortDir])
+  }, [page, sortBy, sortDir, t])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -125,13 +127,13 @@ export default function AdminFeaturesPage() {
   const columns: Column<Feature>[] = [
     {
       key: 'key',
-      header: 'Key',
+      header: t('admin_features_col_key'),
       sortable: true,
       render: (f) => <span className="font-mono text-xs font-medium">{f.key}</span>,
     },
     {
       key: 'name',
-      header: 'Name',
+      header: t('admin_features_col_name'),
       sortable: true,
       render: (f) => (
         <div className="min-w-0">
@@ -144,23 +146,23 @@ export default function AdminFeaturesPage() {
     },
     {
       key: 'type',
-      header: 'Type',
+      header: t('admin_features_col_type'),
       sortable: true,
       render: (f) => <TypeBadge type={f.type} />,
     },
     {
       key: 'plans',
-      header: 'Plans',
+      header: t('admin_features_col_plans'),
       className: 'text-right',
       render: (f) => (
         <span className="tabular-nums text-muted-foreground">
-          {f.plans.length} plan{f.plans.length !== 1 ? 's' : ''}
+          {f.plans.length} {f.plans.length === 1 ? t('admin_plan') : t('admin_plan_plural')}
         </span>
       ),
     },
     {
       key: 'defaultConfig',
-      header: 'Default config',
+      header: t('admin_features_col_default'),
       className: 'max-w-[220px]',
       render: (f) =>
         f.defaultConfig ? (
@@ -180,11 +182,15 @@ export default function AdminFeaturesPage() {
   if (error) {
     return (
       <PageShell>
-        <PageHeader title="Features" description="Manage feature flags and entitlements" />
-        <div className="mt-10 flex flex-col items-center justify-center text-center">
-          <p className="mb-4 text-sm font-medium text-destructive">{error}</p>
+        <PageHeader
+          eyebrow={t('admin_features_eyebrow')}
+          title={t('UI_FEATURES')}
+          description={t('admin_features_desc')}
+        />
+        <div className="mt-10 flex flex-col items-start gap-4">
+          <p className="text-sm font-medium text-destructive">{error}</p>
           <Button variant="outline" size="sm" onClick={fetchFeatures}>
-            Retry
+            {t('admin_retry')}
           </Button>
         </div>
       </PageShell>
@@ -198,13 +204,14 @@ export default function AdminFeaturesPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Features"
-        description="Manage feature flags and entitlements"
+        eyebrow={t('admin_features_eyebrow')}
+        title={t('UI_FEATURES')}
+        description={t('admin_features_desc')}
         actions={
           <Button size="sm" asChild>
             <Link href="/admin/features/new">
               <Plus className="size-3.5" />
-              New Feature
+              {t('admin_features_new')}
             </Link>
           </Button>
         }
@@ -214,21 +221,22 @@ export default function AdminFeaturesPage() {
         <div className="relative w-full max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search features..."
+            placeholder={t('admin_features_search')}
             value={search}
             onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
             className="pl-9"
-            aria-label="Search features"
+            aria-label={t('admin_features_search_aria')}
           />
         </div>
         {!isLoading && (
           <p className="ml-auto text-xs tabular-nums text-muted-foreground">
-            {filteredData.length} result{filteredData.length !== 1 ? 's' : ''}
+            {filteredData.length}{' '}
+            {filteredData.length === 1 ? t('admin_result') : t('admin_results')}
           </p>
         )}
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="mt-4 overflow-hidden rounded-[3px] border border-border bg-card">
         <AdminDataTable<Feature>
           columns={columns}
           data={filteredData}
@@ -241,14 +249,14 @@ export default function AdminFeaturesPage() {
           keyExtractor={(f) => f.id}
           emptyState={
             <AdminEmptyState
-              icon={Loader2}
-              title="No features"
-              description="Create your first feature flag to start managing entitlements."
+              icon={Flag}
+              title={t('admin_features_empty_title')}
+              description={t('admin_features_empty_desc')}
               action={
                 <Button size="sm" asChild>
                   <Link href="/admin/features/new">
                     <Plus className="size-3.5" />
-                    New Feature
+                    {t('admin_features_new')}
                   </Link>
                 </Button>
               }

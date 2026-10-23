@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import AdminUsersPage from '../../(dashboard)/admin/users/page'
 
-// AdminDataTable localizes its footer from <html lang>; assertions below use FR.
+// AdminDataTable localizes its footer from <html lang>; assertions below use EN.
 beforeAll(() => {
-  document.documentElement.lang = 'fr'
+  document.documentElement.lang = 'en'
 })
 
 // ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ describe('AdminUsersPage', () => {
     })
   })
 
-  it('affiche les badges de rôle USER et ADMIN', async () => {
+  it('affiche les badges de rôle User et Admin', async () => {
     ;(global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => mockUsers,
@@ -100,8 +100,8 @@ describe('AdminUsersPage', () => {
     render(<AdminUsersPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('USER')).toBeInTheDocument()
-      expect(screen.getByText('ADMIN')).toBeInTheDocument()
+      expect(screen.getAllByText('User').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Admin').length).toBeGreaterThan(0)
     })
   })
 
@@ -146,7 +146,7 @@ describe('AdminUsersPage', () => {
     render(<AdminUsersPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Aucune donnée')).toBeInTheDocument()
+      expect(screen.getByText('No data')).toBeInTheDocument()
     })
   })
 
@@ -231,9 +231,9 @@ describe('AdminUsersPage', () => {
     render(<AdminUsersPage />)
 
     await waitFor(() => {
-      // document lang = fr → "1 janv. 2026"
-      expect(screen.getByText(/1 janv\. 2026/)).toBeInTheDocument()
-      expect(screen.getByText(/2 janv\. 2026/)).toBeInTheDocument()
+      // document lang = en → "Jan 1, 2026"
+      expect(screen.getByText(/Jan 1, 2026/)).toBeInTheDocument()
+      expect(screen.getByText(/Jan 2, 2026/)).toBeInTheDocument()
     })
   })
 

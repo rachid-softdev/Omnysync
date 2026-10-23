@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from 'react'
 import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -15,7 +14,7 @@ import {
 } from '@/components/ui/table'
 import { useBatchSelect } from '@/hooks/use-batch-select'
 import { BatchActionBar } from '@/components/batch-action-bar'
-import { FileText, Trash2 } from 'lucide-react'
+import { ArrowRight, FileText, Trash2 } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 import { formatDate } from '@/lib/format-date'
 import {
@@ -44,24 +43,18 @@ interface BatchDocumentListProps {
   locale: string
 }
 
-const statusLabels: Record<string, string> = {
-  NOT_SYNCED: 'Not synced',
-  SYNCING: 'Syncing',
-  SYNCED: 'Synced',
-  FAILED: 'Failed',
-}
-
-const statusVariants: Record<string, 'secondary' | 'info' | 'success' | 'destructive'> = {
-  NOT_SYNCED: 'secondary',
-  SYNCING: 'info',
-  SYNCED: 'success',
-  FAILED: 'destructive',
-}
-
 const statusDots: Record<string, string> = {
+  NOT_SYNCED: 'border border-border-strong',
   SYNCING: 'bg-info',
   SYNCED: 'bg-success',
   FAILED: 'bg-destructive',
+}
+
+const statusTones: Record<string, string> = {
+  NOT_SYNCED: 'text-muted-foreground',
+  SYNCING: 'text-info',
+  SYNCED: 'text-success',
+  FAILED: 'text-destructive',
 }
 
 export function BatchDocumentList({ documents: initialDocuments, locale }: BatchDocumentListProps) {
@@ -72,6 +65,13 @@ export function BatchDocumentList({ documents: initialDocuments, locale }: Batch
   const { selectedIds, selectedCount, isAllSelected, toggle, selectAll, clearSelection } =
     useBatchSelect(docs)
 
+  const statusLabels: Record<string, string> = {
+    NOT_SYNCED: t('UI_STATUS_NOT_SYNCED'),
+    SYNCING: t('UI_STATUS_SYNCING'),
+    SYNCED: t('UI_STATUS_SYNCED'),
+    FAILED: t('UI_STATUS_FAILED'),
+  }
+
   const handleBatchDelete = useCallback(() => {
     setDocs((prev) => prev.filter((d) => !selectedIds.has(d.id)))
     toast.success(`${selectedCount} document(s) removed`)
@@ -81,15 +81,28 @@ export function BatchDocumentList({ documents: initialDocuments, locale }: Batch
 
   if (docs.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
-        <span className="mx-auto grid size-10 place-items-center rounded-xl bg-muted">
-          <FileText className="size-5 text-muted-foreground" />
-        </span>
-        <p className="mt-4 text-sm font-medium">{t('UI_NO_DOCS')}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{t('UI_IMPORT_DOCS')}</p>
-        <Button asChild className="mt-6">
-          <Link href="/dashboard/connectors">{t('UI_CONNECT_FIRST')}</Link>
-        </Button>
+      <div className="border border-border bg-card">
+        <div className="flex items-center justify-between border-b border-border px-5 py-3 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+          <span>{t('UI_ALL_DOCS')}</span>
+          <span className="tabular-nums">00</span>
+        </div>
+        <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:p-8">
+          <span className="grid size-10 shrink-0 place-items-center border border-border bg-muted text-muted-foreground">
+            <FileText className="size-5" />
+          </span>
+          <div className="max-w-xl">
+            <p className="text-base font-semibold tracking-[-0.02em]">{t('UI_NO_DOCS')}</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              {t('UI_IMPORT_DOCS')}
+            </p>
+            <Button asChild className="mt-5">
+              <Link href="/dashboard/connectors">
+                {t('UI_CONNECT_FIRST')}
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
       </div>
     )
   }
@@ -113,11 +126,11 @@ export function BatchDocumentList({ documents: initialDocuments, locale }: Batch
         />
       )}
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="border border-border bg-card">
         <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-10 pr-0">
+          <TableHeader className="bg-muted/40">
+            <TableRow className="border-border hover:bg-transparent">
+              <TableHead className="h-9 w-10 px-2 pr-0 sm:px-4">
                 <Checkbox
                   id="select-all-docs"
                   aria-label="Select all documents"
@@ -128,55 +141,76 @@ export function BatchDocumentList({ documents: initialDocuments, locale }: Batch
                   }}
                 />
               </TableHead>
-              <TableHead>Document</TableHead>
-              <TableHead className="hidden md:table-cell">Pipeline</TableHead>
-              <TableHead className="hidden sm:table-cell">Updated</TableHead>
-              <TableHead className="text-right">Status</TableHead>
+              <TableHead className="h-9 px-2 font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
+                {t('UI_DOCUMENT')}
+              </TableHead>
+              <TableHead className="hidden h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] md:table-cell">
+                {t('UI_PIPELINE')}
+              </TableHead>
+              <TableHead className="hidden h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] sm:table-cell">
+                {t('UI_UPDATED')}
+              </TableHead>
+              <TableHead className="h-9 px-2 text-right font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
+                {t('UI_STATUS')}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {docs.map((doc) => (
-              <TableRow key={doc.id} className="group">
-                <TableCell className="pr-0">
+              <TableRow key={doc.id} className="group border-border hover:bg-muted/30">
+                <TableCell className="px-2 pr-0 sm:px-4">
                   <Checkbox
                     checked={selectedIds.has(doc.id)}
                     onCheckedChange={() => toggle(doc.id)}
                     aria-label={`Select ${doc.title}`}
                   />
                 </TableCell>
-                <TableCell>
-                  <Link
-                    href={`/dashboard/documents/${doc.id}`}
-                    className="block max-w-[28rem] truncate text-[13px] font-medium outline-none focus-visible:text-primary focus-visible:underline"
-                  >
-                    {doc.title}
-                  </Link>
+                <TableCell className="px-2 py-2.5 sm:px-4">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/dashboard/documents/${doc.id}`}
+                      className="block max-w-[12rem] truncate text-[13px] font-medium outline-none focus-visible:text-primary focus-visible:underline sm:max-w-[28rem]"
+                    >
+                      {doc.title}
+                    </Link>
+                    <p className="mt-0.5 max-w-[12rem] truncate font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground/60 sm:max-w-none">
+                      DOC / {doc.id.slice(0, 8)}
+                    </p>
+                  </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  <span className="text-[13px] text-muted-foreground">
-                    {doc.sourceConnector?.type || '—'}
-                    <span className="mx-1.5 text-muted-foreground/60">→</span>
-                    {doc.destConnector?.type || '—'}
+                  <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
+                    {doc.sourceConnector?.type?.replace(/_/g, ' ') || '—'}
+                    <span className="mx-2 text-border-strong">→</span>
+                    {doc.destConnector?.type?.replace(/_/g, ' ') || '—'}
                   </span>
                 </TableCell>
-                <TableCell className="hidden whitespace-nowrap text-[13px] text-muted-foreground sm:table-cell">
+                <TableCell className="hidden whitespace-nowrap font-mono text-[10px] tabular-nums text-muted-foreground sm:table-cell">
                   {formatDate(doc.updatedAt, locale)}
                 </TableCell>
-                <TableCell className="text-right">
-                  <Badge variant={statusVariants[doc.syncStatus] || 'secondary'}>
-                    {statusDots[doc.syncStatus] && (
-                      <span
-                        className={`size-1.5 rounded-full ${statusDots[doc.syncStatus]}`}
-                        aria-hidden="true"
-                      />
-                    )}
+                <TableCell className="px-2 text-right sm:px-4">
+                  <span
+                    className={`inline-flex items-center gap-1.5 whitespace-nowrap font-mono text-[9px] uppercase tracking-[0.12em] ${
+                      statusTones[doc.syncStatus] || 'text-muted-foreground'
+                    }`}
+                  >
+                    <span
+                      className={`size-1.5 ${statusDots[doc.syncStatus] || 'bg-muted-foreground/40'}`}
+                      aria-hidden="true"
+                    />
                     {statusLabels[doc.syncStatus] || doc.syncStatus}
-                  </Badge>
+                  </span>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-2.5 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+          <span>
+            {docs.length} {t('UI_DOCS_LABEL').toLowerCase()}
+          </span>
+          <span>{t('UI_ACTIVE')}</span>
+        </div>
       </div>
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>

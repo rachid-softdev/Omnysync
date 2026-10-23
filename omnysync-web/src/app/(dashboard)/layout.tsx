@@ -10,6 +10,7 @@ import { KeyboardShortcuts } from '@/components/keyboard-shortcuts'
 import { CommandPalette, CommandPaletteTrigger } from '@/components/command-palette'
 import { DashboardHeader } from '@/components/dashboard-header'
 import { LogoutButton } from '@/components/logout-button'
+import { BrandLockup } from '@/components/signal-mark'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -58,19 +59,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="min-h-screen bg-muted/40">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:ring-2 focus:ring-ring"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-[2px] focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:ring-2 focus:ring-ring"
       >
         {t('UI_SKIP_TO_CONTENT')}
       </a>
 
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-sidebar md:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
         <div className="flex h-14 items-center border-b border-sidebar-border px-5">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="grid size-7 place-items-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">
-              O
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight">Omnysync</span>
+          <Link href="/dashboard" className="flex items-center">
+            <BrandLockup tone="sidebar" />
           </Link>
         </div>
 
@@ -82,36 +80,38 @@ export default async function DashboardLayout({ children }: { children: React.Re
             href="https://docs.omnysync.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-1 flex h-9 items-center gap-2.5 rounded-md px-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="mt-1 flex h-9 items-center gap-2.5 rounded-[3px] px-2.5 text-sm text-sidebar-foreground/55 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <BookOpen className="size-4 shrink-0" />
             <span className="truncate">{t('UI_DOCS_LINK')}</span>
           </Link>
 
-          <div className="mt-3 flex items-center gap-2.5 rounded-lg border border-sidebar-border bg-background p-2">
+          <div className="mt-3 flex items-center gap-2.5 rounded-[3px] border border-sidebar-border bg-white/[0.04] p-2">
             {user.image ? (
               <Image
                 src={user.image}
                 alt={user.name || 'User'}
                 width={32}
                 height={32}
-                className="size-8 rounded-full object-cover"
+                className="size-8 rounded-[3px] object-cover"
               />
             ) : (
-              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+              <span className="grid size-8 shrink-0 place-items-center rounded-[3px] bg-primary/20 text-xs font-semibold text-primary">
                 {(user.name || user.email || 'U').slice(0, 1).toUpperCase()}
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-medium leading-tight">{user.name}</p>
-              <p className="truncate text-[11px] leading-tight text-muted-foreground">
+              <p className="truncate text-[13px] font-medium leading-tight text-sidebar-foreground">
+                {user.name}
+              </p>
+              <p className="truncate text-[11px] leading-tight text-sidebar-foreground/45">
                 {user.email}
               </p>
             </div>
             <LogoutButton
               label={t('UI_LOGOUT')}
               iconOnly
-              className="shrink-0 text-muted-foreground"
+              className="shrink-0 text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
             />
           </div>
         </div>

@@ -3,7 +3,8 @@ import { render, screen } from '@testing-library/react'
 import RootLayout from '../layout'
 
 vi.mock('next/font/google', () => ({
-  Inter: () => ({ className: 'inter-font' }),
+  Schibsted_Grotesk: () => ({ className: 'schibsted-font', variable: 'font-variable' }),
+  IBM_Plex_Mono: () => ({ className: 'plex-mono-font', variable: 'mono-font-variable' }),
 }))
 
 vi.mock('next/headers', () => ({

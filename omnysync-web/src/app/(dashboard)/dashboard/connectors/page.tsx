@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
@@ -136,6 +135,7 @@ export default function ConnectorsPage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow={`${t('UI_CONNECTORS_INDEX')} / ${String(connectors.length).padStart(2, '0')}`}
         title={t('UI_CONNECTORS')}
         description={t('UI_MANAGE_CONNECTORS')}
         actions={
@@ -153,35 +153,43 @@ export default function ConnectorsPage() {
       />
 
       {statusMsg && (
-        <div className="mt-6 rounded-lg border border-success/30 bg-success-soft px-4 py-3 text-sm text-success">
+        <div className="mt-6 border border-success/30 bg-success-soft px-4 py-3 text-sm text-success">
           {statusMsg}
         </div>
       )}
       {errorMsg && (
-        <div className="mt-6 rounded-lg border border-destructive/30 bg-destructive-soft px-4 py-3 text-sm text-destructive">
+        <div className="mt-6 border border-destructive/30 bg-destructive-soft px-4 py-3 text-sm text-destructive">
           {errorMsg}
         </div>
       )}
 
       {loading ? (
-        <div className="flex min-h-[320px] items-center justify-center">
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        <div className="mt-6 flex min-h-[320px] items-center justify-center border border-border bg-card">
+          <Loader2 className="size-5 animate-spin text-muted-foreground" />
         </div>
       ) : (
         <>
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
             {/* Sources catalog */}
-            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-              <div className="border-b border-border px-5 py-3.5">
-                <h2 className="text-sm font-semibold">{t('UI_SOURCES')}</h2>
-                <p className="mt-0.5 text-xs text-muted-foreground">{t('UI_SOURCES_DESC')}</p>
+            <section className="min-w-0 border border-border bg-card">
+              <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
+                <div className="min-w-0">
+                  <h2 className="text-sm font-semibold">{t('UI_SOURCES')}</h2>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{t('UI_SOURCES_DESC')}</p>
+                </div>
+                <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                  {String(sourceTypes.length).padStart(2, '0')}
+                </span>
               </div>
               <ul className="divide-y divide-border">
-                {[...sourceTypes].map((type) => {
+                {[...sourceTypes].map((type, index) => {
                   const isConnected = connectedTypesSet.has(type)
                   return (
-                    <li key={type} className="flex items-center gap-4 px-5 py-3.5">
-                      <ConnectorIcon type={type} className="size-9 shrink-0" />
+                    <li key={type} className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
+                      <span className="hidden w-4 font-mono text-[9px] tabular-nums text-muted-foreground/50 sm:block">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                      <ConnectorIcon type={type} className="size-8 shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-medium">{connectorNames[type]}</p>
                         <p className="truncate text-xs text-muted-foreground">
@@ -189,10 +197,10 @@ export default function ConnectorsPage() {
                         </p>
                       </div>
                       {isConnected && (
-                        <Badge variant="success">
-                          <span className="size-1.5 rounded-full bg-success" aria-hidden="true" />
+                        <span className="hidden items-center gap-1.5 whitespace-nowrap font-mono text-[9px] uppercase tracking-[0.12em] text-success sm:flex">
+                          <span className="size-1.5 bg-success" aria-hidden="true" />
                           {t('UI_ACTIVE')}
-                        </Badge>
+                        </span>
                       )}
                       <Button
                         variant={isConnected ? 'outline' : 'default'}
@@ -205,20 +213,30 @@ export default function ConnectorsPage() {
                   )
                 })}
               </ul>
-            </div>
+            </section>
 
             {/* Destinations catalog */}
-            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-              <div className="border-b border-border px-5 py-3.5">
-                <h2 className="text-sm font-semibold">{t('UI_DESTINATIONS')}</h2>
-                <p className="mt-0.5 text-xs text-muted-foreground">{t('UI_DESTINATIONS_DESC')}</p>
+            <section className="min-w-0 border border-border bg-card">
+              <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
+                <div className="min-w-0">
+                  <h2 className="text-sm font-semibold">{t('UI_DESTINATIONS')}</h2>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {t('UI_DESTINATIONS_DESC')}
+                  </p>
+                </div>
+                <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                  {String(destTypes.length).padStart(2, '0')}
+                </span>
               </div>
               <ul className="divide-y divide-border">
-                {[...destTypes].map((type) => {
+                {[...destTypes].map((type, index) => {
                   const isConnected = connectedTypesSet.has(type)
                   return (
-                    <li key={type} className="flex items-center gap-4 px-5 py-3.5">
-                      <ConnectorIcon type={type} className="size-9 shrink-0" />
+                    <li key={type} className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
+                      <span className="hidden w-4 font-mono text-[9px] tabular-nums text-muted-foreground/50 sm:block">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                      <ConnectorIcon type={type} className="size-8 shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-medium">{connectorNames[type]}</p>
                         <p className="truncate text-xs text-muted-foreground">
@@ -226,10 +244,10 @@ export default function ConnectorsPage() {
                         </p>
                       </div>
                       {isConnected && (
-                        <Badge variant="success">
-                          <span className="size-1.5 rounded-full bg-success" aria-hidden="true" />
+                        <span className="hidden items-center gap-1.5 whitespace-nowrap font-mono text-[9px] uppercase tracking-[0.12em] text-success sm:flex">
+                          <span className="size-1.5 bg-success" aria-hidden="true" />
                           {t('UI_ACTIVE')}
-                        </Badge>
+                        </span>
                       )}
                       <Button
                         variant={isConnected ? 'outline' : 'default'}
@@ -242,7 +260,7 @@ export default function ConnectorsPage() {
                   )
                 })}
               </ul>
-            </div>
+            </section>
           </div>
 
           {/* Already configured connectors */}
@@ -265,18 +283,20 @@ export default function ConnectorsPage() {
                 />
               )}
 
-              <div className="flex items-baseline justify-between gap-3">
-                <h2 className="text-sm font-semibold">{t('UI_MY_CONNECTORS')}</h2>
-                <p className="text-xs text-muted-foreground">
-                  {connectors.length} {connectors.length === 1 ? 'connector' : 'connectors'}
-                </p>
+              <div className="flex items-end justify-between gap-3 border-b border-border pb-3">
+                <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                  {t('UI_MY_CONNECTORS')}
+                </h2>
+                <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                  {String(connectors.length).padStart(2, '0')}
+                </span>
               </div>
 
-              <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+              <div className="mt-3 border border-border bg-card">
                 <Table>
-                  <TableHeader className="bg-muted/50">
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="w-10 pr-0">
+                  <TableHeader className="bg-muted/40">
+                    <TableRow className="border-border hover:bg-transparent">
+                      <TableHead className="h-9 w-10 px-2 pr-0 sm:px-4">
                         <Checkbox
                           id="select-all-connectors"
                           aria-label="Select all connectors"
@@ -287,49 +307,76 @@ export default function ConnectorsPage() {
                           }}
                         />
                       </TableHead>
-                      <TableHead>Connector</TableHead>
-                      <TableHead className="hidden sm:table-cell">Type</TableHead>
-                      <TableHead className="text-right">Status</TableHead>
+                      <TableHead className="h-9 px-2 font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
+                        {t('UI_CONNECTOR')}
+                      </TableHead>
+                      <TableHead className="hidden h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] sm:table-cell">
+                        {t('UI_TYPE')}
+                      </TableHead>
+                      <TableHead className="h-9 px-2 text-right font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
+                        {t('UI_STATUS')}
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {connectors.map((connector) => (
-                      <TableRow key={connector.id}>
-                        <TableCell className="pr-0">
+                      <TableRow
+                        key={connector.id}
+                        className="group border-border hover:bg-muted/30"
+                      >
+                        <TableCell className="px-2 pr-0 sm:px-4">
                           <Checkbox
                             checked={selectedIds.has(connector.id)}
                             onCheckedChange={() => toggle(connector.id)}
                             aria-label={`Select ${connector.name}`}
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-2 py-2.5 sm:px-4">
                           <div className="flex items-center gap-3">
                             <ConnectorIcon type={connector.type} className="size-8 shrink-0" />
-                            <p className="max-w-[20rem] truncate text-[13px] font-medium">
-                              {connector.name}
-                            </p>
+                            <div className="min-w-0">
+                              <p className="max-w-[12rem] truncate text-[13px] font-medium sm:max-w-[20rem]">
+                                {connector.name}
+                              </p>
+                              <p className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground/60">
+                                CON / {connector.id.slice(0, 8)}
+                              </p>
+                            </div>
                           </div>
                         </TableCell>
-                        <TableCell className="hidden text-[13px] text-muted-foreground sm:table-cell">
+                        <TableCell className="hidden px-4 font-mono text-[10px] uppercase tracking-[0.06em] text-muted-foreground sm:table-cell">
                           {connectorNames[connector.type]}
                         </TableCell>
-                        <TableCell className="text-right">
-                          <Badge
-                            variant={connector.status === 'ACTIVE' ? 'success' : 'destructive'}
+                        <TableCell className="px-2 text-right sm:px-4">
+                          <span
+                            className={`inline-flex items-center gap-1.5 whitespace-nowrap font-mono text-[9px] uppercase tracking-[0.12em] ${
+                              connector.status === 'ACTIVE'
+                                ? 'text-success'
+                                : 'text-muted-foreground'
+                            }`}
                           >
-                            {connector.status === 'ACTIVE' && (
-                              <span
-                                className="size-1.5 rounded-full bg-success"
-                                aria-hidden="true"
-                              />
-                            )}
-                            {connector.status === 'ACTIVE' ? 'Active' : 'Inactive'}
-                          </Badge>
+                            <span
+                              className={`size-1.5 ${
+                                connector.status === 'ACTIVE'
+                                  ? 'bg-success'
+                                  : 'border border-border-strong'
+                              }`}
+                              aria-hidden="true"
+                            />
+                            {connector.status === 'ACTIVE' ? t('UI_ACTIVE') : t('UI_INACTIVE')}
+                          </span>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+                <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-2.5 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+                  <span>
+                    {connectors.length} {t('UI_CONNECTOR').toLowerCase()}
+                    {connectors.length === 1 ? '' : 's'}
+                  </span>
+                  <span>{t('UI_ACTIVE')}</span>
+                </div>
               </div>
             </div>
           )}

@@ -41,6 +41,7 @@ export default async function DocumentsPage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow={`${t('UI_DOCS_INDEX')} / ${String(documents.length).padStart(2, '0')}`}
         title={t('UI_DOCS_LABEL')}
         description={t('UI_MANAGE_DOCS')}
         actions={

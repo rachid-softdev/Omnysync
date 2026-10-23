@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth'
 import { requireAdmin } from '@/lib/auth/require-admin'
-import { getLocaleFromHeaders } from '@/lib/i18n'
+import { getLocaleFromHeaders, getT } from '@/lib/i18n'
 import { prisma } from '@/lib/prisma'
 import { PageHeader, PageShell } from '@/components/page-header'
 import { Badge } from '@/components/ui/badge'
@@ -22,40 +22,41 @@ import { formatDate } from '@/lib/format-date'
 
 export const dynamic = 'force-dynamic'
 
-const quickLinks = [
-  {
-    label: 'User directory',
-    href: '/admin/users',
-    icon: Users,
-  },
-  {
-    label: 'Workspaces',
-    href: '/admin/orgs',
-    icon: Building2,
-  },
-  {
-    label: 'Billing plans',
-    href: '/admin/plans',
-    icon: Package,
-  },
-  {
-    label: 'Feature flags',
-    href: '/admin/features',
-    icon: Puzzle,
-  },
-  {
-    label: 'Entitlement overrides',
-    href: '/admin/overrides',
-    icon: KeyRound,
-  },
-]
-
 export default async function AdminDashboardPage() {
   const session = await auth()
   if (!session?.user?.id) return null
   await requireAdmin()
 
   const locale = getLocaleFromHeaders(await headers())
+  const t = await getT()
+
+  const quickLinks = [
+    {
+      label: t('admin_link_users'),
+      href: '/admin/users',
+      icon: Users,
+    },
+    {
+      label: t('admin_link_orgs'),
+      href: '/admin/orgs',
+      icon: Building2,
+    },
+    {
+      label: t('admin_link_plans'),
+      href: '/admin/plans',
+      icon: Package,
+    },
+    {
+      label: t('admin_link_features'),
+      href: '/admin/features',
+      icon: Puzzle,
+    },
+    {
+      label: t('admin_link_overrides'),
+      href: '/admin/overrides',
+      icon: KeyRound,
+    },
+  ]
 
   const [totalUsers, totalOrgs, totalPlans, totalFeatures, recentUsers, recentOrgs] =
     await Promise.all([
@@ -77,25 +78,25 @@ export default async function AdminDashboardPage() {
 
   const stats = [
     {
-      label: 'Users',
+      label: t('admin_stat_users'),
       value: totalUsers,
       icon: Users,
       href: '/admin/users',
     },
     {
-      label: 'Organizations',
+      label: t('admin_stat_orgs'),
       value: totalOrgs,
       icon: Building2,
       href: '/admin/orgs',
     },
     {
-      label: 'Active Plans',
+      label: t('admin_stat_plans'),
       value: totalPlans,
       icon: Package,
       href: '/admin/plans',
     },
     {
-      label: 'Features',
+      label: t('admin_stat_features'),
       value: totalFeatures,
       icon: Puzzle,
       href: '/admin/features',
@@ -105,20 +106,21 @@ export default async function AdminDashboardPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Administration"
-        description="Platform overview, recent activity and admin tools"
+        eyebrow={t('admin_eyebrow')}
+        title={t('admin_title')}
+        description={t('admin_description')}
         actions={
           <Button variant="outline" size="sm" asChild>
             <Link href="/admin/plans/new">
               <Plus className="size-3.5" />
-              New plan
+              {t('admin_new_plan')}
             </Link>
           </Button>
         }
       />
 
       {/* Metric strip */}
-      <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-sm sm:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-[3px] border border-border bg-border sm:grid-cols-4">
         {stats.map((stat) => (
           <Link
             key={stat.label}
@@ -131,7 +133,7 @@ export default async function AdminDashboardPage() {
             </div>
             <span className="text-2xl font-semibold tracking-tight tabular-nums">{stat.value}</span>
             <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
-              Open
+              {t('admin_open')}
               <ArrowUpRight className="size-3" />
             </span>
           </Link>
@@ -143,21 +145,19 @@ export default async function AdminDashboardPage() {
         <Card className="overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border px-4 py-3">
             <div>
-              <CardTitle className="text-sm font-semibold">Recent Users</CardTitle>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                The 5 most recently created accounts
-              </p>
+              <CardTitle className="text-sm font-semibold">{t('admin_recent_users')}</CardTitle>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t('admin_recent_users_desc')}</p>
             </div>
             <Button variant="ghost" size="xs" asChild>
               <Link href="/admin/users">
-                View all
+                {t('UI_VIEW_ALL')}
                 <ArrowRight className="size-3" />
               </Link>
             </Button>
           </CardHeader>
           <CardContent className="p-0">
             {recentUsers.length === 0 ? (
-              <p className="px-4 py-10 text-center text-sm text-muted-foreground">No users yet</p>
+              <p className="px-4 py-10 text-sm text-muted-foreground">{t('admin_no_users')}</p>
             ) : (
               <div className="divide-y divide-border">
                 {recentUsers.map((user) => (
@@ -166,18 +166,20 @@ export default async function AdminDashboardPage() {
                     href={`/admin/users/${user.id}`}
                     className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40"
                   >
-                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-medium text-muted-foreground">
+                    <span className="grid size-7 shrink-0 place-items-center rounded-[3px] bg-muted text-[11px] font-medium text-muted-foreground">
                       {(user.name || user.email || '?').slice(0, 1).toUpperCase()}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-medium">{user.name || 'Unnamed'}</p>
+                      <p className="truncate text-[13px] font-medium">
+                        {user.name || t('admin_unnamed')}
+                      </p>
                       <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                     </div>
                     <Badge
                       variant={user.role === 'ADMIN' ? 'info' : 'secondary'}
                       className="hidden sm:inline-flex"
                     >
-                      {user.role}
+                      {t(user.role === 'ADMIN' ? 'admin_role_admin' : 'admin_role_user')}
                     </Badge>
                     <span className="hidden shrink-0 text-xs tabular-nums text-muted-foreground sm:block">
                       {formatDate(user.createdAt, locale)}
@@ -194,23 +196,21 @@ export default async function AdminDashboardPage() {
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border px-4 py-3">
               <div>
-                <CardTitle className="text-sm font-semibold">Recent Organizations</CardTitle>
+                <CardTitle className="text-sm font-semibold">{t('admin_recent_orgs')}</CardTitle>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  The 5 most recently created organizations
+                  {t('admin_recent_orgs_desc')}
                 </p>
               </div>
               <Button variant="ghost" size="xs" asChild>
                 <Link href="/admin/orgs">
-                  View all
+                  {t('UI_VIEW_ALL')}
                   <ArrowRight className="size-3" />
                 </Link>
               </Button>
             </CardHeader>
             <CardContent className="p-0">
               {recentOrgs.length === 0 ? (
-                <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  No organizations yet
-                </p>
+                <p className="px-4 py-10 text-sm text-muted-foreground">{t('admin_no_orgs')}</p>
               ) : (
                 <div className="divide-y divide-border">
                   {recentOrgs.map((org) => (
@@ -219,7 +219,7 @@ export default async function AdminDashboardPage() {
                       href={`/admin/orgs/${org.id}`}
                       className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40"
                     >
-                      <span className="grid size-7 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
+                      <span className="grid size-7 shrink-0 place-items-center rounded-[3px] bg-muted text-muted-foreground">
                         <Building2 className="size-3.5" />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -241,7 +241,7 @@ export default async function AdminDashboardPage() {
           {/* Quick links */}
           <Card className="overflow-hidden">
             <CardHeader className="border-b border-border px-4 py-3">
-              <CardTitle className="text-sm font-semibold">Quick links</CardTitle>
+              <CardTitle className="text-sm font-semibold">{t('admin_quick_links')}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-border">

@@ -46,7 +46,7 @@ describe('Avatar', () => {
 
     const root = container.firstChild as HTMLElement
     expect(root).toHaveClass('custom-avatar')
-    expect(root).toHaveClass('rounded-full')
+    expect(root).toHaveClass('rounded-[3px]')
   })
 
   it('applies custom className to AvatarFallback', () => {

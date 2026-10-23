@@ -55,7 +55,7 @@ describe('ThemeToggle', () => {
     expect(button).toBeInTheDocument()
 
     // The button should have the correct classes
-    expect(button.className).toContain('rounded-full')
+    expect(button.className).toContain('rounded-[3px]')
     expect(button.className).toContain('bg-background')
   })
 

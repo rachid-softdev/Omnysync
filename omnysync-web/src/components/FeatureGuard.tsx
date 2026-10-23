@@ -110,7 +110,7 @@ export function PlanBadge({ className = '', variant = 'default' }: PlanBadgeProp
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variantClasses[variant]} ${className}`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-[3px] text-xs font-medium ${variantClasses[variant]} ${className}`}
     >
       Plan
     </span>

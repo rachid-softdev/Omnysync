@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -28,6 +27,7 @@ import { formatDateTime, detectClientLocale } from '@/lib/format-date'
 import { useBatchSelect } from '@/hooks/use-batch-select'
 import { BatchActionBar } from '@/components/batch-action-bar'
 import { PageHeader, PageShell } from '@/components/page-header'
+import { PlanGate } from '@/components/plan-gate'
 import { toast } from '@/components/toast-provider'
 
 interface ApprovalRequest {
@@ -52,6 +52,7 @@ export default function ApprovalsPage() {
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectComment, setRejectComment] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [planGate, setPlanGate] = useState<string | null>(null)
 
   const pendingApprovals = approvals.filter((a) => a.status === 'PENDING')
   const historyApprovals = approvals.filter((a) => a.status !== 'PENDING')
@@ -133,6 +134,14 @@ export default function ApprovalsPage() {
         const data = await res.json()
         setApprovals(data.approvals || [])
       } else {
+        const payload = (await res.json().catch(() => null)) as {
+          code?: string
+          upgradeUrl?: string
+        } | null
+        if (res.status === 403 && payload?.code === 'PLAN_FEATURE_REQUIRED') {
+          setPlanGate(payload.upgradeUrl || '/pricing')
+          return
+        }
         toast.error(`Failed to load approvals (${res.status}). Refresh the page to try again.`)
       }
     } catch (e) {
@@ -200,54 +209,83 @@ export default function ApprovalsPage() {
   }
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return (
-          <Badge variant="warning">
-            <span className="size-1.5 rounded-full bg-warning" aria-hidden="true" />
-            Pending
-          </Badge>
-        )
-      case 'APPROVED':
-        return (
-          <Badge variant="success">
-            <span className="size-1.5 rounded-full bg-success" aria-hidden="true" />
-            Approved
-          </Badge>
-        )
-      case 'REJECTED':
-        return (
-          <Badge variant="destructive">
-            <span className="size-1.5 rounded-full bg-destructive-foreground" aria-hidden="true" />
-            Rejected
-          </Badge>
-        )
-      case 'EXPIRED':
-        return (
-          <Badge variant="secondary">
-            <span className="size-1.5 rounded-full bg-muted-foreground" aria-hidden="true" />
-            Expired
-          </Badge>
-        )
-      default:
-        return <Badge>{status}</Badge>
+    const statusMap: Record<string, { label: string; tone: string; dot: string }> = {
+      PENDING: { label: 'Pending', tone: 'text-warning', dot: 'bg-warning' },
+      APPROVED: { label: 'Approved', tone: 'text-success', dot: 'bg-success' },
+      REJECTED: { label: 'Rejected', tone: 'text-destructive', dot: 'bg-destructive' },
+      EXPIRED: {
+        label: 'Expired',
+        tone: 'text-muted-foreground',
+        dot: 'border border-border-strong',
+      },
     }
+    const entry = statusMap[status] || {
+      label: status,
+      tone: 'text-muted-foreground',
+      dot: 'bg-muted-foreground/40',
+    }
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 whitespace-nowrap font-mono text-[9px] uppercase tracking-[0.12em] ${entry.tone}`}
+      >
+        <span className={`size-1.5 ${entry.dot}`} aria-hidden="true" />
+        {entry.label}
+      </span>
+    )
+  }
+
+  const getResolution = (approval: ApprovalRequest) => {
+    if (approval.status === 'APPROVED') {
+      return `Approved by ${approval.approvedBy} on ${
+        approval.approvedAt ? formatDateTime(approval.approvedAt, locale) : ''
+      }`
+    }
+    if (approval.status === 'REJECTED') {
+      return `Rejected${approval.comments ? `: ${approval.comments}` : ''}`
+    }
+    return `Expired on ${formatDateTime(approval.expiresAt, locale)}`
   }
 
   if (loading) {
     return (
       <PageShell>
-        <PageHeader title={t('APPROVALS_TITLE')} description={t('APPROVALS_SUBTITLE')} />
-        <div className="flex min-h-[320px] items-center justify-center">
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        <PageHeader
+          eyebrow="APPROVALS / QUEUE"
+          title={t('APPROVALS_TITLE')}
+          description={t('APPROVALS_SUBTITLE')}
+        />
+        <div className="mt-6 flex min-h-[320px] items-center justify-center border border-border bg-card">
+          <Loader2 className="size-5 animate-spin text-muted-foreground" />
         </div>
+      </PageShell>
+    )
+  }
+
+  if (planGate) {
+    return (
+      <PageShell>
+        <PageHeader
+          eyebrow={`APPROVALS / ${String(pendingApprovals.length).padStart(2, '0')} PENDING`}
+          title={t('APPROVALS_TITLE')}
+          description={t('APPROVALS_SUBTITLE')}
+        />
+        <PlanGate
+          title={t('plan_gate_approvals_title')}
+          description={t('plan_gate_approvals_desc')}
+          upgradeUrl={planGate}
+          className="mt-6"
+        />
       </PageShell>
     )
   }
 
   return (
     <PageShell>
-      <PageHeader title={t('APPROVALS_TITLE')} description={t('APPROVALS_SUBTITLE')} />
+      <PageHeader
+        eyebrow={`APPROVALS / ${String(pendingApprovals.length).padStart(2, '0')} PENDING`}
+        title={t('APPROVALS_TITLE')}
+        description={t('APPROVALS_SUBTITLE')}
+      />
 
       {/* Pending */}
       <section className="relative mt-6">
@@ -277,112 +315,160 @@ export default function ApprovalsPage() {
         )}
 
         {pendingApprovals.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
-            <span className="mx-auto grid size-10 place-items-center rounded-xl bg-muted">
-              <FileCheck className="size-5 text-muted-foreground" />
-            </span>
-            <p className="mt-4 text-sm font-medium">No pending approval requests</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Pending approvals will appear here when documents are submitted for review.
-            </p>
-            <Button asChild className="mt-6">
-              <Link href="/dashboard/documents">View documents</Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-              <h2 className="text-sm font-semibold">
-                {t('APPROVALS_PENDING')}{' '}
-                <span className="font-normal text-muted-foreground">
-                  ({pendingApprovals.length})
-                </span>
-              </h2>
-              <div className="flex items-center gap-2">
-                <label
-                  htmlFor="select-all-pending"
-                  className="cursor-pointer select-none text-xs text-muted-foreground"
-                >
-                  Select all
-                </label>
-                <Checkbox
-                  id="select-all-pending"
-                  aria-label="Select all pending approvals"
-                  checked={isAllSelected}
-                  onCheckedChange={(checked) => {
-                    if (checked) selectAll()
-                    else clearSelection()
-                  }}
-                />
+          <div className="border border-border bg-card">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+              <span>Approval queue</span>
+              <span>00</span>
+            </div>
+            <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:p-8">
+              <span className="grid size-10 shrink-0 place-items-center border border-border bg-muted text-muted-foreground">
+                <FileCheck className="size-5" />
+              </span>
+              <div className="max-w-xl">
+                <p className="text-base font-semibold tracking-[-0.02em]">
+                  No pending approval requests
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  Pending approvals will appear here when documents are submitted for review.
+                </p>
+                <Button asChild className="mt-5">
+                  <Link href="/dashboard/documents">View documents</Link>
+                </Button>
               </div>
             </div>
+          </div>
+        ) : (
+          <div className="border border-border bg-card">
+            <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border px-5 py-3">
+              <div>
+                <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+                  Queue / pending
+                </p>
+                <h2 className="mt-1 text-sm font-semibold">
+                  {t('APPROVALS_PENDING')}{' '}
+                  <span className="font-normal text-muted-foreground">
+                    ({pendingApprovals.length})
+                  </span>
+                </h2>
+              </div>
+              <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                {pendingApprovals.length} request{pendingApprovals.length === 1 ? '' : 's'}
+              </span>
+            </div>
 
-            <ul className="divide-y divide-border">
-              {pendingApprovals.map((approval) => (
-                <li
-                  key={approval.id}
-                  className="flex flex-wrap items-start justify-between gap-4 px-4 py-4 transition-colors hover:bg-muted/40"
-                >
-                  <div className="flex min-w-0 items-start gap-3">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="hidden h-9 w-10 px-2 pr-0 sm:table-cell sm:px-4">
                     <Checkbox
-                      checked={selectedIds.has(approval.id)}
-                      onCheckedChange={() => toggle(approval.id)}
-                      aria-label={`Select ${approval.documentTitle}`}
-                      className="mt-1"
-                    />
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate text-[13px] font-medium">{approval.documentTitle}</p>
-                        {getStatusBadge(approval.status)}
-                      </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Requested by {approval.requestedBy} ·{' '}
-                        {formatDateTime(approval.requestedAt, locale)}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        Expires on {formatDateTime(approval.expiresAt, locale)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedApproval(approval)}
-                    >
-                      <Eye />
-                      View
-                    </Button>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => approveRequest(approval.id)}
-                      disabled={actionLoading === approval.id}
-                    >
-                      {actionLoading === approval.id ? (
-                        <Loader2 className="animate-spin" />
-                      ) : (
-                        <CheckCircle />
-                      )}
-                      Approve
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedApproval(approval)
-                        setRejectOpen(true)
+                      id="select-all-pending"
+                      aria-label="Select all pending approvals"
+                      checked={isAllSelected}
+                      onCheckedChange={(checked) => {
+                        if (checked) selectAll()
+                        else clearSelection()
                       }}
-                      disabled={actionLoading === approval.id}
-                    >
-                      <XCircle />
-                      Reject
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                    />
+                  </TableHead>
+                  <TableHead className="h-9 px-2 font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
+                    Document
+                  </TableHead>
+                  <TableHead className="hidden h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] sm:table-cell">
+                    Status
+                  </TableHead>
+                  <TableHead className="hidden h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] md:table-cell">
+                    Requested
+                  </TableHead>
+                  <TableHead className="h-9 px-2 text-right font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
+                    <span className="hidden sm:inline">Actions</span>
+                    <span className="sr-only sm:hidden">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingApprovals.map((approval) => (
+                  <TableRow key={approval.id} className="border-border hover:bg-muted/30">
+                    <TableCell className="hidden px-2 pr-0 sm:table-cell sm:px-4">
+                      <Checkbox
+                        checked={selectedIds.has(approval.id)}
+                        onCheckedChange={() => toggle(approval.id)}
+                        aria-label={`Select ${approval.documentTitle}`}
+                      />
+                    </TableCell>
+                    <TableCell className="px-2 py-2.5 sm:px-4">
+                      <div className="min-w-0">
+                        <p className="max-w-[14rem] truncate text-[13px] font-medium sm:max-w-[24rem]">
+                          <Link
+                            href={`/dashboard/documents/${approval.documentId}`}
+                            className="hover:underline"
+                          >
+                            {approval.documentTitle}
+                          </Link>
+                        </p>
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                          Requested by {approval.requestedBy} ·{' '}
+                          {formatDateTime(approval.requestedAt, locale)}
+                        </p>
+                        <p className="mt-0.5 truncate font-mono text-[9px] uppercase tracking-[0.08em] text-muted-foreground/60">
+                          Expires {formatDateTime(approval.expiresAt, locale)}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden px-4 sm:table-cell">
+                      {getStatusBadge(approval.status)}
+                    </TableCell>
+                    <TableCell className="hidden whitespace-nowrap px-4 font-mono text-[10px] tabular-nums text-muted-foreground md:table-cell">
+                      {formatDateTime(approval.requestedAt, locale)}
+                    </TableCell>
+                    <TableCell className="px-2 sm:px-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedApproval(approval)}
+                          aria-label={`View ${approval.documentTitle}`}
+                          className="hidden sm:inline-flex"
+                        >
+                          <Eye />
+                          <span className="hidden sm:inline">View</span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => approveRequest(approval.id)}
+                          disabled={actionLoading === approval.id}
+                          aria-label={`Approve ${approval.documentTitle}`}
+                        >
+                          {actionLoading === approval.id ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <CheckCircle />
+                          )}
+                          <span className="hidden sm:inline">Approve</span>
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedApproval(approval)
+                            setRejectOpen(true)
+                          }}
+                          disabled={actionLoading === approval.id}
+                          aria-label={`Reject ${approval.documentTitle}`}
+                        >
+                          <XCircle />
+                          <span className="hidden sm:inline">Reject</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-2.5 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+              <span>{pendingApprovals.length} pending</span>
+              <span>Review queue</span>
+            </div>
           </div>
         )}
       </section>
@@ -390,35 +476,50 @@ export default function ApprovalsPage() {
       {/* History — only shown once there is something to look back at. */}
       {historyApprovals.length > 0 && (
         <section className="mt-8">
-          <h2 className="text-sm font-semibold">{t('APPROVALS_HISTORY')}</h2>
+          <div className="flex items-end justify-between gap-3 border-b border-border pb-3">
+            <div>
+              <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+                Resolution log
+              </p>
+              <h2 className="mt-1 text-sm font-semibold">{t('APPROVALS_HISTORY')}</h2>
+            </div>
+            <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+              {String(historyApprovals.length).padStart(2, '0')}
+            </span>
+          </div>
 
-          <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+          <div className="mt-3 border border-border bg-card">
             <Table>
-              <TableHeader className="bg-muted/50">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Document</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Resolution</TableHead>
-                  <TableHead className="hidden text-right md:table-cell">Requested</TableHead>
+              <TableHeader className="bg-muted/40">
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em]">
+                    Document
+                  </TableHead>
+                  <TableHead className="h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em]">
+                    Status
+                  </TableHead>
+                  <TableHead className="hidden h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] sm:table-cell">
+                    Resolution
+                  </TableHead>
+                  <TableHead className="hidden h-9 px-4 text-right font-mono text-[9px] uppercase tracking-[0.14em] md:table-cell">
+                    Requested
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {historyApprovals.map((approval) => (
-                  <TableRow key={approval.id}>
-                    <TableCell className="max-w-[18rem] truncate text-[13px] font-medium">
-                      {approval.documentTitle}
+                  <TableRow key={approval.id} className="border-border hover:bg-muted/30">
+                    <TableCell className="max-w-[10rem] px-4 py-2.5 text-[13px] font-medium sm:max-w-[18rem]">
+                      <p className="truncate">{approval.documentTitle}</p>
+                      <p className="mt-0.5 truncate text-[10px] font-normal text-muted-foreground sm:hidden">
+                        {getResolution(approval)}
+                      </p>
                     </TableCell>
-                    <TableCell>{getStatusBadge(approval.status)}</TableCell>
-                    <TableCell className="max-w-[22rem] truncate text-[13px] text-muted-foreground">
-                      {approval.status === 'APPROVED'
-                        ? `Approved by ${approval.approvedBy} on ${
-                            approval.approvedAt ? formatDateTime(approval.approvedAt, locale) : ''
-                          }`
-                        : approval.status === 'REJECTED'
-                          ? `Rejected${approval.comments ? `: ${approval.comments}` : ''}`
-                          : `Expired on ${formatDateTime(approval.expiresAt, locale)}`}
+                    <TableCell className="px-4 py-2.5">{getStatusBadge(approval.status)}</TableCell>
+                    <TableCell className="hidden max-w-[22rem] truncate px-4 py-2.5 text-[13px] text-muted-foreground sm:table-cell">
+                      {getResolution(approval)}
                     </TableCell>
-                    <TableCell className="hidden whitespace-nowrap text-right text-xs tabular-nums text-muted-foreground md:table-cell">
+                    <TableCell className="hidden whitespace-nowrap px-4 py-2.5 text-right font-mono text-[10px] tabular-nums text-muted-foreground md:table-cell">
                       {formatDateTime(approval.requestedAt, locale)}
                     </TableCell>
                   </TableRow>

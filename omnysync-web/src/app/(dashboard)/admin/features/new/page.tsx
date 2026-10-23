@@ -122,6 +122,7 @@ export default function NewFeaturePage() {
   return (
     <PageShell>
       <PageHeader
+        eyebrow="FEATURES / NEW"
         title="New Feature"
         description="Create a new feature flag for entitlements"
         actions={
