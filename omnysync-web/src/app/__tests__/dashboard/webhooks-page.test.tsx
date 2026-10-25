@@ -1,28 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import WebhooksPage from '../../(dashboard)/dashboard/webhooks/page'
 import { toast } from '@/components/toast-provider'
-
-vi.mock('@/lib/i18n/useTranslations', () => ({
-  useTranslations: vi.fn(() => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        WEBHOOKS_TITLE: 'Webhooks',
-        WEBHOOKS_SUBTITLE: 'Manage webhook endpoints',
-        WEBHOOKS_CREATE: 'Create webhook',
-        WEBHOOKS_CREATE_TITLE: 'New webhook',
-        plan_gate_eyebrow: 'PLAN / ACCESS',
-        plan_gate_badge: 'UPGRADE REQUIRED',
-        plan_gate_cta: 'View plans',
-        plan_gate_webhooks_title: 'Webhooks require the Pro plan',
-        plan_gate_webhooks_desc: 'Upgrade to Pro to send signed sync events to your endpoints.',
-      }
-      return translations[key] || key
-    },
-    loading: false,
-    locale: 'en',
-  })),
-}))
 
 vi.mock('@/components/toast-provider', () => ({
   toast: {
@@ -34,6 +13,11 @@ vi.mock('@/components/toast-provider', () => ({
 beforeEach(() => {
   vi.clearAllMocks()
   global.fetch = vi.fn()
+  document.documentElement.lang = 'en'
+})
+
+afterEach(() => {
+  document.documentElement.lang = 'en'
 })
 
 const mockWebhooks = [
@@ -147,7 +131,7 @@ describe('WebhooksPage', () => {
     fireEvent.click(createButton)
 
     await waitFor(() => {
-      expect(screen.getByText('New webhook')).toBeInTheDocument()
+      expect(screen.getByText('New Webhook')).toBeInTheDocument()
       expect(
         screen.getByText('Configure an endpoint to receive notifications from your platforms.')
       ).toBeInTheDocument()
@@ -164,6 +148,27 @@ describe('WebhooksPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Last triggered/)).toBeInTheDocument()
+    })
+    expect(screen.getByText('2 endpoints')).toBeInTheDocument()
+    expect(screen.getByText('1 active')).toBeInTheDocument()
+  })
+
+  it('renders table metadata in French', async () => {
+    document.documentElement.lang = 'fr'
+    ;(global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ webhooks: mockWebhooks }),
+    })
+
+    render(<WebhooksPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Dernier déclenchement')).toBeInTheDocument()
+      expect(screen.getByText('Actif')).toBeInTheDocument()
+      expect(screen.getByText('Inactif')).toBeInTheDocument()
+      expect(screen.getByText('Jamais')).toBeInTheDocument()
+      expect(screen.getByText('2 endpoints')).toBeInTheDocument()
+      expect(screen.getByText('1 actif')).toBeInTheDocument()
     })
   })
 })
