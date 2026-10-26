@@ -844,6 +844,8 @@
   "settings_email": "Email",
   "settings_current_org": "Current organization",
   "settings_org_name": "My Organization",
+  "settings_no_org": "No organization",
+  "settings_profile_unavailable": "Profile details are unavailable right now.",
   "settings_saved": "Saved!",
   "settings_save": "Save",
   "settings_save_error": "Unable to save changes. Check your connection and try again.",

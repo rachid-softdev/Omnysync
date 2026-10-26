@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { PageHeader, PageShell } from '@/components/page-header'
 import { useTranslations } from '@/lib/i18n/useTranslations'
@@ -38,6 +38,14 @@ interface BillingUsage {
   connectorsLimit: number
 }
 
+interface ProfileData {
+  id: string
+  name: string | null
+  email: string | null
+  image: string | null
+  organization: { id: string; name: string } | null
+}
+
 export default function SettingsPage() {
   const { t, tf } = useTranslations()
   const locale = detectClientLocale()
@@ -48,6 +56,9 @@ export default function SettingsPage() {
   const [billing, setBilling] = useState<BillingUsage | null>(null)
   const [billingLoading, setBillingLoading] = useState(true)
   const [billingError, setBillingError] = useState(false)
+  const [profile, setProfile] = useState<ProfileData | null>(null)
+  const [profileLoading, setProfileLoading] = useState(true)
+  const [profileError, setProfileError] = useState(false)
   const [notifications, setNotifications] = useState({
     syncSuccess: true,
     syncFailed: true,
@@ -73,9 +84,30 @@ export default function SettingsPage() {
     }
   }, [])
 
+  const fetchProfile = useCallback(async () => {
+    setProfileLoading(true)
+    setProfileError(false)
+
+    try {
+      const res = await fetch('/api/user/profile')
+      if (!res.ok) {
+        throw new Error(`Failed to load profile (${res.status})`)
+      }
+      const data = (await res.json()) as ProfileData
+      setProfile(data)
+      setName((current) => current || data.name || '')
+    } catch {
+      setProfile(null)
+      setProfileError(true)
+    } finally {
+      setProfileLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     void fetchBilling()
-  }, [fetchBilling])
+    void fetchProfile()
+  }, [fetchBilling, fetchProfile])
 
   const handleSaveProfile = async () => {
     setLoading(true)
@@ -92,6 +124,10 @@ export default function SettingsPage() {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error || `Failed to save profile (${res.status})`)
       }
+      const data = (await res.json().catch(() => ({}))) as { name?: string | null }
+      const savedName = data.name ?? name.trim()
+      setName(savedName)
+      setProfile((current) => (current ? { ...current, name: savedName } : current))
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
@@ -100,6 +136,14 @@ export default function SettingsPage() {
       setLoading(false)
     }
   }
+
+  const initials = (profile?.name || profile?.email || 'U')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 
   return (
     <PageShell>
@@ -156,7 +200,8 @@ export default function SettingsPage() {
             <CardContent className="space-y-5">
               <div className="flex items-center gap-4">
                 <Avatar className="size-16">
-                  <AvatarFallback className="text-lg">U</AvatarFallback>
+                  {profile?.image && <AvatarImage src={profile.image} alt={profile.name ?? ''} />}
+                  <AvatarFallback className="text-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div>
                   <Button variant="outline" size="sm">
@@ -181,7 +226,7 @@ export default function SettingsPage() {
                   <Input
                     id="email"
                     type="email"
-                    value="user@example.com"
+                    value={profile?.email ?? ''}
                     disabled
                     className="bg-muted"
                   />
@@ -193,7 +238,11 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-3 rounded-[3px] border border-border bg-muted/40 px-3 py-2.5">
                   <Building className="size-4 text-muted-foreground" />
                   <div>
-                    <p className="text-[13px] font-medium">{t('settings_org_name')}</p>
+                    <p className="text-[13px] font-medium">
+                      {profileLoading
+                        ? t('loading.default')
+                        : (profile?.organization?.name ?? t('settings_no_org'))}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {billingLoading
                         ? t('loading.default')
@@ -204,6 +253,10 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
+
+              {profileError && (
+                <p className="text-sm text-destructive">{t('settings_profile_unavailable')}</p>
+              )}
 
               {saveError && (
                 <div className="flex items-start gap-2 rounded-[3px] border border-destructive/30 bg-destructive-soft p-3 text-sm text-destructive">

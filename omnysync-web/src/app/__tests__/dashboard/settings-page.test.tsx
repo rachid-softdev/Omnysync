@@ -76,10 +76,36 @@ const usageResponse = {
   }),
 } as Response
 
+const profileResponse = {
+  ok: true,
+  json: async () => ({
+    id: 'user-1',
+    name: 'Ada Lovelace',
+    email: 'ada@example.com',
+    image: null,
+    organization: { id: 'org-1', name: 'Analytical Engines' },
+  }),
+} as Response
+
 beforeEach(() => {
   vi.clearAllMocks()
-  global.fetch = vi.fn(async (input: RequestInfo | URL) => {
-    if (String(input).includes('/api/usage')) return usageResponse
+  global.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    if (url.includes('/api/usage')) return usageResponse
+    if (url.includes('/api/user/profile')) {
+      if (init?.method === 'PATCH') {
+        return {
+          ok: true,
+          json: async () => ({
+            id: 'user-1',
+            name: 'Ada Lovelace',
+            email: 'ada@example.com',
+            image: null,
+          }),
+        } as Response
+      }
+      return profileResponse
+    }
     return { ok: true, json: async () => ({}) } as Response
   })
 })
@@ -87,6 +113,7 @@ beforeEach(() => {
 async function renderSettings() {
   const result = render(<SettingsPage />)
   await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument())
+  await waitFor(() => expect(screen.getByLabelText('Email')).toHaveValue('ada@example.com'))
   return result
 }
 
@@ -111,6 +138,15 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Profile Information')).toBeInTheDocument()
     expect(screen.getByLabelText('Full name')).toBeInTheDocument()
     expect(screen.getByLabelText('Email')).toBeInTheDocument()
+  })
+
+  it('renders real profile data instead of placeholders', async () => {
+    await renderSettings()
+    expect(screen.getByLabelText('Full name')).toHaveValue('Ada Lovelace')
+    expect(screen.getByLabelText('Email')).toHaveValue('ada@example.com')
+    expect(screen.getByText('Analytical Engines')).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('user@example.com')).not.toBeInTheDocument()
+    expect(screen.queryByText('My Organization')).not.toBeInTheDocument()
   })
 
   it('renders Danger Zone section', async () => {
@@ -158,7 +194,10 @@ describe('SettingsPage', () => {
   })
 
   it('shows a retry state when billing is unavailable', async () => {
-    global.fetch = vi.fn(async () => ({ ok: false, status: 500 }) as Response)
+    global.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes('/api/user/profile')) return profileResponse
+      return { ok: false, status: 500 } as Response
+    })
 
     await renderSettings()
 

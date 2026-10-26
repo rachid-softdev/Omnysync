@@ -8,6 +8,43 @@ const updateProfileSchema = z.object({
 })
 
 /**
+ * GET /api/user/profile
+ * Returns the authenticated user's safe profile fields and current organization.
+ */
+export async function GET() {
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    const [user, membership] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { id: true, name: true, email: true, image: true },
+      }),
+      prisma.userOrganization.findFirst({
+        where: { userId: session.user.id },
+        select: { organization: { select: { id: true, name: true } } },
+      }),
+    ])
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      ...user,
+      organization: membership?.organization ?? null,
+    })
+  } catch (error) {
+    console.error('GET user profile error:', error)
+    return NextResponse.json({ error: 'Failed to load profile' }, { status: 500 })
+  }
+}
+
+/**
  * PATCH /api/user/profile
  * Updates the authenticated user's profile. Only the fields accepted by the
  * schema can be changed (never email, role, or password).

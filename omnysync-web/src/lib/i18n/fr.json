@@ -844,6 +844,8 @@
   "settings_email": "E-mail",
   "settings_current_org": "Organisation actuelle",
   "settings_org_name": "Mon organisation",
+  "settings_no_org": "Aucune organisation",
+  "settings_profile_unavailable": "Les informations du profil sont indisponibles pour le moment.",
   "settings_saved": "Enregistré !",
   "settings_save": "Enregistrer",
   "settings_save_error": "Impossible d’enregistrer les modifications. Vérifiez votre connexion et réessayez.",
