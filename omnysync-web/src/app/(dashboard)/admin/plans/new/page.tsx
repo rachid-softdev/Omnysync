@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader, PageShell } from '@/components/page-header'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 import { toast } from '@/components/toast-provider'
 
 type ApiError = {
@@ -23,6 +24,7 @@ type ApiError = {
 
 export default function NewPlanPage() {
   const router = useRouter()
+  const { t, tf } = useTranslations()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Form state
@@ -43,17 +45,17 @@ export default function NewPlanPage() {
   function validate(): boolean {
     const newErrors: Record<string, string> = {}
 
-    if (!key.trim()) newErrors.key = 'Key is required'
-    if (!name.trim()) newErrors.name = 'Name is required'
+    if (!key.trim()) newErrors.key = t('admin_validation_key_required')
+    if (!name.trim()) newErrors.name = t('admin_validation_name_required')
 
     if (priceMonthly && isNaN(parseFloat(priceMonthly))) {
-      newErrors.priceMonthly = 'Must be a valid number'
+      newErrors.priceMonthly = t('admin_validation_valid_number')
     }
     if (priceYearly && isNaN(parseFloat(priceYearly))) {
-      newErrors.priceYearly = 'Must be a valid number'
+      newErrors.priceYearly = t('admin_validation_valid_number')
     }
     if (sortOrder && isNaN(parseInt(sortOrder, 10))) {
-      newErrors.sortOrder = 'Must be a valid integer'
+      newErrors.sortOrder = t('admin_validation_valid_integer')
     }
 
     setErrors(newErrors)
@@ -88,12 +90,12 @@ export default function NewPlanPage() {
       })
 
       if (res.ok) {
-        toast.success(`Plan "${name}" created successfully`)
+        toast.success(tf('admin_plan_new_success', { name }))
         router.push('/admin/plans')
       } else {
         const err: ApiError = await res.json().catch(() => ({
           error: 'UNKNOWN',
-          message: 'An error occurred',
+          message: t('admin_error_generic'),
         }))
 
         if (res.status === 409) {
@@ -102,7 +104,7 @@ export default function NewPlanPage() {
         toast.error(err.message)
       }
     } catch (err) {
-      toast.error('Failed to create plan')
+      toast.error(t('admin_plan_new_error'))
       console.error(err)
     } finally {
       setIsSubmitting(false)
@@ -116,13 +118,13 @@ export default function NewPlanPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="PLANS / NEW"
-        title="New Plan"
-        description="Create a new subscription plan"
+        eyebrow={t('admin_plan_new_eyebrow')}
+        title={t('admin_plan_new_title')}
+        description={t('admin_plan_new_desc')}
         actions={
           <Button variant="outline" size="sm" onClick={() => router.push('/admin/plans')}>
             <ArrowLeft className="size-3.5" />
-            Back
+            {t('admin_action_back')}
           </Button>
         }
       />
@@ -132,14 +134,14 @@ export default function NewPlanPage() {
           <CardContent className="p-0">
             {/* Identity */}
             <div className="border-b border-border p-5">
-              <p className="text-[13px] font-semibold">Identity</p>
+              <p className="text-[13px] font-semibold">{t('admin_plan_new_identity')}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                The key is permanent and used in code and API responses.
+                {t('admin_plan_new_identity_desc')}
               </p>
               <div className="mt-4 space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="key">
-                    Key <span className="text-destructive">*</span>
+                    {t('admin_form_key')} <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="key"
@@ -152,15 +154,13 @@ export default function NewPlanPage() {
                   {errors.key ? (
                     <p className="text-xs text-destructive">{errors.key}</p>
                   ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Unique identifier (lowercase, no spaces). Cannot be changed later.
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('admin_plan_new_key_help')}</p>
                   )}
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="name">
-                    Name <span className="text-destructive">*</span>
+                    {t('admin_form_name')} <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="name"
@@ -177,13 +177,13 @@ export default function NewPlanPage() {
 
             {/* Pricing */}
             <div className="border-b border-border p-5">
-              <p className="text-[13px] font-semibold">Pricing</p>
+              <p className="text-[13px] font-semibold">{t('admin_plan_new_pricing')}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Leave prices empty for custom or contact-based plans.
+                {t('admin_plan_new_pricing_desc')}
               </p>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="priceMonthly">Price Monthly ($)</Label>
+                  <Label htmlFor="priceMonthly">{t('admin_plan_new_price_monthly')}</Label>
                   <Input
                     id="priceMonthly"
                     type="number"
@@ -201,7 +201,7 @@ export default function NewPlanPage() {
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="priceYearly">Price Yearly ($)</Label>
+                  <Label htmlFor="priceYearly">{t('admin_plan_new_price_yearly')}</Label>
                   <Input
                     id="priceYearly"
                     type="number"
@@ -225,16 +225,16 @@ export default function NewPlanPage() {
             <div className="space-y-4 border-b border-border p-5">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <Label htmlFor="isActive">Active</Label>
+                  <Label htmlFor="isActive">{t('admin_form_active')}</Label>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Inactive plans cannot be selected by new subscribers.
+                    {t('admin_plan_new_active_desc')}
                   </p>
                 </div>
                 <Switch id="isActive" checked={isActive} onCheckedChange={setIsActive} />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="sortOrder">Sort Order</Label>
+                <Label htmlFor="sortOrder">{t('admin_plan_new_sort_order')}</Label>
                 <Input
                   id="sortOrder"
                   type="number"
@@ -249,9 +249,7 @@ export default function NewPlanPage() {
                 {errors.sortOrder ? (
                   <p className="text-xs text-destructive">{errors.sortOrder}</p>
                 ) : (
-                  <p className="text-xs text-muted-foreground">
-                    Lower values appear first in lists.
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t('admin_plan_new_sort_help')}</p>
                 )}
               </div>
             </div>
@@ -260,7 +258,7 @@ export default function NewPlanPage() {
             <div className="flex items-center gap-2 p-5">
               <Button type="submit" size="sm" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="size-3.5 animate-spin" />}
-                Create Plan
+                {t('admin_plan_new_submit')}
               </Button>
               <Button
                 type="button"
@@ -268,7 +266,7 @@ export default function NewPlanPage() {
                 size="sm"
                 onClick={() => router.push('/admin/plans')}
               >
-                Cancel
+                {t('admin_action_cancel')}
               </Button>
             </div>
           </CardContent>

@@ -17,7 +17,9 @@ import {
   Shield,
   User as UserIcon,
 } from 'lucide-react'
-import { formatDate, detectClientLocale } from '@/lib/format-date'
+import { headers } from 'next/headers'
+import { formatDate } from '@/lib/format-date'
+import { getLocaleFromHeaders, t as translate } from '@/lib/i18n'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +28,13 @@ interface PageProps {
 }
 
 export default async function AdminUserDetailPage({ params }: PageProps) {
-  const locale = detectClientLocale()
+  const locale = getLocaleFromHeaders(await headers())
+  const t = (key: string) => translate(key, locale)
+  const orgRoleLabels: Record<string, string> = {
+    OWNER: t('admin_role_owner'),
+    ADMIN: t('admin_role_admin'),
+    MEMBER: t('admin_role_member'),
+  }
   const session = await auth()
   if (!session?.user?.id) return null
   await requireAdmin()
@@ -67,20 +75,22 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
         <Button variant="ghost" size="sm" className="-ml-2 text-muted-foreground" asChild>
           <Link href="/admin/users">
             <ArrowLeft className="size-3.5" />
-            Back to users
+            {t('admin_user_detail_back')}
           </Link>
         </Button>
       </div>
 
       <PageHeader
-        eyebrow="USER / RECORD"
-        title={user.name || 'Utilisateur'}
-        description={user.email || 'Aucun email'}
+        eyebrow={t('admin_user_detail_eyebrow')}
+        title={user.name || t('admin_user_detail_title_fallback')}
+        description={user.email || t('admin_user_detail_no_email')}
         actions={
           user.disabledAt ? (
-            <AdminStatusBadge status="error" label="Désactivé" />
+            <AdminStatusBadge status="error" label={t('admin_form_disabled')} />
           ) : (
-            <Badge variant={user.role === 'ADMIN' ? 'info' : 'secondary'}>{user.role}</Badge>
+            <Badge variant={user.role === 'ADMIN' ? 'info' : 'secondary'}>
+              {user.role === 'ADMIN' ? t('admin_role_admin') : t('admin_role_user')}
+            </Badge>
           )
         }
       />
@@ -90,7 +100,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
           <CardHeader className="border-b border-border px-4 py-3">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <UserIcon className="size-4 text-muted-foreground" />
-              Informations
+              {t('admin_user_detail_information')}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -99,7 +109,9 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                 {(user.name || user.email || '?').slice(0, 1).toUpperCase()}
               </span>
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{user.name || 'Sans nom'}</p>
+                <p className="truncate text-sm font-medium">
+                  {user.name || t('admin_user_detail_unnamed')}
+                </p>
                 <p className="truncate text-xs text-muted-foreground">{user.email || '—'}</p>
               </div>
             </div>
@@ -108,21 +120,25 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
               <div className="flex items-center gap-3 px-4 py-3">
                 <Mail className="size-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0">
-                  <dt className="text-xs text-muted-foreground">Email</dt>
+                  <dt className="text-xs text-muted-foreground">{t('admin_user_detail_email')}</dt>
                   <dd className="truncate text-[13px]">{user.email || '—'}</dd>
                 </div>
               </div>
               <div className="flex items-center gap-3 px-4 py-3">
                 <Shield className="size-4 shrink-0 text-muted-foreground" />
                 <div>
-                  <dt className="text-xs text-muted-foreground">Role</dt>
-                  <dd className="text-[13px]">{user.role}</dd>
+                  <dt className="text-xs text-muted-foreground">{t('admin_user_detail_role')}</dt>
+                  <dd className="text-[13px]">
+                    {user.role === 'ADMIN' ? t('admin_role_admin') : t('admin_role_user')}
+                  </dd>
                 </div>
               </div>
               <div className="flex items-center gap-3 px-4 py-3">
                 <Calendar className="size-4 shrink-0 text-muted-foreground" />
                 <div>
-                  <dt className="text-xs text-muted-foreground">Created</dt>
+                  <dt className="text-xs text-muted-foreground">
+                    {t('admin_user_detail_created')}
+                  </dt>
                   <dd className="text-[13px]">
                     {formatDate(user.createdAt, locale, {
                       day: 'numeric',
@@ -136,7 +152,9 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                 <div className="flex items-center gap-3 px-4 py-3">
                   <Calendar className="size-4 shrink-0 text-muted-foreground" />
                   <div>
-                    <dt className="text-xs text-muted-foreground">Last login</dt>
+                    <dt className="text-xs text-muted-foreground">
+                      {t('admin_user_detail_last_login')}
+                    </dt>
                     <dd className="text-[13px]">
                       {formatDate(user.lastLoginAt, locale, {
                         day: 'numeric',
@@ -153,9 +171,12 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
 
             {user.disabledAt && (
               <div className="flex items-center gap-2.5 border-t border-border bg-destructive-soft px-4 py-3">
-                <AdminStatusBadge status="error" label="Désactivé" />
+                <AdminStatusBadge status="error" label={t('admin_form_disabled')} />
                 <span className="text-xs text-destructive">
-                  Compte désactivé le {formatDate(user.disabledAt, locale)}
+                  {t('admin_user_detail_disabled_on').replace(
+                    '{date}',
+                    formatDate(user.disabledAt, locale)
+                  )}
                 </span>
               </div>
             )}
@@ -166,7 +187,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border px-4 py-3">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <Building2 className="size-4 text-muted-foreground" />
-              Organizations
+              {t('admin_user_detail_organizations')}
               <span className="text-xs font-normal text-muted-foreground">
                 {user.organizations.length}
               </span>
@@ -175,7 +196,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
           <CardContent className="p-0">
             {user.organizations.length === 0 ? (
               <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-                Aucune organisation
+                {t('admin_user_detail_no_organizations')}
               </p>
             ) : (
               <div className="divide-y divide-border">
@@ -203,7 +224,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                           </p>
                         )}
                       </div>
-                      <Badge variant="outline">{role}</Badge>
+                      <Badge variant="outline">{orgRoleLabels[role] ?? role}</Badge>
                       <ArrowUpRight className="size-3.5 text-muted-foreground/60 opacity-0 transition-opacity group-hover:opacity-100" />
                     </Link>
                   )
