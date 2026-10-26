@@ -10,9 +10,7 @@ import {
   ArrowRightLeft,
   Plus,
   BarChart3,
-  FileCheck,
   Zap,
-  Webhook,
   Settings,
 } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -84,25 +82,11 @@ const COMMANDS: Command[] = [
     href: '/dashboard/analytics',
   },
   {
-    id: 'approvals',
-    icon: FileCheck,
-    labelKey: 'UI_APPROVALS',
-    shortcut: '⌘⇧P',
-    href: '/dashboard/approvals',
-  },
-  {
     id: 'usage',
     icon: Zap,
     labelKey: 'UI_USAGE',
     shortcut: '⌘U',
     href: '/dashboard/usage',
-  },
-  {
-    id: 'webhooks',
-    icon: Webhook,
-    labelKey: 'UI_WEBHOOKS',
-    shortcut: '⌘W',
-    href: '/dashboard/webhooks',
   },
   {
     id: 'settings',

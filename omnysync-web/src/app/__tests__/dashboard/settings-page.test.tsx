@@ -76,7 +76,7 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Security')).toBeInTheDocument()
     expect(screen.getByText('Notifications')).toBeInTheDocument()
     expect(screen.getByText('Billing')).toBeInTheDocument()
-    expect(screen.getByText('API')).toBeInTheDocument()
+    expect(screen.queryByText('API')).not.toBeInTheDocument()
   })
 
   it('renders profile tab by default with form fields', () => {

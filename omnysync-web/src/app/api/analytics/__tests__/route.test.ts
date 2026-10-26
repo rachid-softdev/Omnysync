@@ -40,9 +40,29 @@ describe('GET /api/analytics', () => {
     mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
 
     const { prisma } = await import('@/lib/prisma')
+    const now = Date.now()
     vi.mocked(prisma.syncLog.findMany).mockResolvedValue([
-      { id: 'log-1', action: 'sync_doc', status: 'SUCCESS', createdAt: new Date('2026-06-19') },
-      { id: 'log-2', action: 'sync_doc', status: 'ERROR', createdAt: new Date('2026-06-18') },
+      {
+        id: 'log-start',
+        documentId: 'doc-1',
+        action: 'sync_started',
+        status: 'INFO',
+        createdAt: new Date(now - 10_000),
+      },
+      {
+        id: 'log-1',
+        documentId: 'doc-1',
+        action: 'sync_completed',
+        status: 'SUCCESS',
+        createdAt: new Date(now - 5_000),
+      },
+      {
+        id: 'log-2',
+        documentId: 'doc-2',
+        action: 'sync_failed',
+        status: 'ERROR',
+        createdAt: new Date(now - 1_000),
+      },
     ] as any)
     vi.mocked(prisma.document.count).mockResolvedValue(15)
     vi.mocked(prisma.connector.count).mockResolvedValue(3)
@@ -67,6 +87,7 @@ describe('GET /api/analytics', () => {
     expect(data.totalSyncs).toBe(2)
     expect(data.successRate).toBe(50) // 1/2 success
     expect(data.failedSyncs).toBe(1)
+    expect(data.avgDuration).toBe(5) // only the run with a measurable start
     expect(data.totalDocuments).toBe(15)
     expect(data.activeConnectors).toBe(3)
     expect(data.recentActivity).toHaveLength(2)
@@ -90,6 +111,7 @@ describe('GET /api/analytics', () => {
     expect(data.totalSyncs).toBe(0)
     expect(data.successRate).toBe(0)
     expect(data.failedSyncs).toBe(0)
+    expect(data.avgDuration).toBeNull()
   })
 
   it('returns 400 for an invalid or out-of-range period', async () => {

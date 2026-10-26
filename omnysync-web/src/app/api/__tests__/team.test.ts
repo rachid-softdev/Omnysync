@@ -76,6 +76,7 @@ describe('GET /api/team', () => {
   it('should return members with id, name, email, image, role, joinedAt', async () => {
     const mockMemberships = [
       {
+        id: 'membership-1',
         role: 'OWNER',
         user: {
           id: 'user-1',
@@ -86,6 +87,7 @@ describe('GET /api/team', () => {
         },
       },
       {
+        id: 'membership-2',
         role: 'MEMBER',
         user: {
           id: 'user-2',
@@ -106,7 +108,7 @@ describe('GET /api/team', () => {
     expect(response.status).toBe(200)
     expect(data).toHaveLength(2)
     expect(data[0]).toEqual({
-      id: 'user-1',
+      id: 'membership-1',
       name: 'Alice',
       email: 'alice@omnysync.com',
       image: 'https://avatar.com/alice',
@@ -114,7 +116,7 @@ describe('GET /api/team', () => {
       joinedAt: '2024-01-01T00:00:00.000Z',
     })
     expect(data[1]).toEqual({
-      id: 'user-2',
+      id: 'membership-2',
       name: 'Bob',
       email: 'bob@omnysync.com',
       image: null,

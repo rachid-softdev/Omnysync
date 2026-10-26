@@ -173,7 +173,7 @@ describe("Sync Service", () => {
     destConnector: {
       id: destConnectorId,
       type: "WORDPRESS",
-      credentials: "enc_creds",
+      credentials: "enc_dXNlcjpwYXNz",
       config: { siteUrl: "https://example.com" },
     },
   };
@@ -419,7 +419,7 @@ describe("Sync Service", () => {
         destConnector: {
           id: destConnectorId,
           type: "WEBFLOW",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { siteId: "site-1", collectionId: "coll-1" },
         },
       };
@@ -460,7 +460,7 @@ describe("Sync Service", () => {
         destConnector: {
           id: destConnectorId,
           type: "SHOPIFY",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { shopDomain: "test.myshopify.com" },
         },
       };
@@ -486,7 +486,7 @@ describe("Sync Service", () => {
       expect(result.success).toBe(true);
       expect(createShopifyClient).toHaveBeenCalledWith(
         "test.myshopify.com",
-        "creds",
+        "dXNlcjpwYXNz",
       );
       const shopifyClient =
         vi.mocked(createShopifyClient).mock.results[0].value;
@@ -508,7 +508,7 @@ describe("Sync Service", () => {
         destConnector: {
           id: destConnectorId,
           type: "CONTENTFUL",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { spaceId: "space-1", contentTypeId: "article" },
         },
       };
@@ -533,7 +533,7 @@ describe("Sync Service", () => {
 
       expect(result.success).toBe(true);
       expect(createContentfulEntry).toHaveBeenCalledWith(
-        "creds",
+        "dXNlcjpwYXNz",
         "space-1",
         "article",
         expect.objectContaining({
@@ -555,7 +555,7 @@ describe("Sync Service", () => {
         destConnector: {
           id: destConnectorId,
           type: "GHOST",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { siteUrl: "https://ghost.example.com" },
         },
       };
@@ -613,6 +613,7 @@ describe("Sync Service", () => {
         sourceConnectorId,
         destConnectorId,
         userId,
+        { ai: true },
       );
 
       expect(result.success).toBe(true);
@@ -887,8 +888,15 @@ describe("Sync Service", () => {
         userId,
       );
 
-      // Sync should succeed (publishToDestination returns early when credentials are null/empty)
-      expect(result.success).toBe(true);
+      // Publishing is fail-closed: missing credentials must not report success.
+      expect(result.success).toBe(false);
+      expect(prisma.document.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            lastSyncError: expect.stringContaining("credentials are missing"),
+          }),
+        }),
+      );
     });
 
     it("should handle large content payload", async () => {
@@ -931,13 +939,13 @@ describe("Sync Service", () => {
       );
     });
 
-    it("should skip Shopify article publish when no blogs exist", async () => {
+    it("should fail the sync when Shopify has no blogs", async () => {
       const shopifyNoBlogDoc = {
         ...baseDocument,
         destConnector: {
           id: destConnectorId,
           type: "SHOPIFY",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { shopDomain: "test.myshopify.com" },
         },
       };
@@ -967,10 +975,16 @@ describe("Sync Service", () => {
         userId,
       );
 
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
+      expect(prisma.document.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            lastSyncError: expect.stringContaining("No Shopify blog found"),
+          }),
+        }),
+      );
       const shopifyClient = vi.mocked(shopifyModule.createShopifyClient).mock
         .results[0].value;
-      // getBlogs was called but no articles were created (no blogs available)
       expect(shopifyClient.getBlogs).toHaveBeenCalled();
       expect(shopifyClient.createArticle).not.toHaveBeenCalled();
     });
@@ -982,7 +996,7 @@ describe("Sync Service", () => {
         destConnector: {
           id: destConnectorId,
           type: "CONTENTFUL",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { spaceId: "space-1", contentTypeId: "article" },
         },
       };
@@ -1008,7 +1022,7 @@ describe("Sync Service", () => {
       expect(result.success).toBe(true);
       const contentfulModule = await import("../contentful");
       expect(contentfulModule.getContentfulEntry).toHaveBeenCalledWith(
-        "creds",
+        "dXNlcjpwYXNz",
         "space-1",
         "existing-entry-slug",
       );
@@ -1054,7 +1068,7 @@ describe("Sync Service", () => {
         destConnector: {
           id: destConnectorId,
           type: "GHOST",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { siteUrl: "https://ghost.example.com" },
         },
       };
@@ -1093,7 +1107,7 @@ describe("Sync Service", () => {
         destConnector: {
           id: destConnectorId,
           type: "WEBFLOW",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { siteId: "site-1", collectionId: "coll-1" },
         },
       };
@@ -1144,7 +1158,7 @@ describe("Sync Service", () => {
         destConnector: {
           id: destConnectorId,
           type: "SHOPIFY",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { shopDomain: "test.myshopify.com" },
         },
       };
@@ -1220,6 +1234,7 @@ describe("Sync Service", () => {
         sourceConnectorId,
         destConnectorId,
         userId,
+        { ai: true },
       );
 
       expect(result.success).toBe(true);
@@ -1383,7 +1398,7 @@ describe("Sync Service", () => {
         destConnector: {
           id: destConnectorId,
           type: "CONTENTFUL",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { spaceId: "space-1", contentTypeId: "article" },
         },
       };
@@ -1404,8 +1419,17 @@ describe("Sync Service", () => {
         userId,
       );
 
-      // Sync succeeds but updateContentfulEntry is not called (entry not found)
-      expect(result.success).toBe(true);
+      // A missing remote entry must fail rather than silently skip publishing.
+      expect(result.success).toBe(false);
+      expect(prisma.document.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            lastSyncError: expect.stringContaining(
+              "Contentful entry not found",
+            ),
+          }),
+        }),
+      );
       expect(contentfulModule.updateContentfulEntry).not.toHaveBeenCalled();
     });
 
@@ -1438,10 +1462,15 @@ describe("Sync Service", () => {
         userId,
       );
 
-      expect(result.success).toBe(true);
-      // With null config, config.siteUrl is undefined, but mock handles it
-      const ghostClient = vi.mocked(createGhostClient).mock.results[0].value;
-      expect(ghostClient.createPost).toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect(prisma.document.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            lastSyncError: expect.stringContaining("credentials are missing"),
+          }),
+        }),
+      );
+      expect(createGhostClient).not.toHaveBeenCalled();
     });
 
     it("should sync Google Docs source to Webflow destination with null credentials", async () => {
@@ -1474,10 +1503,15 @@ describe("Sync Service", () => {
         userId,
       );
 
-      expect(result.success).toBe(true);
-      const webflowClient =
-        vi.mocked(createWebflowClient).mock.results[0].value;
-      expect(webflowClient.updateItem).toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect(prisma.document.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            lastSyncError: expect.stringContaining("credentials are missing"),
+          }),
+        }),
+      );
+      expect(createWebflowClient).not.toHaveBeenCalled();
     });
 
     it("should sync Google Docs source to Shopify destination with null credentials", async () => {
@@ -1510,10 +1544,15 @@ describe("Sync Service", () => {
         userId,
       );
 
-      expect(result.success).toBe(true);
-      const shopifyClient =
-        vi.mocked(createShopifyClient).mock.results[0].value;
-      expect(shopifyClient.updateArticle).toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect(prisma.document.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            lastSyncError: expect.stringContaining("credentials are missing"),
+          }),
+        }),
+      );
+      expect(createShopifyClient).not.toHaveBeenCalled();
     });
 
     it("should sync Google Docs source to WordPress destination with null slug in publishToDestination (update path with slug)", async () => {
@@ -1523,7 +1562,7 @@ describe("Sync Service", () => {
         destConnector: {
           id: destConnectorId,
           type: "WORDPRESS",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { siteUrl: "https://example.com" },
         },
       };
@@ -1555,7 +1594,7 @@ describe("Sync Service", () => {
       expect(wpClient.createPost).not.toHaveBeenCalled();
     });
 
-    it("should sync Google Docs source to Shopify destination with no blogs (blogId falsy, skips article)", async () => {
+    it("should fail the sync when Shopify destination has no blogs", async () => {
       // Reset Shopify mock to return empty blogs
       const shopifyModule = await import("../shopify");
       vi.mocked(shopifyModule.createShopifyClient).mockReturnValue({
@@ -1570,7 +1609,7 @@ describe("Sync Service", () => {
         destConnector: {
           id: destConnectorId,
           type: "SHOPIFY",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { shopDomain: "test.myshopify.com" },
         },
       };
@@ -1593,7 +1632,14 @@ describe("Sync Service", () => {
         userId,
       );
 
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
+      expect(prisma.document.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            lastSyncError: expect.stringContaining("No Shopify blog found"),
+          }),
+        }),
+      );
       const shopifyClient =
         vi.mocked(createShopifyClient).mock.results[0].value;
       expect(shopifyClient.getBlogs).toHaveBeenCalled();
@@ -1760,7 +1806,7 @@ describe("Sync Service", () => {
         slug: "123",
         destConnector: {
           type: "WORDPRESS",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { siteUrl: "https://example.com" },
         },
       } as any);
@@ -1783,7 +1829,7 @@ describe("Sync Service", () => {
         slug: null,
         destConnector: {
           type: "WORDPRESS",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { siteUrl: "https://example.com" },
         },
       } as any);
@@ -1799,7 +1845,7 @@ describe("Sync Service", () => {
         id: documentId,
         destConnector: {
           type: "WEBFLOW",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: {},
         },
       } as any);
@@ -1820,7 +1866,7 @@ describe("Sync Service", () => {
         slug: "123",
         destConnector: {
           type: "WORDPRESS",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { siteUrl: "https://example.com" },
         },
       } as any);
@@ -1861,7 +1907,7 @@ describe("Sync Service", () => {
         slug: "ghost-slug",
         destConnector: {
           type: "GHOST",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { siteUrl: "https://ghost.example.com" },
         },
       } as any);
@@ -1872,7 +1918,7 @@ describe("Sync Service", () => {
       expect(result?.id).toBe("ghost-post-1");
       expect(createGhostClient).toHaveBeenCalledWith(
         "https://ghost.example.com",
-        "creds",
+        "dXNlcjpwYXNz",
       );
       expect(mockGhostClient.getPost).toHaveBeenCalledWith("ghost-slug");
     });
@@ -1900,7 +1946,7 @@ describe("Sync Service", () => {
         slug: null,
         destConnector: {
           type: "GHOST",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { siteUrl: "https://ghost.example.com" },
         },
       } as any);

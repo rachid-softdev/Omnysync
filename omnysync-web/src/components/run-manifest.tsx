@@ -1,25 +1,8 @@
-import {
-  Check,
-  FileText,
-  Globe,
-  LayoutTemplate,
-  RefreshCw,
-  ShoppingBag,
-  Workflow,
-} from 'lucide-react'
+import { Check, FileText, Globe } from 'lucide-react'
 
-const DESTINATIONS = [
-  { name: 'WordPress', meta: '1.2s', icon: Globe, done: true },
-  { name: 'Ghost', meta: '0.8s', icon: LayoutTemplate, done: true },
-  { name: 'Webflow', meta: '1.4s', icon: Workflow, done: true },
-  { name: 'Shopify', meta: '62%', icon: ShoppingBag, done: false },
-]
+const DESTINATION = { name: 'WordPress', icon: Globe }
 
-const PIPELINE = [
-  { label: 'parse', meta: '0.4s' },
-  { label: 'enrich', meta: '1.8s' },
-  { label: 'publish', meta: '10.2s' },
-] as const
+const PIPELINE = [{ label: 'parse' }, { label: 'publish' }] as const
 
 type RunManifestLabels = {
   console: string
@@ -27,7 +10,6 @@ type RunManifestLabels = {
   source: string
   destinations: string
   parse: string
-  enrich: string
   publish: string
   synced: string
   syncing: string
@@ -57,7 +39,7 @@ export function RunManifest({ labels }: { labels: RunManifestLabels }) {
             </span>
             {labels.live}
           </span>
-          <span className="text-sidebar-foreground/35">{labels.console} · #2841</span>
+          <span className="text-sidebar-foreground/35">{labels.console} · DEMO</span>
         </div>
 
         <div className="mt-6 border border-sidebar-border bg-white/[0.03] p-3">
@@ -95,9 +77,6 @@ export function RunManifest({ labels }: { labels: RunManifestLabels }) {
                 <p className="text-[12px] leading-5 text-sidebar-foreground/75">
                   {labels[stage.label]}
                 </p>
-                <span className="shrink-0 font-mono text-[9px] text-sidebar-foreground/35">
-                  {stage.meta}
-                </span>
               </div>
             </div>
           ))}
@@ -106,40 +85,21 @@ export function RunManifest({ labels }: { labels: RunManifestLabels }) {
         <div className="mt-1 border-t border-sidebar-border pt-4">
           <div className="flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.14em] text-sidebar-foreground/35">
             <span>{labels.destinations}</span>
-            <span>04</span>
+            <span>01</span>
           </div>
           <ul className="mt-2.5 space-y-1.5">
-            {DESTINATIONS.map((destination) => {
-              const Icon = destination.icon
-              return (
-                <li key={destination.name} className="flex items-center gap-2.5">
-                  <span className="grid size-6 shrink-0 place-items-center border border-sidebar-border text-sidebar-foreground/55">
-                    <Icon className="size-3" aria-hidden="true" />
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-[12px] text-sidebar-foreground/75">
-                    {destination.name}
-                  </span>
-                  {destination.done ? (
-                    <Check className="size-3 shrink-0 text-success" aria-hidden="true" />
-                  ) : (
-                    <RefreshCw
-                      className="size-3 shrink-0 animate-spin text-sidebar-primary"
-                      aria-hidden="true"
-                    />
-                  )}
-                  <span
-                    className={`w-14 shrink-0 text-right font-mono text-[9px] ${
-                      destination.done ? 'text-success' : 'text-sidebar-foreground/35'
-                    }`}
-                  >
-                    {destination.done ? labels.synced : labels.syncing}
-                  </span>
-                  <span className="w-7 shrink-0 text-right font-mono text-[9px] text-sidebar-foreground/35">
-                    {destination.meta}
-                  </span>
-                </li>
-              )
-            })}
+            <li className="flex items-center gap-2.5">
+              <span className="grid size-6 shrink-0 place-items-center border border-sidebar-border text-sidebar-foreground/55">
+                <DESTINATION.icon className="size-3" aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1 truncate text-[12px] text-sidebar-foreground/75">
+                {DESTINATION.name}
+              </span>
+              <Check className="size-3 shrink-0 text-success" aria-hidden="true" />
+              <span className="w-14 shrink-0 text-right font-mono text-[9px] text-success">
+                {labels.synced}
+              </span>
+            </li>
           </ul>
         </div>
 
@@ -147,7 +107,7 @@ export function RunManifest({ labels }: { labels: RunManifestLabels }) {
           <span className="text-success">00 {labels.errors}</span>
           <span className="inline-flex items-center gap-2">
             <span>{labels.duration}</span>
-            <span className="text-sidebar-foreground/70">12.4s</span>
+            <span className="text-sidebar-foreground/70">—</span>
           </span>
         </div>
       </div>

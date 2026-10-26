@@ -249,7 +249,7 @@ describe('performSync', () => {
       email: 'test@example.com',
     } as any)
 
-    await performSync('doc-789', 'conn-1', 'conn-2', 'user-1')
+    await performSync('doc-789', 'conn-1', 'conn-2', 'user-1', { ai: true })
 
     // Verify AI functions were called
     const { generateSEO, generateExcerpt } = await import('../services/ai')

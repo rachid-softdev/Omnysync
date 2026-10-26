@@ -1,5 +1,9 @@
 import { getPrisma } from "../prisma";
-import { DEFAULT_PLAN_FEATURES, FEATURE_KEYS } from "../entitlements/constants";
+import {
+  ACTIVE_SUBSCRIPTION_STATUSES,
+  DEFAULT_PLAN_FEATURES,
+  FEATURE_KEYS,
+} from "../entitlements/constants";
 import type { PlanKey } from "../entitlements/constants";
 
 export type Plan = PlanKey;
@@ -66,11 +70,23 @@ export async function getUserPlan(userId: string): Promise<Plan> {
 
   const subscription = orgMembership?.organization?.subscriptions?.[0];
 
-  if (!subscription || subscription.status !== "ACTIVE") {
+  // Trials keep their paid plan — Stripe reports trialing subscriptions with
+  // the TRIALING status, not ACTIVE.
+  const isActive =
+    subscription != null &&
+    (ACTIVE_SUBSCRIPTION_STATUSES as readonly string[]).includes(
+      subscription.status,
+    );
+
+  if (!isActive) {
     return "free";
   }
 
-  return (subscription.planKey as Plan) || "free";
+  return (Object.keys(DEFAULT_PLAN_FEATURES) as Plan[]).includes(
+    subscription.planKey as Plan,
+  )
+    ? (subscription.planKey as Plan)
+    : "free";
 }
 
 export function getPlanLimits(plan: Plan): PlanLimits {
@@ -183,7 +199,9 @@ export async function decrementQuotaOnFailure(userId: string): Promise<void> {
 
   await prisma.quotaUsage
     .updateMany({
-      where: { userId, month },
+      // Never let a refund push the counter below zero (e.g. a duplicate
+      // failure callback after the quota row was already refunded).
+      where: { userId, month, syncCount: { gt: 0 } },
       data: { syncCount: { decrement: 1 } },
     })
     .catch(() => {

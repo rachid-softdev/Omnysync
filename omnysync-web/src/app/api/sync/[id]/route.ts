@@ -7,9 +7,11 @@ import { scheduleSync, disableScheduledSync } from '@omnysync/core/services/sche
 import {
   checkAndIncrementQuota,
   checkPlanFeature,
+  decrementQuotaOnFailure,
   getPlanLimits,
   getUserPlan,
 } from '@/lib/auth/subscription'
+import { hasPermission } from '@/lib/auth/permissions'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -79,6 +81,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
+  if (!(await hasPermission(session.user.id, orgId, 'sync:delete'))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   // Disable scheduled sync first
   await disableScheduledSync(id)
 
@@ -88,6 +94,32 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   })
 
   return NextResponse.json({ success: true })
+}
+
+async function executeSync(
+  documentId: string,
+  sourceConnectorId: string,
+  destConnectorId: string,
+  userId: string
+) {
+  const limits = getPlanLimits(await getUserPlan(userId))
+
+  try {
+    const result = await performSync(documentId, sourceConnectorId, destConnectorId, userId, {
+      ai: limits.aiFeatures,
+    })
+
+    // performSync() returns a failure result for most provider errors instead
+    // of throwing. Do not charge the monthly quota for a sync that failed.
+    if (!result.success) {
+      await decrementQuotaOnFailure(userId)
+    }
+
+    return result
+  } catch (error) {
+    await decrementQuotaOnFailure(userId)
+    throw error
+  }
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -116,13 +148,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  // Action: Retry failed sync
-  if (action === 'retry') {
-    if (document.syncStatus !== 'FAILED') {
+  // Actions that execute a sync. Both are server-authorized and quota-gated;
+  // the old sync-detail page called performSync() directly from a server
+  // action, which let Free users run unlimited syncs and AI enrichment.
+  if (action === 'retry' || action === 'run') {
+    if (!(await hasPermission(session.user.id, orgId, 'sync:run'))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    if (!document.sourceConnectorId || !document.destConnectorId) {
+      return NextResponse.json({ error: 'Missing connectors' }, { status: 400 })
+    }
+
+    if (action === 'retry' && document.syncStatus !== 'FAILED') {
       return NextResponse.json({ error: 'Only failed syncs can be retried' }, { status: 400 })
     }
 
-    // Check quota
+    if (document.syncStatus === 'SYNCING') {
+      return NextResponse.json({ error: 'This sync is already running' }, { status: 409 })
+    }
+
+    // Check quota before touching the document so a rejected run does not
+    // reset the status or consume a slot.
     const { allowed, upgradeUrl } = await checkAndIncrementQuota(session.user.id)
     if (!allowed) {
       return NextResponse.json(
@@ -136,33 +183,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       )
     }
 
-    // Reset status and trigger sync
-    await prisma.document.update({
-      where: { id },
-      data: { syncStatus: 'NOT_SYNCED', lastSyncError: null },
-    })
-
-    if (document.sourceConnectorId && document.destConnectorId) {
-      // AI enrichment is a paid feature: only run it when the org's plan
-      // includes it (the sync engine defaults to enabling it for internal
-      // Pro/Business-only callers).
-      const limits = getPlanLimits(await getUserPlan(session.user.id))
-
-      const result = await performSync(
-        id,
-        document.sourceConnectorId,
-        document.destConnectorId,
-        session.user.id,
-        { ai: limits.aiFeatures }
-      )
-      return NextResponse.json(result)
+    if (action === 'retry') {
+      await prisma.document.update({
+        where: { id },
+        data: { syncStatus: 'NOT_SYNCED', lastSyncError: null },
+      })
     }
 
-    return NextResponse.json({ error: 'Missing connectors' }, { status: 400 })
+    const result = await executeSync(
+      id,
+      document.sourceConnectorId,
+      document.destConnectorId,
+      session.user.id
+    )
+    return NextResponse.json(result)
   }
 
   // Action: Schedule sync
   if (action === 'schedule') {
+    if (!(await hasPermission(session.user.id, orgId, 'sync:update'))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const { frequency } = body
 
     if (!['DAILY', 'WEEKLY', 'MONTHLY'].includes(frequency)) {
@@ -194,6 +236,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       )
     }
 
+    await prisma.syncLog.create({
+      data: {
+        userId: session.user.id,
+        organizationId: orgId,
+        documentId: id,
+        action: 'schedule_enabled',
+        status: 'INFO',
+        message: `Scheduled sync enabled (${frequency})`,
+      },
+    })
+
     return NextResponse.json({
       success: true,
       autoSyncEnabled: true,
@@ -204,7 +257,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   // Action: Disable scheduled sync
   if (action === 'disable_schedule') {
+    if (!(await hasPermission(session.user.id, orgId, 'sync:update'))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     await disableScheduledSync(id)
+
+    await prisma.syncLog.create({
+      data: {
+        userId: session.user.id,
+        organizationId: orgId,
+        documentId: id,
+        action: 'schedule_disabled',
+        status: 'INFO',
+        message: 'Scheduled sync disabled',
+      },
+    })
+
     return NextResponse.json({
       success: true,
       autoSyncEnabled: false,

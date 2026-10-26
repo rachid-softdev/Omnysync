@@ -368,7 +368,11 @@ describe("decrementQuotaOnFailure", () => {
     await decrementQuotaOnFailure("user-1");
 
     expect(mockPrismaClient.quotaUsage.updateMany).toHaveBeenCalledWith({
-      where: { userId: "user-1", month: expect.any(String) },
+      where: {
+        userId: "user-1",
+        month: expect.any(String),
+        syncCount: { gt: 0 },
+      },
       data: { syncCount: { decrement: 1 } },
     });
   });

@@ -30,6 +30,10 @@ vi.mock('@/lib/auth/org', () => ({
   getUserOrgId: vi.fn(),
 }))
 
+vi.mock('@/lib/auth/permissions', () => ({
+  hasPermission: vi.fn().mockResolvedValue(true),
+}))
+
 vi.mock('@/lib/auth/subscription', () => ({
   checkConnectorLimit: vi.fn(),
 }))
@@ -109,6 +113,7 @@ vi.mock('@omnysync/core/services/notion', () => ({
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
+import { hasPermission } from '@/lib/auth/permissions'
 import { checkConnectorLimit } from '@/lib/auth/subscription'
 import { createConnectorSchema } from '@/lib/validations'
 import { apiError } from '@/lib/api-error'
@@ -355,11 +360,11 @@ describe('POST /api/connectors', () => {
 
   // ── WEBFLOW valide (vérifie l'ordre des arguments passés au core) ───────
 
-  it('should create a Webflow connector passing (userId, orgId, siteId, accessToken)', async () => {
+  it('should create a Webflow connector passing (userId, orgId, siteId, accessToken, collectionId)', async () => {
     const webflowBody = {
       type: 'WEBFLOW',
       name: 'Mon Webflow',
-      config: { siteId: 'site-42' },
+      config: { siteId: 'site-42', collectionId: 'coll-42' },
       credentials: { accessToken: 'wf-token' },
     }
     vi.mocked(createConnectorSchema.safeParse).mockReturnValue({
@@ -381,10 +386,38 @@ describe('POST /api/connectors', () => {
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    expect(testWebflowConnection).toHaveBeenCalledWith('wf-token', 'site-42')
-    expect(saveWebflowConnector).toHaveBeenCalledWith('user-1', 'org-1', 'site-42', 'wf-token')
+    expect(testWebflowConnection).toHaveBeenCalledWith('wf-token', 'site-42', 'coll-42')
+    expect(saveWebflowConnector).toHaveBeenCalledWith(
+      'user-1',
+      'org-1',
+      'site-42',
+      'wf-token',
+      'coll-42'
+    )
     // SECURITY: les credentials chiffrés ne doivent jamais être renvoyés.
     expect(data.credentials).toBeUndefined()
+  })
+
+  it('should reject a Webflow connector without a collection ID', async () => {
+    const webflowBody = {
+      type: 'WEBFLOW',
+      name: 'Mon Webflow',
+      config: { siteId: 'site-42' },
+      credentials: { accessToken: 'wf-token' },
+    }
+    vi.mocked(createConnectorSchema.safeParse).mockReturnValue({
+      success: true,
+      data: webflowBody,
+    } as any)
+
+    const { POST } = await import('@/app/api/connectors/route')
+    const response = await POST(makeRequest(webflowBody))
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.error).toMatch(/collection ID/i)
+    expect(testWebflowConnection).not.toHaveBeenCalled()
+    expect(saveWebflowConnector).not.toHaveBeenCalled()
   })
 
   // ── Type invalide ───────────────────────────────────────────────────────
@@ -476,7 +509,7 @@ describe('POST /api/connectors — other connector types', () => {
     const body = {
       type: 'WEBFLOW',
       name: 'WF',
-      config: { siteId: 'site-1' },
+      config: { siteId: 'site-1', collectionId: 'coll-1' },
       credentials: { accessToken: 'tok' },
     }
     vi.mocked(createConnectorSchema.safeParse).mockReturnValue({ success: true, data: body } as any)
@@ -489,8 +522,8 @@ describe('POST /api/connectors — other connector types', () => {
 
     expect(response.status).toBe(200)
     expect(data.id).toBe('c-wf')
-    expect(testWebflowConnection).toHaveBeenCalledWith('tok', 'site-1')
-    expect(saveWebflowConnector).toHaveBeenCalledWith('user-1', 'org-1', 'site-1', 'tok')
+    expect(testWebflowConnection).toHaveBeenCalledWith('tok', 'site-1', 'coll-1')
+    expect(saveWebflowConnector).toHaveBeenCalledWith('user-1', 'org-1', 'site-1', 'tok', 'coll-1')
   })
 
   it('should create a Shopify connector', async () => {
@@ -619,7 +652,7 @@ describe('POST /api/connectors — other connector types', () => {
     const body = {
       type: 'WEBFLOW',
       name: 'WF',
-      config: { siteId: 'site-1' },
+      config: { siteId: 'site-1', collectionId: 'coll-1' },
       credentials: { accessToken: 'tok' },
     }
     vi.mocked(createConnectorSchema.safeParse).mockReturnValue({ success: true, data: body } as any)
@@ -647,13 +680,14 @@ describe('DELETE /api/connectors/[id]', () => {
     vi.clearAllMocks()
     vi.mocked(auth).mockResolvedValue({ user: { id: 'user-1' } } as any)
     vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+    vi.mocked(hasPermission).mockResolvedValue(true)
   })
 
-  it('should delete a connector owned by the user', async () => {
+  it('should delete an organization connector when the caller has permission', async () => {
     vi.mocked(prisma.connector.findFirst).mockResolvedValue({
       id: 'c-1',
       organizationId: 'org-1',
-      userId: 'user-1',
+      userId: 'another-user',
     } as any)
     vi.mocked(prisma.connector.delete).mockResolvedValue({} as any)
 
@@ -663,10 +697,22 @@ describe('DELETE /api/connectors/[id]', () => {
 
     expect(response.status).toBe(200)
     expect(data.success).toBe(true)
+    expect(hasPermission).toHaveBeenCalledWith('user-1', 'org-1', 'connector:delete')
     expect(prisma.connector.delete).toHaveBeenCalledWith({ where: { id: 'c-1' } })
   })
 
-  it('should return 404 when the connector belongs to another user', async () => {
+  it('should return 403 when the caller lacks connector:delete', async () => {
+    vi.mocked(hasPermission).mockResolvedValue(false)
+
+    const { DELETE } = await import('@/app/api/connectors/[id]/route')
+    const response = await DELETE(makeRequest(), { params: Promise.resolve({ id: 'c-1' }) })
+
+    expect(response.status).toBe(403)
+    expect(prisma.connector.findFirst).not.toHaveBeenCalled()
+    expect(prisma.connector.delete).not.toHaveBeenCalled()
+  })
+
+  it('should return 404 when the connector belongs to another organization', async () => {
     vi.mocked(prisma.connector.findFirst).mockResolvedValue(null)
 
     const { DELETE } = await import('@/app/api/connectors/[id]/route')
@@ -675,9 +721,9 @@ describe('DELETE /api/connectors/[id]', () => {
     expect(response.status).toBe(404)
     expect(apiError).toHaveBeenCalledWith('Connector not found', 404)
     expect(prisma.connector.delete).not.toHaveBeenCalled()
-    // Ownership must be enforced via the lookup filter.
+    // Organization scoping must be enforced via the lookup filter.
     expect(prisma.connector.findFirst).toHaveBeenCalledWith({
-      where: { id: 'c-1', organizationId: 'org-1', userId: 'user-1' },
+      where: { id: 'c-1', organizationId: 'org-1' },
     })
   })
 

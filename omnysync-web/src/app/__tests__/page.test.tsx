@@ -4,29 +4,19 @@ import Home from '../page'
 
 const { translations } = vi.hoisted(() => ({
   translations: {
-    hero_badge: 'Publish once, everywhere',
+    hero_badge: 'One draft, one destination',
     hero_headline: 'Sync your content',
-    hero_tagline: 'everywhere, automatically',
-    hero_subtitle: 'Publish once, sync to all your platforms.',
+    hero_tagline: 'one destination at a time',
+    hero_subtitle: 'Route a draft to the CMS you publish with.',
     hero_cta_primary: 'Start Free',
-    hero_cta_secondary: 'See how it works',
+    hero_cta_secondary: 'See capabilities',
     hero_no_credit_card: 'No credit card required',
     hero_index: '01 / Content routing',
-    hero_stat: '5 sources · 20 destinations',
+    hero_stat: '4 sources · 5 destinations',
     routing_console: 'Routing console',
     hero_platforms: 'Works with your favorite platforms',
-    demo_eyebrow: 'Product tour',
-    demo_title: 'See Omnysync in action',
-    demo_subtitle: 'Watch a real sync.',
-    demo_play: 'Play demo',
-    demo_pause: 'Pause demo',
-    demo_silent: 'Silent demo',
-    demo_video_label: 'Product demo video',
-    demo_fallback: 'Download the video',
     features_title: 'Everything you need',
     features_subtitle: 'Powerful features for content creators.',
-    feature_two_way_title: 'Two-Way Sync',
-    feature_two_way_desc: 'Bidirectional synchronization.',
     feature_analytics_title: 'Analytics',
     feature_analytics_desc: 'Track performance.',
     feature_scheduling_title: 'Scheduling',
@@ -68,25 +58,25 @@ vi.mock('@/lib/i18n/useTranslations', () => ({
 }))
 
 describe('Home page', () => {
-  it('renders hero section', async () => {
+  it('renders hero section with a truthful route claim', async () => {
     render(await Home())
     expect(screen.getByText('Sync your content')).toBeInTheDocument()
-    expect(screen.getByText('everywhere, automatically')).toBeInTheDocument()
+    expect(screen.getByText('one destination at a time')).toBeInTheDocument()
+    expect(screen.getAllByText('4 sources · 5 destinations').length).toBeGreaterThan(0)
   })
 
   it('renders CTA buttons', async () => {
     render(await Home())
     expect(screen.getByText('Start Free')).toBeInTheDocument()
-    expect(screen.getByText('See how it works')).toBeInTheDocument()
+    expect(screen.getByText('See capabilities')).toBeInTheDocument()
   })
 
-  it('renders features section', async () => {
+  it('renders only implemented feature claims', async () => {
     render(await Home())
     expect(screen.getByText('Everything you need')).toBeInTheDocument()
-    // Some labels also appear in the product mockup, so assert presence rather than uniqueness.
-    expect(screen.getAllByText('Two-Way Sync').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Analytics').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Scheduling').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Two-Way Sync')).not.toBeInTheDocument()
   })
 
   it('renders how it works section', async () => {
@@ -104,15 +94,11 @@ describe('Home page', () => {
     }
   })
 
-  it('renders product demo section', async () => {
+  it('does not render the unverified multi-destination demo video', async () => {
     const { container } = render(await Home())
-    const demo = container.querySelector('#demo')
 
-    expect(demo).not.toBeNull()
-    expect(screen.getByText('Product tour')).toBeInTheDocument()
-    expect(screen.getByText('See Omnysync in action')).toBeInTheDocument()
-    expect(demo?.querySelector('video source')?.getAttribute('src')).toMatch(/\/demo(-fr)?\.mp4$/)
-    expect(screen.getByRole('button', { name: 'Play demo' })).toBeInTheDocument()
+    expect(container.querySelector('#demo')).toBeNull()
+    expect(container.querySelector('video')).toBeNull()
   })
 
   it('renders footer with links', async () => {

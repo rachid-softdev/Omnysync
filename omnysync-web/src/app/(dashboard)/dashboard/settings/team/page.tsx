@@ -89,14 +89,20 @@ export default function TeamSettingsPage() {
         body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
       })
 
+      const data = await res.json().catch(() => ({}))
+
       if (res.ok) {
         setInviteDialogOpen(false)
         setInviteEmail('')
         setInviteRole('MEMBER')
         fetchTeam()
+        toast.success('Member added to your organization')
+      } else {
+        toast.error(typeof data?.error === 'string' ? data.error : 'Could not add this member')
       }
     } catch (e) {
       console.error(e)
+      toast.error('Could not add this member')
     } finally {
       setInviting(false)
     }
@@ -109,11 +115,13 @@ export default function TeamSettingsPage() {
         method: 'DELETE',
       })
 
+      const data = await res.json().catch(() => ({}))
+
       if (res.ok) {
         fetchTeam()
         toast.success('Member removed')
       } else {
-        toast.error('Error removing member')
+        toast.error(typeof data?.error === 'string' ? data.error : 'Error removing member')
       }
     } catch (e) {
       console.error(e)
@@ -131,11 +139,16 @@ export default function TeamSettingsPage() {
         body: JSON.stringify({ role: newRole }),
       })
 
+      const data = await res.json().catch(() => ({}))
+
       if (res.ok) {
         fetchTeam()
+      } else {
+        toast.error(typeof data?.error === 'string' ? data.error : 'Error updating role')
       }
     } catch (e) {
       console.error(e)
+      toast.error('Error updating role')
     }
   }
 
@@ -189,14 +202,15 @@ export default function TeamSettingsPage() {
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="size-4" />
-                Invite member
+                Add member
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Invite member</DialogTitle>
+                <DialogTitle>Add member</DialogTitle>
                 <DialogDescription>
-                  Send an email invitation to join your organization.
+                  Add an existing Omnysync account to your organization. Your teammate must sign up
+                  before you can add them; no email invitation is sent yet.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -231,7 +245,7 @@ export default function TeamSettingsPage() {
                 </Button>
                 <Button onClick={handleInvite} disabled={inviting || !inviteEmail}>
                   {inviting ? <Loader2 className="size-4 animate-spin" /> : null}
-                  Send invitation
+                  Add member
                 </Button>
               </DialogFooter>
             </DialogContent>

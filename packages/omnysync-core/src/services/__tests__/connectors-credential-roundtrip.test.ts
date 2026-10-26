@@ -127,10 +127,14 @@ describe("Connector credential encrypt → decrypt round-trip", () => {
         "org-1",
         "site-abc",
         "wf-token",
+        "collection-1",
       );
 
       expect(created.type).toBe("WEBFLOW");
-      expect(created.config).toEqual({ siteId: "site-abc" });
+      expect(created.config).toEqual({
+        siteId: "site-abc",
+        collectionId: "collection-1",
+      });
       expect(decrypt(created.credentials)).toBe("wf-token");
     });
   });

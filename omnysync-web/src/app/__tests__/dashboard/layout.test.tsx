@@ -122,8 +122,8 @@ describe('DashboardLayout', () => {
     expect(screen.getByText('Connectors')).toBeInTheDocument()
     expect(screen.getByText('Sync')).toBeInTheDocument()
     expect(screen.getByText('Analytics')).toBeInTheDocument()
-    expect(screen.getByText('Webhooks')).toBeInTheDocument()
-    expect(screen.getByText('Approvals')).toBeInTheDocument()
+    expect(screen.queryByText('Webhooks')).not.toBeInTheDocument()
+    expect(screen.queryByText('Approvals')).not.toBeInTheDocument()
     expect(screen.getByText('Usage')).toBeInTheDocument()
     expect(screen.getByText('Settings')).toBeInTheDocument()
   })
@@ -161,7 +161,7 @@ describe('DashboardLayout', () => {
     const mobileNav = screen.getByTestId('mobile-nav')
     expect(mobileNav).toBeInTheDocument()
     expect(screen.getByTestId('mobile-nav-user')).toHaveTextContent('John Doe')
-    expect(screen.getByTestId('mobile-nav-count')).toHaveTextContent('9')
+    expect(screen.getByTestId('mobile-nav-count')).toHaveTextContent('7')
   })
 
   it('renders main content area', async () => {

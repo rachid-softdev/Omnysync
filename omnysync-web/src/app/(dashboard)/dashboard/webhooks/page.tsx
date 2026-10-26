@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, Plus, Webhook, Trash2, Play, Copy } from 'lucide-react'
+import { Loader2, Plus, Webhook, Trash2, Play } from 'lucide-react'
 import { toast } from '@/components/toast-provider'
 import {
   AlertDialog,
@@ -44,7 +44,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { useTranslations } from '@/lib/i18n/useTranslations'
-import { formatDateTime, detectClientLocale } from '@/lib/format-date'
 import { useBatchSelect } from '@/hooks/use-batch-select'
 import { BatchActionBar } from '@/components/batch-action-bar'
 import { PageHeader, PageShell } from '@/components/page-header'
@@ -56,15 +55,12 @@ interface WebhookEndpoint {
   connectorName?: string
   type: string
   url: string
-  secret?: string
   isActive: boolean
   createdAt: string
-  lastTriggeredAt?: string
 }
 
 export default function WebhooksPage() {
   const { t, tf } = useTranslations()
-  const locale = detectClientLocale()
   const [loading, setLoading] = useState(true)
   const [webhooks, setWebhooks] = useState<WebhookEndpoint[]>([])
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -223,11 +219,6 @@ export default function WebhooksPage() {
     } finally {
       setTestingId(null)
     }
-  }
-
-  const copySecret = (secret: string) => {
-    navigator.clipboard.writeText(secret)
-    toast.success(t('WEBHOOKS_TOAST_SECRET_COPIED'))
   }
 
   if (planGate) {
@@ -401,9 +392,6 @@ export default function WebhooksPage() {
                   <TableHead className="h-9 w-8 px-1 font-mono text-[9px] uppercase tracking-[0.14em] sm:w-auto sm:px-4">
                     <span className="hidden sm:inline">{t('UI_STATUS')}</span>
                   </TableHead>
-                  <TableHead className="hidden h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] md:table-cell">
-                    {t('WEBHOOKS_LAST_TRIGGERED')}
-                  </TableHead>
                   <TableHead className="h-9 px-2 text-right font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
                     <span className="sr-only">{t('WEBHOOKS_ACTIONS')}</span>
                   </TableHead>
@@ -457,11 +445,6 @@ export default function WebhooksPage() {
                         </span>
                       </span>
                     </TableCell>
-                    <TableCell className="hidden whitespace-nowrap px-4 py-2.5 font-mono text-[10px] tabular-nums text-muted-foreground md:table-cell">
-                      {webhook.lastTriggeredAt
-                        ? formatDateTime(webhook.lastTriggeredAt, locale)
-                        : t('WEBHOOKS_NEVER')}
-                    </TableCell>
                     <TableCell className="px-2 sm:px-4">
                       <div className="flex items-center justify-end gap-1">
                         <Switch
@@ -482,17 +465,6 @@ export default function WebhooksPage() {
                             <Play />
                           )}
                         </Button>
-                        {webhook.secret && (
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="hidden text-muted-foreground sm:inline-flex"
-                            onClick={() => copySecret(webhook.secret!)}
-                            aria-label={t('WEBHOOKS_COPY_SECRET')}
-                          >
-                            <Copy />
-                          </Button>
-                        )}
                         <AlertDialog
                           open={deleteTarget === webhook.id}
                           onOpenChange={(open) => {

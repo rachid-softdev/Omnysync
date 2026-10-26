@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { PageHeader, PageShell } from '@/components/page-header'
+import { SyncRunButton } from '@/components/sync-run-button'
 import {
   ArrowLeft,
   RefreshCw,
@@ -15,7 +16,6 @@ import {
   FileText,
   Database,
   Wand2,
-  Upload,
   Send,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -63,30 +63,71 @@ export default async function SyncDetailPage({ params }: PageProps) {
     notFound()
   }
 
-  // Define sync steps
+  // Derive the run steps from the latest execution's logs instead of showing
+  // a fixed "all completed" animation. AI is optional and may be skipped.
+  const latestStart = syncLogs.find((log) => log.action === 'sync_started')
+  const latestLogs = latestStart
+    ? syncLogs.filter((log) => log.createdAt >= latestStart.createdAt)
+    : []
+  const hasAction = (action: string) => latestLogs.some((log) => log.action === action)
+  const failed = document.syncStatus === 'FAILED'
+
   const syncSteps = [
-    { id: 1, name: 'Content Retrieval', icon: Database, status: 'completed' as const },
-    { id: 2, name: 'HTML Parsing', icon: FileText, status: 'completed' as const },
-    { id: 3, name: 'AI Enrichment', icon: Wand2, status: 'completed' as const },
-    { id: 4, name: 'Image Upload', icon: Upload, status: 'completed' as const },
     {
-      id: 5,
+      id: 1,
+      name: 'Content Retrieval',
+      icon: Database,
+      status: hasAction('fetch_content_completed')
+        ? ('completed' as const)
+        : hasAction('fetch_content_started')
+          ? ('in_progress' as const)
+          : failed
+            ? ('error' as const)
+            : ('pending' as const),
+    },
+    {
+      id: 2,
+      name: 'HTML Parsing',
+      icon: FileText,
+      status: hasAction('parsing_html_completed')
+        ? ('completed' as const)
+        : hasAction('parsing_html_started')
+          ? ('in_progress' as const)
+          : failed
+            ? ('error' as const)
+            : ('pending' as const),
+    },
+    {
+      id: 3,
+      name: 'AI Enrichment',
+      icon: Wand2,
+      status: hasAction('ai_enrichment_completed')
+        ? ('completed' as const)
+        : hasAction('ai_enrichment_skipped')
+          ? ('skipped' as const)
+          : hasAction('ai_enrichment_started')
+            ? ('in_progress' as const)
+            : ('pending' as const),
+    },
+    {
+      id: 4,
       name: 'Publishing',
       icon: Send,
-      status:
-        document.syncStatus === 'SYNCED'
-          ? ('completed' as const)
-          : document.syncStatus === 'SYNCING'
-            ? ('in_progress' as const)
-            : document.syncStatus === 'FAILED'
-              ? ('error' as const)
-              : ('pending' as const),
+      status: hasAction('sync_completed')
+        ? ('completed' as const)
+        : hasAction('publish_started')
+          ? ('in_progress' as const)
+          : failed
+            ? ('error' as const)
+            : ('pending' as const),
     },
   ]
 
-  // Calculate overall progress
-  const completedSteps = syncSteps.filter((s) => s.status === 'completed').length
-  const progress = Math.round((completedSteps / syncSteps.length) * 100)
+  // Optional steps (skipped AI) are excluded from the completion ratio.
+  const applicableSteps = syncSteps.filter((step) => step.status !== 'skipped')
+  const completedSteps = applicableSteps.filter((step) => step.status === 'completed').length
+  const progress =
+    applicableSteps.length > 0 ? Math.round((completedSteps / applicableSteps.length) * 100) : 0
 
   const statusLabels: Record<string, string> = {
     NOT_SYNCED: 'Not synced',
@@ -98,10 +139,13 @@ export default async function SyncDetailPage({ params }: PageProps) {
   const connectorNames: Record<string, string> = {
     GOOGLE_DOCS: 'Google Docs',
     NOTION: 'Notion',
+    AIRTABLE: 'Airtable',
+    CONTENTFUL: 'Contentful',
     WORDPRESS: 'WordPress',
     GHOST: 'Ghost',
     WEBFLOW: 'Webflow',
     SHOPIFY: 'Shopify',
+    MEDIUM: 'Medium',
   }
 
   const stepStatusLabels: Record<string, string> = {
@@ -109,6 +153,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
     in_progress: 'In progress...',
     error: 'Error occurred',
     pending: 'Pending',
+    skipped: 'Skipped — AI enrichment disabled',
   }
 
   return (
@@ -131,30 +176,7 @@ export default async function SyncDetailPage({ params }: PageProps) {
                 View document
               </Link>
             </Button>
-            <form
-              action={async () => {
-                'use server'
-                // Trigger sync
-                const { performSync } = await import('@omnysync/core/services/sync')
-                await (
-                  performSync as (
-                    orgId: string,
-                    documentId: string,
-                    ...args: unknown[]
-                  ) => Promise<unknown>
-                )(
-                  document.id,
-                  document.sourceConnectorId!,
-                  document.destConnectorId!,
-                  session.user.id
-                )
-              }}
-            >
-              <Button type="submit" size="sm">
-                <RefreshCw className="size-4" />
-                Restart
-              </Button>
-            </form>
+            <SyncRunButton documentId={document.id} label="Run sync" />
           </>
         }
       />
@@ -229,7 +251,9 @@ export default async function SyncDetailPage({ params }: PageProps) {
                               ? 'bg-info-soft text-info'
                               : step.status === 'error'
                                 ? 'bg-destructive-soft text-destructive'
-                                : 'bg-muted text-muted-foreground'
+                                : step.status === 'skipped'
+                                  ? 'bg-muted text-muted-foreground'
+                                  : 'bg-muted text-muted-foreground'
                         }`}
                       >
                         {step.status === 'completed' ? (

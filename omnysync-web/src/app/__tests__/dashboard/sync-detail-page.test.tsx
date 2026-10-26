@@ -6,6 +6,7 @@ const mockNotFound = vi.hoisted(() => vi.fn())
 
 vi.mock('next/navigation', () => ({
   notFound: mockNotFound,
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
 }))
 
 vi.mock('next/link', () => ({
@@ -93,6 +94,44 @@ const mockDocument = {
   createdAt: new Date() as Date,
 }
 
+const completedSyncLogs = [
+  {
+    id: 'log-start',
+    status: 'INFO',
+    action: 'sync_started',
+    message: 'Sync started',
+    createdAt: new Date('2026-06-01T10:00:00Z'),
+  },
+  {
+    id: 'log-fetch',
+    status: 'INFO',
+    action: 'fetch_content_completed',
+    message: 'Content fetched',
+    createdAt: new Date('2026-06-01T10:00:01Z'),
+  },
+  {
+    id: 'log-parse',
+    status: 'INFO',
+    action: 'parsing_html_completed',
+    message: 'HTML generated',
+    createdAt: new Date('2026-06-01T10:00:02Z'),
+  },
+  {
+    id: 'log-ai',
+    status: 'INFO',
+    action: 'ai_enrichment_skipped',
+    message: 'AI enrichment is disabled for this run',
+    createdAt: new Date('2026-06-01T10:00:03Z'),
+  },
+  {
+    id: 'log-publish',
+    status: 'SUCCESS',
+    action: 'sync_completed',
+    message: 'Sync completed',
+    createdAt: new Date('2026-06-01T10:00:04Z'),
+  },
+]
+
 describe('SyncDetailPage', () => {
   it('renders header with document title and back button', async () => {
     const { prisma } = await import('@/lib/prisma')
@@ -107,9 +146,9 @@ describe('SyncDetailPage', () => {
     expect(screen.getByText('Back')).toBeInTheDocument()
   })
 
-  it('renders status card with progress', async () => {
+  it('derives progress from the latest sync logs', async () => {
     const { prisma } = await import('@/lib/prisma')
-    ;(prisma.syncLog.findMany as any).mockResolvedValueOnce([])
+    ;(prisma.syncLog.findMany as any).mockResolvedValueOnce(completedSyncLogs)
     ;(prisma.document.findUnique as any).mockResolvedValueOnce(mockDocument)
 
     const element = await SyncDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
@@ -120,9 +159,9 @@ describe('SyncDetailPage', () => {
     expect(screen.getByText('Progress')).toBeInTheDocument()
   })
 
-  it('renders sync steps with all completed status', async () => {
+  it('renders only real sync steps and marks skipped AI explicitly', async () => {
     const { prisma } = await import('@/lib/prisma')
-    ;(prisma.syncLog.findMany as any).mockResolvedValueOnce([])
+    ;(prisma.syncLog.findMany as any).mockResolvedValueOnce(completedSyncLogs)
     ;(prisma.document.findUnique as any).mockResolvedValueOnce(mockDocument)
 
     const element = await SyncDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
@@ -132,8 +171,9 @@ describe('SyncDetailPage', () => {
     expect(screen.getByText('Content Retrieval')).toBeInTheDocument()
     expect(screen.getByText('HTML Parsing')).toBeInTheDocument()
     expect(screen.getByText('AI Enrichment')).toBeInTheDocument()
-    expect(screen.getByText('Image Upload')).toBeInTheDocument()
+    expect(screen.getByText('Skipped — AI enrichment disabled')).toBeInTheDocument()
     expect(screen.getByText('Publishing')).toBeInTheDocument()
+    expect(screen.queryByText('Image Upload')).not.toBeInTheDocument()
   })
 
   it('renders source and destination connector info', async () => {

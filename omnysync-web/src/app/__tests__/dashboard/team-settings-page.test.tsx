@@ -74,7 +74,7 @@ describe('TeamSettingsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Team')).toBeInTheDocument()
-      expect(screen.getByText('Invite member')).toBeInTheDocument()
+      expect(screen.getByText('Add member')).toBeInTheDocument()
     })
   })
 
@@ -111,7 +111,7 @@ describe('TeamSettingsPage', () => {
     })
   })
 
-  it('opens invite dialog when clicking Invite member', async () => {
+  it('opens the add-member dialog with truthful copy', async () => {
     ;(global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => mockMembers,
@@ -120,12 +120,12 @@ describe('TeamSettingsPage', () => {
     render(<TeamSettingsPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Invite member')).toBeInTheDocument()
+      expect(screen.getByText('Add member')).toBeInTheDocument()
     })
 
-    fireEvent.click(screen.getByText('Invite member'))
+    fireEvent.click(screen.getByText('Add member'))
     expect(
-      screen.getByText('Send an email invitation to join your organization.')
+      screen.getByText(/Add an existing Omnysync account to your organization/i)
     ).toBeInTheDocument()
   })
 

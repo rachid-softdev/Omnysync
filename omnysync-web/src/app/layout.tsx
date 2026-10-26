@@ -28,18 +28,18 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: {
-      default: 'Omnysync - Sync Your Content Everywhere',
+      default: 'Omnysync - Content Routing for Publishers',
       template: '%s | Omnysync',
     },
     description:
-      'Sync your content across all platforms automatically. Publish once, everywhere - WordPress, Ghost, Webflow, Shopify and more.',
+      'Route a draft from Google Docs, Notion, Airtable or Contentful to the CMS you publish with. One destination per document, with a clear run log.',
     keywords: [
-      'content sync',
-      'multi-platform publishing',
+      'content routing',
+      'publishing automation',
       'WordPress',
       'Ghost',
       'CMS',
-      'automation',
+      'scheduled sync',
     ],
     authors: [{ name: 'Omnysync' }],
     openGraph: {

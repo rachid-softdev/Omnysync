@@ -43,11 +43,18 @@ import {
   acknowledgeMessage,
 } from "../queue";
 
+function setQueueEnv() {
+  process.env.QSTASH_URL = "https://qstash.example.com";
+  process.env.QSTASH_TOKEN = "test-token";
+  process.env.NEXTAUTH_URL = "https://app.omnysync.com";
+}
+
 describe("Queue Service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     delete process.env.QSTASH_URL;
     delete process.env.QSTASH_TOKEN;
+    delete process.env.NEXTAUTH_URL;
   });
 
   describe("generateIdempotencyKey", () => {
@@ -446,8 +453,14 @@ describe("Queue Service", () => {
   });
 
   describe("enqueueJob", () => {
+    beforeEach(() => {
+      process.env.QSTASH_URL = "https://qstash.example.com";
+      process.env.QSTASH_TOKEN = "test-token";
+      setQueueEnv();
+    });
+
     it("should publish a job to QStash", async () => {
-      process.env.NEXTAUTH_URL = "https://app.omnysync.com";
+      setQueueEnv();
       mockQstashPublish.mockResolvedValue({ messageId: "msg-1" } as never);
 
       const job = {
@@ -465,7 +478,7 @@ describe("Queue Service", () => {
     });
 
     it("should publish with delay when specified", async () => {
-      process.env.NEXTAUTH_URL = "https://app.omnysync.com";
+      setQueueEnv();
       mockQstashPublish.mockResolvedValue({ messageId: "msg-2" } as never);
 
       const job = {
@@ -480,26 +493,35 @@ describe("Queue Service", () => {
       );
     });
 
-    it("should publish with malformed URL when NEXTAUTH_URL is not set", async () => {
+    it("fails closed when NEXTAUTH_URL is not set", async () => {
       delete process.env.NEXTAUTH_URL;
-      mockQstashPublish.mockResolvedValue({ messageId: "msg-3" } as never);
 
       const job = {
         id: "",
         type: "sync_document" as const,
         payload: { documentId: "doc-1" },
       };
-      const jobId = await enqueueJob(job);
 
-      expect(jobId).toBeDefined();
-      expect(mockQstashPublish).toHaveBeenCalledWith({
-        url: "undefined/api/queue",
-        body: expect.any(String),
-      });
+      await expect(enqueueJob(job)).rejects.toThrow("Queue is not configured");
+      expect(mockQstashPublish).not.toHaveBeenCalled();
+    });
+
+    it("fails closed when QSTASH credentials are not set", async () => {
+      delete process.env.QSTASH_URL;
+      delete process.env.QSTASH_TOKEN;
+
+      const job = {
+        id: "",
+        type: "sync_document" as const,
+        payload: { documentId: "doc-1" },
+      };
+
+      await expect(enqueueJob(job)).rejects.toThrow("Queue is not configured");
+      expect(mockQstashPublish).not.toHaveBeenCalled();
     });
 
     it("should accept a custom idempotency key", async () => {
-      process.env.NEXTAUTH_URL = "https://app.omnysync.com";
+      setQueueEnv();
       mockQstashPublish.mockResolvedValue({ messageId: "msg-4" } as never);
 
       const job = {
@@ -517,7 +539,7 @@ describe("Queue Service", () => {
     });
 
     it("should generate a unique job ID for each call", async () => {
-      process.env.NEXTAUTH_URL = "https://app.omnysync.com";
+      setQueueEnv();
       mockQstashPublish.mockResolvedValue({ messageId: "msg-5" } as never);
 
       const job = {
@@ -534,7 +556,7 @@ describe("Queue Service", () => {
 
   describe("enqueueSyncJob", () => {
     it("should enqueue a sync job without options", async () => {
-      process.env.NEXTAUTH_URL = "https://app.omnysync.com";
+      setQueueEnv();
       mockQstashPublish.mockResolvedValue({ messageId: "msg-s1" } as never);
 
       const jobId = await enqueueSyncJob("doc-1", "source-1", "dest-1");
@@ -547,7 +569,7 @@ describe("Queue Service", () => {
     });
 
     it("should enqueue a sync job with delay and priority options", async () => {
-      process.env.NEXTAUTH_URL = "https://app.omnysync.com";
+      setQueueEnv();
       mockQstashPublish.mockResolvedValue({ messageId: "msg-s2" } as never);
 
       const jobId = await enqueueSyncJob("doc-1", "source-1", "dest-1", {
@@ -567,7 +589,7 @@ describe("Queue Service", () => {
 
   describe("enqueueImageUpload", () => {
     it("should enqueue an image upload job", async () => {
-      process.env.NEXTAUTH_URL = "https://app.omnysync.com";
+      setQueueEnv();
       mockQstashPublish.mockResolvedValue({ messageId: "msg-i1" } as never);
 
       const jobId = await enqueueImageUpload(
@@ -586,7 +608,7 @@ describe("Queue Service", () => {
 
   describe("enqueueAIImageGeneration", () => {
     it("should enqueue an AI image generation job", async () => {
-      process.env.NEXTAUTH_URL = "https://app.omnysync.com";
+      setQueueEnv();
       mockQstashPublish.mockResolvedValue({ messageId: "msg-ai1" } as never);
 
       const jobId = await enqueueAIImageGeneration(
@@ -604,7 +626,7 @@ describe("Queue Service", () => {
 
   describe("enqueueSEOProcessing", () => {
     it("should enqueue an SEO processing job", async () => {
-      process.env.NEXTAUTH_URL = "https://app.omnysync.com";
+      setQueueEnv();
       mockQstashPublish.mockResolvedValue({ messageId: "msg-seo1" } as never);
 
       const jobId = await enqueueSEOProcessing("doc-1");
@@ -619,7 +641,7 @@ describe("Queue Service", () => {
 
   describe("enqueueChangeDetection", () => {
     it("should enqueue a change detection job", async () => {
-      process.env.NEXTAUTH_URL = "https://app.omnysync.com";
+      setQueueEnv();
       mockQstashPublish.mockResolvedValue({ messageId: "msg-c1" } as never);
 
       const jobId = await enqueueChangeDetection("doc-1");
@@ -653,7 +675,7 @@ describe("Queue Service", () => {
 
   describe("enqueueJob with special characters", () => {
     it("should handle payload with special characters", async () => {
-      process.env.NEXTAUTH_URL = "https://app.omnysync.com";
+      setQueueEnv();
       mockQstashPublish.mockResolvedValue({ messageId: "msg-sp" } as never);
 
       const job = {

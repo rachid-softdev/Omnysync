@@ -190,7 +190,7 @@ describe("Integration Sync Engine - performSync", () => {
     destConnector: {
       id: destConnectorId,
       type: "WORDPRESS" as const,
-      credentials: "enc_creds",
+      credentials: "enc_dXNlcjpwYXNz",
       config: { siteUrl: "https://example.com" },
     },
   };
@@ -480,7 +480,7 @@ describe("Integration Sync Engine - performSync", () => {
       destConnector: {
         ...baseDocument.destConnector,
         type: "GHOST",
-        credentials: "enc_creds",
+        credentials: "enc_dXNlcjpwYXNz",
         config: { siteUrl: "https://ghost.example.com" },
       },
     };
@@ -557,6 +557,7 @@ describe("Integration Sync Engine - performSync", () => {
       sourceConnectorId,
       destConnectorId,
       userId,
+      { ai: true },
     );
 
     expect(result.success).toBe(true);
@@ -649,16 +650,16 @@ describe("Integration Sync Engine - performSync", () => {
   });
 
   // ==========================================================================
-  // Test 12: Shopify empty blog list → silent skip
+  // Test 12: Shopify empty blog list → fail closed
   // ==========================================================================
 
-  it("should handle Shopify getBlogs returning empty blog list (silent skip)", async () => {
+  it("should fail when Shopify getBlogs returns an empty blog list", async () => {
     const shopifyDoc = {
       ...baseDocument,
       destConnector: {
         ...baseDocument.destConnector,
         type: "SHOPIFY",
-        credentials: "enc_creds",
+        credentials: "enc_dXNlcjpwYXNz",
         config: { shopDomain: "test.myshopify.com" },
       },
     };
@@ -689,7 +690,14 @@ describe("Integration Sync Engine - performSync", () => {
       userId,
     );
 
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
+    expect(prisma.document.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          lastSyncError: expect.stringContaining("No Shopify blog found"),
+        }),
+      }),
+    );
     expect(mockCreateArticle).not.toHaveBeenCalled();
     expect(mockUpdateArticle).not.toHaveBeenCalled();
   });
@@ -705,7 +713,7 @@ describe("Integration Sync Engine - performSync", () => {
       destConnector: {
         ...baseDocument.destConnector,
         type: "CONTENTFUL",
-        credentials: "enc_creds",
+        credentials: "enc_dXNlcjpwYXNz",
         config: { spaceId: "space-1", contentTypeId: "article" },
       },
     };

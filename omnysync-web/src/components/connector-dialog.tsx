@@ -33,6 +33,7 @@ const PLATFORM_FIELDS: Record<
   ],
   WEBFLOW: [
     { label: 'Site ID', key: 'siteId', type: 'text', placeholder: 'abc123...' },
+    { label: 'Collection ID', key: 'collectionId', type: 'text', placeholder: 'collection ID' },
     { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'token...' },
   ],
   SHOPIFY: [
@@ -103,6 +104,7 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
         break
       case 'WEBFLOW':
         config.siteId = fields.siteId || ''
+        config.collectionId = fields.collectionId || ''
         credentials.accessToken = fields.accessToken || ''
         break
       case 'SHOPIFY':

@@ -27,10 +27,8 @@ const mockWebhooks = [
     connectorName: 'WordPress - mon-site.com',
     type: 'WORDPRESS',
     url: 'https://mon-site.com/webhook',
-    secret: 'sec-123',
     isActive: true,
     createdAt: '2026-05-01T10:00:00Z',
-    lastTriggeredAt: '2026-06-01T08:00:00Z',
   },
   {
     id: 'w2',
@@ -40,7 +38,6 @@ const mockWebhooks = [
     url: 'https://mon-blog.ghost.io/webhook',
     isActive: false,
     createdAt: '2026-04-15T10:00:00Z',
-    lastTriggeredAt: undefined,
   },
 ]
 
@@ -133,12 +130,12 @@ describe('WebhooksPage', () => {
     await waitFor(() => {
       expect(screen.getByText('New Webhook')).toBeInTheDocument()
       expect(
-        screen.getByText('Configure an endpoint to receive notifications from your platforms.')
+        screen.getByText('Configure an endpoint to receive a test delivery from Omnysync.')
       ).toBeInTheDocument()
     })
   })
 
-  it('shows last triggered info for active webhooks', async () => {
+  it('shows endpoint counts for active webhooks', async () => {
     ;(global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ webhooks: mockWebhooks }),
@@ -147,9 +144,8 @@ describe('WebhooksPage', () => {
     render(<WebhooksPage />)
 
     await waitFor(() => {
-      expect(screen.getByText(/Last triggered/)).toBeInTheDocument()
+      expect(screen.getByText('2 endpoints')).toBeInTheDocument()
     })
-    expect(screen.getByText('2 endpoints')).toBeInTheDocument()
     expect(screen.getByText('1 active')).toBeInTheDocument()
   })
 
@@ -163,10 +159,8 @@ describe('WebhooksPage', () => {
     render(<WebhooksPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Dernier déclenchement')).toBeInTheDocument()
       expect(screen.getByText('Actif')).toBeInTheDocument()
       expect(screen.getByText('Inactif')).toBeInTheDocument()
-      expect(screen.getByText('Jamais')).toBeInTheDocument()
       expect(screen.getByText('2 endpoints')).toBeInTheDocument()
       expect(screen.getByText('1 actif')).toBeInTheDocument()
     })

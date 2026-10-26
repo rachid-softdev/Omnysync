@@ -85,6 +85,7 @@ export const ghostConfigSchema = z.object({
 /** Webflow specific */
 export const webflowConfigSchema = z.object({
   siteId: z.string().min(1),
+  collectionId: z.string().min(1),
   accessToken: z.string().min(1),
 })
 

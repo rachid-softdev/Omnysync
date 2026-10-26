@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
-import { enqueueSyncJob } from '@omnysync/core/services/queue'
-import { checkAndIncrementQuota, checkDocumentLimit } from '@/lib/auth/subscription'
+import { enqueueSyncJob, isQueueConfigured } from '@omnysync/core/services/queue'
+import {
+  checkAndIncrementQuota,
+  checkDocumentLimit,
+  decrementQuotaOnFailure,
+} from '@/lib/auth/subscription'
 import { createSyncSchema } from '@/lib/validations'
 import { apiError } from '@/lib/api-error'
 import { PUBLIC_CONNECTOR_SELECT, sanitizeDocumentConnectors } from '@/lib/public-connector'
@@ -94,6 +98,17 @@ export async function POST(req: NextRequest) {
     return apiError(`${destConnector.type} cannot be used as a destination connector`, 400)
   }
 
+  // Fail before creating a document or consuming quota when the queue is not
+  // configured. Previously the document was created, quota incremented, and
+  // only then the QStash publish failed — leaving an orphaned document.
+  if (!isQueueConfigured()) {
+    return apiError(
+      'Sync queue is not configured. Set QSTASH_URL, QSTASH_TOKEN and NEXTAUTH_URL.',
+      503,
+      'QUEUE_NOT_CONFIGURED'
+    )
+  }
+
   // Check document limit (plan entitlement) before creating the document.
   // checkDocumentLimit was never called anywhere, so MAX_DOCUMENTS was dead.
   const documentLimit = await checkDocumentLimit(session.user.id)
@@ -139,9 +154,36 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  await enqueueSyncJob(document.id, sourceConnectorId, destConnectorId, {
-    userId: session.user.id,
-  })
+  try {
+    await enqueueSyncJob(document.id, sourceConnectorId, destConnectorId, {
+      userId: session.user.id,
+    })
+  } catch (error) {
+    console.error('Failed to enqueue sync job:', error)
+
+    await prisma.document.update({
+      where: { id: document.id },
+      data: {
+        syncStatus: 'FAILED',
+        lastSyncError: 'The sync queue is unavailable. Please retry.',
+      },
+    })
+
+    await prisma.syncLog.create({
+      data: {
+        userId: session.user.id,
+        organizationId: orgId,
+        documentId: document.id,
+        action: 'sync_failed',
+        status: 'ERROR',
+        message: 'The sync queue is unavailable. Please retry.',
+      },
+    })
+
+    await decrementQuotaOnFailure(session.user.id)
+
+    return apiError('Could not queue the sync. Please retry.', 503, 'QUEUE_UNAVAILABLE')
+  }
 
   return NextResponse.json(document)
 }

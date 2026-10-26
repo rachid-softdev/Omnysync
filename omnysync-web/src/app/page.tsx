@@ -9,23 +9,19 @@ import {
   FileText,
   Globe,
   LayoutTemplate,
-  RefreshCw,
   Send,
   ShoppingBag,
   Workflow,
 } from 'lucide-react'
-import { ProductDemo } from '@/components/product-demo'
 import { RouteMap } from '@/components/route-map'
-import { RunManifest } from '@/components/run-manifest'
 import { BrandLockup } from '@/components/signal-mark'
-import { getLocaleFromHeaders, getT } from '@/lib/i18n'
-import { headers } from 'next/headers'
+import { getT } from '@/lib/i18n'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Omnysync — Your content, everywhere',
+  title: 'Omnysync — Content routing for publishers',
   description:
-    'Write once, publish everywhere. Omnysync keeps WordPress, Ghost, Webflow and Shopify in sync from a single draft.',
+    'Route a draft from Google Docs, Notion, Airtable or Contentful to the CMS you publish with. One destination per document, with a clear run log.',
 }
 
 const PLATFORMS = [
@@ -38,12 +34,6 @@ const PLATFORMS = [
 ]
 
 const FEATURES = [
-  {
-    titleKey: 'feature_two_way_title',
-    descKey: 'feature_two_way_desc',
-    icon: RefreshCw,
-    visual: 'two-way',
-  },
   {
     titleKey: 'feature_analytics_title',
     descKey: 'feature_analytics_desc',
@@ -65,22 +55,7 @@ const STEPS = [
 ] as const
 
 export default async function Home() {
-  const locale = getLocaleFromHeaders(await headers())
   const t = await getT()
-
-  const runLabels = {
-    console: t('routing_console'),
-    live: t('run_live'),
-    source: t('UI_SOURCE'),
-    destinations: t('UI_DESTINATIONS'),
-    parse: t('run_parse'),
-    enrich: t('run_enrich'),
-    publish: t('run_publish'),
-    synced: t('UI_SYNCED'),
-    syncing: t('run_syncing'),
-    errors: t('UI_ERRORS'),
-    duration: t('run_duration'),
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -132,7 +107,7 @@ export default async function Home() {
                 <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
               <Link
-                href="#demo"
+                href="#features"
                 className="inline-flex h-11 w-full items-center justify-center rounded-[3px] border border-border bg-card px-6 text-sm font-medium text-foreground shadow-2xs transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-border-strong hover:bg-muted active:translate-y-px sm:w-auto"
               >
                 {t('hero_cta_secondary')}
@@ -165,7 +140,7 @@ export default async function Home() {
             <RouteMap tone="dark" />
             <div className="mt-3 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
               <span>{t('routing_console')}</span>
-              <span>v2.4</span>
+              <span>DEMO</span>
             </div>
           </div>
         </div>
@@ -202,62 +177,6 @@ export default async function Home() {
               </li>
             ))}
           </ul>
-        </div>
-      </section>
-
-      {/* ── Product demo ────────────────────────────────────────────────── */}
-      <section id="demo" className="scroll-mt-16 border-b border-border py-20 sm:py-24">
-        <div className="mx-auto max-w-[1200px] px-6">
-          <div className="grid gap-6 border-b border-border pb-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end lg:gap-16">
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
-                {t('demo_eyebrow')}
-              </p>
-              <h2 className="mt-3 max-w-xl text-[clamp(2rem,4.2vw,3.25rem)] font-semibold leading-[1.02] tracking-[-0.035em]">
-                {t('demo_title')}
-              </h2>
-            </div>
-            <div>
-              <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-                {t('demo_subtitle')}
-              </p>
-              <div className="mt-4 flex items-center gap-3 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="size-1.5 rounded-full bg-success" aria-hidden="true" />
-                  {t('routing_console')}
-                </span>
-                <span className="h-3 w-px bg-border" aria-hidden="true" />
-                <span>#2841</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 grid overflow-hidden border border-border bg-card lg:grid-cols-[1.55fr_0.85fr]">
-            <ProductDemo
-              flush
-              src={locale === 'fr' ? '/demo-fr.mp4' : '/demo.mp4'}
-              poster={locale === 'fr' ? '/demo-poster-fr.webp' : '/demo-poster-en.webp'}
-              url="app.omnysync.com/dashboard"
-              label={t('demo_video_label')}
-              playLabel={t('demo_play')}
-              pauseLabel={t('demo_pause')}
-              silentLabel={t('demo_silent')}
-              fallbackHref={locale === 'fr' ? '/demo-fr.mp4' : '/demo.mp4'}
-              fallbackLabel={t('demo_fallback')}
-            />
-            <RunManifest labels={runLabels} />
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
-            <span>{t('demo_manifest_note')}</span>
-            <Link
-              href="#features"
-              className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
-            >
-              {t('demo_next')}
-              <ArrowDown className="size-3" aria-hidden="true" />
-            </Link>
-          </div>
         </div>
       </section>
 
@@ -305,24 +224,6 @@ export default async function Home() {
                     <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
                       {t(feature.descKey)}
                     </p>
-
-                    {feature.visual === 'two-way' && (
-                      <div className="mt-5 flex flex-wrap items-center gap-3 border border-border bg-muted/30 p-3">
-                        <span className="border border-border bg-background px-2.5 py-1.5 text-[11px] font-medium shadow-2xs">
-                          Google Docs
-                        </span>
-                        <span className="flex items-center gap-0.5 text-primary" aria-hidden="true">
-                          <ArrowRight className="size-3.5" />
-                          <ArrowRight className="size-3.5 rotate-180" />
-                        </span>
-                        <span className="border border-border bg-background px-2.5 py-1.5 text-[11px] font-medium shadow-2xs">
-                          WordPress
-                        </span>
-                        <span className="ml-auto font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
-                          Δ 12s
-                        </span>
-                      </div>
-                    )}
 
                     {feature.visual === 'analytics' && (
                       <div

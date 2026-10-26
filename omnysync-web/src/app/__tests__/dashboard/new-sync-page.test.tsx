@@ -8,15 +8,13 @@ vi.mock('@/lib/i18n/useTranslations', () => ({
       const translations: Record<string, string> = {
         UI_NEW_SYNC: 'New Sync',
         sync_new_desc:
-          'Move a document from a source platform to a destination, with optional AI enrichment.',
+          'Move a document from a source platform to a destination, then review the route before starting.',
         UI_STEP_SOURCE: 'Source',
         UI_STEP_SOURCE_DESC: 'Select content source',
         UI_STEP_DOCUMENT: 'Document',
         UI_STEP_DOCUMENT_DESC: 'Choose document',
         UI_STEP_DESTINATION: 'Destination',
         UI_STEP_DESTINATION_DESC: 'Select target platform',
-        UI_STEP_IA: 'AI',
-        UI_STEP_IA_DESC: 'AI options',
         UI_STEP_SYNC: 'Sync',
         UI_STEP_SYNC_DESC: 'Start sync',
         UI_SELECT_SOURCE: 'Select Source',
@@ -32,8 +30,8 @@ vi.mock('@/lib/i18n/useTranslations', () => ({
         UI_DESTINATION_DESC: 'Select target platform',
         UI_PLATFORM: 'Platform',
         UI_SELECT_DESTINATION: 'Select destination',
-        UI_AI_ENRICHMENT: 'AI Enrichment',
-        UI_AI_OPTIONS: 'Configure AI options',
+        UI_REVIEW_STEP: 'Review',
+        UI_REVIEW_DESC: 'Confirm the route before starting.',
         UI_START_SYNC: 'Start Sync',
         UI_SYNC_IN_PROGRESS: 'Sync in progress',
         UI_DO_NOT_CLOSE: 'Do not close this page',
@@ -46,9 +44,6 @@ vi.mock('@/lib/i18n/useTranslations', () => ({
         UI_DESTINATION_CONFIGURED: 'Destination configured',
         UI_CONNECTION_VERIFIED: 'Connection verified',
         UI_SYNC_STARTING: 'Sync starting...',
-        LABEL_SEO: 'Auto SEO',
-        LABEL_IA_IMAGES: 'Generate images',
-        LABEL_INTERNAL_LINKS: 'Internal links',
       }
       return translations[key] || key
     },
@@ -95,7 +90,7 @@ describe('NewSyncPage', () => {
       expect(screen.getAllByText('Source').length).toBeGreaterThanOrEqual(1)
       expect(screen.getByText('Document')).toBeInTheDocument()
       expect(screen.getByText('Destination')).toBeInTheDocument()
-      expect(screen.getAllByText('AI').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByText('Review')).toBeInTheDocument()
       expect(screen.getByText('Sync')).toBeInTheDocument()
     })
   })
@@ -142,7 +137,7 @@ describe('NewSyncPage', () => {
     expect(screen.getByText('Waiting for activity...')).toBeInTheDocument()
   })
 
-  it('shows AI enrichment step indicator', async () => {
+  it('shows the review step indicator without an AI step', async () => {
     ;(global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => mockConnectors,
@@ -154,7 +149,7 @@ describe('NewSyncPage', () => {
       expect(screen.getByText('Select Source')).toBeInTheDocument()
     })
 
-    // AI step indicator is always rendered regardless of current step
-    expect(screen.getByText('AI options')).toBeInTheDocument()
+    expect(screen.getByText('Confirm the route before starting.')).toBeInTheDocument()
+    expect(screen.queryByText('AI options')).not.toBeInTheDocument()
   })
 })

@@ -69,7 +69,7 @@ describe('UsagePage', () => {
     expect(spinner).toBeInTheDocument()
   })
 
-  it('falls back to demo data when fetch is not ok', async () => {
+  it('shows an unavailable state instead of invented usage when fetch fails', async () => {
     ;(global.fetch as any).mockResolvedValueOnce({
       ok: false,
       json: async () => ({}),
@@ -78,9 +78,12 @@ describe('UsagePage', () => {
     render(<UsagePage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Plan Pro')).toBeInTheDocument()
-      expect(screen.getByText('Active')).toBeInTheDocument()
+      expect(
+        screen.getByText('Unable to load live data. No usage figures are shown.')
+      ).toBeInTheDocument()
     })
+    expect(screen.queryByText('Plan Pro')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
   })
 
   it('renders plan info banner', async () => {
@@ -143,7 +146,7 @@ describe('UsagePage', () => {
     })
   })
 
-  it('renders AI tab with AI usage breakdown', async () => {
+  it('renders the AI metadata tab without image or interlinking claims', async () => {
     ;(global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -177,9 +180,12 @@ describe('UsagePage', () => {
     await waitFor(() => {
       expect(screen.getByText('AI Usage')).toBeInTheDocument()
       expect(screen.getByText('15')).toBeInTheDocument()
-      expect(screen.getByText('8')).toBeInTheDocument()
-      expect(screen.getByText('3')).toBeInTheDocument()
+      expect(
+        screen.getByText('AI metadata is in beta and is not included in plan limits.')
+      ).toBeInTheDocument()
     })
+    expect(screen.queryByText('Images')).not.toBeInTheDocument()
+    expect(screen.queryByText('Interlinking')).not.toBeInTheDocument()
   })
 
   it('renders history tab with monthly data', async () => {

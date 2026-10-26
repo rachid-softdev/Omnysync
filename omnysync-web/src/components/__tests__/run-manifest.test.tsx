@@ -8,7 +8,6 @@ const labels = {
   source: 'Source',
   destinations: 'Destinations',
   parse: 'Parse',
-  enrich: 'Enrich',
   publish: 'Publish',
   synced: 'Synchronized',
   syncing: 'Syncing',
@@ -23,20 +22,18 @@ describe('RunManifest', () => {
     expect(screen.getByText('Live run')).toBeInTheDocument()
     expect(screen.getByText('launch-notes.md')).toBeInTheDocument()
     expect(screen.getByText('Parse')).toBeInTheDocument()
-    expect(screen.getByText('Enrich')).toBeInTheDocument()
     expect(screen.getByText('Publish')).toBeInTheDocument()
-
-    for (const destination of ['WordPress', 'Ghost', 'Webflow', 'Shopify']) {
-      expect(screen.getByText(destination)).toBeInTheDocument()
-    }
+    expect(screen.getByText('WordPress')).toBeInTheDocument()
+    expect(screen.queryByText('Ghost')).not.toBeInTheDocument()
   })
 
-  it('distinguishes completed and in-flight destinations', () => {
+  it('shows one completed destination and does not invent a duration', () => {
     render(<RunManifest labels={labels} />)
 
-    expect(screen.getAllByText('Synchronized')).toHaveLength(3)
-    expect(screen.getByText('Syncing')).toBeInTheDocument()
+    expect(screen.getByText('Synchronized')).toBeInTheDocument()
+    expect(screen.queryByText('Syncing')).not.toBeInTheDocument()
     expect(screen.getByText('00 Errors')).toBeInTheDocument()
-    expect(screen.getByText('12.4s')).toBeInTheDocument()
+    expect(screen.queryByText('12.4s')).not.toBeInTheDocument()
+    expect(screen.getByText('—')).toBeInTheDocument()
   })
 })

@@ -6,6 +6,7 @@ const mockNotFound = vi.hoisted(() => vi.fn())
 
 vi.mock('next/navigation', () => ({
   notFound: mockNotFound,
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
 }))
 
 vi.mock('next/link', () => ({
@@ -26,6 +27,9 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     document: {
       findUnique: vi.fn(),
+    },
+    userOrganization: {
+      findFirst: vi.fn(),
     },
   },
 }))
@@ -60,6 +64,15 @@ vi.mock('lucide-react', () => {
 beforeEach(() => {
   vi.clearAllMocks()
   mockNotFound.mockReset()
+})
+
+beforeEach(async () => {
+  const { prisma } = await import('@/lib/prisma')
+  ;(prisma.userOrganization.findFirst as any).mockResolvedValue({
+    organization: {
+      subscriptions: [{ status: 'ACTIVE', planKey: 'pro' }],
+    },
+  })
 })
 
 const mockDocument = {
@@ -114,17 +127,17 @@ describe('DocumentDetailPage', () => {
     expect(screen.getAllByText('WordPress').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders Edit, Sync and Delete buttons', async () => {
+  it('renders working Sync and Delete actions without a dead Edit control', async () => {
     const { prisma } = await import('@/lib/prisma')
     ;(prisma.document.findUnique as any).mockResolvedValueOnce(mockDocument)
 
     const element = await DocumentDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
     render(element)
 
-    expect(screen.getByText('Edit')).toBeInTheDocument()
     const syncButtons = screen.getAllByText('Sync')
     expect(syncButtons.length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Delete')).toBeInTheDocument()
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument()
   })
 
   it('renders status cards', async () => {

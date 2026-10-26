@@ -156,7 +156,7 @@ describe('createConnectorSchema', () => {
       type: 'WEBFLOW' as const,
       name: 'My Webflow Site',
       credentials: { accessToken: 'webflow-token' },
-      config: { siteId: 'site-123' },
+      config: { siteId: 'site-123', collectionId: 'collection-123' },
     }
 
     const result = createConnectorSchema.safeParse(validInput)

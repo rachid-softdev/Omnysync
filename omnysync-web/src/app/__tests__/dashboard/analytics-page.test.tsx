@@ -37,6 +37,20 @@ describe('AnalyticsPage', () => {
     expect(spinner).toBeInTheDocument()
   })
 
+  it('shows an unavailable duration instead of inventing one', async () => {
+    ;(global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ ...mockAnalyticsData, avgDuration: null }),
+    })
+
+    render(<AnalyticsPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('—')).toBeInTheDocument()
+      expect(screen.getByText('No duration recorded')).toBeInTheDocument()
+    })
+  })
+
   it('renders analytics data when loaded', async () => {
     ;(global.fetch as any).mockResolvedValueOnce({
       ok: true,

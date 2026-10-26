@@ -37,8 +37,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
       items: [
         { href: '/dashboard/sync', icon: 'sync', label: t('UI_SYNC') },
         { href: '/dashboard/analytics', icon: 'analytics', label: t('UI_ANALYTICS') },
-        { href: '/dashboard/webhooks', icon: 'webhooks', label: t('UI_WEBHOOKS') },
-        { href: '/dashboard/approvals', icon: 'approvals', label: t('UI_APPROVALS') },
       ],
     },
     {

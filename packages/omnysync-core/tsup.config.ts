@@ -28,6 +28,7 @@ export default defineConfig({
     "services/two-factor": "src/services/two-factor.ts",
     "services/password-reset": "src/services/password-reset.ts",
     "services/sync": "src/services/sync.ts",
+    "services/outbound-url": "src/services/outbound-url.ts",
     "services/two-way-sync": "src/services/two-way-sync.ts",
     "services/image-upload": "src/services/image-upload.ts",
     "services/ai": "src/services/ai.ts",

@@ -30,7 +30,7 @@ const ghostConnectorSchema = z.object({
 const webflowConnectorSchema = z.object({
   type: z.literal('WEBFLOW'),
   name: z.string().min(1).max(100),
-  config: z.object({ siteId: z.string().min(1) }),
+  config: z.object({ siteId: z.string().min(1), collectionId: z.string().min(1) }),
   credentials: z.object({ accessToken: z.string().min(1) }),
 })
 

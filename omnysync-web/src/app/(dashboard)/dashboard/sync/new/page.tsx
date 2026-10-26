@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -115,8 +114,8 @@ export default function NewSyncPage() {
     },
     {
       id: 4,
-      title: t('UI_STEP_IA'),
-      description: t('UI_STEP_IA_DESC'),
+      title: t('UI_REVIEW_STEP'),
+      description: t('UI_REVIEW_DESC'),
       status: currentStep === 3 ? 'current' : currentStep > 3 ? 'completed' : 'pending',
     },
     {
@@ -458,12 +457,12 @@ export default function NewSyncPage() {
             </Card>
           )}
 
-          {/* Step 3: AI Enrichment */}
+          {/* Step 3: Review */}
           {currentStep === 3 && (
             <Card>
               <CardHeader>
-                <CardTitle>{t('UI_AI_ENRICHMENT')}</CardTitle>
-                <CardDescription>{t('UI_AI_OPTIONS')}</CardDescription>
+                <CardTitle>{t('UI_REVIEW_STEP')}</CardTitle>
+                <CardDescription>{t('UI_REVIEW_DESC')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2.5 rounded-[3px] bg-muted p-4">
@@ -492,20 +491,6 @@ export default function NewSyncPage() {
                       </dd>
                     </div>
                   </dl>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="seo" defaultChecked />
-                    <Label htmlFor="seo">{t('LABEL_SEO')}</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="images" />
-                    <Label htmlFor="images">{t('LABEL_IA_IMAGES')}</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="links" defaultChecked />
-                    <Label htmlFor="links">{t('LABEL_INTERNAL_LINKS')}</Label>
-                  </div>
                 </div>
                 <div className="flex gap-2 border-t border-border pt-4">
                   <Button variant="outline" onClick={() => setCurrentStep(2)} className="flex-1">

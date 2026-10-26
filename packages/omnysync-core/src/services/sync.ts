@@ -18,6 +18,7 @@ import { createWebflowClient } from "./webflow";
 import { createShopifyClient } from "./shopify";
 import { requireDocumentAccess } from "./authz";
 import { sanitizeErrorMessage } from "./sanitize";
+import { assertSafeOutboundUrl } from "./outbound-url";
 
 export interface SyncResult {
   success: boolean;
@@ -222,9 +223,9 @@ async function generateAIImages(
 
 export interface PerformSyncOptions {
   /**
-   * AI enrichment (SEO, excerpt, interlinking, images) is a paid plan feature.
-   * Web routes pass the caller's plan flag; internal callers (scheduler,
-   * two-way sync, approval portal) are Pro/Business-only and may omit it.
+   * AI enrichment (SEO, excerpt, interlinking, images) is opt-in.
+   * Every caller must pass the caller's plan flag explicitly; omitting it is
+   * treated as `false` so a forgotten option can never spend AI credits.
    */
   ai?: boolean;
 }
@@ -234,7 +235,7 @@ export async function performSync(
   sourceConnectorId: string,
   destConnectorId: string,
   userId: string,
-  options: PerformSyncOptions = {},
+  options: PerformSyncOptions = { ai: false },
 ): Promise<SyncResult> {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
@@ -422,7 +423,7 @@ export async function performSync(
     };
     let aiImageUrl: string | null = null;
 
-    if (options.ai !== false) {
+    if (options.ai === true) {
       await prisma.syncLog.create({
         data: {
           documentId,
@@ -468,7 +469,7 @@ export async function performSync(
           userId: document.userId,
           action: "ai_enrichment_skipped",
           status: "INFO",
-          message: "AI enrichment is not included in the current plan",
+          message: "AI enrichment is disabled for this run",
         },
       });
     }
@@ -519,7 +520,7 @@ export async function performSync(
         documentId,
         action: "sync_completed",
         status: "SUCCESS",
-        message: "Document synchronisé avec succès (avec enrichissement IA)",
+        message: "Document synchronisé avec succès",
       },
     });
 
@@ -593,7 +594,9 @@ async function publishToDestination(
   document: PublishDocument,
   htmlContent: string,
 ) {
-  if (!document.destConnector) return;
+  if (!document.destConnector) {
+    throw new Error("No destination connector configured");
+  }
 
   const rawCredentials = decrypt(document.destConnector.credentials || "");
   const config = (document.destConnector.config || {}) as Record<
@@ -601,13 +604,29 @@ async function publishToDestination(
     string
   >;
 
+  if (!rawCredentials) {
+    throw new Error("Destination connector credentials are missing");
+  }
+
+  // Publishing is fail-closed: a sync is only marked SYNCED after one of the
+  // branches below has actually created or updated the remote post.
+  let published = false;
+
   if (document.destConnector.type === "WORDPRESS") {
+    await assertSafeOutboundUrl(config.siteUrl);
     const { createWordPressClient } = await import("./wordpress");
     const creds = Buffer.from(rawCredentials, "base64").toString().split(":");
+    if (!creds[0] || !creds[1]) {
+      throw new Error("WordPress credentials are incomplete");
+    }
     const client = createWordPressClient(config.siteUrl, creds[0], creds[1]);
 
     if (document.slug) {
-      await client.updatePost(parseInt(document.slug), {
+      const postId = Number.parseInt(document.slug, 10);
+      if (!Number.isFinite(postId)) {
+        throw new Error("WordPress post id is invalid");
+      }
+      await client.updatePost(postId, {
         title: document.title,
         content: htmlContent,
         status: "publish",
@@ -623,9 +642,11 @@ async function publishToDestination(
         data: { slug: result.id.toString() },
       });
     }
+    published = true;
   }
 
   if (document.destConnector.type === "GHOST") {
+    await assertSafeOutboundUrl(config.siteUrl);
     const { createGhostClient } = await import("./ghost");
     const client = createGhostClient(config.siteUrl, rawCredentials);
 
@@ -641,11 +662,16 @@ async function publishToDestination(
         html: htmlContent,
         status: "published",
       });
+      const postId = result.posts[0]?.id;
+      if (!postId) {
+        throw new Error("Ghost did not return a post id");
+      }
       await prisma.document.update({
         where: { id: document.id },
-        data: { slug: result.posts[0].id },
+        data: { slug: postId },
       });
     }
+    published = true;
   }
 
   if (document.destConnector.type === "WEBFLOW") {
@@ -654,14 +680,13 @@ async function publishToDestination(
 
     const slug = document.title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
-    // A Webflow item always belongs to a collection. When none is configured
-    // (the connector dialog does not ask for one yet), resolve the site's
-    // first collection instead of calling the API with `undefined`.
-    const collectionId =
-      config.collectionId || (await client.getCollections()).collections[0]?.id;
-
+    // A Webflow item must belong to a collection chosen by the user. Picking
+    // the first collection silently published into the wrong CMS collection.
+    const collectionId = config.collectionId;
     if (!collectionId) {
-      throw new Error("No Webflow collection found for this site");
+      throw new Error(
+        "Webflow collection ID is required. Reconnect Webflow with a collection selected.",
+      );
     }
 
     if (document.slug) {
@@ -678,41 +703,55 @@ async function publishToDestination(
         content: htmlContent,
         status: "published",
       });
+      const itemId = result.items[0]?.id;
+      if (!itemId) {
+        throw new Error("Webflow did not return an item id");
+      }
       await prisma.document.update({
         where: { id: document.id },
-        data: { slug: result.items[0].id },
+        data: { slug: itemId },
       });
     }
+    published = true;
   }
 
   if (document.destConnector.type === "SHOPIFY") {
+    if (!config.shopDomain) {
+      throw new Error("Shopify shop domain is required");
+    }
+    await assertSafeOutboundUrl(`https://${config.shopDomain}`);
     const { createShopifyClient } = await import("./shopify");
     const client = createShopifyClient(config.shopDomain, rawCredentials);
 
     const blogs = await client.getBlogs();
     const blogId = blogs.blogs[0]?.id;
 
-    if (blogId) {
-      if (document.slug) {
-        await client.updateArticle(blogId, document.slug, {
-          title: document.title,
-          body_html: htmlContent,
-        });
-      } else {
-        const result = await client.createArticle(blogId, {
-          title: document.title,
-          body_html: htmlContent,
-        });
-        await prisma.document.update({
-          where: { id: document.id },
-          data: { slug: result.article.id.toString() },
-        });
-      }
-    } else {
-      console.warn(
-        `[Sync] No Shopify blogs found for ${config.shopDomain} — skipping article publish`,
+    if (!blogId) {
+      throw new Error(
+        "No Shopify blog found. Create a blog in Shopify before syncing articles.",
       );
     }
+
+    if (document.slug) {
+      await client.updateArticle(blogId, document.slug, {
+        title: document.title,
+        body_html: htmlContent,
+      });
+    } else {
+      const result = await client.createArticle(blogId, {
+        title: document.title,
+        body_html: htmlContent,
+      });
+      const articleId = result.article?.id;
+      if (articleId === undefined || articleId === null) {
+        throw new Error("Shopify did not return an article id");
+      }
+      await prisma.document.update({
+        where: { id: document.id },
+        data: { slug: articleId.toString() },
+      });
+    }
+    published = true;
   }
 
   // Contentful integration
@@ -728,6 +767,10 @@ async function publishToDestination(
     const spaceId = contentfulConfig.spaceId;
     const accessToken = rawCredentials;
     const contentTypeId = contentfulConfig.contentTypeId || "article";
+
+    if (!spaceId) {
+      throw new Error("Contentful space ID is required");
+    }
 
     const fields = {
       title: { "en-US": document.title },
@@ -749,15 +792,16 @@ async function publishToDestination(
         spaceId,
         document.slug,
       );
-      if (contentfulEntry) {
-        await updateContentfulEntry(
-          accessToken,
-          spaceId,
-          document.slug,
-          fields,
-          contentfulEntry.version,
-        );
+      if (!contentfulEntry) {
+        throw new Error("Contentful entry not found");
       }
+      await updateContentfulEntry(
+        accessToken,
+        spaceId,
+        document.slug,
+        fields,
+        contentfulEntry.version,
+      );
     } else {
       const result = await createContentfulEntry(
         accessToken,
@@ -770,6 +814,7 @@ async function publishToDestination(
         data: { slug: result.id },
       });
     }
+    published = true;
   }
 
   // Medium integration
@@ -785,31 +830,38 @@ async function publishToDestination(
 
     if (document.slug) {
       // The Medium API has no update endpoint: re-publishing would create a
-      // duplicate post. Keep the existing publication.
-      console.warn(
-        `[Sync] Medium post already published for document ${document.id} — skipping (Medium API does not support updates)`,
+      // duplicate post. Fail rather than report a sync that did not publish.
+      throw new Error(
+        "Medium does not support updating an existing post. Create a new document to publish a new version.",
       );
-    } else {
-      const post = {
-        title: document.title,
-        contentFormat: "html" as const,
-        content: htmlContent,
-        publishStatus: "public" as const,
-      };
-
-      const result = mediumConfig.publicationId
-        ? await createMediumPublicationPost(
-            rawCredentials,
-            mediumConfig.publicationId,
-            post,
-          )
-        : await createMediumPost(rawCredentials, mediumConfig.userId, post);
-
-      await prisma.document.update({
-        where: { id: document.id },
-        data: { slug: result.id },
-      });
     }
+
+    const post = {
+      title: document.title,
+      contentFormat: "html" as const,
+      content: htmlContent,
+      publishStatus: "public" as const,
+    };
+
+    const result = mediumConfig.publicationId
+      ? await createMediumPublicationPost(
+          rawCredentials,
+          mediumConfig.publicationId,
+          post,
+        )
+      : await createMediumPost(rawCredentials, mediumConfig.userId, post);
+
+    await prisma.document.update({
+      where: { id: document.id },
+      data: { slug: result.id },
+    });
+    published = true;
+  }
+
+  if (!published) {
+    throw new Error(
+      `Unsupported destination connector type: ${document.destConnector.type}`,
+    );
   }
 }
 

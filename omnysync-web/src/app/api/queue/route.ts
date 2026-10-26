@@ -4,7 +4,12 @@ import { performSync, detectAndSyncChanges } from '@omnysync/core/services/sync'
 import { generateAImage, generateSEO } from '@omnysync/core/services/ai'
 import { uploadAllImages } from '@omnysync/core/services/image-upload'
 import { prisma } from '@/lib/prisma'
-import { getPlanLimits, getUserPlan } from '@/lib/auth/subscription'
+import {
+  checkAndIncrementQuota,
+  decrementQuotaOnFailure,
+  getPlanLimits,
+  getUserPlan,
+} from '@/lib/auth/subscription'
 import {
   processJobWithRetry,
   isJobCompleted,
@@ -119,8 +124,16 @@ export async function POST(req: NextRequest) {
             { ai: limits.aiFeatures }
           )
         })
-        // Upload images after sync (fire and forget)
-        uploadAllImages(job.payload.documentId as string, userId).catch(console.error)
+        // performSync() returns a failure result for provider errors instead of
+        // throwing. The quota was consumed when the document was created, so
+        // refund it when the queued sync did not publish.
+        const failed = (result as { success?: boolean } | null)?.success === false
+        if (failed) {
+          await decrementQuotaOnFailure(userId)
+        } else {
+          // Upload images after a successful sync (fire and forget).
+          uploadAllImages(job.payload.documentId as string, userId).catch(console.error)
+        }
 
         // Mark as completed after successful processing
         if (idempotencyKey) {
@@ -134,10 +147,37 @@ export async function POST(req: NextRequest) {
         if (!userId) {
           return NextResponse.json({ error: 'Unknown document' }, { status: 404 })
         }
-        const result = await processJobWithRetry(job, async (j: unknown) => {
-          const jPayload = j as { payload: { documentId: string } }
-          return detectAndSyncChanges(jPayload.payload.documentId, userId)
-        })
+
+        // A detected change triggers a publish, so it consumes the same
+        // monthly sync quota as a regular sync. Check before running the AI
+        // comparison; refund when no change was found or the run failed.
+        const quota = await checkAndIncrementQuota(userId)
+        if (!quota.allowed) {
+          return NextResponse.json(
+            {
+              error: 'Monthly sync quota exceeded',
+              code: 'QUOTA_EXCEEDED',
+              upgradeUrl: quota.upgradeUrl,
+            },
+            { status: 403 }
+          )
+        }
+
+        let result: unknown
+        try {
+          result = await processJobWithRetry(job, async (j: unknown) => {
+            const jPayload = j as { payload: { documentId: string } }
+            return detectAndSyncChanges(jPayload.payload.documentId, userId)
+          })
+        } catch (error) {
+          await decrementQuotaOnFailure(userId)
+          throw error
+        }
+
+        const detection = result as { success?: boolean; changesDetected?: boolean } | null
+        if (detection?.success === false || detection?.changesDetected === false) {
+          await decrementQuotaOnFailure(userId)
+        }
 
         if (idempotencyKey) {
           markJobCompleted(idempotencyKey, result)

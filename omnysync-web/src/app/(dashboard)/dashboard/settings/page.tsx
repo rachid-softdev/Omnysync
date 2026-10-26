@@ -9,7 +9,6 @@ import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
 import {
   Table,
@@ -23,7 +22,6 @@ import { PageHeader, PageShell } from '@/components/page-header'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 import {
   User,
-  Key,
   Bell,
   CreditCard,
   Shield,
@@ -48,11 +46,6 @@ export default function SettingsPage() {
     weeklyDigest: false,
     teamInvites: true,
   })
-
-  // API Keys (simulées)
-  const [apiKeys] = useState([
-    { id: '1', name: 'Production API Key', createdAt: '2026-01-15', lastUsed: '2026-05-10' },
-  ])
 
   const handleSaveProfile = async () => {
     setLoading(true)
@@ -120,13 +113,6 @@ export default function SettingsPage() {
           >
             <CreditCard className="size-4" />
             {t('settings_tab_billing')}
-          </TabsTrigger>
-          <TabsTrigger
-            value="api"
-            className="justify-start gap-2 rounded-[2px] px-3 py-2 text-[13px] lg:w-full"
-          >
-            <Key className="size-4" />
-            {t('settings_tab_api')}
           </TabsTrigger>
         </TabsList>
 
@@ -486,66 +472,6 @@ export default function SettingsPage() {
                   ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* API Tab */}
-        <TabsContent value="api" className="max-w-2xl space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('settings_api_keys_title')}</CardTitle>
-              <CardDescription>{t('settings_api_keys_desc')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground">{t('settings_api_keys_intro')}</p>
-                <Button size="sm">
-                  <Key className="size-3.5" />
-                  {t('settings_generate_key')}
-                </Button>
-              </div>
-
-              <Separator />
-
-              {apiKeys.map((key) => (
-                <div key={key.id} className="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <p className="text-[13px] font-medium">{key.name}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {t('settings_created_on')} {key.createdAt} - {t('settings_last_used')}:{' '}
-                      {key.lastUsed}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      {t('settings_copy')}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="text-destructive"
-                      aria-label={`${t('settings_delete_key')} ${key.name}`}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('settings_api_docs_title')}</CardTitle>
-              <CardDescription>{t('settings_api_docs_desc')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">{t('settings_api_docs_intro')}</p>
-              <Button variant="outline" size="sm" className="mt-4">
-                <ExternalLink className="size-3.5" />
-                {t('settings_view_docs')}
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>

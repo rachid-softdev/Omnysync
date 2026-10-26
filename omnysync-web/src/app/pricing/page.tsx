@@ -10,16 +10,26 @@ export const metadata: Metadata = {
   description: 'Free, Pro and Business plans for content routing. Start free, scale when you grow.',
 }
 
+type PlanCard = {
+  nameKey: string
+  priceKey: string
+  periodKey?: string
+  descriptionKey: string
+  ctaKey: string
+  href: string
+  priceIsCustom?: boolean
+}
+
 export default async function PricingPage() {
   const t = await getT()
 
-  const plans = [
+  const plans: PlanCard[] = [
     {
       nameKey: 'plan_pro_name',
       priceKey: 'plan_pro_price',
       periodKey: 'plan_pro_period',
       descriptionKey: 'plan_pro_description',
-      ctaKey: 'cta_start_trial',
+      ctaKey: 'cta_upgrade_pro',
       href: '/api/stripe/checkout',
     },
     {
@@ -33,10 +43,10 @@ export default async function PricingPage() {
     {
       nameKey: 'plan_business_name',
       priceKey: 'plan_business_price',
-      periodKey: 'plan_business_period',
       descriptionKey: 'plan_business_description',
       ctaKey: 'cta_contact_sales',
       href: 'mailto:sales@omnysync.com',
+      priceIsCustom: true,
     },
   ]
 
@@ -50,40 +60,20 @@ export default async function PricingPage() {
       values: [t('plan_pro_feature_2'), t('plan_free_feature_2'), t('plan_business_feature_2')],
     },
     {
-      labelKey: 'compare_platforms',
-      values: [
-        t('plan_pro_feature_3'),
-        `${t('plan_free_feature_3')} · ${t('plan_free_feature_4')}`,
-        t('plan_pro_feature_3'),
-      ],
+      labelKey: 'compare_documents',
+      values: [t('plan_pro_feature_3'), t('plan_free_feature_3'), t('plan_business_feature_3')],
     },
     {
-      labelKey: 'compare_pro_features',
-      values: [t('value_included'), '—', t('plan_business_feature_3')],
-    },
-    {
-      labelKey: 'compare_ai',
+      labelKey: 'compare_scheduled',
       values: [t('plan_pro_feature_4'), '—', t('plan_pro_feature_4')],
     },
     {
-      labelKey: 'compare_linking',
-      values: [t('plan_pro_feature_5'), '—', t('plan_pro_feature_5')],
-    },
-    {
-      labelKey: 'compare_change',
-      values: [t('plan_pro_feature_6'), '—', t('plan_pro_feature_6')],
-    },
-    {
-      labelKey: 'compare_two_way',
+      labelKey: 'compare_team',
       values: ['—', '—', t('plan_business_feature_4')],
     },
     {
-      labelKey: 'compare_team_api',
-      values: ['—', '—', `${t('plan_business_feature_5')} · ${t('plan_business_feature_6')}`],
-    },
-    {
       labelKey: 'compare_support',
-      values: [t('plan_pro_feature_7'), t('plan_free_feature_5'), t('plan_business_feature_7')],
+      values: [t('plan_pro_feature_6'), t('plan_free_feature_4'), t('plan_business_feature_5')],
     },
   ]
 
@@ -200,15 +190,17 @@ export default async function PricingPage() {
                           <span className="text-4xl font-semibold tracking-[-0.04em] tabular-nums">
                             {t(plan.priceKey)}
                           </span>
-                          <span
-                            className={
-                              isPro
-                                ? 'text-[11px] text-sidebar-foreground/45'
-                                : 'text-[11px] text-muted-foreground'
-                            }
-                          >
-                            /{t(plan.periodKey)}
-                          </span>
+                          {!plan.priceIsCustom && plan.periodKey ? (
+                            <span
+                              className={
+                                isPro
+                                  ? 'text-[11px] text-sidebar-foreground/45'
+                                  : 'text-[11px] text-muted-foreground'
+                              }
+                            >
+                              /{t(plan.periodKey)}
+                            </span>
+                          ) : null}
                         </div>
                         {isPro && (
                           <p className="mt-1 font-mono text-[8px] uppercase tracking-[0.12em] text-sidebar-primary">

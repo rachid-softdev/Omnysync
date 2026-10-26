@@ -5,6 +5,16 @@ import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Table,
   TableBody,
   TableCell,
@@ -67,6 +77,8 @@ export default function ConnectorsPage() {
   const [dialogType, setDialogType] = useState<string | null>(null)
   const [statusMsg, setStatusMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
+  const [pendingDisconnect, setPendingDisconnect] = useState<string[]>([])
+  const [disconnecting, setDisconnecting] = useState(false)
 
   const fetchConnectors = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -111,11 +123,55 @@ export default function ConnectorsPage() {
   const { selectedIds, selectedCount, isAllSelected, toggle, selectAll, clearSelection } =
     useBatchSelect(connectors)
 
-  const handleBatchDisconnect = useCallback(() => {
-    setConnectors((prev) => prev.filter((c) => !selectedIds.has(c.id)))
-    toast.success(`${selectedCount} connector(s) disconnected`)
-    clearSelection()
-  }, [selectedIds, selectedCount, clearSelection])
+  const handleDisconnect = useCallback(async () => {
+    if (pendingDisconnect.length === 0) return
+
+    setDisconnecting(true)
+
+    const results = await Promise.all(
+      pendingDisconnect.map(async (id) => {
+        try {
+          const res = await fetch(`/api/connectors/${id}`, { method: 'DELETE' })
+          const data = await res.json().catch(() => ({}))
+          return {
+            id,
+            ok: res.ok,
+            error: typeof data?.error === 'string' ? data.error : 'Disconnect failed',
+          }
+        } catch {
+          return { id, ok: false, error: 'Network error' }
+        }
+      })
+    )
+
+    const removedIds = results.filter((result) => result.ok).map((result) => result.id)
+    const failures = results.filter((result) => !result.ok)
+
+    if (removedIds.length > 0) {
+      setConnectors((prev) => prev.filter((connector) => !removedIds.includes(connector.id)))
+    }
+
+    if (failures.length === 0) {
+      toast.success(
+        removedIds.length === 1
+          ? 'Connector disconnected'
+          : `${removedIds.length} connectors disconnected`
+      )
+      clearSelection()
+    } else if (removedIds.length > 0) {
+      toast.warning(
+        `${removedIds.length} disconnected, ${failures.length} could not be disconnected: ${failures
+          .map((failure) => failure.error)
+          .join('; ')}`
+      )
+      clearSelection()
+    } else {
+      toast.error(failures.map((failure) => failure.error).join('; '))
+    }
+
+    setDisconnecting(false)
+    setPendingDisconnect([])
+  }, [pendingDisconnect, clearSelection])
 
   const handleConnect = useCallback((type: string) => {
     try {
@@ -277,7 +333,7 @@ export default function ConnectorsPage() {
                       label: 'Disconnect',
                       icon: <XCircle className="size-4" />,
                       variant: 'destructive',
-                      onClick: handleBatchDisconnect,
+                      onClick: () => setPendingDisconnect([...selectedIds]),
                     },
                   ]}
                 />
@@ -315,6 +371,9 @@ export default function ConnectorsPage() {
                       </TableHead>
                       <TableHead className="h-9 px-2 text-right font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
                         {t('UI_STATUS')}
+                      </TableHead>
+                      <TableHead className="h-9 w-10 px-2 text-right font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
+                        <span className="sr-only">Actions</span>
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -366,6 +425,17 @@ export default function ConnectorsPage() {
                             {connector.status === 'ACTIVE' ? t('UI_ACTIVE') : t('UI_INACTIVE')}
                           </span>
                         </TableCell>
+                        <TableCell className="px-2 text-right sm:px-4">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Disconnect ${connector.name}`}
+                            title="Disconnect"
+                            onClick={() => setPendingDisconnect([connector.id])}
+                          >
+                            <XCircle className="size-4 text-destructive" aria-hidden="true" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -389,6 +459,42 @@ export default function ConnectorsPage() {
         onClose={() => setDialogType(null)}
         onSuccess={fetchConnectors}
       />
+
+      <AlertDialog
+        open={pendingDisconnect.length > 0}
+        onOpenChange={(open) => {
+          if (!open && !disconnecting) setPendingDisconnect([])
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingDisconnect.length === 1
+                ? 'Disconnect this connector?'
+                : `Disconnect ${pendingDisconnect.length} connectors?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the connection from Omnysync. Content already published on the
+              destination is not deleted. Connectors linked to documents cannot be disconnected
+              until those documents are removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={disconnecting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault()
+                void handleDisconnect()
+              }}
+              disabled={disconnecting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {disconnecting && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+              Disconnect
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   )
 }

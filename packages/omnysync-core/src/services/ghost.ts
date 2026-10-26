@@ -2,6 +2,7 @@ import { prisma } from "../prisma";
 import { ERR_UPLOAD_MEDIA } from "../errors";
 import { encrypt } from "../crypto";
 import { fetchWithRetry } from "../http";
+import { assertSafeOutboundUrl } from "./outbound-url";
 
 export interface GhostPost {
   id?: string;
@@ -140,6 +141,7 @@ export async function testGhostConnection(
   adminApiKey: string,
 ) {
   try {
+    await assertSafeOutboundUrl(siteUrl);
     const client = createGhostClient(siteUrl, adminApiKey);
     await client.getTags();
     return { success: true };

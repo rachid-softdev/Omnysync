@@ -2,10 +2,37 @@ import { Client } from "@upstash/qstash";
 import { Redis } from "@upstash/redis";
 import crypto from "crypto";
 
-const qstash = new Client({
-  baseUrl: process.env.QSTASH_URL!,
-  token: process.env.QSTASH_TOKEN!,
-});
+let qstashClient: Client | null = null;
+
+/**
+ * QStash is a production dependency for sync jobs. Callers must check this
+ * before creating a document/quota row so a misconfigured deployment fails
+ * fast instead of leaving orphaned records behind.
+ */
+export function isQueueConfigured(): boolean {
+  return Boolean(
+    process.env.QSTASH_URL &&
+    process.env.QSTASH_TOKEN &&
+    process.env.NEXTAUTH_URL,
+  );
+}
+
+function getQStash(): Client {
+  if (!isQueueConfigured()) {
+    throw new Error(
+      "Queue is not configured. Set QSTASH_URL, QSTASH_TOKEN and NEXTAUTH_URL.",
+    );
+  }
+
+  if (!qstashClient) {
+    qstashClient = new Client({
+      baseUrl: process.env.QSTASH_URL!,
+      token: process.env.QSTASH_TOKEN!,
+    });
+  }
+
+  return qstashClient;
+}
 
 // Redis-backed completed-jobs store (shared across instances)
 function getRedis(): Redis | null {
@@ -251,6 +278,8 @@ export async function enqueueJob(
     idempotencyKey: key,
     ...job,
   });
+
+  const qstash = getQStash();
 
   if (delayInSeconds) {
     const scheduledTime = Math.floor(Date.now() / 1000) + delayInSeconds;

@@ -5,12 +5,15 @@ import { getUserOrgId } from '@/lib/auth/org'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { PageHeader, PageShell } from '@/components/page-header'
+import { SyncRunButton } from '@/components/sync-run-button'
+import { DeleteDocumentButton } from '@/components/delete-document-button'
+import { ScheduleSettings } from '@/components/schedule-settings'
+import { getPlanLimits, getUserPlan } from '@/lib/auth/subscription'
 
-import { ArrowLeft, RefreshCw, Trash2, Edit, Clock, CheckCircle, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
@@ -71,6 +74,8 @@ export default async function DocumentDetailPage({ params }: PageProps) {
     notFound()
   }
 
+  const canSchedule = getPlanLimits(await getUserPlan(session.user.id)).scheduledSync
+
   const statusLabels: Record<string, string> = {
     DRAFT: 'Draft',
     READY: 'Ready',
@@ -115,22 +120,8 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 Back
               </Link>
             </Button>
-            <Button variant="outline" size="sm">
-              <Edit className="size-4" />
-              Edit
-            </Button>
-            <Button variant="outline" size="sm">
-              <RefreshCw className="size-4" />
-              Sync
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-destructive hover:bg-destructive-soft"
-            >
-              <Trash2 className="size-4" />
-              Delete
-            </Button>
+            <SyncRunButton documentId={document.id} label="Sync" />
+            <DeleteDocumentButton documentId={document.id} />
           </>
         }
       />
@@ -405,31 +396,12 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 <CardDescription>Configure sync frequency</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-[13px] font-medium">Auto sync</p>
-                    <p className="text-xs text-muted-foreground">Automatically detect changes</p>
-                  </div>
-                  <Switch
-                    checked={document.autoSyncEnabled}
-                    disabled
-                    aria-label="Auto sync enabled"
-                  />
-                </div>
-                {document.autoSyncEnabled && document.syncFrequency && (
-                  <div className="border-t border-border pt-4">
-                    <p className="text-xs text-muted-foreground">Frequency</p>
-                    <p className="mt-0.5 text-[13px] font-medium">
-                      {document.syncFrequency === 'DAILY'
-                        ? 'Daily'
-                        : document.syncFrequency === 'WEEKLY'
-                          ? 'Weekly'
-                          : document.syncFrequency === 'MONTHLY'
-                            ? 'Monthly'
-                            : 'Manual'}
-                    </p>
-                  </div>
-                )}
+                <ScheduleSettings
+                  documentId={document.id}
+                  autoSyncEnabled={document.autoSyncEnabled}
+                  syncFrequency={document.syncFrequency}
+                  canSchedule={canSchedule}
+                />
                 {document.nextSyncAt && (
                   <div className="border-t border-border pt-4">
                     <p className="text-xs text-muted-foreground">Next sync</p>
@@ -446,20 +418,17 @@ export default async function DocumentDetailPage({ params }: PageProps) {
               </CardContent>
             </Card>
 
-            {/* Auto-publish Settings */}
+            {/* Publishing behavior */}
             <Card>
               <CardHeader>
                 <CardTitle>Publishing</CardTitle>
-                <CardDescription>Auto-publish options</CardDescription>
+                <CardDescription>How this document publishes</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-[13px] font-medium">Auto-publish</p>
-                    <p className="text-xs text-muted-foreground">Publish immediately after sync</p>
-                  </div>
-                  <Switch defaultChecked aria-label="Auto-publish" />
-                </div>
+                <p className="text-[13px] leading-relaxed text-muted-foreground">
+                  Each sync publishes this document to its configured destination. Omnysync does not
+                  fan out one document to multiple destinations.
+                </p>
               </CardContent>
             </Card>
           </div>

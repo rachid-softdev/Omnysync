@@ -2,6 +2,12 @@
   "buildCommand": "npx prisma generate && next build",
   "installCommand": "npm install",
   "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/sync",
+      "schedule": "0 * * * *"
+    }
+  ],
   "env": {
     "DATABASE_URL": "@database_url",
     "NEXTAUTH_SECRET": "@nextauth_secret",
@@ -14,6 +20,7 @@
     "QSTASH_TOKEN": "@qstash_token",
     "QSTASH_CURRENT_SIGNING_KEY": "@qstash_current_signing_key",
     "QSTASH_NEXT_SIGNING_KEY": "@qstash_next_signing_key",
+    "CRON_SECRET": "@cron_secret",
     "STRIPE_SECRET_KEY": "@stripe_secret_key",
     "STRIPE_WEBHOOK_SECRET": "@stripe_webhook_secret",
     "RESEND_API_KEY": "@resend_api_key",

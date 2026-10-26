@@ -185,7 +185,7 @@ describe("Integration Sync Engine", () => {
     destConnector: {
       id: destConnectorId,
       type: "WORDPRESS" as const,
-      credentials: "enc_creds",
+      credentials: "enc_dXNlcjpwYXNz",
       config: { siteUrl: "https://example.com" },
     },
   };
@@ -554,7 +554,7 @@ describe("Integration Sync Engine", () => {
         slug: "123",
         destConnector: {
           type: "WORDPRESS",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { siteUrl: "https://example.com" },
         },
       } as any);
@@ -571,7 +571,7 @@ describe("Integration Sync Engine", () => {
         slug: "post-slug",
         destConnector: {
           type: "GHOST",
-          credentials: "enc_creds",
+          credentials: "enc_dXNlcjpwYXNz",
           config: { siteUrl: "https://myghost.com" },
         },
       } as any);
