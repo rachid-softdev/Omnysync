@@ -6,24 +6,25 @@ product
 
 ## Users
 
-**Content teams, agencies, and individual creators** who need to publish and synchronize content across multiple CMS platforms (WordPress, Ghost, Webflow, Shopify, Medium, etc.). They are:
+**Content teams, agencies, and individual creators** who need to move content from a source platform to a destination CMS (WordPress, Ghost, Webflow, Shopify, Contentful, Medium). They are:
 
-- **Marketing/content managers** juggling 3+ publishing platforms who waste hours copying content between systems
-- **Agencies** managing dozens of client sites who need centralized content operations
-- **Individual creators** who want to write once and publish everywhere without manual copy-paste
+- **Marketing/content managers** who copy the same document into a CMS by hand and want a repeatable route
+- **Agencies** managing client sites who need centralized content operations and a clear sync history
+- **Individual creators** who want to publish from their writing tool to one destination without manual copy-paste
 
-Their context: typically in-browser, task-oriented, managing multiple content sources and destinations simultaneously. They value speed, reliability, and visibility into what's happening.
+Their context: typically in-browser, task-oriented, and working with one source and one destination per sync. They value speed, reliability, and visibility into what's happening.
 
 ## Product Purpose
 
-Omnysync is a multi-platform content synchronization and automation platform. It lets users:
+Omnysync is a content routing platform. Each sync moves one document from one source to one destination. It lets users:
 
-- **Publish once, sync everywhere** — connect content sources (Google Docs, Notion, Airtable, Contentful) to destinations (WordPress, Ghost, Webflow, Shopify, Medium)
-- **Enrich with AI** — auto-generate SEO metadata, images, and internal links during sync
-- **Track and manage** — see sync status, history, analytics, and usage across all connected platforms
-- **Collaborate** — team management, approval workflows, and webhook-based integrations
+- **Route content** — connect sources (Google Docs, Notion, Airtable, Contentful) to destinations (WordPress, Ghost, Webflow, Shopify, Contentful, Medium)
+- **Schedule recurring syncs** — keep a destination up to date on Pro and Business plans
+- **Enrich with AI (beta)** — generate SEO metadata during sync when the plan includes AI features; images and automatic internal linking are not advertised as current features
+- **Track and manage** — see sync status, history, analytics, usage, and errors for each document
+- **Collaborate** — manage team members and roles
 
-Success looks like: users never manually copy-paste content between platforms again.
+Success looks like: users stop manually copying a document from their source into their destination CMS.
 
 ## Brand Personality
 

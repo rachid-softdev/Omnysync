@@ -1,6 +1,6 @@
 ---
 name: Omnysync
-description: Multi-platform content synchronization platform with a clean, confident product UI.
+description: Content routing platform with a clean, confident product UI.
 colors:
   primary: "#0064e0"
   primary-hover: "#0457cb"
@@ -467,10 +467,10 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 
 - **Hero:** asymmetric two-column composition. Left: mono route index, display headline, single primary CTA. Right: `RouteMap` in an ink console with registration marks; a thin blueprint grid is clipped to the hero and never used as a page background.
 - **Connector rail:** a horizontal, scrollable ledger of supported sources and destinations, each labelled `SOURCE` or `DESTINATION` in mono. Replaces logo strips and trust-bar clichés.
-- **Run record / demo:** a split panel. Left: the real product recording with a REC chrome and square play control. Right: `RunManifest`, an ink ledger of source → parse → enrich → publish → destinations, with latency and error metadata.
-- **Capability ledger:** a sticky editorial heading beside full-width rows. Each row carries a mono index, icon, title, description and one small product diagram (two-way route, sync bars, schedule timeline). No repeated card grid.
+- **Route map / demo:** the hero’s `RouteMap` in an ink console with registration marks and a `DEMO` label. The map shows one source, one document, one destination and real stages.
+- **Capability ledger:** a sticky editorial heading beside full-width rows. Each row carries a mono index, icon, title, description and one small product diagram (one-way route, sync bars, schedule timeline). No repeated card grid.
 - **Flow band:** full-bleed ink section with a blueprint wash, three numbered steps, mono source/document/destination metadata and no card containers.
-- **Closing CTA:** oversized two-line statement (`Draft once.` / `Publish everywhere.`) with the action rail aligned to the baseline on the right. No centered card or ambient glow.
+- **Closing CTA:** oversized two-line statement (`Draft once.` / `Publish on your schedule.`) with the action rail aligned to the baseline on the right. No centered card or ambient glow.
 - **Pricing matrix:** one spec-sheet table. The Pro column is the signal column: ink surface, cobalt top rule, included badge and primary CTA. The capability column is sticky on horizontal scroll. Rows use explicit limits instead of decorative checkmarks.
 - **Footer:** four-column index (brand, product, account, system) with mono column labels and a legal rail. No newsletter form or invented social proof.
 
@@ -488,8 +488,8 @@ The scale is two-layer (a tight contact shadow + a wide diffuse shadow) so surfa
 - **Connector registry:** source and destination catalogues as border-led lists, configured connectors in a mono table, and alert rails for failed connections. No rounded catalogue cards.
 - **Analytics:** four metric cells in a shared rail, then a bar ledger that fills the whole reporting window (zero days included) and two mono tables for connector mix and recent activity. Tabs use the cobalt active state.
 - **Usage:** ink plan console followed by consumption rows (`used / limit`, progress rule, remaining or over-limit label) and AI/history tables. Over-limit rows read `N over limit` instead of a negative remainder.
-- **Approvals:** pending queue as an actionable table (document, status, requested, approve/reject) plus a resolution log. On mobile the document title links to the record, the view action moves into the title, and the resolution folds under the document name.
-- **Webhooks:** endpoint registry with square provider marks, status dot + label on desktop and dot-only on mobile, a test-event action and a compact footer rail.
+- **Approvals (not exposed in navigation):** pending queue as an actionable table (document, status, requested, approve/reject) plus a resolution log. On mobile the document title links to the record, the view action moves into the title, and the resolution folds under the document name.
+- **Webhooks (not exposed in navigation; test-only delivery):** endpoint registry with square provider marks, status dot + label on desktop and dot-only on mobile, a test-event action and a compact footer rail.
 - **Settings and team:** sticky tab rail on desktop, wrapping tab rail on mobile, border-led section cards, and a member registry where the role control is part of the row rather than a separate badge.
 - **Admin:** a control dashboard (metric strip, recent users/workspaces, quick-link index) plus registries built on `AdminDataTable`. Admin table headers and footers use mono labels; admin pages carry `SURFACE / SECTION` eyebrows.
 - **Auth checkpoint:** the 2FA page mirrors the sign-in split. The form stays a single narrow column; the right panel is an access sequence (`verified → waiting → locked`), not a testimonial or illustration.

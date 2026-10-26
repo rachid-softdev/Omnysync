@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,16 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { PageHeader, PageShell } from '@/components/page-header'
 import { useTranslations } from '@/lib/i18n/useTranslations'
+import { detectClientLocale, formatDate } from '@/lib/format-date'
 import {
   User,
   Bell,
@@ -28,24 +22,60 @@ import {
   Trash2,
   Loader2,
   CheckCircle,
-  ExternalLink,
   Building,
   Globe,
   AlertCircle,
 } from 'lucide-react'
 
+interface BillingUsage {
+  currentPlan: string
+  billingCycle: { start: string; end: string }
+  syncUsed: number
+  syncLimit: number
+  documentsUsed: number
+  documentsLimit: number
+  connectorsUsed: number
+  connectorsLimit: number
+}
+
 export default function SettingsPage() {
-  const { t } = useTranslations()
+  const { t, tf } = useTranslations()
+  const locale = detectClientLocale()
   const [loading, setLoading] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [saved, setSaved] = useState(false)
   const [name, setName] = useState('')
+  const [billing, setBilling] = useState<BillingUsage | null>(null)
+  const [billingLoading, setBillingLoading] = useState(true)
+  const [billingError, setBillingError] = useState(false)
   const [notifications, setNotifications] = useState({
     syncSuccess: true,
     syncFailed: true,
     weeklyDigest: false,
     teamInvites: true,
   })
+
+  const fetchBilling = useCallback(async () => {
+    setBillingLoading(true)
+    setBillingError(false)
+
+    try {
+      const res = await fetch('/api/usage')
+      if (!res.ok) {
+        throw new Error(`Failed to load billing (${res.status})`)
+      }
+      setBilling((await res.json()) as BillingUsage)
+    } catch {
+      setBilling(null)
+      setBillingError(true)
+    } finally {
+      setBillingLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void fetchBilling()
+  }, [fetchBilling])
 
   const handleSaveProfile = async () => {
     setLoading(true)
@@ -164,7 +194,13 @@ export default function SettingsPage() {
                   <Building className="size-4 text-muted-foreground" />
                   <div>
                     <p className="text-[13px] font-medium">{t('settings_org_name')}</p>
-                    <p className="text-xs text-muted-foreground">{t('settings_plan_pro')}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {billingLoading
+                        ? t('loading.default')
+                        : billing
+                          ? billing.currentPlan
+                          : t('settings_plan_unknown')}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -373,107 +409,103 @@ export default function SettingsPage() {
 
         {/* Billing Tab */}
         <TabsContent value="billing" className="max-w-2xl space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('settings_current_plan')}</CardTitle>
-              <CardDescription>{t('settings_current_plan_desc')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap items-center justify-between gap-4 rounded-[3px] border border-border bg-muted/30 p-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-lg font-semibold tracking-tight">{t('settings_plan_pro')}</p>
-                    <Badge variant="success">{t('settings_active')}</Badge>
+          {billingLoading ? (
+            <Card>
+              <CardContent className="flex min-h-[160px] items-center justify-center">
+                <Loader2 className="size-5 animate-spin text-muted-foreground" />
+              </CardContent>
+            </Card>
+          ) : billingError || !billing ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('settings_current_plan')}</CardTitle>
+                <CardDescription>{t('settings_current_plan_desc')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap items-center justify-between gap-4 rounded-[3px] border border-warning/30 bg-warning-soft p-4 text-sm text-warning">
+                  <span>{t('settings_billing_unavailable')}</span>
+                  <Button variant="outline" size="sm" onClick={fetchBilling}>
+                    {t('settings_retry')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('settings_current_plan')}</CardTitle>
+                  <CardDescription>{t('settings_current_plan_desc')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap items-center justify-between gap-4 rounded-[3px] border border-border bg-muted/30 p-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-lg font-semibold tracking-tight">
+                          {billing.currentPlan}
+                        </p>
+                        <Badge variant="outline">{t('settings_current')}</Badge>
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {billing.currentPlan.toLowerCase() === 'free'
+                          ? t('settings_plan_free_meta')
+                          : tf('settings_plan_period_ends', {
+                              date: formatDate(billing.billingCycle.end, locale),
+                            })}
+                      </p>
+                    </div>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href="/pricing">{t('settings_change_plan')}</Link>
+                    </Button>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{t('settings_plan_meta')}</p>
-                </div>
-                <Button variant="outline" size="sm">
-                  {t('settings_change_plan')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('settings_usage_title')}</CardTitle>
-              <CardDescription>{t('settings_usage_desc')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>{t('settings_documents')}</span>
-                  <span className="tabular-nums text-muted-foreground">45 / 100</span>
-                </div>
-                <Progress value={45} className="h-1.5" />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>{t('settings_syncs')}</span>
-                  <span className="tabular-nums text-muted-foreground">67 / 100</span>
-                </div>
-                <Progress value={67} className="h-1.5" />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>{t('settings_connectors')}</span>
-                  <span className="tabular-nums text-muted-foreground">6 / 10</span>
-                </div>
-                <Progress value={60} className="h-1.5" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('settings_invoice_history')}</CardTitle>
-              <CardDescription>{t('settings_invoice_history_desc')}</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader className="bg-muted/40">
-                  <TableRow className="border-border hover:bg-transparent">
-                    <TableHead className="h-9 font-mono text-[9px] uppercase tracking-[0.14em]">
-                      {t('settings_date')}
-                    </TableHead>
-                    <TableHead className="h-9 font-mono text-[9px] uppercase tracking-[0.14em]">
-                      {t('settings_amount')}
-                    </TableHead>
-                    <TableHead className="h-9 font-mono text-[9px] uppercase tracking-[0.14em]">
-                      {t('settings_status')}
-                    </TableHead>
-                    <TableHead className="h-9 text-right font-mono text-[9px] uppercase tracking-[0.14em]">
-                      <span className="sr-only">{t('settings_actions')}</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('settings_usage_title')}</CardTitle>
+                  <CardDescription>{t('settings_usage_desc')}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   {[
-                    { date: 'May 15, 2026', amount: '$29.00', status: t('settings_paid') },
-                    { date: 'April 15, 2026', amount: '$29.00', status: t('settings_paid') },
-                    { date: 'March 15, 2026', amount: '$29.00', status: t('settings_paid') },
-                  ].map((invoice, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{invoice.date}</TableCell>
-                      <TableCell className="tabular-nums">{invoice.amount}</TableCell>
-                      <TableCell>
-                        <Badge variant="success">{invoice.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={`${t('settings_open_invoice')} ${invoice.date}`}
-                        >
-                          <ExternalLink className="size-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                    {
+                      label: t('settings_documents'),
+                      used: billing.documentsUsed,
+                      limit: billing.documentsLimit,
+                    },
+                    {
+                      label: t('settings_syncs'),
+                      used: billing.syncUsed,
+                      limit: billing.syncLimit,
+                    },
+                    {
+                      label: t('settings_connectors'),
+                      used: billing.connectorsUsed,
+                      limit: billing.connectorsLimit,
+                    },
+                  ].map((row) => {
+                    const unlimited = row.limit === -1
+                    const percentage =
+                      unlimited || row.limit <= 0
+                        ? 0
+                        : Math.min(100, Math.round((row.used / row.limit) * 100))
+
+                    return (
+                      <div key={row.label} className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>{row.label}</span>
+                          <span className="tabular-nums text-muted-foreground">
+                            {row.used} / {unlimited ? t('settings_unlimited') : row.limit}
+                          </span>
+                        </div>
+                        {!unlimited && <Progress value={percentage} className="h-1.5" />}
+                      </div>
+                    )
+                  })}
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
       </Tabs>
     </PageShell>

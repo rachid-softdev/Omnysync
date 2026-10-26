@@ -59,19 +59,46 @@ vi.mock('@/components/ui/tabs', () => {
   }
 })
 
+const usageResponse = {
+  ok: true,
+  json: async () => ({
+    currentPlan: 'Pro',
+    billingCycle: {
+      start: '2026-06-01T00:00:00.000Z',
+      end: '2026-07-01T00:00:00.000Z',
+    },
+    syncUsed: 12,
+    syncLimit: 100,
+    documentsUsed: 3,
+    documentsLimit: 500,
+    connectorsUsed: 2,
+    connectorsLimit: 10,
+  }),
+} as Response
+
 beforeEach(() => {
   vi.clearAllMocks()
+  global.fetch = vi.fn(async (input: RequestInfo | URL) => {
+    if (String(input).includes('/api/usage')) return usageResponse
+    return { ok: true, json: async () => ({}) } as Response
+  })
 })
 
+async function renderSettings() {
+  const result = render(<SettingsPage />)
+  await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument())
+  return result
+}
+
 describe('SettingsPage', () => {
-  it('renders title and description', () => {
-    render(<SettingsPage />)
+  it('renders title and description', async () => {
+    await renderSettings()
     expect(screen.getByText('Settings')).toBeInTheDocument()
     expect(screen.getByText('Manage your preferences and configurations')).toBeInTheDocument()
   })
 
-  it('renders all tab triggers', () => {
-    render(<SettingsPage />)
+  it('renders all tab triggers', async () => {
+    await renderSettings()
     expect(screen.getByText('Profile')).toBeInTheDocument()
     expect(screen.getByText('Security')).toBeInTheDocument()
     expect(screen.getByText('Notifications')).toBeInTheDocument()
@@ -79,26 +106,21 @@ describe('SettingsPage', () => {
     expect(screen.queryByText('API')).not.toBeInTheDocument()
   })
 
-  it('renders profile tab by default with form fields', () => {
-    render(<SettingsPage />)
+  it('renders profile tab by default with form fields', async () => {
+    await renderSettings()
     expect(screen.getByText('Profile Information')).toBeInTheDocument()
     expect(screen.getByLabelText('Full name')).toBeInTheDocument()
     expect(screen.getByLabelText('Email')).toBeInTheDocument()
   })
 
-  it('renders Danger Zone section', () => {
-    render(<SettingsPage />)
+  it('renders Danger Zone section', async () => {
+    await renderSettings()
     expect(screen.getByText('Danger Zone')).toBeInTheDocument()
     expect(screen.getByText('Delete my account')).toBeInTheDocument()
   })
 
   it('shows "Saved!" after saving profile', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({}),
-    })
-
-    render(<SettingsPage />)
+    await renderSettings()
 
     const saveButton = screen.getByText('Save')
     fireEvent.click(saveButton)
@@ -108,8 +130,8 @@ describe('SettingsPage', () => {
     })
   })
 
-  it('renders notification switches', () => {
-    render(<SettingsPage />)
+  it('renders notification switches', async () => {
+    await renderSettings()
 
     // Switch to notifications tab
     const notifTab = screen.getByText('Notifications')
@@ -121,14 +143,30 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Team invites')).toBeInTheDocument()
   })
 
-  it('renders billing tab with plan info', () => {
-    render(<SettingsPage />)
+  it('renders billing tab with real plan and usage data', async () => {
+    await renderSettings()
 
-    const billingTab = screen.getByText('Billing')
-    fireEvent.click(billingTab)
+    fireEvent.click(screen.getByText('Billing'))
 
-    expect(screen.getByText('Current plan')).toBeInTheDocument()
-    expect(screen.getByText('Pro Plan')).toBeInTheDocument()
-    expect(screen.getByText('$29/month - renews June 15, 2026')).toBeInTheDocument()
+    expect(await screen.findByText('Pro')).toBeInTheDocument()
+    expect(screen.getByText('Current period ends 7/1/2026')).toBeInTheDocument()
+    expect(screen.getByText('12 / 100')).toBeInTheDocument()
+    expect(screen.getByText('3 / 500')).toBeInTheDocument()
+    expect(screen.getByText('2 / 10')).toBeInTheDocument()
+    expect(screen.queryByText(/\$29/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Invoice history')).not.toBeInTheDocument()
+  })
+
+  it('shows a retry state when billing is unavailable', async () => {
+    global.fetch = vi.fn(async () => ({ ok: false, status: 500 }) as Response)
+
+    await renderSettings()
+
+    fireEvent.click(screen.getByText('Billing'))
+
+    expect(
+      await screen.findByText('Billing details are unavailable right now.')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Retry')).toBeInTheDocument()
   })
 })
