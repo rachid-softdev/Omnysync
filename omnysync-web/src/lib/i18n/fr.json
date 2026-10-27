@@ -837,8 +837,6 @@
   "settings_tab_api": "API",
   "settings_profile_title": "Informations du profil",
   "settings_profile_desc": "Gérez vos informations personnelles",
-  "settings_change_photo": "Changer la photo",
-  "settings_photo_hint": "JPG, PNG ou GIF. 2 Mo maximum.",
   "settings_full_name": "Nom complet",
   "settings_name_placeholder": "Votre nom",
   "settings_email": "E-mail",

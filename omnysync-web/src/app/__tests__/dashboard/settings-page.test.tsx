@@ -3,6 +3,12 @@ import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import SettingsPage from '../../(dashboard)/dashboard/settings/page'
 
+const mockPush = vi.hoisted(() => vi.fn())
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush }),
+}))
+
 beforeAll(() => {
   document.documentElement.lang = 'en'
 })
@@ -89,6 +95,10 @@ const profileResponse = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  Object.defineProperty(window, 'location', {
+    value: { href: '' },
+    writable: true,
+  })
   global.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
     if (url.includes('/api/usage')) return usageResponse
@@ -149,6 +159,12 @@ describe('SettingsPage', () => {
     expect(screen.queryByText('My Organization')).not.toBeInTheDocument()
   })
 
+  it('does not render a non-functional change photo control', async () => {
+    await renderSettings()
+    expect(screen.queryByText('Change photo')).not.toBeInTheDocument()
+    expect(screen.queryByText(/JPG, PNG/)).not.toBeInTheDocument()
+  })
+
   it('renders Danger Zone section', async () => {
     await renderSettings()
     expect(screen.getByText('Danger Zone')).toBeInTheDocument()
@@ -207,5 +223,48 @@ describe('SettingsPage', () => {
       await screen.findByText('Billing details are unavailable right now.')
     ).toBeInTheDocument()
     expect(screen.getByText('Retry')).toBeInTheDocument()
+  })
+
+  it('opens the Stripe billing portal when changing plan', async () => {
+    global.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/usage')) return usageResponse
+      if (url.includes('/api/user/profile')) return profileResponse
+      if (url.includes('/api/stripe/portal')) {
+        return {
+          ok: true,
+          json: async () => ({ url: 'https://stripe.com/portal/sess_123' }),
+        } as Response
+      }
+      return { ok: true, json: async () => ({}) } as Response
+    })
+
+    await renderSettings()
+
+    fireEvent.click(screen.getByText('Billing'))
+    fireEvent.click(await screen.findByText('Change plan'))
+
+    await waitFor(() => {
+      expect(window.location.href).toBe('https://stripe.com/portal/sess_123')
+    })
+  })
+
+  it('falls back to pricing when the billing portal is unavailable', async () => {
+    global.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/usage')) return usageResponse
+      if (url.includes('/api/user/profile')) return profileResponse
+      if (url.includes('/api/stripe/portal')) return { ok: false, status: 404 } as Response
+      return { ok: true, json: async () => ({}) } as Response
+    })
+
+    await renderSettings()
+
+    fireEvent.click(screen.getByText('Billing'))
+    fireEvent.click(await screen.findByText('Change plan'))
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/pricing')
+    })
   })
 })

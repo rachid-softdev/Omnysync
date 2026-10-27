@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -49,7 +49,9 @@ interface ProfileData {
 export default function SettingsPage() {
   const { t, tf } = useTranslations()
   const locale = detectClientLocale()
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [billingActionLoading, setBillingActionLoading] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [saved, setSaved] = useState(false)
   const [name, setName] = useState('')
@@ -137,6 +139,28 @@ export default function SettingsPage() {
     }
   }
 
+  const handleChangePlan = async () => {
+    setBillingActionLoading(true)
+
+    try {
+      const res = await fetch('/api/stripe/portal')
+      if (res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { url?: string }
+        if (data.url) {
+          window.location.href = data.url
+          return
+        }
+      }
+    } catch {
+      // Fall through to the plan picker when the portal is unavailable.
+    } finally {
+      setBillingActionLoading(false)
+    }
+
+    // Free plans have no Stripe customer, so the portal returns 404.
+    router.push('/pricing')
+  }
+
   const initials = (profile?.name || profile?.email || 'U')
     .split(/\s+/)
     .filter(Boolean)
@@ -198,18 +222,10 @@ export default function SettingsPage() {
               <CardDescription>{t('settings_profile_desc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="flex items-center gap-4">
-                <Avatar className="size-16">
-                  {profile?.image && <AvatarImage src={profile.image} alt={profile.name ?? ''} />}
-                  <AvatarFallback className="text-lg">{initials}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <Button variant="outline" size="sm">
-                    {t('settings_change_photo')}
-                  </Button>
-                  <p className="mt-1 text-xs text-muted-foreground">{t('settings_photo_hint')}</p>
-                </div>
-              </div>
+              <Avatar className="size-16">
+                {profile?.image && <AvatarImage src={profile.image} alt={profile.name ?? ''} />}
+                <AvatarFallback className="text-lg">{initials}</AvatarFallback>
+              </Avatar>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
@@ -507,8 +523,14 @@ export default function SettingsPage() {
                             })}
                       </p>
                     </div>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href="/pricing">{t('settings_change_plan')}</Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleChangePlan}
+                      disabled={billingActionLoading}
+                    >
+                      {billingActionLoading && <Loader2 className="size-3.5 animate-spin" />}
+                      {t('settings_change_plan')}
                     </Button>
                   </div>
                 </CardContent>
