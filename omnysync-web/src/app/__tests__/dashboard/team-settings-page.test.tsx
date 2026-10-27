@@ -2,20 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import TeamSettingsPage from '../../(dashboard)/dashboard/settings/team/page'
 
-vi.mock('@/lib/i18n/useTranslations', () => ({
-  useTranslations: vi.fn(() => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        TEAM_TITLE: 'Team',
-        TEAM_SUBTITLE: 'Manage your organization members',
-      }
-      return translations[key] || key
-    },
-    loading: false,
-    locale: 'en',
-  })),
-}))
-
 vi.mock('@/components/toast-provider', () => ({
   toast: {
     success: vi.fn(),
@@ -25,6 +11,7 @@ vi.mock('@/components/toast-provider', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
+  document.documentElement.lang = 'en'
   global.fetch = vi.fn()
 })
 
@@ -139,6 +126,24 @@ describe('TeamSettingsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('No members found')).toBeInTheDocument()
+    })
+  })
+
+  it('renders French labels and roles', async () => {
+    document.documentElement.lang = 'fr'
+    ;(global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockMembers,
+    })
+
+    render(<TeamSettingsPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Équipe')).toBeInTheDocument()
+      expect(screen.getByText('Ajouter un membre')).toBeInTheDocument()
+      expect(screen.getByText('3 membres')).toBeInTheDocument()
+      expect(screen.getByText('Propriétaire')).toBeInTheDocument()
+      expect(screen.getByText('Membres de l’organisation')).toBeInTheDocument()
     })
   })
 })
