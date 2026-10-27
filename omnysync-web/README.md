@@ -64,11 +64,18 @@ Variables optionnelles :
 | `STRIPE_SECRET_KEY`             | Paiements Stripe                                                          |
 | `STRIPE_WEBHOOK_SECRET`         | Signature des webhooks Stripe                                             |
 | `RESEND_API_KEY`                | Emails transactionnels                                                    |
+| `UPSTASH_REDIS_REST_URL`        | URL Upstash Redis (cache partagé, idempotence, rate limiting)             |
+| `UPSTASH_REDIS_REST_TOKEN`      | Jeton Upstash Redis (distinct du jeton QStash)                            |
 | `ALLOW_PRIVATE_CONNECTOR_HOSTS` | Liste d'hôtes privés autorisés pour les connecteurs (séparés par virgule) |
 
 En production, la file QStash et `CRON_SECRET` sont requis : la création d'une
 synchronisation échoue avant toute écriture si la file n'est pas configurée, et
 le cron refuse de s'exécuter sans secret.
+
+Redis est optionnel : sans `UPSTASH_REDIS_REST_URL` et
+`UPSTASH_REDIS_REST_TOKEN`, le cache, l'idempotence des jobs et le rate limiting
+Redis utilisent la mémoire locale de chaque instance. Les identifiants Redis
+sont distincts des identifiants QStash et ne doivent pas être réutilisés.
 
 ## Base de données
 

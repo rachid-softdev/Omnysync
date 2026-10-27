@@ -9,7 +9,8 @@
  * Pub/sub for multi-instance cache invalidation (fan-out pattern)
  */
 
-import { Redis } from "@upstash/redis";
+import type { Redis } from "@upstash/redis";
+import { createRedisClient, getRedisRestConfig } from "../cache/redis-config";
 import { CACHE_CONFIG, DEFAULT_PLAN } from "./constants";
 import type { EntitlementMap } from "./types";
 
@@ -126,27 +127,26 @@ export class CacheService {
   }
 
   private initRedis(): void {
-    if (process.env.QSTASH_TOKEN && process.env.QSTASH_URL) {
-      try {
-        this.redis = new Redis({
-          url: process.env.QSTASH_URL,
-          token: process.env.QSTASH_TOKEN,
-        });
-
-        // Test connection
-        this.redis.ping().catch((err) => {
-          console.warn("[CacheService] Redis connection failed:", err);
-          this.redis = null;
-        });
-      } catch (err) {
-        console.warn("[CacheService] Failed to initialize Redis:", err);
-        this.redis = null;
-      }
-    } else {
+    if (!getRedisRestConfig()) {
       console.warn(
         "[CacheService] Redis not configured, using memory cache only",
       );
+      return;
     }
+
+    const client = createRedisClient();
+    if (!client) {
+      console.warn("[CacheService] Failed to initialize Redis");
+      return;
+    }
+
+    this.redis = client;
+
+    // Test connection
+    this.redis.ping().catch((err) => {
+      console.warn("[CacheService] Redis connection failed:", err);
+      this.redis = null;
+    });
   }
 
   private cleanupIntervalId: ReturnType<typeof setInterval> | null = null;

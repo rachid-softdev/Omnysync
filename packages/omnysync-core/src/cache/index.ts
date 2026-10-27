@@ -1,12 +1,8 @@
-import { Redis } from "@upstash/redis";
+import { createRedisClient } from "./redis-config";
 
-// Initialiser le client Redis (utilise Upstash qui est déjà utilisé pour QStash)
-const redis = process.env.QSTASH_TOKEN
-  ? new Redis({
-      url: process.env.QSTASH_URL || "https://qstash.upstash.io",
-      token: process.env.QSTASH_TOKEN,
-    })
-  : null;
+// Redis is optional and must use dedicated Upstash Redis credentials.
+// QStash credentials are a different product and cannot be reused here.
+const redis = createRedisClient();
 
 export interface CacheOptions {
   ttl?: number; // Time to live en secondes (défaut: 60)

@@ -1,6 +1,7 @@
 import { Client } from "@upstash/qstash";
-import { Redis } from "@upstash/redis";
+import type { Redis } from "@upstash/redis";
 import crypto from "crypto";
+import { createRedisClient } from "../cache/redis-config";
 
 let qstashClient: Client | null = null;
 
@@ -34,19 +35,10 @@ function getQStash(): Client {
   return qstashClient;
 }
 
-// Redis-backed completed-jobs store (shared across instances)
+// Redis-backed completed-jobs store (shared across instances).
+// Uses dedicated Upstash Redis credentials, never QStash credentials.
 function getRedis(): Redis | null {
-  if (process.env.QSTASH_URL && process.env.QSTASH_TOKEN) {
-    try {
-      return new Redis({
-        url: process.env.QSTASH_URL,
-        token: process.env.QSTASH_TOKEN,
-      });
-    } catch {
-      return null;
-    }
-  }
-  return null;
+  return createRedisClient();
 }
 
 const PROCESSED_JOBS_TTL = 24 * 60 * 60; // 24 hours (seconds for Redis)

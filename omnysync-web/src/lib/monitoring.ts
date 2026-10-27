@@ -214,7 +214,7 @@ export async function healthCheck() {
 
   // Check Redis (if configured)
   try {
-    if (process.env.UPSTASH_REDIS_REST_URL) {
+    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
       const { Redis } = await import('@upstash/redis')
       const redis = new Redis({
         url: process.env.UPSTASH_REDIS_REST_URL,

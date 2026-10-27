@@ -9,13 +9,16 @@ import { Redis } from '@upstash/redis'
 export const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute
 export const RATE_LIMIT_MAX = 30 // requests per window
 
-// Initialize Redis client
-const redis = process.env.UPSTASH_REDIS_REST_URL
-  ? new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    })
-  : null
+// Initialize Redis client only when both REST credentials are present.
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN
+const redis =
+  redisUrl && redisToken
+    ? new Redis({
+        url: redisUrl,
+        token: redisToken,
+      })
+    : null
 
 /**
  * Extract client IP from request headers
