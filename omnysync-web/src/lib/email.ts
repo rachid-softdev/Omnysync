@@ -202,3 +202,33 @@ export async function sendTeamInviteEmail({
     `,
   })
 }
+
+export async function sendApprovalRequestEmail({
+  to,
+  documentTitle,
+  organizationName,
+  requesterName,
+  approvalUrl,
+  expiresAt,
+}: {
+  to: string
+  documentTitle: string
+  organizationName: string
+  requesterName: string
+  approvalUrl: string
+  expiresAt: Date
+}) {
+  await sendEmail({
+    to,
+    subject: `Approval requested: ${documentTitle.replace(/[\r\n]+/g, ' ')}`,
+    html: `
+      <h1>Approval requested</h1>
+      <p><strong>${escapeHtml(requesterName)}</strong> requested approval for <strong>${escapeHtml(
+        documentTitle
+      )}</strong> in ${escapeHtml(organizationName)}.</p>
+      <p>Review the document and approve or reject it in the Omnysync approvals dashboard.</p>
+      <p><a href="${escapeHtml(approvalUrl)}">Open approvals</a></p>
+      <p>This request expires on ${escapeHtml(expiresAt.toISOString())}.</p>
+    `,
+  })
+}

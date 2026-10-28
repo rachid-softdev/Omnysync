@@ -20,6 +20,9 @@ const mockPrisma = vi.hoisted(() => ({
   userOrganization: {
     findFirst: vi.fn().mockResolvedValue({ userId: 'user-1', organizationId: 'org-1' }),
   },
+  webhookEndpoint: {
+    findMany: vi.fn().mockResolvedValue([]),
+  },
 }))
 
 vi.hoisted(() => {

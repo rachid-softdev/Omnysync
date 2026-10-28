@@ -45,6 +45,9 @@ vi.mock("../authz", () => ({
 vi.mock("../sanitize", () => ({
   sanitizeErrorMessage: vi.fn((e) => String(e)),
 }));
+vi.mock("../webhooks", () => ({
+  dispatchSyncWebhooks: vi.fn().mockResolvedValue(undefined),
+}));
 
 // Mock connector modules
 vi.mock("../wordpress", () => ({
@@ -142,6 +145,7 @@ import { createGhostClient } from "../ghost";
 import { createContentfulEntry } from "../contentful";
 import { getGoogleDocContent } from "../google-docs";
 import { getNotionPageContent } from "../notion";
+import { dispatchSyncWebhooks } from "../webhooks";
 
 describe("Sync Service", () => {
   const documentId = "doc-1";
@@ -583,6 +587,14 @@ describe("Sync Service", () => {
       expect(ghostClient.createPost).toHaveBeenCalledWith(
         expect.objectContaining({ status: "published" }),
       );
+      expect(dispatchSyncWebhooks).toHaveBeenCalledWith({
+        organizationId: orgId,
+        connectorId: destConnectorId,
+        documentId,
+        documentTitle: "Google Doc",
+        userId,
+        success: true,
+      });
       expect(prisma.document.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ slug: "post-1" }),
@@ -778,6 +790,15 @@ describe("Sync Service", () => {
         expect.any(String),
         expect.any(String),
         false,
+      );
+      expect(dispatchSyncWebhooks).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organizationId: orgId,
+          connectorId: destConnectorId,
+          documentId,
+          userId,
+          success: false,
+        }),
       );
       // Catch block should update syncStatus to FAILED
       expect(prisma.document.update).toHaveBeenCalledWith(

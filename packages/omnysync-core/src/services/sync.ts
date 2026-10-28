@@ -10,6 +10,7 @@ import { Prisma } from "@prisma/client";
 import { decrypt } from "../crypto";
 import { sendSyncCompleteEmail } from "../email";
 import { shouldSendNotification } from "./notification-preferences";
+import { dispatchSyncWebhooks } from "./webhooks";
 import { detectContentChanges } from "./ai";
 import { getGoogleDocContent } from "./google-docs";
 import { getNotionPageContent } from "./notion";
@@ -303,9 +304,12 @@ export async function performSync(
     },
   });
 
+  // Keep the latest title outside the try block so failure webhooks can report
+  // the title fetched from the source even if publishing later fails.
+  let title = document.title;
+
   try {
     let content = "";
-    let title = document.title;
 
     // Step 1: Retrieve content from source
     await prisma.syncLog.create({
@@ -525,6 +529,23 @@ export async function performSync(
       },
     });
 
+    // Notify outbound webhooks after the document is marked SYNCED. A webhook
+    // failure is logged per endpoint and never changes the sync result.
+    if (document.destConnector) {
+      try {
+        await dispatchSyncWebhooks({
+          organizationId: document.organizationId,
+          connectorId: document.destConnector.id,
+          documentId,
+          documentTitle: title,
+          userId: document.userId,
+          success: true,
+        });
+      } catch (webhookError) {
+        console.error("Failed to dispatch sync webhooks:", webhookError);
+      }
+    }
+
     // Send success email
     try {
       const user = await prisma.user.findUnique({
@@ -572,6 +593,24 @@ export async function performSync(
       });
     } catch (rollbackError) {
       console.error("Rollback failed:", rollbackError);
+    }
+
+    // Notify outbound webhooks about the failure. As with success delivery,
+    // webhook errors are isolated from the sync result.
+    if (document.destConnector) {
+      try {
+        await dispatchSyncWebhooks({
+          organizationId: document.organizationId,
+          connectorId: document.destConnector.id,
+          documentId,
+          documentTitle: title,
+          userId: document.userId,
+          success: false,
+          error: sanitizeErrorMessage(error),
+        });
+      } catch (webhookError) {
+        console.error("Failed to dispatch sync webhooks:", webhookError);
+      }
     }
 
     // Send failure email

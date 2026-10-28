@@ -20,7 +20,7 @@ export interface SafeOutboundUrlOptions {
   allowPrivate?: boolean;
 }
 
-function normalizeHostname(hostname: string): string {
+export function normalizeHostname(hostname: string): string {
   return hostname
     .replace(/^\[|\]$/g, "")
     .replace(/\.$/, "")
@@ -34,7 +34,11 @@ function privateHostAllowlist(): string[] {
     .filter(Boolean);
 }
 
-function isBlockedHostname(hostname: string): boolean {
+export function isPrivateHostAllowlisted(hostname: string): boolean {
+  return privateHostAllowlist().includes(normalizeHostname(hostname));
+}
+
+export function isBlockedHostname(hostname: string): boolean {
   return (
     hostname === "localhost" ||
     hostname.endsWith(".localhost") ||
@@ -119,7 +123,7 @@ function isPrivateIPv6(address: string): boolean {
   );
 }
 
-function isPrivateAddress(address: string): boolean {
+export function isPrivateAddress(address: string): boolean {
   const version = isIP(address);
   if (version === 4) return isPrivateIPv4(address);
   if (version === 6) return isPrivateIPv6(address);

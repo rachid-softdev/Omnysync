@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { PageHeader, PageShell } from '@/components/page-header'
 import { SyncRunButton } from '@/components/sync-run-button'
+import { CheckChangesButton } from '@/components/check-changes-button'
 import { DeleteDocumentButton } from '@/components/delete-document-button'
 import { ScheduleSettings } from '@/components/schedule-settings'
 import { getPlanLimits, getUserPlan } from '@/lib/auth/subscription'
@@ -74,7 +75,10 @@ export default async function DocumentDetailPage({ params }: PageProps) {
     notFound()
   }
 
-  const canSchedule = getPlanLimits(await getUserPlan(session.user.id)).scheduledSync
+  const planLimits = getPlanLimits(await getUserPlan(session.user.id))
+  const canSchedule = planLimits.scheduledSync
+  // Change detection is AI-powered and only meaningful for published documents.
+  const canCheckChanges = planLimits.aiFeatures && document.status === 'PUBLISHED'
 
   const statusLabels: Record<string, string> = {
     DRAFT: 'Draft',
@@ -120,6 +124,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                 Back
               </Link>
             </Button>
+            {canCheckChanges && <CheckChangesButton documentId={document.id} />}
             <SyncRunButton documentId={document.id} label="Sync" />
             <DeleteDocumentButton documentId={document.id} />
           </>

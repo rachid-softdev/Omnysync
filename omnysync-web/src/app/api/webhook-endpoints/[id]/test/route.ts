@@ -3,51 +3,10 @@
  * POST /api/webhook-endpoints/[id]/test
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { lookup } from 'node:dns/promises'
+import { postJsonWithPinnedDns, UnsafeOutboundUrlError } from '@omnysync/core/services/safe-fetch'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkPlanFeature } from '@/lib/auth/subscription'
-
-// 🔒 Block SSRF to private / internal / cloud-metadata IP ranges
-const BLOCKED_HOST_PATTERNS = [
-  /^localhost$/i,
-  /^127\./,
-  /^10\./,
-  /^172\.(1[6-9]|2\d|3[01])\./,
-  /^192\.168\./,
-  /^169\.254\./,
-  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, // CGNAT 100.64.0.0/10
-  /^0\.0\.0\.0$/,
-  /^::$/,
-  /^fc00:/i,
-  /^fd[0-9a-f]{2}:/i,
-  /^fe80:/i,
-  /^\[?::1\]?$/,
-]
-
-function isPrivateHostname(host: string): boolean {
-  const normalized = host.replace(/^\[|\]$/g, '') // strip brackets for IPv6
-  return BLOCKED_HOST_PATTERNS.some((pattern) => pattern.test(normalized))
-}
-
-/**
- * Resolve the hostname and reject it when any of its addresses is internal.
- * Checking only the literal hostname would let a public name that resolves to
- * an internal IP (DNS rebinding) reach private services.
- */
-async function resolvesToPrivateAddress(hostname: string): Promise<boolean> {
-  if (isPrivateHostname(hostname)) {
-    return true
-  }
-
-  try {
-    const addresses = await lookup(hostname, { all: true })
-    return addresses.some(({ address }) => isPrivateHostname(address))
-  } catch {
-    // Unresolvable host: the fetch will fail on its own.
-    return false
-  }
-}
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -97,7 +56,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: 'Le webhook est désactivé' }, { status: 400 })
     }
 
-    // 🔒 SSRF protection: reject requests to private / internal addresses
+    // Parse early so malformed URLs get a 400 before any DNS work.
     let parsedUrl: URL
     try {
       parsedUrl = new URL(webhook.url)
@@ -105,28 +64,12 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: 'URL de webhook invalide' }, { status: 400 })
     }
 
-    if (isPrivateHostname(parsedUrl.hostname)) {
-      console.warn(
-        `SSRF blocked: webhook test to private address "${webhook.url}" (user ${session.user.id})`
-      )
-      return NextResponse.json(
-        { error: 'Les adresses réseau internes ne sont pas autorisées' },
-        { status: 400 }
-      )
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return NextResponse.json({ error: 'URL de webhook invalide' }, { status: 400 })
     }
 
-    // Reject public names that resolve to internal addresses
-    if (await resolvesToPrivateAddress(parsedUrl.hostname)) {
-      console.warn(
-        `SSRF blocked: webhook test to a host resolving to a private address "${webhook.url}" (user ${session.user.id})`
-      )
-      return NextResponse.json(
-        { error: 'Les adresses réseau internes ne sont pas autorisées' },
-        { status: 400 }
-      )
-    }
-
-    // Envoyer une requête de test
+    // Envoyer une requête de test. postJsonWithPinnedDns validates the target,
+    // pins the resolved DNS address, and never follows redirects.
     const testPayload = {
       event: 'test',
       timestamp: new Date().toISOString(),
@@ -134,17 +77,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     }
 
     try {
-      const response = await fetch(webhook.url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Webhook-Test': 'true',
-        },
-        body: JSON.stringify(testPayload),
-        // Do not follow redirects: a public URL could redirect to an internal
-        // address, bypassing the checks above.
-        redirect: 'manual',
-        signal: AbortSignal.timeout(10000),
+      const response = await postJsonWithPinnedDns(webhook.url, JSON.stringify(testPayload), {
+        'X-Webhook-Test': 'true',
       })
 
       // Enregistrer le test dans les logs
@@ -169,6 +103,13 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
         message: response.ok ? 'Test réussi' : `Statut: ${response.status}`,
       })
     } catch (fetchError) {
+      if (fetchError instanceof UnsafeOutboundUrlError) {
+        console.warn(
+          `SSRF blocked: webhook test to "${parsedUrl.host}" (user ${session.user.id}): ${fetchError.message}`
+        )
+        return NextResponse.json({ error: fetchError.message }, { status: 400 })
+      }
+
       const errorMessage = fetchError instanceof Error ? fetchError.message : 'Erreur inconnue'
 
       await prisma.syncLog.create({
