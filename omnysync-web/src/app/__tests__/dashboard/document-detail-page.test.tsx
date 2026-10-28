@@ -45,6 +45,8 @@ vi.mock('lucide-react', () => {
     CheckCircle: () => <svg data-testid="icon-checkcircle" />,
     AlertCircle: () => <svg data-testid="icon-alertcircle" />,
     Info: () => <svg data-testid="icon-info" />,
+    Sparkles: () => <svg data-testid="icon-sparkles" />,
+    Loader2: () => <svg data-testid="icon-loader" />,
   }
   // Fallback so any other lucide icon (e.g. used by shared components like
   // HelpTooltip) renders a generic SVG instead of throwing "No X export".

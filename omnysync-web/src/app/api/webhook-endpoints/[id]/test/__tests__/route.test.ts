@@ -171,4 +171,40 @@ describe('POST /api/webhook-endpoints/[id]/test', () => {
     expect(response.status).toBe(200)
     expect(data.success).toBe(false)
   })
+
+  it('returns 404 when the user has no organization', async () => {
+    vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null)
+
+    const response = await callRoute()
+
+    expect(response.status).toBe(404)
+    expect(mockPostJson).not.toHaveBeenCalled()
+  })
+
+  it('reports a non-ok response and logs it as an error', async () => {
+    mockPostJson.mockResolvedValue({ ok: false, status: 404, body: '', headers: {} })
+
+    const response = await callRoute()
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.success).toBe(false)
+    expect(data.statusCode).toBe(404)
+    expect(prisma.syncLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'webhook_test',
+          status: 'ERROR',
+        }),
+      })
+    )
+  })
+
+  it('returns 500 when logging the result fails unexpectedly', async () => {
+    vi.mocked(prisma.syncLog.create).mockRejectedValue(new Error('Unexpected'))
+
+    const response = await callRoute()
+
+    expect(response.status).toBe(500)
+  })
 })
