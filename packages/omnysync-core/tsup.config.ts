@@ -29,6 +29,10 @@ export default defineConfig({
     "services/password-reset": "src/services/password-reset.ts",
     "services/sync": "src/services/sync.ts",
     "services/outbound-url": "src/services/outbound-url.ts",
+    "services/safe-fetch": "src/services/safe-fetch.ts",
+    "services/webhooks": "src/services/webhooks.ts",
+    "services/notification-preferences":
+      "src/services/notification-preferences.ts",
     "services/two-way-sync": "src/services/two-way-sync.ts",
     "services/image-upload": "src/services/image-upload.ts",
     "services/ai": "src/services/ai.ts",
