@@ -73,7 +73,12 @@ export async function PUT(request: NextRequest) {
 
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { password: passwordHash },
+      data: {
+        password: passwordHash,
+        // Invalidate every JWT issued before this change. The auth callback
+        // compares this timestamp with the token's copy on every access.
+        passwordChangedAt: new Date(),
+      },
     })
 
     return NextResponse.json({ success: true, message: 'Mot de passe mis à jour' })

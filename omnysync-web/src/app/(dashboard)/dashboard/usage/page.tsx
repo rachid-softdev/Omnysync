@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -53,9 +54,11 @@ interface UsageData {
 export default function UsagePage() {
   const { t } = useTranslations()
   const locale = detectClientLocale()
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [usage, setUsage] = useState<UsageData | null>(null)
   const [isFallbackData, setIsFallbackData] = useState(false)
+  const [planActionLoading, setPlanActionLoading] = useState(false)
 
   const fetchUsage = async () => {
     try {
@@ -80,6 +83,28 @@ export default function UsagePage() {
   useEffect(() => {
     fetchUsage()
   }, [])
+
+  const handleChangePlan = async () => {
+    setPlanActionLoading(true)
+
+    try {
+      const res = await fetch('/api/stripe/portal')
+      if (res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { url?: string }
+        if (data.url) {
+          window.location.href = data.url
+          return
+        }
+      }
+    } catch {
+      // Fall through to the plan picker when the portal is unavailable.
+    } finally {
+      setPlanActionLoading(false)
+    }
+
+    // Free plans have no Stripe customer, so the portal returns 404.
+    router.push('/pricing')
+  }
 
   const getUsagePercentage = (used: number, limit: number) => {
     if (limit === -1) return 0 // Unlimited
@@ -192,7 +217,10 @@ export default function UsagePage() {
             variant="outline"
             size="sm"
             className="border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            onClick={handleChangePlan}
+            disabled={planActionLoading}
           >
+            {planActionLoading && <Loader2 className="size-3.5 animate-spin" />}
             {t('USAGE_CHANGE_PLAN')}
           </Button>
         </div>

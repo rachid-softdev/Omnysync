@@ -3,6 +3,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import UsagePage from '../../(dashboard)/dashboard/usage/page'
 
+const mockPush = vi.hoisted(() => vi.fn())
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush }),
+}))
+
 // Mock Radix UI Tabs to support click-based tab switching in jsdom
 vi.mock('@/components/ui/tabs', () => {
   const React = require('react')
@@ -57,8 +63,32 @@ vi.mock('@/components/ui/tabs', () => {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  Object.defineProperty(window, 'location', {
+    value: { href: '' },
+    writable: true,
+  })
   global.fetch = vi.fn()
 })
+
+const usageResponse = {
+  ok: true,
+  json: async () => ({
+    currentPlan: 'Pro',
+    billingCycle: { start: '2026-05-01', end: '2026-05-31' },
+    syncUsed: 45,
+    syncLimit: 100,
+    documentsUsed: 20,
+    documentsLimit: -1,
+    connectorsUsed: 4,
+    connectorsLimit: 10,
+    teamUsed: 2,
+    teamLimit: 5,
+    aiSEO: 23,
+    aiImages: 12,
+    aiInterlinking: 8,
+    history: [],
+  }),
+} as Response
 
 describe('UsagePage', () => {
   it('shows loading spinner initially', () => {
@@ -186,6 +216,45 @@ describe('UsagePage', () => {
     })
     expect(screen.queryByText('Images')).not.toBeInTheDocument()
     expect(screen.queryByText('Interlinking')).not.toBeInTheDocument()
+  })
+
+  it('opens the Stripe billing portal when changing plan', async () => {
+    ;(global.fetch as any).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/usage')) return usageResponse
+      if (url.includes('/api/stripe/portal')) {
+        return {
+          ok: true,
+          json: async () => ({ url: 'https://stripe.com/portal/sess_123' }),
+        }
+      }
+      return { ok: true, json: async () => ({}) }
+    })
+
+    render(<UsagePage />)
+
+    fireEvent.click(await screen.findByText('Change plan'))
+
+    await waitFor(() => {
+      expect(window.location.href).toBe('https://stripe.com/portal/sess_123')
+    })
+  })
+
+  it('falls back to pricing when the billing portal is unavailable', async () => {
+    ;(global.fetch as any).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/usage')) return usageResponse
+      if (url.includes('/api/stripe/portal')) return { ok: false, status: 404 }
+      return { ok: true, json: async () => ({}) }
+    })
+
+    render(<UsagePage />)
+
+    fireEvent.click(await screen.findByText('Change plan'))
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/pricing')
+    })
   })
 
   it('renders history tab with monthly data', async () => {

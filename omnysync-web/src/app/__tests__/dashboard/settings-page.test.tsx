@@ -1,12 +1,17 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react'
 import SettingsPage from '../../(dashboard)/dashboard/settings/page'
 
 const mockPush = vi.hoisted(() => vi.fn())
+const mockSignOut = vi.hoisted(() => vi.fn())
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
+}))
+
+vi.mock('next-auth/react', () => ({
+  signOut: mockSignOut,
 }))
 
 beforeAll(() => {
@@ -95,6 +100,7 @@ const profileResponse = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockSignOut.mockResolvedValue(undefined)
   Object.defineProperty(window, 'location', {
     value: { href: '' },
     writable: true,
@@ -265,6 +271,135 @@ describe('SettingsPage', () => {
 
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/pricing')
+    })
+  })
+
+  it('updates the password and signs the user out to re-authenticate', async () => {
+    await renderSettings()
+
+    fireEvent.click(screen.getByText('Security'))
+    fireEvent.change(screen.getByLabelText('Current password'), {
+      target: { value: 'OldPassword1' },
+    })
+    fireEvent.change(screen.getByLabelText('New password'), {
+      target: { value: 'NewPassword1' },
+    })
+    fireEvent.change(screen.getByLabelText('Confirm password'), {
+      target: { value: 'NewPassword1' },
+    })
+    fireEvent.click(screen.getByText('Update password'))
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/user/password',
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify({
+            currentPassword: 'OldPassword1',
+            newPassword: 'NewPassword1',
+          }),
+        })
+      )
+      expect(mockSignOut).toHaveBeenCalledWith({ callbackUrl: '/auth/signin' })
+    })
+  })
+
+  it('rejects mismatched new passwords without calling the API', async () => {
+    await renderSettings()
+
+    fireEvent.click(screen.getByText('Security'))
+    fireEvent.change(screen.getByLabelText('Current password'), {
+      target: { value: 'OldPassword1' },
+    })
+    fireEvent.change(screen.getByLabelText('New password'), {
+      target: { value: 'NewPassword1' },
+    })
+    fireEvent.change(screen.getByLabelText('Confirm password'), {
+      target: { value: 'DifferentPassword1' },
+    })
+    fireEvent.click(screen.getByText('Update password'))
+
+    expect(await screen.findByText('New passwords do not match.')).toBeInTheDocument()
+    expect(global.fetch).not.toHaveBeenCalledWith('/api/user/password', expect.anything())
+  })
+
+  it('enables 2FA with a real setup secret and verification code', async () => {
+    global.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('/api/usage')) return usageResponse
+      if (url.includes('/api/user/profile')) return profileResponse
+      if (url.includes('/api/auth/2fa/setup') && init?.method === 'POST') {
+        return {
+          ok: true,
+          json: async () => ({ success: true, backupCodes: ['ABCD-EFGH', 'IJKL-MNOP'] }),
+        } as Response
+      }
+      if (url.includes('/api/auth/2fa/setup')) {
+        return {
+          ok: true,
+          json: async () => ({
+            enabled: false,
+            secret: 'JBSWY3DPEHPK3PXP',
+            otpauthUrl: 'otpauth://totp/Omnysync?secret=JBSWY3DPEHPK3PXP',
+          }),
+        } as Response
+      }
+      return { ok: true, json: async () => ({}) } as Response
+    })
+
+    await renderSettings()
+
+    fireEvent.click(screen.getByText('Security'))
+    fireEvent.click(screen.getByText('Enable'))
+
+    expect(await screen.findByText('JBSWY3DPEHPK3PXP')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('6-digit code'), {
+      target: { value: '123456' },
+    })
+    fireEvent.click(screen.getByText('Verify and enable'))
+
+    await waitFor(() => {
+      expect(screen.getByText('2FA enabled')).toBeInTheDocument()
+      expect(screen.getByText('ABCD-EFGH')).toBeInTheDocument()
+    })
+  })
+
+  it('signs out everywhere through the session revocation endpoint', async () => {
+    await renderSettings()
+
+    fireEvent.click(screen.getByText('Security'))
+    fireEvent.click(screen.getByText('Sign out everywhere'))
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith('/api/user/sessions', {
+        method: 'DELETE',
+      })
+      expect(mockSignOut).toHaveBeenCalledWith({ callbackUrl: '/auth/signin' })
+    })
+  })
+
+  it('deletes the account only after the SUPPRIMER confirmation', async () => {
+    await renderSettings()
+
+    fireEvent.click(screen.getByText('Delete'))
+
+    const dialog = await screen.findByRole('dialog')
+    const confirmButton = within(dialog).getByRole('button', { name: 'Delete' })
+    expect(confirmButton).toBeDisabled()
+
+    fireEvent.change(within(dialog).getByLabelText('Type SUPPRIMER to confirm'), {
+      target: { value: 'SUPPRIMER' },
+    })
+    expect(confirmButton).toBeEnabled()
+
+    fireEvent.click(confirmButton)
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith('/api/user?confirmText=SUPPRIMER', {
+        method: 'DELETE',
+      })
+      expect(mockSignOut).toHaveBeenCalledWith({ callbackUrl: '/' })
     })
   })
 })

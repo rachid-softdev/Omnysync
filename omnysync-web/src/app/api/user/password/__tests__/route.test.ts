@@ -124,7 +124,10 @@ describe('PUT /api/user/password', () => {
     expect(data.success).toBe(true)
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: 'user-1' },
-      data: { password: 'new-hash' },
+      data: {
+        password: 'new-hash',
+        passwordChangedAt: expect.any(Date),
+      },
     })
   })
 })

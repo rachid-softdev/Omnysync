@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signOut } from 'next-auth/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,6 +12,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { PageHeader, PageShell } from '@/components/page-header'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 import { detectClientLocale, formatDate } from '@/lib/format-date'
@@ -67,6 +76,29 @@ export default function SettingsPage() {
     weeklyDigest: false,
     teamInvites: true,
   })
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSaved, setPasswordSaved] = useState(false)
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
+  const [twoFactorLoading, setTwoFactorLoading] = useState(false)
+  const [twoFactorError, setTwoFactorError] = useState('')
+  const [twoFactorSetup, setTwoFactorSetup] = useState<{
+    secret: string
+    otpauthUrl: string
+  } | null>(null)
+  const [twoFactorCode, setTwoFactorCode] = useState('')
+  const [twoFactorBackupCodes, setTwoFactorBackupCodes] = useState<string[] | null>(null)
+  const [sessionActionLoading, setSessionActionLoading] = useState(false)
+  const [sessionError, setSessionError] = useState('')
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState('')
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const fetchBilling = useCallback(async () => {
     setBillingLoading(true)
@@ -159,6 +191,189 @@ export default function SettingsPage() {
 
     // Free plans have no Stripe customer, so the portal returns 404.
     router.push('/pricing')
+  }
+
+  useEffect(() => {
+    let cancelled = false
+
+    fetch('/api/auth/session')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { user?: { has2FA?: boolean } } | null) => {
+        if (!cancelled && data?.user?.has2FA) {
+          setTwoFactorEnabled(true)
+        }
+      })
+      .catch(() => {
+        // The 2FA status is also returned by the setup endpoint on demand.
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const handleUpdatePassword = async () => {
+    setPasswordError('')
+    setPasswordSaved(false)
+
+    if (!passwordForm.currentPassword || !passwordForm.newPassword) {
+      setPasswordError(t('settings_password_required'))
+      return
+    }
+
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordError(t('settings_password_too_short'))
+      return
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError(t('settings_password_mismatch'))
+      return
+    }
+
+    setPasswordLoading(true)
+
+    try {
+      const res = await fetch('/api/user/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        }),
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        throw new Error(data.error || t('settings_password_error'))
+      }
+
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      setPasswordSaved(true)
+      // Changing the password invalidates every existing JWT, including this
+      // one. Send the user to sign in again instead of leaving a dead session.
+      await signOut({ callbackUrl: '/auth/signin' })
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : t('settings_password_error'))
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
+
+  const handleStartTwoFactor = async () => {
+    setTwoFactorLoading(true)
+    setTwoFactorError('')
+
+    try {
+      const res = await fetch('/api/auth/2fa/setup')
+      const data = (await res.json().catch(() => ({}))) as {
+        enabled?: boolean
+        secret?: string
+        otpauthUrl?: string
+        error?: string
+      }
+
+      if (!res.ok) {
+        throw new Error(data.error || t('settings_2fa_error'))
+      }
+
+      if (data.enabled) {
+        setTwoFactorEnabled(true)
+        return
+      }
+
+      if (!data.secret || !data.otpauthUrl) {
+        throw new Error(t('settings_2fa_error'))
+      }
+
+      setTwoFactorSetup({ secret: data.secret, otpauthUrl: data.otpauthUrl })
+    } catch (err) {
+      setTwoFactorError(err instanceof Error ? err.message : t('settings_2fa_error'))
+    } finally {
+      setTwoFactorLoading(false)
+    }
+  }
+
+  const handleVerifyTwoFactor = async () => {
+    setTwoFactorError('')
+
+    if (!/^\d{6}$/.test(twoFactorCode)) {
+      setTwoFactorError(t('settings_2fa_invalid_code'))
+      return
+    }
+
+    setTwoFactorLoading(true)
+
+    try {
+      const res = await fetch('/api/auth/2fa/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify', code: twoFactorCode }),
+      })
+      const data = (await res.json().catch(() => ({}))) as {
+        success?: boolean
+        backupCodes?: string[]
+        error?: string
+      }
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || t('settings_2fa_error'))
+      }
+
+      setTwoFactorEnabled(true)
+      setTwoFactorBackupCodes(data.backupCodes ?? [])
+      setTwoFactorSetup(null)
+      setTwoFactorCode('')
+    } catch (err) {
+      setTwoFactorError(err instanceof Error ? err.message : t('settings_2fa_error'))
+    } finally {
+      setTwoFactorLoading(false)
+    }
+  }
+
+  const handleSignOutEverywhere = async () => {
+    setSessionActionLoading(true)
+    setSessionError('')
+
+    try {
+      const res = await fetch('/api/user/sessions', { method: 'DELETE' })
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(data.error || t('settings_sessions_error'))
+      }
+
+      await signOut({ callbackUrl: '/auth/signin' })
+    } catch (err) {
+      setSessionError(err instanceof Error ? err.message : t('settings_sessions_error'))
+    } finally {
+      setSessionActionLoading(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeleteError('')
+
+    if (deleteConfirm !== 'SUPPRIMER') {
+      setDeleteError(t('settings_delete_confirm_hint'))
+      return
+    }
+
+    setDeleteLoading(true)
+
+    try {
+      const res = await fetch(`/api/user?confirmText=${encodeURIComponent(deleteConfirm)}`, {
+        method: 'DELETE',
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        throw new Error(data.error || t('settings_delete_error'))
+      }
+
+      await signOut({ callbackUrl: '/' })
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : t('settings_delete_error'))
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   const initials = (profile?.name || profile?.email || 'U')
@@ -303,7 +518,15 @@ export default function SettingsPage() {
                     {t('settings_delete_account_desc')}
                   </p>
                 </div>
-                <Button variant="destructive" size="sm">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    setDeleteConfirm('')
+                    setDeleteError('')
+                    setDeleteOpen(true)
+                  }}
+                >
                   <Trash2 className="size-3.5" />
                   {t('settings_delete')}
                 </Button>
@@ -322,17 +545,59 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="current-password">{t('settings_current_password')}</Label>
-                <Input id="current-password" type="password" placeholder="••••••••" />
+                <Input
+                  id="current-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      currentPassword: e.target.value,
+                    }))
+                  }
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="new-password">{t('settings_new_password')}</Label>
-                <Input id="new-password" type="password" placeholder="••••••••" />
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={passwordForm.newPassword}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))
+                  }
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="confirm-password">{t('settings_confirm_password')}</Label>
-                <Input id="confirm-password" type="password" placeholder="••••••••" />
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      confirmPassword: e.target.value,
+                    }))
+                  }
+                />
               </div>
-              <Button size="sm">{t('settings_update_password')}</Button>
+              {passwordError && (
+                <div className="flex items-start gap-2 rounded-[3px] border border-destructive/30 bg-destructive-soft p-3 text-sm text-destructive">
+                  <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                  <span>{passwordError}</span>
+                </div>
+              )}
+              {passwordSaved && (
+                <p className="text-sm text-success">{t('settings_password_success')}</p>
+              )}
+              <Button size="sm" onClick={handleUpdatePassword} disabled={passwordLoading}>
+                {passwordLoading && <Loader2 className="size-3.5 animate-spin" />}
+                {t('settings_update_password')}
+              </Button>
             </CardContent>
           </Card>
 
@@ -344,20 +609,41 @@ export default function SettingsPage() {
             <CardContent>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-[2px] bg-warning-soft p-2">
-                    <Shield className="size-4 text-warning" />
+                  <div
+                    className={`rounded-[2px] p-2 ${
+                      twoFactorEnabled ? 'bg-success-soft' : 'bg-warning-soft'
+                    }`}
+                  >
+                    <Shield
+                      className={`size-4 ${twoFactorEnabled ? 'text-success' : 'text-warning'}`}
+                    />
                   </div>
                   <div>
-                    <p className="text-[13px] font-medium">{t('settings_2fa_disabled')}</p>
+                    <p className="text-[13px] font-medium">
+                      {twoFactorEnabled ? t('settings_2fa_enabled') : t('settings_2fa_disabled')}
+                    </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {t('settings_2fa_disabled_desc')}
+                      {twoFactorEnabled
+                        ? t('settings_2fa_enabled_desc')
+                        : t('settings_2fa_disabled_desc')}
                     </p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm">
-                  {t('settings_enable')}
-                </Button>
+                {!twoFactorEnabled && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleStartTwoFactor}
+                    disabled={twoFactorLoading}
+                  >
+                    {twoFactorLoading && <Loader2 className="size-3.5 animate-spin" />}
+                    {t('settings_enable')}
+                  </Button>
+                )}
               </div>
+              {twoFactorError && !twoFactorSetup && (
+                <p className="mt-3 text-sm text-destructive">{twoFactorError}</p>
+              )}
             </CardContent>
           </Card>
 
@@ -367,35 +653,21 @@ export default function SettingsPage() {
               <CardDescription>{t('settings_sessions_desc')}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="divide-y divide-border">
-                <div className="flex items-center justify-between gap-4 py-3 first:pt-0">
-                  <div className="flex items-center gap-3">
-                    <Globe className="size-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-[13px] font-medium">Chrome - Windows</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {t('settings_last_activity_5m')}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="outline">{t('settings_current')}</Badge>
-                </div>
-                <div className="flex items-center justify-between gap-4 py-3 last:pb-0">
-                  <div className="flex items-center gap-3">
-                    <Globe className="size-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-[13px] font-medium">Safari - macOS</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {t('settings_last_activity_3d')}
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="text-destructive">
-                    {t('settings_revoke')}
-                  </Button>
-                </div>
+              <div className="flex items-start gap-3 rounded-[3px] border border-border bg-muted/40 p-3">
+                <Globe className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  {t('settings_sessions_unavailable')}
+                </p>
               </div>
-              <Button variant="outline" size="sm" className="mt-5 w-full">
+              {sessionError && <p className="mt-3 text-sm text-destructive">{sessionError}</p>}
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-5 w-full"
+                onClick={handleSignOutEverywhere}
+                disabled={sessionActionLoading}
+              >
+                {sessionActionLoading && <Loader2 className="size-3.5 animate-spin" />}
                 {t('settings_sign_out_all')}
               </Button>
             </CardContent>
@@ -583,6 +855,131 @@ export default function SettingsPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      <Dialog
+        open={Boolean(twoFactorSetup)}
+        onOpenChange={(open) => {
+          if (!open && !twoFactorLoading) {
+            setTwoFactorSetup(null)
+            setTwoFactorCode('')
+            setTwoFactorError('')
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('settings_2fa_setup_title')}</DialogTitle>
+            <DialogDescription>{t('settings_2fa_setup_desc')}</DialogDescription>
+          </DialogHeader>
+
+          {twoFactorSetup && (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>{t('settings_2fa_secret')}</Label>
+                <code className="block break-all rounded-[3px] border border-border bg-muted/40 p-3 font-mono text-xs">
+                  {twoFactorSetup.secret}
+                </code>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t('settings_2fa_uri')}</Label>
+                <code className="block break-all rounded-[3px] border border-border bg-muted/40 p-3 font-mono text-xs">
+                  {twoFactorSetup.otpauthUrl}
+                </code>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="two-factor-code">{t('settings_2fa_code')}</Label>
+                <Input
+                  id="two-factor-code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="123456"
+                />
+              </div>
+              {twoFactorError && <p className="text-sm text-destructive">{twoFactorError}</p>}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setTwoFactorSetup(null)
+                setTwoFactorCode('')
+                setTwoFactorError('')
+              }}
+              disabled={twoFactorLoading}
+            >
+              {t('settings_2fa_cancel')}
+            </Button>
+            <Button onClick={handleVerifyTwoFactor} disabled={twoFactorLoading}>
+              {twoFactorLoading && <Loader2 className="size-3.5 animate-spin" />}
+              {t('settings_2fa_verify')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(twoFactorBackupCodes)}
+        onOpenChange={(open) => {
+          if (!open) setTwoFactorBackupCodes(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('settings_2fa_backup_title')}</DialogTitle>
+            <DialogDescription>{t('settings_2fa_backup_desc')}</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2 rounded-[3px] border border-border bg-muted/40 p-4 font-mono text-sm">
+            {twoFactorBackupCodes?.map((code) => (
+              <span key={code}>{code}</span>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setTwoFactorBackupCodes(null)}>{t('settings_2fa_done')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('settings_delete_confirm_title')}</DialogTitle>
+            <DialogDescription>{t('settings_delete_confirm_desc')}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="delete-confirm">{t('settings_delete_confirm_hint')}</Label>
+              <Input
+                id="delete-confirm"
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                placeholder="SUPPRIMER"
+                autoComplete="off"
+              />
+            </div>
+            {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={deleteLoading}>
+              {t('settings_delete_cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={deleteLoading || deleteConfirm !== 'SUPPRIMER'}
+            >
+              {deleteLoading && <Loader2 className="size-3.5 animate-spin" />}
+              {t('settings_delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   )
 }
