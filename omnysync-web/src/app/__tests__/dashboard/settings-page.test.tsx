@@ -197,8 +197,40 @@ describe('SettingsPage', () => {
 
     expect(screen.getByText('Sync successful')).toBeInTheDocument()
     expect(screen.getByText('Sync failure')).toBeInTheDocument()
-    expect(screen.getByText('Weekly digest')).toBeInTheDocument()
+    expect(screen.queryByText('Weekly digest')).not.toBeInTheDocument()
     expect(screen.getByText('Team invites')).toBeInTheDocument()
+  })
+
+  it('persists notification preferences instead of saving the profile name', async () => {
+    await renderSettings()
+
+    fireEvent.click(screen.getByText('Notifications'))
+
+    const syncFailure = await screen.findByRole('switch', { name: 'Sync failure' })
+    await waitFor(() => expect(syncFailure).not.toBeDisabled())
+
+    fireEvent.click(syncFailure)
+    fireEvent.click(screen.getByText('Save preferences'))
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/user/notifications',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({
+            syncSuccess: true,
+            syncFailed: false,
+            teamInvites: true,
+          }),
+        })
+      )
+      expect(screen.getByText('Saved!')).toBeInTheDocument()
+    })
+
+    expect(global.fetch).not.toHaveBeenCalledWith(
+      '/api/user/profile',
+      expect.objectContaining({ method: 'PATCH' })
+    )
   })
 
   it('renders billing tab with real plan and usage data', async () => {

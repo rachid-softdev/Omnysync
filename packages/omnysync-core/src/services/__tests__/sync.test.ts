@@ -10,6 +10,7 @@ const mockPrisma = vi.hoisted(() => ({
   },
   syncLog: { create: vi.fn() },
   user: { findUnique: vi.fn() },
+  notificationPreference: { findUnique: vi.fn() },
   userOrganization: {
     findFirst: vi.fn().mockResolvedValue({ id: "membership-1" }),
   },
@@ -180,6 +181,7 @@ describe("Sync Service", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(prisma.notificationPreference.findUnique).mockResolvedValue(null);
   });
 
   describe("performSync", () => {
@@ -1321,6 +1323,40 @@ describe("Sync Service", () => {
 
       expect(result.success).toBe(true);
       // Email should NOT be sent when user has no email
+      expect(sendSyncCompleteEmail).not.toHaveBeenCalled();
+    });
+
+    it("should skip the success email when the user disabled it", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: "user-1",
+        email: "user@test.com",
+      } as any);
+      vi.mocked(prisma.notificationPreference.findUnique).mockResolvedValue({
+        syncSuccess: false,
+        syncFailed: true,
+        teamInvites: true,
+      } as any);
+
+      vi.mocked(prisma.document.findUnique).mockResolvedValue(
+        baseDocument as any,
+      );
+      vi.mocked(prisma.document.updateMany).mockResolvedValue({
+        count: 1,
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+      vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any);
+
+      const result = await performSync(
+        documentId,
+        sourceConnectorId,
+        destConnectorId,
+        userId,
+      );
+
+      expect(result.success).toBe(true);
+      expect(prisma.notificationPreference.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId } }),
+      );
       expect(sendSyncCompleteEmail).not.toHaveBeenCalled();
     });
 

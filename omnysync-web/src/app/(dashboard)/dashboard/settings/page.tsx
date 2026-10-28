@@ -73,9 +73,13 @@ export default function SettingsPage() {
   const [notifications, setNotifications] = useState({
     syncSuccess: true,
     syncFailed: true,
-    weeklyDigest: false,
     teamInvites: true,
   })
+  const [notificationsLoading, setNotificationsLoading] = useState(true)
+  const [notificationsSaving, setNotificationsSaving] = useState(false)
+  const [notificationsLoadError, setNotificationsLoadError] = useState(false)
+  const [notificationsError, setNotificationsError] = useState('')
+  const [notificationsSaved, setNotificationsSaved] = useState(false)
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -138,10 +142,33 @@ export default function SettingsPage() {
     }
   }, [])
 
+  const fetchNotifications = useCallback(async () => {
+    setNotificationsLoading(true)
+    setNotificationsLoadError(false)
+
+    try {
+      const res = await fetch('/api/user/notifications')
+      if (!res.ok) {
+        throw new Error(`Failed to load notification preferences (${res.status})`)
+      }
+      const data = (await res.json()) as Partial<typeof notifications>
+      setNotifications((prev) => ({
+        syncSuccess: typeof data.syncSuccess === 'boolean' ? data.syncSuccess : prev.syncSuccess,
+        syncFailed: typeof data.syncFailed === 'boolean' ? data.syncFailed : prev.syncFailed,
+        teamInvites: typeof data.teamInvites === 'boolean' ? data.teamInvites : prev.teamInvites,
+      }))
+    } catch {
+      setNotificationsLoadError(true)
+    } finally {
+      setNotificationsLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     void fetchBilling()
     void fetchProfile()
-  }, [fetchBilling, fetchProfile])
+    void fetchNotifications()
+  }, [fetchBilling, fetchProfile, fetchNotifications])
 
   const handleSaveProfile = async () => {
     setLoading(true)
@@ -168,6 +195,41 @@ export default function SettingsPage() {
       setSaveError(err instanceof Error ? err.message : t('settings_save_error'))
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSaveNotifications = async () => {
+    setNotificationsSaving(true)
+    setNotificationsError('')
+    setNotificationsSaved(false)
+
+    try {
+      const res = await fetch('/api/user/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(notifications),
+      })
+      const data = (await res.json().catch(() => ({}))) as {
+        syncSuccess?: boolean
+        syncFailed?: boolean
+        teamInvites?: boolean
+        error?: string
+      }
+      if (!res.ok) {
+        throw new Error(data.error || t('settings_notifications_error'))
+      }
+
+      setNotifications((prev) => ({
+        syncSuccess: typeof data.syncSuccess === 'boolean' ? data.syncSuccess : prev.syncSuccess,
+        syncFailed: typeof data.syncFailed === 'boolean' ? data.syncFailed : prev.syncFailed,
+        teamInvites: typeof data.teamInvites === 'boolean' ? data.teamInvites : prev.teamInvites,
+      }))
+      setNotificationsSaved(true)
+      setTimeout(() => setNotificationsSaved(false), 3000)
+    } catch (err) {
+      setNotificationsError(err instanceof Error ? err.message : t('settings_notifications_error'))
+    } finally {
+      setNotificationsSaving(false)
     }
   }
 
@@ -691,7 +753,9 @@ export default function SettingsPage() {
                     </p>
                   </div>
                   <Switch
+                    aria-label={t('settings_sync_success')}
                     checked={notifications.syncSuccess}
+                    disabled={notificationsLoading || notificationsSaving}
                     onCheckedChange={(checked) =>
                       setNotifications((prev) => ({ ...prev, syncSuccess: checked }))
                     }
@@ -705,23 +769,11 @@ export default function SettingsPage() {
                     </p>
                   </div>
                   <Switch
+                    aria-label={t('settings_sync_failure')}
                     checked={notifications.syncFailed}
+                    disabled={notificationsLoading || notificationsSaving}
                     onCheckedChange={(checked) =>
                       setNotifications((prev) => ({ ...prev, syncFailed: checked }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between gap-4 py-4">
-                  <div>
-                    <p className="text-[13px] font-medium">{t('settings_weekly_digest')}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {t('settings_weekly_digest_desc')}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={notifications.weeklyDigest}
-                    onCheckedChange={(checked) =>
-                      setNotifications((prev) => ({ ...prev, weeklyDigest: checked }))
                     }
                   />
                 </div>
@@ -733,16 +785,31 @@ export default function SettingsPage() {
                     </p>
                   </div>
                   <Switch
+                    aria-label={t('settings_team_invites')}
                     checked={notifications.teamInvites}
+                    disabled={notificationsLoading || notificationsSaving}
                     onCheckedChange={(checked) =>
                       setNotifications((prev) => ({ ...prev, teamInvites: checked }))
                     }
                   />
                 </div>
               </div>
-              <Button size="sm" className="mt-6" onClick={handleSaveProfile} disabled={loading}>
-                {loading && <Loader2 className="size-3.5 animate-spin" />}
-                {t('settings_save_preferences')}
+              {notificationsLoadError && (
+                <p className="mt-4 text-sm text-warning">
+                  {t('settings_notifications_unavailable')}
+                </p>
+              )}
+              {notificationsError && (
+                <p className="mt-4 text-sm text-destructive">{notificationsError}</p>
+              )}
+              <Button
+                size="sm"
+                className="mt-6"
+                onClick={handleSaveNotifications}
+                disabled={notificationsLoading || notificationsSaving}
+              >
+                {notificationsSaving && <Loader2 className="size-3.5 animate-spin" />}
+                {notificationsSaved ? t('settings_saved') : t('settings_save_preferences')}
               </Button>
             </CardContent>
           </Card>

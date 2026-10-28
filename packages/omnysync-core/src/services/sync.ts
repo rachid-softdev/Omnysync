@@ -9,6 +9,7 @@ import {
 import { Prisma } from "@prisma/client";
 import { decrypt } from "../crypto";
 import { sendSyncCompleteEmail } from "../email";
+import { shouldSendNotification } from "./notification-preferences";
 import { detectContentChanges } from "./ai";
 import { getGoogleDocContent } from "./google-docs";
 import { getNotionPageContent } from "./notion";
@@ -529,7 +530,10 @@ export async function performSync(
       const user = await prisma.user.findUnique({
         where: { id: document.userId },
       });
-      if (user?.email) {
+      if (
+        user?.email &&
+        (await shouldSendNotification(document.userId, "syncSuccess"))
+      ) {
         await sendSyncCompleteEmail(user.email, document.title, true);
       }
     } catch (emailError) {
@@ -575,7 +579,10 @@ export async function performSync(
       const user = await prisma.user.findUnique({
         where: { id: document.userId },
       });
-      if (user?.email) {
+      if (
+        user?.email &&
+        (await shouldSendNotification(document.userId, "syncFailed"))
+      ) {
         await sendSyncCompleteEmail(user.email, document.title, false);
       }
     } catch (emailError) {
