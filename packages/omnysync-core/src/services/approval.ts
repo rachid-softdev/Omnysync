@@ -80,9 +80,11 @@ export async function createApprovalRequest(
 
     await auditApproval.requested(organizationId, approval.id, data.documentId);
 
-    // Construire l'URL d'approbation (utilise l'URL de l'app)
+    // Construire l'URL d'approbation (utilise l'URL de l'app).
+    // The public token page does not exist; reviewers use the authenticated
+    // approvals dashboard. Keep returning the token separately for callers.
     const origin = process.env.NEXTAUTH_URL || "http://localhost:3000";
-    const approvalUrl = `${origin}/public/approval/${token}`;
+    const approvalUrl = `${origin}/dashboard/approvals`;
 
     return {
       success: true,

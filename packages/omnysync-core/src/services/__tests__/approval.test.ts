@@ -118,7 +118,7 @@ describe("Approval Service", () => {
       expect(result.success).toBe(true);
       expect(result.token).toBeDefined();
       expect(result.token!.length).toBeGreaterThan(0);
-      expect(result.approvalUrl).toContain("/public/approval/");
+      expect(result.approvalUrl).toContain("/dashboard/approvals");
       expect(prisma.approvalRequest.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -224,8 +224,8 @@ describe("Approval Service", () => {
         );
 
         expect(result.success).toBe(true);
-        expect(result.approvalUrl).toContain(
-          "http://localhost:3000/public/approval/",
+        expect(result.approvalUrl).toBe(
+          "http://localhost:3000/dashboard/approvals",
         );
       } finally {
         process.env.NEXTAUTH_URL = originalUrl;
