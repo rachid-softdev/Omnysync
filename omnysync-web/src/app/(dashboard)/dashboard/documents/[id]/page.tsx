@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth'
 import { getLocaleFromHeaders, t as translate } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/metadata'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,6 +22,15 @@ import { notFound } from 'next/navigation'
 import { formatDate } from '@/lib/format-date'
 
 export const dynamic = 'force-dynamic'
+
+export function generateMetadata() {
+  return pageMetadata({
+    titleKey: 'META_DOCUMENT_DETAIL_TITLE',
+    descriptionKey: 'META_DOCUMENT_DETAIL_DESC',
+    path: '/dashboard/documents',
+    index: false,
+  })
+}
 
 interface PageProps {
   params: Promise<{ id: string }>

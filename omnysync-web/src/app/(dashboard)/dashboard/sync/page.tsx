@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth'
 import { getLocaleFromHeaders, getT } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/metadata'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { BatchSyncList } from '@/components/batch-sync-list'
@@ -11,6 +12,15 @@ import Link from 'next/link'
 import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
+
+export function generateMetadata() {
+  return pageMetadata({
+    titleKey: 'META_SYNC_TITLE',
+    descriptionKey: 'META_SYNC_DESC',
+    path: '/dashboard/sync',
+    index: false,
+  })
+}
 
 export default async function SyncPage() {
   const session = await auth()
@@ -41,10 +51,7 @@ export default async function SyncPage() {
         description={t('UI_SYNC_HISTORY')}
         actions={
           <>
-            <HelpTooltip
-              side="left"
-              text="Sync sends your content from source platforms to your connected destinations. Each sync creates a log entry you can review here."
-            />
+            <HelpTooltip side="left" text={t('UI_SYNC_HELP')} />
             <Button asChild>
               <Link href="/dashboard/sync/new">
                 {t('UI_NEW_SYNC')}

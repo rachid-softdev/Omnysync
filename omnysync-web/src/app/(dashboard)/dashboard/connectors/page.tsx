@@ -59,15 +59,15 @@ const connectorNames: Record<string, string> = {
 }
 
 const connectorDescriptions: Record<string, string> = {
-  GOOGLE_DOCS: 'Retrieve content from Google Docs',
-  NOTION: 'Import your Notion pages',
-  WORDPRESS: 'Publish to WordPress via REST API',
-  GHOST: 'Export to Ghost via Admin API',
-  WEBFLOW: 'Sync to Webflow CMS',
-  SHOPIFY: 'Create Shopify articles',
-  AIRTABLE: 'Sync your Airtable bases',
-  CONTENTFUL: 'Publish to Contentful',
-  MEDIUM: 'Publish to Medium',
+  GOOGLE_DOCS: 'CONNECTOR_DESC_GOOGLE_DOCS',
+  NOTION: 'CONNECTOR_DESC_NOTION',
+  WORDPRESS: 'CONNECTOR_DESC_WORDPRESS',
+  GHOST: 'CONNECTOR_DESC_GHOST',
+  WEBFLOW: 'CONNECTOR_DESC_WEBFLOW',
+  SHOPIFY: 'CONNECTOR_DESC_SHOPIFY',
+  AIRTABLE: 'CONNECTOR_DESC_AIRTABLE',
+  CONTENTFUL: 'CONNECTOR_DESC_CONTENTFUL',
+  MEDIUM: 'CONNECTOR_DESC_MEDIUM',
 }
 
 export default function ConnectorsPage() {
@@ -136,10 +136,11 @@ export default function ConnectorsPage() {
           return {
             id,
             ok: res.ok,
-            error: typeof data?.error === 'string' ? data.error : 'Disconnect failed',
+            error:
+              typeof data?.error === 'string' ? data.error : t('UI_CONNECTOR_DISCONNECT_FAILED'),
           }
         } catch {
-          return { id, ok: false, error: 'Network error' }
+          return { id, ok: false, error: t('UI_NETWORK_ERROR') }
         }
       })
     )
@@ -153,16 +154,19 @@ export default function ConnectorsPage() {
 
     if (failures.length === 0) {
       toast.success(
-        removedIds.length === 1
-          ? 'Connector disconnected'
-          : `${removedIds.length} connectors disconnected`
+        t(
+          removedIds.length === 1
+            ? 'UI_CONNECTOR_DISCONNECTED_ONE'
+            : 'UI_CONNECTOR_DISCONNECTED_OTHER'
+        ).replace('{count}', String(removedIds.length))
       )
       clearSelection()
     } else if (removedIds.length > 0) {
       toast.warning(
-        `${removedIds.length} disconnected, ${failures.length} could not be disconnected: ${failures
-          .map((failure) => failure.error)
-          .join('; ')}`
+        t('UI_CONNECTOR_DISCONNECT_PARTIAL')
+          .replace('{removed}', String(removedIds.length))
+          .replace('{failed}', String(failures.length))
+          .replace('{errors}', failures.map((failure) => failure.error).join('; '))
       )
       clearSelection()
     } else {
@@ -171,22 +175,25 @@ export default function ConnectorsPage() {
 
     setDisconnecting(false)
     setPendingDisconnect([])
-  }, [pendingDisconnect, clearSelection])
+  }, [pendingDisconnect, clearSelection, t])
 
-  const handleConnect = useCallback((type: string) => {
-    try {
-      if (type === 'GOOGLE_DOCS') {
-        window.location.href = '/api/auth/connect/google'
-      } else if (type === 'NOTION') {
-        window.location.href = '/api/auth/connect/notion'
-      } else {
-        setDialogType(type)
+  const handleConnect = useCallback(
+    (type: string) => {
+      try {
+        if (type === 'GOOGLE_DOCS') {
+          window.location.href = '/api/auth/connect/google'
+        } else if (type === 'NOTION') {
+          window.location.href = '/api/auth/connect/notion'
+        } else {
+          setDialogType(type)
+        }
+      } catch (err) {
+        setErrorMsg(t('UI_CONNECT_INIT_ERROR'))
+        setTimeout(() => setErrorMsg(''), 5000)
       }
-    } catch (err) {
-      setErrorMsg('Failed to initiate connection. Please try again.')
-      setTimeout(() => setErrorMsg(''), 5000)
-    }
-  }, [])
+    },
+    [t]
+  )
 
   return (
     <PageShell>
@@ -196,10 +203,7 @@ export default function ConnectorsPage() {
         description={t('UI_MANAGE_CONNECTORS')}
         actions={
           <>
-            <HelpTooltip
-              side="left"
-              text="Connectors link your content platforms (WordPress, Ghost, Webflow, etc.) to Omnysync. Add source connectors to pull content from, and destination connectors to push content to."
-            />
+            <HelpTooltip side="left" text={t('UI_CONNECTORS_HELP')} />
             <Button variant="outline" size="sm" onClick={() => fetchConnectors()}>
               <RefreshCw />
               {t('UI_REFRESH')}
@@ -240,6 +244,7 @@ export default function ConnectorsPage() {
               <ul className="divide-y divide-border">
                 {[...sourceTypes].map((type, index) => {
                   const isConnected = connectedTypesSet.has(type)
+                  const descriptionKey = connectorDescriptions[type]
                   return (
                     <li key={type} className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
                       <span className="hidden w-4 font-mono text-[9px] tabular-nums text-muted-foreground/50 sm:block">
@@ -249,7 +254,7 @@ export default function ConnectorsPage() {
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-medium">{connectorNames[type]}</p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {connectorDescriptions[type]}
+                          {descriptionKey ? t(descriptionKey) : null}
                         </p>
                       </div>
                       {isConnected && (
@@ -287,6 +292,7 @@ export default function ConnectorsPage() {
               <ul className="divide-y divide-border">
                 {[...destTypes].map((type, index) => {
                   const isConnected = connectedTypesSet.has(type)
+                  const descriptionKey = connectorDescriptions[type]
                   return (
                     <li key={type} className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
                       <span className="hidden w-4 font-mono text-[9px] tabular-nums text-muted-foreground/50 sm:block">
@@ -296,7 +302,7 @@ export default function ConnectorsPage() {
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-medium">{connectorNames[type]}</p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {connectorDescriptions[type]}
+                          {descriptionKey ? t(descriptionKey) : null}
                         </p>
                       </div>
                       {isConnected && (
@@ -330,7 +336,7 @@ export default function ConnectorsPage() {
                   onClearSelection={clearSelection}
                   actions={[
                     {
-                      label: 'Disconnect',
+                      label: t('UI_DISCONNECT'),
                       icon: <XCircle className="size-4" />,
                       variant: 'destructive',
                       onClick: () => setPendingDisconnect([...selectedIds]),
@@ -355,7 +361,7 @@ export default function ConnectorsPage() {
                       <TableHead className="h-9 w-10 px-2 pr-0 sm:px-4">
                         <Checkbox
                           id="select-all-connectors"
-                          aria-label="Select all connectors"
+                          aria-label={t('UI_SELECT_ALL_CONNECTORS')}
                           checked={isAllSelected}
                           onCheckedChange={(checked) => {
                             if (checked) selectAll()
@@ -373,7 +379,7 @@ export default function ConnectorsPage() {
                         {t('UI_STATUS')}
                       </TableHead>
                       <TableHead className="h-9 w-10 px-2 text-right font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
-                        <span className="sr-only">Actions</span>
+                        <span className="sr-only">{t('UI_ACTIONS')}</span>
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -387,7 +393,10 @@ export default function ConnectorsPage() {
                           <Checkbox
                             checked={selectedIds.has(connector.id)}
                             onCheckedChange={() => toggle(connector.id)}
-                            aria-label={`Select ${connector.name}`}
+                            aria-label={t('UI_SELECT_CONNECTOR_ITEM').replace(
+                              '{name}',
+                              connector.name
+                            )}
                           />
                         </TableCell>
                         <TableCell className="px-2 py-2.5 sm:px-4">
@@ -429,8 +438,11 @@ export default function ConnectorsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            aria-label={`Disconnect ${connector.name}`}
-                            title="Disconnect"
+                            aria-label={t('UI_DISCONNECT_CONNECTOR').replace(
+                              '{name}',
+                              connector.name
+                            )}
+                            title={t('UI_DISCONNECT')}
                             onClick={() => setPendingDisconnect([connector.id])}
                           >
                             <XCircle className="size-4 text-destructive" aria-hidden="true" />
@@ -470,17 +482,16 @@ export default function ConnectorsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>
               {pendingDisconnect.length === 1
-                ? 'Disconnect this connector?'
-                : `Disconnect ${pendingDisconnect.length} connectors?`}
+                ? t('UI_DISCONNECT_ONE_TITLE')
+                : t('UI_DISCONNECT_MANY_TITLE').replace(
+                    '{count}',
+                    String(pendingDisconnect.length)
+                  )}
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              This removes the connection from Omnysync. Content already published on the
-              destination is not deleted. Connectors linked to documents cannot be disconnected
-              until those documents are removed.
-            </AlertDialogDescription>
+            <AlertDialogDescription>{t('UI_DISCONNECT_DESC')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={disconnecting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={disconnecting}>{t('UI_CANCEL')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(event) => {
                 event.preventDefault()
@@ -490,7 +501,7 @@ export default function ConnectorsPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {disconnecting && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-              Disconnect
+              {t('UI_DISCONNECT')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

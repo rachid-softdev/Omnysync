@@ -58,7 +58,7 @@ const statusTones: Record<string, string> = {
 }
 
 export function BatchDocumentList({ documents: initialDocuments, locale }: BatchDocumentListProps) {
-  const { t } = useTranslations()
+  const { t } = useTranslations(locale)
   const [docs, setDocs] = useState(initialDocuments)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
@@ -74,10 +74,14 @@ export function BatchDocumentList({ documents: initialDocuments, locale }: Batch
 
   const handleBatchDelete = useCallback(() => {
     setDocs((prev) => prev.filter((d) => !selectedIds.has(d.id)))
-    toast.success(`${selectedCount} document(s) removed`)
+    toast.success(
+      t(
+        selectedCount === 1 ? 'UI_DOCUMENTS_REMOVED_TOAST_ONE' : 'UI_DOCUMENTS_REMOVED_TOAST_OTHER'
+      ).replace('{count}', String(selectedCount))
+    )
     clearSelection()
     setDeleteConfirmOpen(false)
-  }, [selectedIds, selectedCount, clearSelection])
+  }, [selectedIds, selectedCount, clearSelection, t])
 
   if (docs.length === 0) {
     return (
@@ -115,9 +119,10 @@ export function BatchDocumentList({ documents: initialDocuments, locale }: Batch
           isAllSelected={isAllSelected}
           onSelectAll={selectAll}
           onClearSelection={clearSelection}
+          locale={locale}
           actions={[
             {
-              label: 'Delete',
+              label: t('UI_DELETE'),
               icon: <Trash2 className="size-4" />,
               variant: 'destructive',
               onClick: () => setDeleteConfirmOpen(true),
@@ -133,7 +138,7 @@ export function BatchDocumentList({ documents: initialDocuments, locale }: Batch
               <TableHead className="h-9 w-10 px-2 pr-0 sm:px-4">
                 <Checkbox
                   id="select-all-docs"
-                  aria-label="Select all documents"
+                  aria-label={t('UI_SELECT_ALL_DOCUMENTS')}
                   checked={isAllSelected}
                   onCheckedChange={(checked) => {
                     if (checked) selectAll()
@@ -162,7 +167,7 @@ export function BatchDocumentList({ documents: initialDocuments, locale }: Batch
                   <Checkbox
                     checked={selectedIds.has(doc.id)}
                     onCheckedChange={() => toggle(doc.id)}
-                    aria-label={`Select ${doc.title}`}
+                    aria-label={t('UI_SELECT_DOCUMENT_ITEM').replace('{title}', doc.title)}
                   />
                 </TableCell>
                 <TableCell className="px-2 py-2.5 sm:px-4">
@@ -216,19 +221,22 @@ export function BatchDocumentList({ documents: initialDocuments, locale }: Batch
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete documents</AlertDialogTitle>
+            <AlertDialogTitle>{t('UI_DELETE_DOCUMENTS_TITLE')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove {selectedCount} document(s) from this list? This
-              action cannot be undone.
+              {t(
+                selectedCount === 1
+                  ? 'UI_DELETE_DOCUMENTS_DESC_ONE'
+                  : 'UI_DELETE_DOCUMENTS_DESC_OTHER'
+              ).replace('{count}', String(selectedCount))}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('UI_CANCEL')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBatchDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t('UI_DELETE')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

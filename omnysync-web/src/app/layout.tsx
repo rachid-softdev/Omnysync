@@ -4,6 +4,8 @@ import { headers } from 'next/headers'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
+import { getLocaleFromHeaders, t } from '@/lib/i18n'
+import { getBaseUrl } from '@/lib/metadata'
 
 // One display/UI family plus a mono for technical metadata (see DESIGN.md).
 // The CSS variables are consumed by the `--font-sans` and `--font-mono` tokens.
@@ -21,18 +23,18 @@ const fontMono = IBM_Plex_Mono({
 })
 
 export async function generateMetadata(): Promise<Metadata> {
-  const headersList = await headers()
-  const acceptLanguage = headersList.get('accept-language') || ''
-  const locale = acceptLanguage.split(',')[0]?.split('-')[0] || 'en'
+  const locale = getLocaleFromHeaders(await headers())
+  const title = t('META_HOME_TITLE', locale)
+  const description = t('META_HOME_DESC', locale)
   const ogLocale = locale === 'fr' ? 'fr_FR' : 'en_US'
 
   return {
+    metadataBase: new URL(getBaseUrl()),
     title: {
-      default: 'Omnysync - Content Routing for Publishers',
+      default: title,
       template: '%s | Omnysync',
     },
-    description:
-      'Route a draft from Google Docs, Notion, Airtable or Contentful to the CMS you publish with. One destination per document, with a clear run log.',
+    description,
     keywords: [
       'content routing',
       'publishing automation',
@@ -46,9 +48,13 @@ export async function generateMetadata(): Promise<Metadata> {
       type: 'website',
       locale: ogLocale,
       siteName: 'Omnysync',
+      title,
+      description,
     },
     twitter: {
       card: 'summary_large_image',
+      title,
+      description,
     },
     robots: {
       index: true,

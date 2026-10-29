@@ -1,6 +1,16 @@
 import Link from 'next/link'
 import { AlertCircle } from 'lucide-react'
 import { getT } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/metadata'
+
+export function generateMetadata() {
+  return pageMetadata({
+    titleKey: 'META_AUTH_ERROR_TITLE',
+    descriptionKey: 'META_AUTH_ERROR_DESC',
+    path: '/auth/error',
+    index: false,
+  })
+}
 
 interface AuthErrorPageProps {
   searchParams: Promise<{ error?: string | string[] }>

@@ -19,6 +19,12 @@ vi.mock('@/lib/i18n/useTranslations', () => ({
         UI_CONFIGURE: 'Configure',
         UI_CONFIGURED: 'Configured',
         UI_ACTIVE: 'Active',
+        UI_DISCONNECT: 'Disconnect',
+        UI_DISCONNECT_CONNECTOR: 'Disconnect {name}',
+        UI_DISCONNECT_ONE_TITLE: 'Disconnect this connector?',
+        UI_DISCONNECT_DESC: 'This removes the connection from Omnysync.',
+        UI_CANCEL: 'Cancel',
+        UI_CONNECTORS_HELP: 'Connectors help',
       }
       return translations[key] || key
     },

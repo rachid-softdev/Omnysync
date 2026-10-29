@@ -1,6 +1,16 @@
 import Link from 'next/link'
 import { MailCheck } from 'lucide-react'
 import { getT } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/metadata'
+
+export function generateMetadata() {
+  return pageMetadata({
+    titleKey: 'META_VERIFY_TITLE',
+    descriptionKey: 'META_VERIFY_DESC',
+    path: '/auth/verify-request',
+    index: false,
+  })
+}
 
 export default async function VerifyRequestPage() {
   const t = await getT()

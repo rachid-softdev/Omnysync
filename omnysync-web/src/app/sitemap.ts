@@ -29,23 +29,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly' as const,
       priority: 0.5,
     },
-    {
-      url: `${baseUrl}/blog`,
-      lastModified: now,
-      changeFrequency: 'weekly' as const,
-      priority: 0.7,
-    },
   ]
-
-  // You could dynamically fetch blog posts from your data
-  // For now, we'll add a placeholder for dynamic content
-  // const blogPosts = await getBlogPosts()
-  // const dynamicPages = blogPosts.map((post) => ({
-  //   url: `${baseUrl}/blog/${post.slug}`,
-  //   lastModified: new Date(post.updatedAt),
-  //   changeFrequency: "weekly" as const,
-  //   priority: 0.6,
-  // }))
 
   return [...staticPages]
 }

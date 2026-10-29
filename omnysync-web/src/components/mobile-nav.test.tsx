@@ -41,7 +41,14 @@ vi.mock('@/lib/actions', () => ({
 
 vi.mock('@/lib/i18n/useTranslations', () => ({
   useTranslations: () => ({
-    t: (key: string) => (key === 'UI_LOGOUT' ? 'Logout' : key),
+    t: (key: string) => {
+      const labels: Record<string, string> = {
+        UI_LOGOUT: 'Logout',
+        UI_OPEN_MENU: 'Open menu',
+        UI_CLOSE_MENU: 'Close menu',
+      }
+      return labels[key] ?? key
+    },
     loading: false,
     locale: 'en',
   }),

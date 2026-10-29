@@ -1,6 +1,9 @@
 import { auth } from '@/lib/auth'
-import { getT } from '@/lib/i18n'
+import { getLocaleFromHeaders, getT } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/metadata'
 import { redirect } from 'next/navigation'
+import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import Link from 'next/link'
 import Image from 'next/image'
 import { BookOpen } from 'lucide-react'
@@ -12,6 +15,15 @@ import { DashboardHeader } from '@/components/dashboard-header'
 import { LogoutButton } from '@/components/logout-button'
 import { BrandLockup } from '@/components/signal-mark'
 
+export function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    titleKey: 'META_DASHBOARD_TITLE',
+    descriptionKey: 'META_DASHBOARD_DESC',
+    path: '/dashboard',
+    index: false,
+  })
+}
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
 
@@ -20,6 +32,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   const user = session.user
+  const locale = getLocaleFromHeaders(await headers())
   const t = await getT()
 
   // Icons are referenced by name so this data can cross the server/client
@@ -37,6 +50,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
       items: [
         { href: '/dashboard/sync', icon: 'sync', label: t('UI_SYNC') },
         { href: '/dashboard/analytics', icon: 'analytics', label: t('UI_ANALYTICS') },
+        { href: '/dashboard/webhooks', icon: 'webhooks', label: t('UI_WEBHOOKS') },
+        { href: '/dashboard/approvals', icon: 'approvals', label: t('UI_APPROVALS') },
       ],
     },
     {
@@ -44,6 +59,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       items: [
         { href: '/dashboard/usage', icon: 'usage', label: t('UI_USAGE') },
         { href: '/dashboard/settings', icon: 'settings', label: t('UI_SETTINGS') },
+        { href: '/dashboard/settings/team', icon: 'users', label: t('UI_TEAM') },
         ...(user.role === 'ADMIN'
           ? [{ href: '/admin', icon: 'admin' as const, label: t('UI_ADMIN') }]
           : []),
@@ -115,12 +131,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </aside>
 
-      <MobileNav navItems={navItems} user={user} />
+      <MobileNav navItems={navItems} user={user} locale={locale} />
       <CommandPalette />
       <KeyboardShortcuts />
 
       <div className="md:pl-64">
-        <DashboardHeader user={{ name: user.name, email: user.email, image: user.image }} />
+        <DashboardHeader
+          user={{ name: user.name, email: user.email, image: user.image }}
+          locale={locale}
+        />
         <main id="main-content" className="pt-14">
           {children}
         </main>

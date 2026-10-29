@@ -16,12 +16,16 @@ import {
 import { RouteMap } from '@/components/route-map'
 import { BrandLockup } from '@/components/signal-mark'
 import { getT } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/metadata'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = {
-  title: 'Omnysync — Content routing for publishers',
-  description:
-    'Route a draft from Google Docs, Notion, Airtable or Contentful to the CMS you publish with. One destination per document, with a clear run log.',
+export function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    titleKey: 'META_HOME_TITLE',
+    descriptionKey: 'META_HOME_DESC',
+    path: '/',
+    absoluteTitle: true,
+  })
 }
 
 const PLATFORMS = [

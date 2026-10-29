@@ -3,11 +3,15 @@ import { Button } from '@/components/ui/button'
 import { ProCheckoutButton } from '@/components/pro-checkout-button'
 import Link from 'next/link'
 import { getT } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/metadata'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = {
-  title: 'Pricing',
-  description: 'Free, Pro and Business plans for content routing. Start free, scale when you grow.',
+export function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    titleKey: 'META_PRICING_TITLE',
+    descriptionKey: 'META_PRICING_DESC',
+    path: '/pricing',
+  })
 }
 
 type PlanCard = {

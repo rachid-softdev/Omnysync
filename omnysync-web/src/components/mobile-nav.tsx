@@ -27,13 +27,14 @@ interface MobileNavProps {
     email?: string | null
     image?: string | null
   }
+  locale?: string
 }
 
-export function MobileNav({ navItems, user }: MobileNavProps) {
+export function MobileNav({ navItems, user, locale }: MobileNavProps) {
   const isMobile = useIsMobile()
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
-  const { t } = useTranslations()
+  const { t } = useTranslations(locale)
 
   if (!isMobile) return null
 
@@ -48,7 +49,7 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
           variant="ghost"
           size="icon-sm"
           onClick={() => setIsOpen(true)}
-          aria-label="Open menu"
+          aria-label={t('UI_OPEN_MENU')}
         >
           <Menu className="size-5" />
         </Button>
@@ -77,7 +78,7 @@ export function MobileNav({ navItems, user }: MobileNavProps) {
             variant="ghost"
             size="icon-sm"
             onClick={() => setIsOpen(false)}
-            aria-label="Close menu"
+            aria-label={t('UI_CLOSE_MENU')}
             className="text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <X className="size-5" />
