@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Loader2, Sparkles } from 'lucide-react'
 import { toast } from '@/components/toast-provider'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 interface CheckChangesButtonProps {
   documentId: string
+  locale?: string
 }
 
 /**
@@ -17,8 +19,9 @@ interface CheckChangesButtonProps {
  * rendered for plans that include AI. The server remains the source of truth if
  * the plan changes while the page is open.
  */
-export function CheckChangesButton({ documentId }: CheckChangesButtonProps) {
+export function CheckChangesButton({ documentId, locale }: CheckChangesButtonProps) {
   const router = useRouter()
+  const { t } = useTranslations(locale)
   const [loading, setLoading] = useState(false)
 
   const check = async () => {
@@ -28,13 +31,13 @@ export function CheckChangesButton({ documentId }: CheckChangesButtonProps) {
       const data = await res.json().catch(() => ({}))
 
       if (!res.ok) {
-        throw new Error(data.error || data.message || 'Could not check for changes')
+        throw new Error(data.error || data.message || t('DOC_CHECK_CHANGES_ERROR'))
       }
 
-      toast.success(data.message || 'Change detection queued')
+      toast.success(data.message || t('DOC_CHECK_CHANGES_QUEUED'))
       router.refresh()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not check for changes')
+      toast.error(error instanceof Error ? error.message : t('DOC_CHECK_CHANGES_ERROR'))
     } finally {
       setLoading(false)
     }
@@ -43,7 +46,7 @@ export function CheckChangesButton({ documentId }: CheckChangesButtonProps) {
   return (
     <Button variant="outline" size="sm" onClick={check} disabled={loading}>
       {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-      Check for changes
+      {t('DOC_CHECK_CHANGES')}
     </Button>
   )
 }

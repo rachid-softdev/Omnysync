@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth'
-import { getLocaleFromHeaders } from '@/lib/i18n'
+import { getLocaleFromHeaders, t as translate } from '@/lib/i18n'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -48,6 +48,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
   }
 
   const locale = getLocaleFromHeaders(await headers())
+  const t = (key: string) => translate(key, locale)
   const orgId = await getUserOrgId(session.user.id)
 
   const document = await prisma.document.findUnique({
@@ -80,18 +81,25 @@ export default async function DocumentDetailPage({ params }: PageProps) {
   // Change detection is AI-powered and only meaningful for published documents.
   const canCheckChanges = planLimits.aiFeatures && document.status === 'PUBLISHED'
 
-  const statusLabels: Record<string, string> = {
-    DRAFT: 'Draft',
-    READY: 'Ready',
-    PUBLISHED: 'Published',
-    ARCHIVED: 'Archived',
+  const statusKeys: Record<string, string> = {
+    DRAFT: 'DOC_STATUS_DRAFT',
+    READY: 'DOC_STATUS_READY',
+    PUBLISHED: 'DOC_STATUS_PUBLISHED',
+    ARCHIVED: 'DOC_STATUS_ARCHIVED',
   }
 
-  const syncStatusLabels: Record<string, string> = {
-    NOT_SYNCED: 'Not synced',
-    SYNCING: 'Syncing',
-    SYNCED: 'Synced',
-    FAILED: 'Failed',
+  const syncStatusKeys: Record<string, string> = {
+    NOT_SYNCED: 'UI_STATUS_NOT_SYNCED',
+    SYNCING: 'UI_STATUS_SYNCING',
+    SYNCED: 'UI_STATUS_SYNCED',
+    FAILED: 'UI_STATUS_FAILED',
+  }
+
+  const frequencyLabel = (frequency: string | null) => {
+    if (frequency === 'DAILY') return t('DOC_FREQ_DAILY')
+    if (frequency === 'WEEKLY') return t('DOC_FREQ_WEEKLY')
+    if (frequency === 'MONTHLY') return t('DOC_FREQ_MONTHLY')
+    return t('DOC_FREQ_MANUAL')
   }
 
   const connectorNames: Record<string, string> = {
@@ -103,8 +111,8 @@ export default async function DocumentDetailPage({ params }: PageProps) {
     SHOPIFY: 'Shopify',
   }
 
-  const sourceName = connectorNames[document.sourceConnector?.type || 'UNKNOWN'] || 'Source'
-  const destName = connectorNames[document.destConnector?.type || 'UNKNOWN'] || 'Destination'
+  const sourceName = connectorNames[document.sourceConnector?.type || 'UNKNOWN'] || t('UI_SOURCE')
+  const destName = connectorNames[document.destConnector?.type || 'UNKNOWN'] || t('UI_DESTINATION')
 
   // Calculate sync progress
   const syncProgress =
@@ -113,20 +121,20 @@ export default async function DocumentDetailPage({ params }: PageProps) {
   return (
     <PageShell>
       <PageHeader
-        eyebrow={`DOCUMENT / ${sourceName.toUpperCase()} → ${destName.toUpperCase()}`}
+        eyebrow={`${t('UI_DOCUMENT').toUpperCase()} / ${sourceName.toUpperCase()} → ${destName.toUpperCase()}`}
         title={document.title}
-        description={`${sourceName} → ${destName} · Created on ${formatDate(document.createdAt, locale)}`}
+        description={`${sourceName} → ${destName} · ${t('DOC_CREATED_ON')} ${formatDate(document.createdAt, locale)}`}
         actions={
           <>
             <Button variant="ghost" size="sm" asChild>
               <Link href="/dashboard/documents">
                 <ArrowLeft className="size-4" />
-                Back
+                {t('DOC_BACK')}
               </Link>
             </Button>
-            {canCheckChanges && <CheckChangesButton documentId={document.id} />}
-            <SyncRunButton documentId={document.id} label="Sync" />
-            <DeleteDocumentButton documentId={document.id} />
+            {canCheckChanges && <CheckChangesButton documentId={document.id} locale={locale} />}
+            <SyncRunButton documentId={document.id} label={t('DOC_SYNC_ACTION')} locale={locale} />
+            <DeleteDocumentButton documentId={document.id} locale={locale} />
           </>
         }
       />
@@ -151,10 +159,10 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                   )}
                 </span>
                 <div>
-                  <p className="text-xs text-muted-foreground">Status</p>
+                  <p className="text-xs text-muted-foreground">{t('UI_STATUS')}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <span className="text-base font-semibold tracking-tight">
-                      {statusLabels[document.status] || document.status}
+                      {t(statusKeys[document.status] || document.status)}
                     </span>
                     <Badge variant={syncBadgeVariant[document.syncStatus] || 'secondary'}>
                       {syncDotClass[document.syncStatus] && (
@@ -163,13 +171,13 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                           aria-hidden="true"
                         />
                       )}
-                      {syncStatusLabels[document.syncStatus] || document.syncStatus}
+                      {t(syncStatusKeys[document.syncStatus] || document.syncStatus)}
                     </Badge>
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-xs text-muted-foreground">Sync progress</p>
+                <p className="text-xs text-muted-foreground">{t('DOC_SYNC_PROGRESS')}</p>
                 <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">
                   {syncProgress}%
                 </p>
@@ -183,31 +191,25 @@ export default async function DocumentDetailPage({ params }: PageProps) {
           <CardContent className="p-5">
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
               <div>
-                <dt className="text-xs text-muted-foreground">Last sync</dt>
+                <dt className="text-xs text-muted-foreground">{t('DOC_LAST_SYNC')}</dt>
                 <dd className="mt-0.5 text-[13px] font-medium">
-                  {document.lastSyncedAt ? formatDate(document.lastSyncedAt, locale) : 'Never'}
+                  {document.lastSyncedAt
+                    ? formatDate(document.lastSyncedAt, locale)
+                    : t('DOC_NEVER')}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground">Version</dt>
+                <dt className="text-xs text-muted-foreground">{t('DOC_VERSION')}</dt>
                 <dd className="mt-0.5 text-[13px] font-medium tabular-nums">v{document.version}</dd>
               </div>
               <div className="col-span-2">
-                <dt className="text-xs text-muted-foreground">Auto sync</dt>
+                <dt className="text-xs text-muted-foreground">{t('DOC_AUTO_SYNC')}</dt>
                 <dd className="mt-0.5 text-[13px] font-medium">
                   {document.autoSyncEnabled
                     ? document.syncFrequency
-                      ? `Enabled · ${
-                          document.syncFrequency === 'DAILY'
-                            ? 'Daily'
-                            : document.syncFrequency === 'WEEKLY'
-                              ? 'Weekly'
-                              : document.syncFrequency === 'MONTHLY'
-                                ? 'Monthly'
-                                : 'Manual'
-                        }`
-                      : 'Enabled'
-                    : 'Disabled'}
+                      ? `${t('DOC_ENABLED')} · ${frequencyLabel(document.syncFrequency)}`
+                      : t('DOC_ENABLED')
+                    : t('DOC_DISABLED')}
                 </dd>
               </div>
             </dl>
@@ -218,10 +220,10 @@ export default async function DocumentDetailPage({ params }: PageProps) {
       {/* Tabs */}
       <Tabs defaultValue="overview" className="mt-8 w-full">
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="overview">{t('DOC_TAB_OVERVIEW')}</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
-          <TabsTrigger value="logs">History</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="logs">{t('DOC_TAB_HISTORY')}</TabsTrigger>
+          <TabsTrigger value="settings">{t('UI_SETTINGS')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -229,8 +231,8 @@ export default async function DocumentDetailPage({ params }: PageProps) {
             {/* Content Preview */}
             <Card>
               <CardHeader>
-                <CardTitle>Content</CardTitle>
-                <CardDescription>Synced content preview</CardDescription>
+                <CardTitle>{t('DOC_CONTENT')}</CardTitle>
+                <CardDescription>{t('DOC_CONTENT_DESC')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="prose prose-sm max-w-none dark:prose-invert">
@@ -242,7 +244,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                       }}
                     />
                   ) : (
-                    <p className="text-sm text-muted-foreground">No content available</p>
+                    <p className="text-sm text-muted-foreground">{t('DOC_NO_CONTENT')}</p>
                   )}
                 </div>
               </CardContent>
@@ -251,38 +253,38 @@ export default async function DocumentDetailPage({ params }: PageProps) {
             {/* Metadata */}
             <Card>
               <CardHeader>
-                <CardTitle>Metadata</CardTitle>
-                <CardDescription>Document information</CardDescription>
+                <CardTitle>{t('DOC_METADATA')}</CardTitle>
+                <CardDescription>{t('DOC_METADATA_DESC')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
                   <div>
-                    <dt className="text-xs text-muted-foreground">Source</dt>
+                    <dt className="text-xs text-muted-foreground">{t('UI_SOURCE')}</dt>
                     <dd className="mt-0.5 text-[13px] font-medium">
                       {connectorNames[document.sourceConnector?.type || 'UNKNOWN'] || '—'}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-muted-foreground">Destination</dt>
+                    <dt className="text-xs text-muted-foreground">{t('UI_DESTINATION')}</dt>
                     <dd className="mt-0.5 text-[13px] font-medium">
                       {connectorNames[document.destConnector?.type || 'UNKNOWN'] || '—'}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-muted-foreground">Categories</dt>
+                    <dt className="text-xs text-muted-foreground">{t('DOC_CATEGORIES')}</dt>
                     <dd className="mt-0.5 text-[13px] font-medium">
-                      {document.categories?.join(', ') || 'None'}
+                      {document.categories?.join(', ') || t('DOC_NONE')}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-muted-foreground">Tags</dt>
+                    <dt className="text-xs text-muted-foreground">{t('DOC_TAGS')}</dt>
                     <dd className="mt-0.5 text-[13px] font-medium">
-                      {document.tags?.join(', ') || 'None'}
+                      {document.tags?.join(', ') || t('DOC_NONE')}
                     </dd>
                   </div>
                   {document.excerpt && (
                     <div className="col-span-2">
-                      <dt className="text-xs text-muted-foreground">Excerpt</dt>
+                      <dt className="text-xs text-muted-foreground">{t('DOC_EXCERPT')}</dt>
                       <dd className="mt-0.5 text-[13px]">{document.excerpt}</dd>
                     </div>
                   )}
@@ -295,20 +297,20 @@ export default async function DocumentDetailPage({ params }: PageProps) {
         <TabsContent value="seo" className="mt-4">
           <Card className="max-w-3xl">
             <CardHeader>
-              <CardTitle>SEO Optimization</CardTitle>
-              <CardDescription>Metadata for search engines</CardDescription>
+              <CardTitle>{t('DOC_SEO_OPTIMIZATION')}</CardTitle>
+              <CardDescription>{t('DOC_SEO_DESC')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div>
-                <p className="text-xs text-muted-foreground">SEO Title</p>
+                <p className="text-xs text-muted-foreground">{t('DOC_SEO_TITLE')}</p>
                 <p className="mt-1 text-sm font-medium">{document.seoTitle || document.title}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">SEO Description</p>
-                <p className="mt-1 text-sm">{document.seoDescription || 'No description'}</p>
+                <p className="text-xs text-muted-foreground">{t('DOC_SEO_DESCRIPTION')}</p>
+                <p className="mt-1 text-sm">{document.seoDescription || t('DOC_NO_DESCRIPTION')}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Keywords</p>
+                <p className="text-xs text-muted-foreground">{t('DOC_KEYWORDS')}</p>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {document.seoKeywords && document.seoKeywords.length > 0 ? (
                     document.seoKeywords.map((keyword: string, index: number) => (
@@ -317,7 +319,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                       </Badge>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground">No keywords</p>
+                    <p className="text-sm text-muted-foreground">{t('DOC_NO_KEYWORDS')}</p>
                   )}
                 </div>
               </div>
@@ -328,13 +330,13 @@ export default async function DocumentDetailPage({ params }: PageProps) {
         <TabsContent value="logs" className="mt-4">
           <Card className="max-w-3xl">
             <CardHeader>
-              <CardTitle>Sync history</CardTitle>
-              <CardDescription>Recent operations log</CardDescription>
+              <CardTitle>{t('DOC_SYNC_HISTORY')}</CardTitle>
+              <CardDescription>{t('DOC_HISTORY_DESC')}</CardDescription>
             </CardHeader>
             <CardContent>
               {document.syncLogs.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
-                  No history available
+                  {t('DOC_NO_HISTORY')}
                 </p>
               ) : (
                 <ul className="space-y-2">
@@ -397,8 +399,8 @@ export default async function DocumentDetailPage({ params }: PageProps) {
             {/* Sync Settings */}
             <Card>
               <CardHeader>
-                <CardTitle>Auto sync</CardTitle>
-                <CardDescription>Configure sync frequency</CardDescription>
+                <CardTitle>{t('DOC_AUTO_SYNC')}</CardTitle>
+                <CardDescription>{t('DOC_AUTO_SYNC_DESC')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <ScheduleSettings
@@ -406,10 +408,11 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                   autoSyncEnabled={document.autoSyncEnabled}
                   syncFrequency={document.syncFrequency}
                   canSchedule={canSchedule}
+                  locale={locale}
                 />
                 {document.nextSyncAt && (
                   <div className="border-t border-border pt-4">
-                    <p className="text-xs text-muted-foreground">Next sync</p>
+                    <p className="text-xs text-muted-foreground">{t('DOC_NEXT_SYNC')}</p>
                     <p className="mt-0.5 text-[13px] font-medium">
                       {formatDate(document.nextSyncAt, locale, {
                         day: 'numeric',
@@ -426,13 +429,12 @@ export default async function DocumentDetailPage({ params }: PageProps) {
             {/* Publishing behavior */}
             <Card>
               <CardHeader>
-                <CardTitle>Publishing</CardTitle>
-                <CardDescription>How this document publishes</CardDescription>
+                <CardTitle>{t('DOC_PUBLISHING')}</CardTitle>
+                <CardDescription>{t('DOC_PUBLISHING_DESC')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-[13px] leading-relaxed text-muted-foreground">
-                  Each sync publishes this document to its configured destination. Omnysync does not
-                  fan out one document to multiple destinations.
+                  {t('DOC_PUBLISHING_BODY')}
                 </p>
               </CardContent>
             </Card>

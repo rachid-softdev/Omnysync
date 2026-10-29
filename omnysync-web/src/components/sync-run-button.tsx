@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Loader2 } from 'lucide-react'
 import { toast } from '@/components/toast-provider'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 interface SyncRunButtonProps {
   documentId: string
@@ -12,6 +13,7 @@ interface SyncRunButtonProps {
   variant?: 'default' | 'outline' | 'ghost' | 'secondary'
   size?: 'default' | 'sm' | 'lg' | 'icon'
   disabled?: boolean
+  locale?: string
 }
 
 /**
@@ -21,12 +23,14 @@ interface SyncRunButtonProps {
  */
 export function SyncRunButton({
   documentId,
-  label = 'Sync',
+  label,
   variant = 'outline',
   size = 'sm',
   disabled = false,
+  locale,
 }: SyncRunButtonProps) {
   const router = useRouter()
+  const { t } = useTranslations(locale)
   const [loading, setLoading] = useState(false)
 
   const run = async () => {
@@ -40,18 +44,18 @@ export function SyncRunButton({
 
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        throw new Error(data.error || data.message || 'Sync could not be started')
+        throw new Error(data.error || data.message || t('SYNC_RUN_START_ERROR'))
       }
 
       if (data.success === false) {
-        toast.error(data.error || 'Sync failed')
+        toast.error(data.error || t('SYNC_RUN_FAILED'))
       } else {
-        toast.success('Sync completed')
+        toast.success(t('SYNC_RUN_COMPLETED'))
       }
 
       router.refresh()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Sync could not be started')
+      toast.error(error instanceof Error ? error.message : t('SYNC_RUN_START_ERROR'))
     } finally {
       setLoading(false)
     }
@@ -64,7 +68,7 @@ export function SyncRunButton({
       ) : (
         <RefreshCw className="size-4" aria-hidden="true" />
       )}
-      {label}
+      {label ?? t('SYNC_RUN_DEFAULT')}
     </Button>
   )
 }

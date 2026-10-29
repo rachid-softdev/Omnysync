@@ -3,6 +3,11 @@ import { render, screen } from '@testing-library/react'
 import DocumentDetailPage from '../../(dashboard)/dashboard/documents/[id]/page'
 
 const mockNotFound = vi.hoisted(() => vi.fn())
+const localeState = vi.hoisted(() => ({ lang: 'en' }))
+
+vi.mock('next/headers', () => ({
+  headers: vi.fn(async () => new Headers({ 'Accept-Language': localeState.lang })),
+}))
 
 vi.mock('next/navigation', () => ({
   notFound: mockNotFound,
@@ -66,6 +71,7 @@ vi.mock('lucide-react', () => {
 beforeEach(() => {
   vi.clearAllMocks()
   mockNotFound.mockReset()
+  localeState.lang = 'en'
 })
 
 beforeEach(async () => {
@@ -166,6 +172,36 @@ describe('DocumentDetailPage', () => {
     expect(screen.getByText('SEO')).toBeInTheDocument()
     expect(screen.getByText('History')).toBeInTheDocument()
     expect(screen.getByText('Settings')).toBeInTheDocument()
+  })
+
+  it('renders French copy and passes the locale to client actions', async () => {
+    localeState.lang = 'fr'
+    const { prisma } = await import('@/lib/prisma')
+    ;(prisma.document.findUnique as any).mockResolvedValueOnce(mockDocument)
+
+    const element = await DocumentDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
+    render(element)
+
+    expect(screen.getByText('Retour')).toBeInTheDocument()
+    expect(screen.getByText('Synchroniser')).toBeInTheDocument()
+    expect(screen.getByText('Supprimer')).toBeInTheDocument()
+    expect(screen.getByText('Vérifier les modifications')).toBeInTheDocument()
+    expect(screen.getByText('Statut')).toBeInTheDocument()
+    expect(screen.getAllByText('Publié').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Synchronisé').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('Aperçu')).toBeInTheDocument()
+    expect(screen.getByText('SEO')).toBeInTheDocument()
+    expect(screen.getByText('Historique')).toBeInTheDocument()
+    expect(screen.getByText('Paramètres')).toBeInTheDocument()
+    expect(screen.getByText('Contenu')).toBeInTheDocument()
+    expect(screen.getByText('Aperçu du contenu synchronisé')).toBeInTheDocument()
+    expect(screen.getByText('Métadonnées')).toBeInTheDocument()
+    expect(screen.getByText('Informations du document')).toBeInTheDocument()
+    expect(screen.getByText('Dernière synchronisation')).toBeInTheDocument()
+    expect(screen.getByText('Version')).toBeInTheDocument()
+    expect(screen.getAllByText('Synchronisation auto').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('Progression de la synchronisation')).toBeInTheDocument()
+    expect(screen.getByText(/Créé le/)).toBeInTheDocument()
   })
 
   it('calls notFound when document is not found', async () => {

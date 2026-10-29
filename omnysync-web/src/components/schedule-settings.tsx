@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Loader2 } from 'lucide-react'
 import { toast } from '@/components/toast-provider'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 type Frequency = 'DAILY' | 'WEEKLY' | 'MONTHLY'
 
@@ -15,12 +16,13 @@ interface ScheduleSettingsProps {
   autoSyncEnabled: boolean
   syncFrequency: string | null
   canSchedule: boolean
+  locale?: string
 }
 
-const FREQUENCY_LABELS: Record<Frequency, string> = {
-  DAILY: 'Daily',
-  WEEKLY: 'Weekly',
-  MONTHLY: 'Monthly',
+const FREQUENCY_KEYS: Record<Frequency, string> = {
+  DAILY: 'DOC_FREQ_DAILY',
+  WEEKLY: 'DOC_FREQ_WEEKLY',
+  MONTHLY: 'DOC_FREQ_MONTHLY',
 }
 
 function initialFrequency(value: string | null): Frequency {
@@ -32,8 +34,11 @@ export function ScheduleSettings({
   autoSyncEnabled,
   syncFrequency,
   canSchedule,
+  locale,
 }: ScheduleSettingsProps) {
   const router = useRouter()
+  const { t, tf } = useTranslations(locale)
+  const frequencyLabel = (value: Frequency) => t(FREQUENCY_KEYS[value])
   const [enabled, setEnabled] = useState(autoSyncEnabled)
   const [frequency, setFrequency] = useState<Frequency>(initialFrequency(syncFrequency))
   const [loading, setLoading] = useState(false)
@@ -46,7 +51,7 @@ export function ScheduleSettings({
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      throw new Error(data.error || data.message || 'Schedule could not be updated')
+      throw new Error(data.error || data.message || t('DOC_SCHEDULE_ERROR'))
     }
     return data
   }
@@ -58,15 +63,19 @@ export function ScheduleSettings({
       if (nextEnabled) {
         await patch({ action: 'schedule', frequency })
         setEnabled(true)
-        toast.success(`Scheduled sync enabled (${FREQUENCY_LABELS[frequency].toLowerCase()})`)
+        toast.success(
+          tf('DOC_SCHEDULE_ENABLED_TOAST', {
+            frequency: frequencyLabel(frequency).toLowerCase(),
+          })
+        )
       } else {
         await patch({ action: 'disable_schedule' })
         setEnabled(false)
-        toast.success('Scheduled sync disabled')
+        toast.success(t('DOC_SCHEDULE_DISABLED_TOAST'))
       }
       router.refresh()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Schedule could not be updated')
+      toast.error(error instanceof Error ? error.message : t('DOC_SCHEDULE_ERROR'))
     } finally {
       setLoading(false)
     }
@@ -79,10 +88,14 @@ export function ScheduleSettings({
     setLoading(true)
     try {
       await patch({ action: 'schedule', frequency: nextFrequency })
-      toast.success(`Scheduled sync set to ${FREQUENCY_LABELS[nextFrequency].toLowerCase()}`)
+      toast.success(
+        tf('DOC_SCHEDULE_SET_TOAST', {
+          frequency: frequencyLabel(nextFrequency).toLowerCase(),
+        })
+      )
       router.refresh()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Schedule could not be updated')
+      toast.error(error instanceof Error ? error.message : t('DOC_SCHEDULE_ERROR'))
     } finally {
       setLoading(false)
     }
@@ -92,11 +105,9 @@ export function ScheduleSettings({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-[13px] font-medium">Auto sync</p>
+          <p className="text-[13px] font-medium">{t('DOC_SCHEDULE_AUTO_SYNC')}</p>
           <p className="text-xs text-muted-foreground">
-            {canSchedule
-              ? 'Run this sync on a recurring schedule'
-              : 'Scheduled sync requires the Pro plan'}
+            {canSchedule ? t('DOC_SCHEDULE_DESC') : t('DOC_SCHEDULE_PRO_REQUIRED')}
           </p>
         </div>
         {loading ? (
@@ -106,7 +117,7 @@ export function ScheduleSettings({
             checked={enabled}
             onCheckedChange={toggle}
             disabled={!canSchedule || loading}
-            aria-label="Auto sync enabled"
+            aria-label={t('DOC_SCHEDULE_ARIA')}
           />
         )}
       </div>
@@ -114,27 +125,27 @@ export function ScheduleSettings({
       {!canSchedule && (
         <p className="text-xs text-muted-foreground">
           <Link href="/pricing" className="underline underline-offset-4 hover:text-foreground">
-            View plans
+            {t('DOC_SCHEDULE_VIEW_PLANS')}
           </Link>{' '}
-          to enable scheduled sync.
+          {t('DOC_SCHEDULE_ENABLE_HINT')}
         </p>
       )}
 
       {canSchedule && (
         <div className="border-t border-border pt-4">
-          <p className="text-xs text-muted-foreground">Frequency</p>
+          <p className="text-xs text-muted-foreground">{t('DOC_SCHEDULE_FREQUENCY')}</p>
           <Select
             value={frequency}
             onValueChange={(value) => void changeFrequency(value as Frequency)}
             disabled={!enabled || loading}
           >
-            <SelectTrigger className="mt-1.5 w-full" aria-label="Sync frequency">
-              <span>{FREQUENCY_LABELS[frequency]}</span>
+            <SelectTrigger className="mt-1.5 w-full" aria-label={t('DOC_SCHEDULE_FREQ_ARIA')}>
+              <span>{frequencyLabel(frequency)}</span>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="DAILY">Daily</SelectItem>
-              <SelectItem value="WEEKLY">Weekly</SelectItem>
-              <SelectItem value="MONTHLY">Monthly</SelectItem>
+              <SelectItem value="DAILY">{t('DOC_FREQ_DAILY')}</SelectItem>
+              <SelectItem value="WEEKLY">{t('DOC_FREQ_WEEKLY')}</SelectItem>
+              <SelectItem value="MONTHLY">{t('DOC_FREQ_MONTHLY')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
