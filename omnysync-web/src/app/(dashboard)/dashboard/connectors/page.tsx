@@ -33,7 +33,14 @@ import { toast } from '@/components/toast-provider'
 
 const ConnectorDialog = dynamic(
   () => import('@/components/connector-dialog').then((mod) => ({ default: mod.ConnectorDialog })),
-  { ssr: false, loading: () => <div className="p-4">Loading...</div> }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="p-4" aria-hidden="true">
+        <div className="h-4 w-24 animate-pulse rounded-[2px] bg-muted" />
+      </div>
+    ),
+  }
 )
 
 interface Connector {

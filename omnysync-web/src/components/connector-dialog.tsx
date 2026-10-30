@@ -12,54 +12,106 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 const PLATFORM_FIELDS: Record<
   string,
-  { label: string; key: string; type: string; placeholder: string }[]
+  {
+    labelKey: string
+    key: string
+    type: string
+    placeholder?: string
+    placeholderKey?: string
+  }[]
 > = {
   WORDPRESS: [
-    { label: 'Site URL', key: 'siteUrl', type: 'text', placeholder: 'https://example.com' },
-    { label: 'Username', key: 'username', type: 'text', placeholder: 'admin' },
     {
-      label: 'Application Password',
+      labelKey: 'CONNECTOR_FIELD_SITE_URL',
+      key: 'siteUrl',
+      type: 'text',
+      placeholder: 'https://example.com',
+    },
+    { labelKey: 'CONNECTOR_FIELD_USERNAME', key: 'username', type: 'text', placeholder: 'admin' },
+    {
+      labelKey: 'CONNECTOR_FIELD_APP_PASSWORD',
       key: 'password',
       type: 'password',
       placeholder: 'XXXX XXXX XXXX XXXX',
     },
   ],
   GHOST: [
-    { label: 'Site URL', key: 'siteUrl', type: 'text', placeholder: 'https://example.com' },
-    { label: 'Admin API Key', key: 'adminApiKey', type: 'password', placeholder: 'id:secret' },
+    {
+      labelKey: 'CONNECTOR_FIELD_SITE_URL',
+      key: 'siteUrl',
+      type: 'text',
+      placeholder: 'https://example.com',
+    },
+    {
+      labelKey: 'CONNECTOR_FIELD_ADMIN_API_KEY',
+      key: 'adminApiKey',
+      type: 'password',
+      placeholder: 'id:secret',
+    },
   ],
   WEBFLOW: [
-    { label: 'Site ID', key: 'siteId', type: 'text', placeholder: 'abc123...' },
-    { label: 'Collection ID', key: 'collectionId', type: 'text', placeholder: 'collection ID' },
-    { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'token...' },
+    { labelKey: 'CONNECTOR_FIELD_SITE_ID', key: 'siteId', type: 'text', placeholder: 'abc123...' },
+    {
+      labelKey: 'CONNECTOR_FIELD_COLLECTION_ID',
+      key: 'collectionId',
+      type: 'text',
+      placeholderKey: 'CONNECTOR_PLACEHOLDER_COLLECTION_ID',
+    },
+    {
+      labelKey: 'CONNECTOR_FIELD_ACCESS_TOKEN',
+      key: 'accessToken',
+      type: 'password',
+      placeholder: 'token...',
+    },
   ],
   SHOPIFY: [
     {
-      label: 'Shop Domain',
+      labelKey: 'CONNECTOR_FIELD_SHOP_DOMAIN',
       key: 'shopDomain',
       type: 'text',
       placeholder: 'my-store.myshopify.com',
     },
-    { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'shpat_...' },
+    {
+      labelKey: 'CONNECTOR_FIELD_ACCESS_TOKEN',
+      key: 'accessToken',
+      type: 'password',
+      placeholder: 'shpat_...',
+    },
   ],
   AIRTABLE: [
-    { label: 'API Key', key: 'apiKey', type: 'password', placeholder: 'key...' },
-    { label: 'Base ID', key: 'baseId', type: 'text', placeholder: 'app...' },
+    { labelKey: 'CONNECTOR_FIELD_API_KEY', key: 'apiKey', type: 'password', placeholder: 'key...' },
+    { labelKey: 'CONNECTOR_FIELD_BASE_ID', key: 'baseId', type: 'text', placeholder: 'app...' },
   ],
   CONTENTFUL: [
-    { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'token...' },
-    { label: 'Space ID', key: 'spaceId', type: 'text', placeholder: 'space ID' },
+    {
+      labelKey: 'CONNECTOR_FIELD_ACCESS_TOKEN',
+      key: 'accessToken',
+      type: 'password',
+      placeholder: 'token...',
+    },
+    {
+      labelKey: 'CONNECTOR_FIELD_SPACE_ID',
+      key: 'spaceId',
+      type: 'text',
+      placeholderKey: 'CONNECTOR_PLACEHOLDER_SPACE_ID',
+    },
   ],
   MEDIUM: [
-    { label: 'Access Token', key: 'accessToken', type: 'password', placeholder: 'token...' },
     {
-      label: 'Publication ID (optional)',
+      labelKey: 'CONNECTOR_FIELD_ACCESS_TOKEN',
+      key: 'accessToken',
+      type: 'password',
+      placeholder: 'token...',
+    },
+    {
+      labelKey: 'CONNECTOR_FIELD_PUBLICATION_ID',
       key: 'publicationId',
       type: 'text',
-      placeholder: 'publication ID',
+      placeholderKey: 'CONNECTOR_PLACEHOLDER_PUBLICATION_ID',
     },
   ],
 }
@@ -72,6 +124,7 @@ interface ConnectorDialogProps {
 }
 
 export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDialogProps) {
+  const { t, tf } = useTranslations()
   const [fields, setFields] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -134,7 +187,7 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Connection failed')
+        throw new Error(data.error || t('CONNECTOR_CONNECTION_FAILED'))
       }
 
       setSuccess(true)
@@ -159,16 +212,6 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
     MEDIUM: 'Medium',
   }
 
-  const connectorDescriptions: Record<string, string> = {
-    WORDPRESS: 'Connect your WordPress site via REST API',
-    GHOST: 'Connect your Ghost blog via Admin API',
-    WEBFLOW: 'Connect your Webflow CMS',
-    SHOPIFY: 'Connect your Shopify store',
-    AIRTABLE: 'Synchronize your Airtable bases',
-    CONTENTFUL: 'Connect your Contentful space',
-    MEDIUM: 'Publish your articles to Medium',
-  }
-
   return (
     <Dialog
       open={open}
@@ -178,24 +221,26 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Connect {connectorName[type] || type}</DialogTitle>
-          <DialogDescription>{connectorDescriptions[type]}</DialogDescription>
+          <DialogTitle>
+            {tf('CONNECTOR_DIALOG_TITLE', { name: connectorName[type] || type })}
+          </DialogTitle>
+          <DialogDescription>{t(`CONNECTOR_DESC_${type}`)}</DialogDescription>
         </DialogHeader>
 
         {success ? (
           <div className="flex flex-col items-center gap-3 py-8">
             <CheckCircle className="w-10 h-10 text-success" aria-hidden="true" />
-            <p className="text-sm text-muted-foreground">Connected successfully!</p>
+            <p className="text-sm text-muted-foreground">{t('CONNECTOR_CONNECTED_SUCCESS')}</p>
           </div>
         ) : (
           <div className="space-y-4">
             {platformFields.map((field) => (
               <div key={field.key} className="space-y-1.5">
-                <Label htmlFor={field.key}>{field.label}</Label>
+                <Label htmlFor={field.key}>{t(field.labelKey)}</Label>
                 <Input
                   id={field.key}
                   type={field.type}
-                  placeholder={field.placeholder}
+                  placeholder={field.placeholderKey ? t(field.placeholderKey) : field.placeholder}
                   value={fields[field.key] || ''}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     updateField(field.key, e.target.value)
@@ -216,12 +261,11 @@ export function ConnectorDialog({ type, open, onClose, onSuccess }: ConnectorDia
 
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={onClose}>
-                Cancel
+                {t('UI_CANCEL')}
               </Button>
-              {}
               <Button className="flex-1" onClick={handleConnect} disabled={loading}>
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />}
-                Connect
+                {t('CONNECTOR_CONNECT_ACTION')}
               </Button>
             </div>
           </div>

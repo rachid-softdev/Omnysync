@@ -3,6 +3,7 @@ import { IBM_Plex_Mono, Schibsted_Grotesk } from 'next/font/google'
 import { headers } from 'next/headers'
 import './globals.css'
 import { Providers } from '@/components/providers'
+import { PublicSkipLink } from '@/components/public-skip-link'
 import { Header } from '@/components/header'
 import { getLocaleFromHeaders, t } from '@/lib/i18n'
 import { getBaseUrl } from '@/lib/metadata'
@@ -80,6 +81,7 @@ export default async function RootLayout({
     >
       <body className="min-h-screen bg-background">
         <Providers>
+          <PublicSkipLink />
           <Header />
           {children}
         </Providers>

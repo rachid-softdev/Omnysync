@@ -65,6 +65,14 @@ describe('Home page', () => {
     expect(screen.getAllByText('4 sources · 5 destinations').length).toBeGreaterThan(0)
   })
 
+  it('gives the hero heading a readable accessible name', async () => {
+    render(await Home())
+
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+      'Sync your content one destination at a time'
+    )
+  })
+
   it('renders CTA buttons', async () => {
     render(await Home())
     expect(screen.getByText('Start Free')).toBeInTheDocument()

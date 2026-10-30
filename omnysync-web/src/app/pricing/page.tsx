@@ -82,7 +82,7 @@ export default async function PricingPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-background">
+    <main id="main-content" className="min-h-screen bg-background">
       <div className="mx-auto max-w-[1200px] px-6 pb-20 pt-28">
         {/* Header */}
         <div className="animate-enter-up flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
@@ -281,6 +281,6 @@ export default async function PricingPage() {
           </p>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

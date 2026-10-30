@@ -204,6 +204,51 @@ describe('DocumentDetailPage', () => {
     expect(screen.getByText(/Créé le/)).toBeInTheDocument()
   })
 
+  it('explains an empty preview without contradicting a successful sync', async () => {
+    const { prisma } = await import('@/lib/prisma')
+    ;(prisma.document.findUnique as any).mockResolvedValueOnce({
+      ...mockDocument,
+      htmlContent: null,
+      content: null,
+    })
+
+    const element = await DocumentDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
+    render(element)
+
+    expect(screen.getByText('No stored preview')).toBeInTheDocument()
+    expect(screen.getByText(/sync status reflects delivery/i)).toBeInTheDocument()
+  })
+
+  it('renders plain content when no HTML preview exists', async () => {
+    const { prisma } = await import('@/lib/prisma')
+    ;(prisma.document.findUnique as any).mockResolvedValueOnce({
+      ...mockDocument,
+      htmlContent: null,
+      content: 'Plain text body',
+    })
+
+    const element = await DocumentDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
+    render(element)
+
+    expect(screen.getByText('Plain text body')).toBeInTheDocument()
+  })
+
+  it('localizes the empty preview explanation', async () => {
+    localeState.lang = 'fr'
+    const { prisma } = await import('@/lib/prisma')
+    ;(prisma.document.findUnique as any).mockResolvedValueOnce({
+      ...mockDocument,
+      htmlContent: null,
+      content: null,
+    })
+
+    const element = await DocumentDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
+    render(element)
+
+    expect(screen.getByText('Aucun aperçu conservé')).toBeInTheDocument()
+    expect(screen.getByText(/statut de synchronisation reflète la livraison/i)).toBeInTheDocument()
+  })
+
   it('calls notFound when document is not found', async () => {
     mockNotFound.mockImplementationOnce(() => {
       throw new Error('NOT_FOUND')

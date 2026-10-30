@@ -19,7 +19,10 @@ export default async function NotFound() {
   const tr = (key: string) => t(key, locale)
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
+    <main
+      id="main-content"
+      className="min-h-screen flex flex-col items-center justify-center bg-background p-6"
+    >
       <div className="text-center max-w-md">
         <h1 className="text-9xl font-bold text-primary">404</h1>
         <h2 className="text-2xl font-semibold mt-4 mb-2">{tr('NOT_FOUND_TITLE')}</h2>
@@ -42,6 +45,6 @@ export default async function NotFound() {
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

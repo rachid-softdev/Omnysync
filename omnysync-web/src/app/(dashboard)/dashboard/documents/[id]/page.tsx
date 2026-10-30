@@ -253,8 +253,17 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                         __html: document.htmlContent.substring(0, 2000) + '...',
                       }}
                     />
+                  ) : document.content ? (
+                    <div className="max-h-96 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                      {document.content}
+                    </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">{t('DOC_NO_CONTENT')}</p>
+                    <div className="space-y-1.5">
+                      <p className="text-sm font-medium text-foreground">{t('DOC_NO_CONTENT')}</p>
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        {t('DOC_NO_CONTENT_HINT')}
+                      </p>
+                    </div>
                   )}
                 </div>
               </CardContent>

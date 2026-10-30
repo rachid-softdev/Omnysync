@@ -23,7 +23,10 @@ export default async function AuthErrorPage({ searchParams }: AuthErrorPageProps
   const body = code === 'OAuthAccountNotLinked' ? t('auth_oauth_linked') : t('auth_error_body')
 
   return (
-    <div className="grid min-h-screen place-items-center bg-background px-6 py-16">
+    <main
+      id="main-content"
+      className="grid min-h-screen place-items-center bg-background px-6 py-16"
+    >
       <div className="w-full max-w-md border border-border bg-card p-8">
         <div className="grid size-9 place-items-center rounded-[2px] border border-destructive/20 bg-destructive-soft text-destructive">
           <AlertCircle className="size-4" />
@@ -40,6 +43,6 @@ export default async function AuthErrorPage({ searchParams }: AuthErrorPageProps
           {t('auth_error_back')}
         </Link>
       </div>
-    </div>
+    </main>
   )
 }
