@@ -57,6 +57,14 @@ describe("resolveSafeOutboundTarget", () => {
     await expect(
       resolveSafeOutboundTarget("http://[::1]/hook"),
     ).rejects.toBeInstanceOf(UnsafeOutboundUrlError);
+    await expect(
+      resolveSafeOutboundTarget("http://[fec0::1]/hook"),
+    ).rejects.toBeInstanceOf(UnsafeOutboundUrlError);
+    await expect(
+      resolveSafeOutboundTarget(
+        "http://[2001:0:4136:e378:8000:63bf:3fff:fdd2]/hook",
+      ),
+    ).rejects.toBeInstanceOf(UnsafeOutboundUrlError);
 
     expect(mockLookup).not.toHaveBeenCalled();
   });
@@ -112,6 +120,17 @@ describe("createPinnedLookup", () => {
     lookup("example.com", {}, callback);
 
     expect(callback).toHaveBeenCalledWith(null, "93.184.216.34", 4);
+  });
+
+  it("returns an address array when autoSelectFamily requests all addresses", () => {
+    const lookup = createPinnedLookup("93.184.216.34", 4);
+    const callback = vi.fn();
+
+    lookup("example.com", { all: true }, callback);
+
+    expect(callback).toHaveBeenCalledWith(null, [
+      { address: "93.184.216.34", family: 4 },
+    ]);
   });
 });
 

@@ -116,9 +116,14 @@ function isPrivateIPv6(address: string): boolean {
     value.startsWith("fe9") ||
     value.startsWith("fea") ||
     value.startsWith("feb") ||
+    value.startsWith("fec") || // fec0::/10 site-local (deprecated)
+    value.startsWith("fed") ||
+    value.startsWith("fee") ||
+    value.startsWith("fef") ||
     value.startsWith("ff") || // multicast
     value.startsWith("64:ff9b:") || // NAT64: can embed a private IPv4 address
     value.startsWith("2002:") || // 6to4: can embed a private IPv4 address
+    value.startsWith("2001:0:") || // Teredo: can embed a private IPv4 address
     value.startsWith("2001:db8") // documentation range
   );
 }

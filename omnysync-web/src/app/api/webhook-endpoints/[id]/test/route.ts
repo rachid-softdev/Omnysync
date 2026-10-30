@@ -91,7 +91,6 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
           message: `Test webhook - Status: ${response.status}`,
           details: {
             webhookId: id,
-            url: webhook.url,
             responseStatus: response.status,
           },
         },
@@ -119,7 +118,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
           action: 'webhook_test',
           status: 'ERROR',
           message: `Test échoué: ${errorMessage}`,
-          details: { webhookId: id, url: webhook.url, error: errorMessage },
+          details: { webhookId: id, error: errorMessage },
         },
       })
 

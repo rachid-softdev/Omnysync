@@ -110,7 +110,15 @@ export function createPinnedLookup(
   address: string,
   family: 4 | 6,
 ): LookupFunction {
-  return (_hostname, _options, callback) => {
+  return (_hostname, options, callback) => {
+    // Node's autoSelectFamily path calls lookup with `all: true` and expects
+    // an array. Returning a string there makes the request fail with
+    // ERR_INVALID_IP_ADDRESS before it reaches the pinned address.
+    if (options?.all) {
+      callback(null, [{ address, family }]);
+      return;
+    }
+
     callback(null, address, family);
   };
 }
