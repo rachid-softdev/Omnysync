@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { t, getLocaleFromHeaders } from '../index'
+import fr from '../fr.json'
 
 describe('t()', () => {
   it('returns the translation for a known key in the specified locale', () => {
@@ -45,6 +46,14 @@ describe('t()', () => {
   it('returns key for empty string key', () => {
     // An empty key won't be in translations, so it returns itself
     expect(t('', 'en')).toBe('')
+  })
+})
+
+describe('French dictionary integrity', () => {
+  it('does not contain question marks corrupted inside words', () => {
+    const corrupted = Object.entries(fr).filter(([, value]) => /\w\?\w/.test(value))
+
+    expect(corrupted).toEqual([])
   })
 })
 

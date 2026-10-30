@@ -361,6 +361,7 @@ describe('webflowConfigSchema', () => {
   it('accepts valid Webflow config', () => {
     const result = webflowConfigSchema.safeParse({
       siteId: 'site-123',
+      collectionId: 'collection-123',
       accessToken: 'token-abc',
     })
     expect(result.success).toBe(true)
@@ -369,6 +370,15 @@ describe('webflowConfigSchema', () => {
   it('rejects empty siteId', () => {
     const result = webflowConfigSchema.safeParse({
       siteId: '',
+      collectionId: 'collection-123',
+      accessToken: 'token',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects a missing collectionId', () => {
+    const result = webflowConfigSchema.safeParse({
+      siteId: 'site-123',
       accessToken: 'token',
     })
     expect(result.success).toBe(false)

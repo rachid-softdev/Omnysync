@@ -13,12 +13,92 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
       update: vi.fn(),
+      findUnique: vi.fn(),
+    },
+    userOrganization: {
+      findFirst: vi.fn(),
     },
   },
 }))
 
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+
+const sampleUser = {
+  id: 'user-1',
+  name: 'Ada Lovelace',
+  email: 'ada@example.com',
+  image: null,
+}
+
+describe('GET /api/user/profile', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    vi.mocked(auth).mockResolvedValue({
+      user: { id: 'user-1', email: 'ada@example.com' },
+    } as any)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(sampleUser as any)
+    vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue({
+      organization: { id: 'org-1', name: 'Analytical Engines' },
+    } as any)
+  })
+
+  it('should return 401 when unauthenticated', async () => {
+    vi.mocked(auth).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/user/profile/route')
+    const response = await GET()
+
+    expect(response.status).toBe(401)
+    expect(prisma.user.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('should return 404 when the user no longer exists', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/user/profile/route')
+    const response = await GET()
+
+    expect(response.status).toBe(404)
+  })
+
+  it('should return safe profile fields and the current organization', async () => {
+    const { GET } = await import('@/app/api/user/profile/route')
+    const response = await GET()
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data).toEqual({
+      ...sampleUser,
+      organization: { id: 'org-1', name: 'Analytical Engines' },
+    })
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      select: { id: true, name: true, email: true, image: true },
+    })
+  })
+
+  it('should return a null organization when the user has no membership', async () => {
+    vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null)
+
+    const { GET } = await import('@/app/api/user/profile/route')
+    const response = await GET()
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.organization).toBeNull()
+  })
+
+  it('should return 500 when the profile query fails', async () => {
+    vi.mocked(prisma.user.findUnique).mockRejectedValue(new Error('DB down'))
+
+    const { GET } = await import('@/app/api/user/profile/route')
+    const response = await GET()
+
+    expect(response.status).toBe(500)
+  })
+})
 
 describe('PATCH /api/user/profile', () => {
   const makeRequest = (body: string) =>

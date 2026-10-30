@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, Plus, Webhook, Trash2, Play, Copy } from 'lucide-react'
+import { Loader2, Plus, Webhook, Trash2, Play } from 'lucide-react'
 import { toast } from '@/components/toast-provider'
 import {
   AlertDialog,
@@ -44,7 +44,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { useTranslations } from '@/lib/i18n/useTranslations'
-import { formatDateTime, detectClientLocale } from '@/lib/format-date'
 import { useBatchSelect } from '@/hooks/use-batch-select'
 import { BatchActionBar } from '@/components/batch-action-bar'
 import { PageHeader, PageShell } from '@/components/page-header'
@@ -56,15 +55,12 @@ interface WebhookEndpoint {
   connectorName?: string
   type: string
   url: string
-  secret?: string
   isActive: boolean
   createdAt: string
-  lastTriggeredAt?: string
 }
 
 export default function WebhooksPage() {
-  const { t } = useTranslations()
-  const locale = detectClientLocale()
+  const { t, tf } = useTranslations()
   const [loading, setLoading] = useState(true)
   const [webhooks, setWebhooks] = useState<WebhookEndpoint[]>([])
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -76,6 +72,7 @@ export default function WebhooksPage() {
 
   const { selectedIds, selectedCount, isAllSelected, toggle, selectAll, clearSelection } =
     useBatchSelect(webhooks)
+  const activeCount = webhooks.filter((webhook) => webhook.isActive).length
 
   const handleBatchDelete = useCallback(async () => {
     const ids = Array.from(selectedIds)
@@ -91,10 +88,17 @@ export default function WebhooksPage() {
         console.error(e)
       }
     }
-    toast.success(`${success} webhook(s) deleted`)
+    toast.success(
+      tf(
+        success === 1 ? 'WEBHOOKS_TOAST_BATCH_DELETED_ONE' : 'WEBHOOKS_TOAST_BATCH_DELETED_OTHER',
+        {
+          count: success,
+        }
+      )
+    )
     clearSelection()
     setBatchDeleteConfirmOpen(false)
-  }, [selectedIds, clearSelection])
+  }, [selectedIds, clearSelection, tf])
 
   // Form state
   const [newWebhook, setNewWebhook] = useState({
@@ -118,11 +122,11 @@ export default function WebhooksPage() {
           setPlanGate(payload.upgradeUrl || '/pricing')
           return
         }
-        toast.error(`Failed to load webhooks (${res.status}). Refresh the page to try again.`)
+        toast.error(tf('WEBHOOKS_TOAST_LOAD_FAILED', { status: res.status }))
       }
     } catch (e) {
       console.error(e)
-      toast.error('Unable to connect to the server. Check your internet connection.')
+      toast.error(t('WEBHOOKS_TOAST_CONNECT'))
     } finally {
       setLoading(false)
     }
@@ -146,11 +150,11 @@ export default function WebhooksPage() {
         setIsCreateOpen(false)
         setNewWebhook({ connectorId: '', type: 'WORDPRESS', url: '' })
       } else {
-        toast.error(`Failed to create webhook (${res.status}). Check your input and try again.`)
+        toast.error(tf('WEBHOOKS_TOAST_CREATE_FAILED', { status: res.status }))
       }
     } catch (e) {
       console.error(e)
-      toast.error('Unable to create webhook. Check your connection and try again.')
+      toast.error(t('WEBHOOKS_TOAST_CREATE_ERROR'))
     }
   }
 
@@ -160,13 +164,13 @@ export default function WebhooksPage() {
       const res = await fetch(`/api/webhook-endpoints/${deleteTarget}`, { method: 'DELETE' })
       if (res.ok) {
         setWebhooks(webhooks.filter((w) => w.id !== deleteTarget))
-        toast.success('Webhook deleted')
+        toast.success(t('WEBHOOKS_TOAST_DELETED'))
       } else {
-        toast.error(`Could not delete webhook (${res.status}). Try again or contact support.`)
+        toast.error(tf('WEBHOOKS_TOAST_DELETE_FAILED', { status: res.status }))
       }
     } catch (e) {
       console.error(e)
-      toast.error('Could not delete webhook. Check your connection and try again.')
+      toast.error(t('WEBHOOKS_TOAST_DELETE_ERROR'))
     } finally {
       setDeleteTarget(null)
     }
@@ -183,11 +187,15 @@ export default function WebhooksPage() {
       if (res.ok) {
         setWebhooks(webhooks.map((w) => (w.id === id ? { ...w, isActive } : w)))
       } else {
-        toast.error(`Could not ${isActive ? 'enable' : 'disable'} webhook (${res.status}).`)
+        toast.error(
+          tf(isActive ? 'WEBHOOKS_TOAST_ENABLE_FAILED' : 'WEBHOOKS_TOAST_DISABLE_FAILED', {
+            status: res.status,
+          })
+        )
       }
     } catch (e) {
       console.error(e)
-      toast.error('Could not update webhook. Check your connection and try again.')
+      toast.error(t('WEBHOOKS_TOAST_UPDATE_ERROR'))
     }
   }
 
@@ -198,27 +206,28 @@ export default function WebhooksPage() {
       const data = await res.json()
 
       if (res.ok && data.success) {
-        toast.success('Test webhook sent successfully!')
+        toast.success(t('WEBHOOKS_TOAST_TEST_SUCCESS'))
       } else {
-        toast.error(`Test failed: ${data.error || 'Unknown error. Verify the endpoint URL.'}`)
+        toast.error(
+          tf('WEBHOOKS_TOAST_TEST_FAILED', {
+            error: data.error || t('WEBHOOKS_TOAST_TEST_UNKNOWN'),
+          })
+        )
       }
     } catch {
-      toast.error('Could not send test to webhook. Check that the endpoint URL is reachable.')
+      toast.error(t('WEBHOOKS_TOAST_TEST_ERROR'))
     } finally {
       setTestingId(null)
     }
-  }
-
-  const copySecret = (secret: string) => {
-    navigator.clipboard.writeText(secret)
-    toast.success('Secret copied to clipboard')
   }
 
   if (planGate) {
     return (
       <PageShell>
         <PageHeader
-          eyebrow={`WEBHOOKS / ${String(webhooks.length).padStart(2, '0')}`}
+          eyebrow={tf('WEBHOOKS_EYEBROW', {
+            count: String(webhooks.length).padStart(2, '0'),
+          })}
           title={t('WEBHOOKS_TITLE')}
           description={t('WEBHOOKS_SUBTITLE')}
         />
@@ -235,7 +244,9 @@ export default function WebhooksPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow={`WEBHOOKS / ${String(webhooks.length).padStart(2, '0')}`}
+        eyebrow={tf('WEBHOOKS_EYEBROW', {
+          count: String(webhooks.length).padStart(2, '0'),
+        })}
         title={t('WEBHOOKS_TITLE')}
         description={t('WEBHOOKS_SUBTITLE')}
         actions={
@@ -249,20 +260,18 @@ export default function WebhooksPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>{t('WEBHOOKS_CREATE_TITLE')}</DialogTitle>
-                <DialogDescription>
-                  Configure an endpoint to receive notifications from your platforms.
-                </DialogDescription>
+                <DialogDescription>{t('WEBHOOKS_CREATE_DESC')}</DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4 py-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="webhook-connector">Connector</Label>
+                  <Label htmlFor="webhook-connector">{t('UI_CONNECTOR')}</Label>
                   <Select
                     value={newWebhook.connectorId}
                     onValueChange={(v) => setNewWebhook({ ...newWebhook, connectorId: v })}
                   >
                     <SelectTrigger id="webhook-connector" className="w-full">
-                      <SelectValue placeholder="Select a connector" />
+                      <SelectValue placeholder={t('WEBHOOKS_SELECT_CONNECTOR')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="connector-1">WordPress - mon-site.com</SelectItem>
@@ -273,7 +282,7 @@ export default function WebhooksPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="webhook-type">Type</Label>
+                  <Label htmlFor="webhook-type">{t('UI_TYPE')}</Label>
                   <Select
                     value={newWebhook.type}
                     onValueChange={(v) => setNewWebhook({ ...newWebhook, type: v })}
@@ -291,7 +300,7 @@ export default function WebhooksPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="webhook-url">Endpoint URL</Label>
+                  <Label htmlFor="webhook-url">{t('WEBHOOKS_ENDPOINT_URL')}</Label>
                   <Input
                     id="webhook-url"
                     placeholder="https://your-site.com/webhook"
@@ -300,17 +309,15 @@ export default function WebhooksPage() {
                       setNewWebhook({ ...newWebhook, url: e.target.value })
                     }
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Omnysync sends a signed POST request to this URL on every sync event.
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t('WEBHOOKS_URL_HELPER')}</p>
                 </div>
               </div>
 
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                  Cancel
+                  {t('WEBHOOKS_CANCEL')}
                 </Button>
-                <Button onClick={createWebhook}>Create</Button>
+                <Button onClick={createWebhook}>{t('WEBHOOKS_CREATE_SUBMIT')}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -324,7 +331,7 @@ export default function WebhooksPage() {
       ) : webhooks.length === 0 ? (
         <div className="mt-6 border border-border bg-card">
           <div className="flex items-center justify-between border-b border-border px-5 py-3 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-            <span>Endpoint registry</span>
+            <span>{t('WEBHOOKS_REGISTRY')}</span>
             <span>00</span>
           </div>
           <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:p-8">
@@ -332,13 +339,15 @@ export default function WebhooksPage() {
               <Webhook className="size-5" />
             </span>
             <div className="max-w-xl">
-              <p className="text-base font-semibold tracking-[-0.02em]">No webhooks configured</p>
+              <p className="text-base font-semibold tracking-[-0.02em]">
+                {t('WEBHOOKS_EMPTY_TITLE')}
+              </p>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                Create your first webhook to receive real-time notifications.
+                {t('WEBHOOKS_EMPTY_DESC')}
               </p>
               <Button className="mt-5" onClick={() => setIsCreateOpen(true)}>
                 <Plus />
-                Create webhook
+                {t('WEBHOOKS_CREATE')}
               </Button>
             </div>
           </div>
@@ -353,7 +362,7 @@ export default function WebhooksPage() {
               onClearSelection={clearSelection}
               actions={[
                 {
-                  label: 'Delete',
+                  label: t('WEBHOOKS_DELETE_ACTION'),
                   icon: <Trash2 className="size-4" />,
                   variant: 'destructive',
                   onClick: () => setBatchDeleteConfirmOpen(true),
@@ -369,7 +378,7 @@ export default function WebhooksPage() {
                   <TableHead className="hidden h-9 w-10 px-2 pr-0 sm:table-cell sm:px-4">
                     <Checkbox
                       id="select-all-webhooks"
-                      aria-label="Select all webhooks"
+                      aria-label={t('WEBHOOKS_SELECT_ALL')}
                       checked={isAllSelected}
                       onCheckedChange={(checked) => {
                         if (checked) selectAll()
@@ -378,16 +387,13 @@ export default function WebhooksPage() {
                     />
                   </TableHead>
                   <TableHead className="h-9 px-2 font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
-                    Endpoint
+                    {t('WEBHOOKS_ENDPOINT')}
                   </TableHead>
                   <TableHead className="h-9 w-8 px-1 font-mono text-[9px] uppercase tracking-[0.14em] sm:w-auto sm:px-4">
-                    <span className="hidden sm:inline">Status</span>
-                  </TableHead>
-                  <TableHead className="hidden h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] md:table-cell">
-                    Last triggered
+                    <span className="hidden sm:inline">{t('UI_STATUS')}</span>
                   </TableHead>
                   <TableHead className="h-9 px-2 text-right font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">{t('WEBHOOKS_ACTIONS')}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -398,7 +404,7 @@ export default function WebhooksPage() {
                       <Checkbox
                         checked={selectedIds.has(webhook.id)}
                         onCheckedChange={() => toggle(webhook.id)}
-                        aria-label={`Select ${webhook.type}`}
+                        aria-label={tf('WEBHOOKS_SELECT_ONE', { type: webhook.type })}
                       />
                     </TableCell>
                     <TableCell className="px-2 py-2.5 sm:px-4">
@@ -435,28 +441,23 @@ export default function WebhooksPage() {
                           aria-hidden="true"
                         />
                         <span className="hidden sm:inline">
-                          {webhook.isActive ? 'Active' : 'Inactive'}
+                          {webhook.isActive ? t('UI_ACTIVE') : t('UI_INACTIVE')}
                         </span>
                       </span>
-                    </TableCell>
-                    <TableCell className="hidden whitespace-nowrap px-4 py-2.5 font-mono text-[10px] tabular-nums text-muted-foreground md:table-cell">
-                      {webhook.lastTriggeredAt
-                        ? formatDateTime(webhook.lastTriggeredAt, locale)
-                        : 'Never'}
                     </TableCell>
                     <TableCell className="px-2 sm:px-4">
                       <div className="flex items-center justify-end gap-1">
                         <Switch
                           checked={webhook.isActive}
                           onCheckedChange={(checked) => toggleWebhook(webhook.id, checked)}
-                          aria-label={`Toggle ${webhook.type} webhook`}
+                          aria-label={tf('WEBHOOKS_TOGGLE', { type: webhook.type })}
                         />
                         <Button
                           variant="outline"
                           size="icon-sm"
                           onClick={() => testWebhook(webhook.id)}
                           disabled={testingId === webhook.id}
-                          aria-label="Send test event"
+                          aria-label={t('WEBHOOKS_TEST_EVENT')}
                         >
                           {testingId === webhook.id ? (
                             <Loader2 className="animate-spin" />
@@ -464,17 +465,6 @@ export default function WebhooksPage() {
                             <Play />
                           )}
                         </Button>
-                        {webhook.secret && (
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="hidden text-muted-foreground sm:inline-flex"
-                            onClick={() => copySecret(webhook.secret!)}
-                            aria-label="Copy signing secret"
-                          >
-                            <Copy />
-                          </Button>
-                        )}
                         <AlertDialog
                           open={deleteTarget === webhook.id}
                           onOpenChange={(open) => {
@@ -487,25 +477,24 @@ export default function WebhooksPage() {
                               size="icon-sm"
                               className="text-destructive hover:bg-destructive-soft"
                               onClick={() => setDeleteTarget(webhook.id)}
-                              aria-label="Delete webhook"
+                              aria-label={t('WEBHOOKS_DELETE')}
                             >
                               <Trash2 />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete webhook</AlertDialogTitle>
+                              <AlertDialogTitle>{t('WEBHOOKS_DELETE')}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete this webhook? This action is
-                                irreversible.
+                                {t('WEBHOOKS_DELETE_DESC')}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
-                                Cancel
+                                {t('WEBHOOKS_CANCEL')}
                               </AlertDialogCancel>
                               <AlertDialogAction onClick={confirmDeleteWebhook}>
-                                Delete
+                                {t('WEBHOOKS_DELETE_ACTION')}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -518,24 +507,31 @@ export default function WebhooksPage() {
             </Table>
             <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-2.5 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
               <span>
-                {webhooks.length} endpoint{webhooks.length === 1 ? '' : 's'}
+                {webhooks.length === 1
+                  ? t('WEBHOOKS_FOOTER_ENDPOINTS_ONE')
+                  : tf('WEBHOOKS_FOOTER_ENDPOINTS_OTHER', { count: webhooks.length })}
               </span>
-              <span>{webhooks.filter((webhook) => webhook.isActive).length} active</span>
+              <span>
+                {activeCount === 1
+                  ? t('WEBHOOKS_FOOTER_ACTIVE_ONE')
+                  : tf('WEBHOOKS_FOOTER_ACTIVE_OTHER', { count: activeCount })}
+              </span>
             </div>
           </div>
 
           <AlertDialog open={batchDeleteConfirmOpen} onOpenChange={setBatchDeleteConfirmOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete webhooks</AlertDialogTitle>
+                <AlertDialogTitle>{t('WEBHOOKS_DELETE_BATCH_TITLE')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete {selectedCount} webhook(s)? This action is
-                  irreversible.
+                  {tf('WEBHOOKS_DELETE_BATCH_DESC', { count: selectedCount })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleBatchDelete}>Delete</AlertDialogAction>
+                <AlertDialogCancel>{t('WEBHOOKS_CANCEL')}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleBatchDelete}>
+                  {t('WEBHOOKS_DELETE_ACTION')}
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

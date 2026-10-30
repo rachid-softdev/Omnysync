@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
+import { hasPermission } from '@/lib/auth/permissions'
 import { apiError } from '@/lib/api-error'
 
 export async function DELETE(
@@ -15,14 +16,20 @@ export async function DELETE(
   }
 
   const orgId = await getUserOrgId(session.user.id)
+
+  if (!(await hasPermission(session.user.id, orgId, 'connector:delete'))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const { id } = await params
 
-  // Verify the connector exists and belongs to the user's organization
+  // Verify the connector exists and belongs to the caller's organization.
+  // Do not filter by userId: admins must be able to disconnect connectors
+  // created by another teammate.
   const connector = await prisma.connector.findFirst({
     where: {
       id,
       organizationId: orgId,
-      userId: session.user.id,
     },
   })
 

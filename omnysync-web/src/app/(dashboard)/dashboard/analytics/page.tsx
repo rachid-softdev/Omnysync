@@ -27,7 +27,7 @@ import { useTranslations } from '@/lib/i18n/useTranslations'
 interface AnalyticsData {
   totalSyncs: number
   successRate: number
-  avgDuration: number
+  avgDuration: number | null
   totalDocuments: number
   activeConnectors: number
   failedSyncs: number
@@ -276,10 +276,12 @@ export default function AnalyticsPage() {
             <Clock className="size-4 text-muted-foreground/60" aria-hidden="true" />
           </div>
           <p className="mt-3 text-3xl font-semibold tabular-nums tracking-[-0.04em]">
-            {displayData.avgDuration}s
+            {displayData.avgDuration === null ? '—' : `${displayData.avgDuration}s`}
           </p>
           <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground/70">
-            {t('ANALYTICS_PER_SYNC')}
+            {displayData.avgDuration === null
+              ? t('ANALYTICS_DURATION_UNAVAILABLE')
+              : t('ANALYTICS_PER_SYNC')}
           </p>
         </div>
 

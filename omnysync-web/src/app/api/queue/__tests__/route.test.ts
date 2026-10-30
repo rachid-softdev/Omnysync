@@ -23,8 +23,10 @@ vi.mock('@/lib/prisma', () => ({
 
 // The queue handler resolves the plan to decide whether AI enrichment runs.
 vi.mock('@/lib/auth/subscription', () => ({
+  checkAndIncrementQuota: vi.fn(),
   getPlanLimits: vi.fn(() => ({ aiFeatures: true })),
   getUserPlan: vi.fn(async () => 'pro'),
+  decrementQuotaOnFailure: vi.fn(),
 }))
 
 vi.mock('@omnysync/core/services/sync', () => ({
@@ -55,6 +57,7 @@ import {
   markJobCompleted,
 } from '@omnysync/core/services/queue'
 import { uploadAllImages } from '@omnysync/core/services/image-upload'
+import { checkAndIncrementQuota, decrementQuotaOnFailure } from '@/lib/auth/subscription'
 import { prisma } from '@/lib/prisma'
 
 // ============================================================================
@@ -96,6 +99,7 @@ describe('POST /api/queue', () => {
     vi.mocked(isJobCompleted).mockReturnValue(false)
     vi.mocked(markJobCompleted).mockResolvedValue(undefined)
     vi.mocked(uploadAllImages).mockResolvedValue(undefined)
+    vi.mocked(checkAndIncrementQuota).mockResolvedValue({ allowed: true } as any)
   })
 
   afterEach(() => {
@@ -168,6 +172,18 @@ describe('POST /api/queue', () => {
     expect(markJobCompleted).toHaveBeenCalledWith('idem-001', syncResult)
   })
 
+  it('refunds the quota when a queued sync fails', async () => {
+    const syncResult = { success: false, error: 'publish failed', documentId: 'doc-1' }
+    vi.mocked(processJobWithRetry).mockResolvedValue(syncResult)
+
+    const { POST } = await import('@/app/api/queue/route')
+    const response = await POST(makeRequest(defaultPayload))
+
+    expect(response.status).toBe(200)
+    expect(decrementQuotaOnFailure).toHaveBeenCalledWith('user-1')
+    expect(uploadAllImages).not.toHaveBeenCalled()
+  })
+
   // ── sync_document sans userId (pas d'upload d'images) ───────────────────
 
   it('should fall back to the document owner when userId is missing from the payload', async () => {
@@ -226,6 +242,47 @@ describe('POST /api/queue', () => {
     expect(response.status).toBe(200)
     expect(data).toEqual(detectResult)
     expect(markJobCompleted).toHaveBeenCalledWith('idem-001', detectResult)
+  })
+
+  it('should refund quota when change detection finds no changes', async () => {
+    vi.mocked(processJobWithRetry).mockResolvedValue({
+      success: true,
+      changesDetected: false,
+    })
+
+    const { POST } = await import('@/app/api/queue/route')
+    const response = await POST(
+      makeRequest({
+        ...defaultPayload,
+        type: 'detect_changes',
+        payload: { documentId: 'doc-1', userId: 'user-1' },
+      })
+    )
+
+    expect(response.status).toBe(200)
+    expect(checkAndIncrementQuota).toHaveBeenCalledWith('user-1')
+    expect(decrementQuotaOnFailure).toHaveBeenCalledWith('user-1')
+  })
+
+  it('should return 403 without running change detection when quota is exceeded', async () => {
+    vi.mocked(checkAndIncrementQuota).mockResolvedValue({
+      allowed: false,
+      upgradeUrl: '/pricing',
+    } as any)
+
+    const { POST } = await import('@/app/api/queue/route')
+    const response = await POST(
+      makeRequest({
+        ...defaultPayload,
+        type: 'detect_changes',
+        payload: { documentId: 'doc-1', userId: 'user-1' },
+      })
+    )
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.code).toBe('QUOTA_EXCEEDED')
+    expect(processJobWithRetry).not.toHaveBeenCalled()
   })
 
   // ── detect_changes sans idempotencyKey ──────────────────────────────────

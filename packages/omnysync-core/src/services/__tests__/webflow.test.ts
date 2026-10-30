@@ -265,6 +265,7 @@ describe("Webflow Connector", () => {
         orgId,
         siteId,
         accessToken,
+        "collection-1",
       );
 
       expect(result.id).toBe("conn-1");
@@ -274,10 +275,17 @@ describe("Webflow Connector", () => {
           organizationId: orgId,
           type: "WEBFLOW",
           name: `Webflow - ${siteId}`,
-          config: { siteId },
+          config: { siteId, collectionId: "collection-1" },
           credentials: `enc_${accessToken}`,
         }),
       });
+    });
+
+    it("should reject a missing collection ID", async () => {
+      await expect(
+        saveWebflowConnector(userId, orgId, siteId, accessToken, ""),
+      ).rejects.toThrow("collection ID is required");
+      expect(prisma.connector.create).not.toHaveBeenCalled();
     });
   });
 

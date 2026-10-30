@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkPlanFeature } from '@/lib/auth/subscription'
+import { sendApprovalRequestEmail } from '@/lib/email'
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
 
@@ -148,7 +149,48 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // TODO: Envoyer un email au personnes qui peuvent approuver
+    // Notify the organization's reviewers. Email is best-effort: a mail
+    // provider failure must not roll back an approval request that was created.
+    try {
+      const [organization, reviewers] = await Promise.all([
+        prisma.organization.findUnique({
+          where: { id: membership.organizationId },
+          select: { name: true },
+        }),
+        prisma.userOrganization.findMany({
+          where: {
+            organizationId: membership.organizationId,
+            role: { in: ['OWNER', 'ADMIN'] },
+            userId: { not: session.user.id },
+          },
+          select: { user: { select: { email: true } } },
+        }),
+      ])
+
+      const approvalUrl = `${
+        process.env.NEXTAUTH_URL || 'http://localhost:3000'
+      }/dashboard/approvals`
+      const requesterName = session.user.name || session.user.email || 'A teammate'
+      const organizationName = organization?.name || 'your organization'
+
+      await Promise.allSettled(
+        reviewers
+          .map((membership) => membership.user.email)
+          .filter((email): email is string => Boolean(email))
+          .map((email) =>
+            sendApprovalRequestEmail({
+              to: email,
+              documentTitle: document.title,
+              organizationName,
+              requesterName,
+              approvalUrl,
+              expiresAt: approval.expiresAt,
+            })
+          )
+      )
+    } catch (emailError) {
+      console.error('Failed to send approval request emails:', emailError)
+    }
 
     return NextResponse.json({
       approval: {

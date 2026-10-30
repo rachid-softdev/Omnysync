@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -11,17 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  Loader2,
-  Zap,
-  FileText,
-  Users,
-  Image as ImageIcon,
-  Link2,
-  BarChart3,
-  Calendar,
-  Check,
-} from 'lucide-react'
+import { Loader2, Zap, FileText, Users, Link2, BarChart3, Calendar } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 import { formatDate, detectClientLocale } from '@/lib/format-date'
 import { PageHeader, PageShell } from '@/components/page-header'
@@ -63,9 +54,11 @@ interface UsageData {
 export default function UsagePage() {
   const { t } = useTranslations()
   const locale = detectClientLocale()
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [usage, setUsage] = useState<UsageData | null>(null)
   const [isFallbackData, setIsFallbackData] = useState(false)
+  const [planActionLoading, setPlanActionLoading] = useState(false)
 
   const fetchUsage = async () => {
     try {
@@ -91,34 +84,27 @@ export default function UsagePage() {
     fetchUsage()
   }, [])
 
-  // Demo data fallback
-  const demoUsage: UsageData = {
-    currentPlan: 'Pro',
-    billingCycle: {
-      start: '2026-05-01',
-      end: '2026-05-31',
-    },
-    syncUsed: 67,
-    syncLimit: 100,
-    documentsUsed: 45,
-    documentsLimit: -1, // Unlimited
-    connectorsUsed: 6,
-    connectorsLimit: 10,
-    teamUsed: 3,
-    teamLimit: 5,
-    aiSEO: 23,
-    aiImages: 12,
-    aiInterlinking: 8,
-    history: [
-      { month: '2026-05', syncs: 67, documents: 45, aiCalls: 43 },
-      { month: '2026-04', syncs: 52, documents: 38, aiCalls: 31 },
-      { month: '2026-03', syncs: 48, documents: 32, aiCalls: 28 },
-      { month: '2026-02', syncs: 35, documents: 25, aiCalls: 19 },
-      { month: '2026-01', syncs: 28, documents: 20, aiCalls: 12 },
-    ],
-  }
+  const handleChangePlan = async () => {
+    setPlanActionLoading(true)
 
-  const displayUsage = usage || demoUsage
+    try {
+      const res = await fetch('/api/stripe/portal')
+      if (res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { url?: string }
+        if (data.url) {
+          window.location.href = data.url
+          return
+        }
+      }
+    } catch {
+      // Fall through to the plan picker when the portal is unavailable.
+    } finally {
+      setPlanActionLoading(false)
+    }
+
+    // Free plans have no Stripe customer, so the portal returns 404.
+    router.push('/pricing')
+  }
 
   const getUsagePercentage = (used: number, limit: number) => {
     if (limit === -1) return 0 // Unlimited
@@ -145,6 +131,27 @@ export default function UsagePage() {
       </PageShell>
     )
   }
+
+  if (isFallbackData || !usage) {
+    return (
+      <PageShell>
+        <PageHeader
+          eyebrow="USAGE / UNAVAILABLE"
+          title={t('USAGE_TITLE')}
+          description={t('USAGE_SUBTITLE')}
+        />
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border border-warning/30 bg-warning-soft px-4 py-3 text-sm">
+          <span className="text-warning">{t('USAGE_UNABLE_LIVE')}</span>
+          <Button variant="outline" size="sm" onClick={fetchUsage} disabled={loading}>
+            {loading && <Loader2 className="size-3.5 animate-spin" />}
+            {t('USAGE_RETRY')}
+          </Button>
+        </div>
+      </PageShell>
+    )
+  }
+
+  const displayUsage = usage
 
   const usageRows = [
     {
@@ -185,16 +192,6 @@ export default function UsagePage() {
         description={t('USAGE_SUBTITLE')}
       />
 
-      {isFallbackData && (
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border border-warning/30 bg-warning-soft px-4 py-3 text-sm">
-          <span className="text-warning">{t('USAGE_UNABLE_LIVE')}</span>
-          <Button variant="outline" size="sm" onClick={fetchUsage} disabled={loading}>
-            {loading && <Loader2 className="size-3.5 animate-spin" />}
-            {t('USAGE_RETRY')}
-          </Button>
-        </div>
-      )}
-
       {/* Plan console */}
       <section className="mt-6 border border-border bg-sidebar text-sidebar-foreground">
         <div className="flex flex-wrap items-center justify-between gap-4 p-5">
@@ -220,7 +217,10 @@ export default function UsagePage() {
             variant="outline"
             size="sm"
             className="border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            onClick={handleChangePlan}
+            disabled={planActionLoading}
           >
+            {planActionLoading && <Loader2 className="size-3.5 animate-spin" />}
             {t('USAGE_CHANGE_PLAN')}
           </Button>
         </div>
@@ -324,78 +324,25 @@ export default function UsagePage() {
                 <h2 className="mt-1 text-sm font-semibold">{t('USAGE_AI_USAGE')}</h2>
               </div>
               <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
-                {displayUsage.aiSEO + displayUsage.aiImages + displayUsage.aiInterlinking}{' '}
-                {t('USAGE_CALLS')}
+                {displayUsage.aiSEO} {t('USAGE_CALLS')}
               </span>
             </div>
 
-            <div className="grid gap-px border-b border-border bg-border md:grid-cols-3">
-              <div className="bg-card p-5">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="size-4 text-muted-foreground" />
-                  <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
-                    SEO
-                  </span>
-                </div>
-                <p className="mt-3 text-3xl font-semibold tabular-nums tracking-[-0.04em]">
-                  {displayUsage.aiSEO}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">{t('USAGE_SEO_METADATA')}</p>
+            <div className="bg-card p-5">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="size-4 text-muted-foreground" />
+                <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+                  SEO
+                </span>
               </div>
-
-              <div className="bg-card p-5">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="size-4 text-muted-foreground" />
-                  <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
-                    Images
-                  </span>
-                </div>
-                <p className="mt-3 text-3xl font-semibold tabular-nums tracking-[-0.04em]">
-                  {displayUsage.aiImages}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">{t('USAGE_IMAGES_GENERATED')}</p>
-              </div>
-
-              <div className="bg-card p-5">
-                <div className="flex items-center gap-2">
-                  <Link2 className="size-4 text-muted-foreground" />
-                  <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
-                    {t('USAGE_INTERLINKING')}
-                  </span>
-                </div>
-                <p className="mt-3 text-3xl font-semibold tabular-nums tracking-[-0.04em]">
-                  {displayUsage.aiInterlinking}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">{t('USAGE_INTERNAL_LINKS')}</p>
-              </div>
+              <p className="mt-3 text-3xl font-semibold tabular-nums tracking-[-0.04em]">
+                {displayUsage.aiSEO}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{t('USAGE_SEO_METADATA')}</p>
             </div>
 
-            <div className="px-5 py-4">
-              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
-                {t('USAGE_INCLUDED')} {displayUsage.currentPlan}
-              </p>
-              <ul className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-                <li className="flex items-center gap-2">
-                  <Check className="size-3.5 text-success" />
-                  {t('USAGE_AUTO_SEO')}
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="size-3.5 text-success" />
-                  {t('USAGE_IMAGE_GENERATION')}
-                </li>
-                {displayUsage.currentPlan === 'Pro' && (
-                  <li className="flex items-center gap-2">
-                    <Check className="size-3.5 text-success" />
-                    {t('USAGE_INTERNAL_INTERLINKING')}
-                  </li>
-                )}
-                {displayUsage.currentPlan !== 'Free' && (
-                  <li className="flex items-center gap-2">
-                    <Check className="size-3.5 text-success" />
-                    {t('USAGE_CONTENT_ENHANCEMENT')}
-                  </li>
-                )}
-              </ul>
+            <div className="border-t border-border px-5 py-4">
+              <p className="text-sm text-muted-foreground">{t('USAGE_AI_BETA_NOTE')}</p>
             </div>
           </section>
         </TabsContent>

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import ConnectorsPage from '../../(dashboard)/dashboard/connectors/page'
 
 vi.mock('@/lib/i18n/useTranslations', () => ({
@@ -19,6 +19,12 @@ vi.mock('@/lib/i18n/useTranslations', () => ({
         UI_CONFIGURE: 'Configure',
         UI_CONFIGURED: 'Configured',
         UI_ACTIVE: 'Active',
+        UI_DISCONNECT: 'Disconnect',
+        UI_DISCONNECT_CONNECTOR: 'Disconnect {name}',
+        UI_DISCONNECT_ONE_TITLE: 'Disconnect this connector?',
+        UI_DISCONNECT_DESC: 'This removes the connection from Omnysync.',
+        UI_CANCEL: 'Cancel',
+        UI_CONNECTORS_HELP: 'Connectors help',
       }
       return translations[key] || key
     },
@@ -134,6 +140,37 @@ describe('ConnectorsPage', () => {
       expect(screen.getByText('My Connectors')).toBeInTheDocument()
       expect(screen.getByText('My Google Drive')).toBeInTheDocument()
       expect(screen.getByText('My Blog')).toBeInTheDocument()
+    })
+  })
+
+  it('disconnects a connector through the API and removes it from the list', async () => {
+    ;(global.fetch as any)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockConnectors,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      })
+
+    render(<ConnectorsPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('My Blog')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByLabelText('Disconnect My Blog'))
+    expect(await screen.findByText('Disconnect this connector?')).toBeInTheDocument()
+
+    const disconnectButtons = screen.getAllByRole('button', { name: 'Disconnect' })
+    fireEvent.click(disconnectButtons[disconnectButtons.length - 1])
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith('/api/connectors/c2', { method: 'DELETE' })
+    })
+    await waitFor(() => {
+      expect(screen.queryByText('My Blog')).not.toBeInTheDocument()
     })
   })
 

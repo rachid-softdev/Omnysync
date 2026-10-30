@@ -17,8 +17,20 @@ vi.mock("../sync", () => ({
   performSync: vi.fn(),
 }));
 
+vi.mock("../../auth/subscription", () => ({
+  getUserPlan: vi.fn(async () => "pro"),
+  getPlanLimits: vi.fn(() => ({ scheduledSync: true, aiFeatures: true })),
+  checkAndIncrementQuota: vi.fn(async () => ({ allowed: true })),
+  decrementQuotaOnFailure: vi.fn(),
+}));
+
 import { prisma } from "../../prisma";
 import { performSync } from "../sync";
+import {
+  checkAndIncrementQuota,
+  decrementQuotaOnFailure,
+  getPlanLimits,
+} from "../../auth/subscription";
 import {
   calculateNextSync,
   scheduleSync,
@@ -32,6 +44,13 @@ describe("Scheduler Service", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getPlanLimits).mockReturnValue({
+      scheduledSync: true,
+      aiFeatures: true,
+    } as any);
+    vi.mocked(checkAndIncrementQuota).mockResolvedValue({
+      allowed: true,
+    } as any);
   });
 
   describe("calculateNextSync", () => {
@@ -202,6 +221,7 @@ describe("Scheduler Service", () => {
         "sc-1",
         "dc-1",
         "user-1",
+        { ai: true },
       );
     });
 
@@ -240,7 +260,7 @@ describe("Scheduler Service", () => {
       expect(prisma.document.update).not.toHaveBeenCalled();
     });
 
-    it("should handle missing sourceConnectorId or destConnectorId (silent skip)", async () => {
+    it("should fail closed when sourceConnectorId or destConnectorId is missing", async () => {
       vi.mocked(prisma.document.findMany).mockResolvedValue([
         {
           id: documentId,
@@ -259,8 +279,101 @@ describe("Scheduler Service", () => {
       const result = await runScheduledSyncs();
 
       expect(result.executed).toBe(0);
-      expect(result.failed).toBe(0);
+      expect(result.failed).toBe(1);
       expect(performSync).not.toHaveBeenCalled();
+    });
+
+    it("should skip documents whose plan no longer includes scheduled sync", async () => {
+      vi.mocked(prisma.document.findMany).mockResolvedValue([
+        {
+          id: documentId,
+          organizationId: "org-1",
+          userId: "user-1",
+          sourceConnectorId: "sc-1",
+          destConnectorId: "dc-1",
+          syncFrequency: "DAILY",
+          status: "PUBLISHED",
+          syncStatus: "SYNCED",
+          sourceConnector: { id: "sc-1" },
+          destConnector: { id: "dc-1" },
+        },
+      ] as any);
+      vi.mocked(getPlanLimits).mockReturnValue({
+        scheduledSync: false,
+        aiFeatures: false,
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+
+      const result = await runScheduledSyncs();
+
+      expect(result.failed).toBe(1);
+      expect(performSync).not.toHaveBeenCalled();
+      expect(prisma.syncLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          action: "scheduled_sync_skipped",
+          message: "Scheduled sync is not included in the current plan",
+        }),
+      });
+    });
+
+    it("should skip and advance the schedule when quota is exhausted", async () => {
+      vi.mocked(prisma.document.findMany).mockResolvedValue([
+        {
+          id: documentId,
+          organizationId: "org-1",
+          userId: "user-1",
+          sourceConnectorId: "sc-1",
+          destConnectorId: "dc-1",
+          syncFrequency: "DAILY",
+          status: "PUBLISHED",
+          syncStatus: "SYNCED",
+          sourceConnector: { id: "sc-1" },
+          destConnector: { id: "dc-1" },
+        },
+      ] as any);
+      vi.mocked(checkAndIncrementQuota).mockResolvedValue({
+        allowed: false,
+        upgradeUrl: "/pricing",
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+
+      const result = await runScheduledSyncs();
+
+      expect(result.failed).toBe(1);
+      expect(performSync).not.toHaveBeenCalled();
+      expect(prisma.document.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: documentId },
+          data: expect.objectContaining({ nextSyncAt: expect.any(Date) }),
+        }),
+      );
+    });
+
+    it("should refund quota when performSync returns a failure", async () => {
+      vi.mocked(prisma.document.findMany).mockResolvedValue([
+        {
+          id: documentId,
+          organizationId: "org-1",
+          userId: "user-1",
+          sourceConnectorId: "sc-1",
+          destConnectorId: "dc-1",
+          syncFrequency: "DAILY",
+          status: "PUBLISHED",
+          syncStatus: "SYNCED",
+          sourceConnector: { id: "sc-1" },
+          destConnector: { id: "dc-1" },
+        },
+      ] as any);
+      vi.mocked(performSync).mockResolvedValue({
+        success: false,
+        error: "Provider rejected publish",
+      } as any);
+      vi.mocked(prisma.document.update).mockResolvedValue({} as any);
+
+      const result = await runScheduledSyncs();
+
+      expect(result.failed).toBe(1);
+      expect(decrementQuotaOnFailure).toHaveBeenCalledWith("user-1");
     });
 
     it("should update nextSyncAt after successful sync", async () => {

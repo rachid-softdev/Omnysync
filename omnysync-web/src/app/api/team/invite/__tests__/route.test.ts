@@ -14,8 +14,10 @@ vi.mock('@/lib/prisma', () => ({
     user: { findUnique: vi.fn() },
     userOrganization: {
       findUnique: vi.fn(),
+      findMany: vi.fn(),
       create: vi.fn(),
     },
+    organization: { findUnique: vi.fn() },
   },
 }))
 
@@ -35,12 +37,17 @@ vi.mock('@/lib/audit', () => ({
   auditMember: { invited: vi.fn() },
 }))
 
+vi.mock('@/lib/email', () => ({
+  sendTeamInviteEmail: vi.fn(),
+}))
+
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { hasPermission } from '@/lib/auth/permissions'
 import { checkTeamMemberLimit } from '@/lib/auth/subscription'
 import { auditMember } from '@/lib/audit'
+import { sendTeamInviteEmail } from '@/lib/email'
 
 describe('POST /api/team/invite', () => {
   const makeRequest = (body: unknown) =>
@@ -75,11 +82,14 @@ describe('POST /api/team/invite', () => {
     } as any)
 
     vi.mocked(prisma.userOrganization.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.userOrganization.findMany).mockResolvedValue([])
+    vi.mocked(prisma.organization.findUnique).mockResolvedValue({ name: 'Acme' } as any)
     vi.mocked(prisma.userOrganization.create).mockResolvedValue({
       userId: 'user-2',
       organizationId: 'org-1',
       role: 'MEMBER',
     } as any)
+    vi.mocked(sendTeamInviteEmail).mockResolvedValue(undefined)
   })
 
   it('should return 401 when unauthenticated', async () => {
@@ -194,5 +204,74 @@ describe('POST /api/team/invite', () => {
       data: { userId: 'user-2', organizationId: 'org-1', role: 'ADMIN' },
     })
     expect(auditMember.invited).toHaveBeenCalledWith('org-1', 'alice@example.com', 'ADMIN')
+  })
+
+  it('notifies only owners/admins who enabled team invite notifications', async () => {
+    vi.mocked(prisma.userOrganization.findMany).mockResolvedValue([
+      {
+        user: {
+          id: 'admin-1',
+          email: 'admin@example.com',
+          notificationPreference: { teamInvites: true },
+        },
+      },
+      {
+        user: {
+          id: 'admin-2',
+          email: 'muted@example.com',
+          notificationPreference: { teamInvites: false },
+        },
+      },
+      {
+        user: {
+          id: 'admin-3',
+          email: 'default@example.com',
+          notificationPreference: null,
+        },
+      },
+      {
+        user: {
+          id: 'admin-4',
+          email: null,
+          notificationPreference: { teamInvites: true },
+        },
+      },
+    ] as any)
+
+    const { POST } = await import('@/app/api/team/invite/route')
+    const response = await POST(makeRequest({ email: 'alice@example.com' }))
+
+    expect(response.status).toBe(200)
+    expect(sendTeamInviteEmail).toHaveBeenCalledTimes(2)
+    expect(sendTeamInviteEmail).toHaveBeenCalledWith({
+      to: 'admin@example.com',
+      memberName: 'Alice',
+      organizationName: 'Acme',
+      inviterName: 'A teammate',
+    })
+    expect(sendTeamInviteEmail).toHaveBeenCalledWith({
+      to: 'default@example.com',
+      memberName: 'Alice',
+      organizationName: 'Acme',
+      inviterName: 'A teammate',
+    })
+  })
+
+  it('still succeeds when notification delivery fails', async () => {
+    vi.mocked(prisma.userOrganization.findMany).mockResolvedValue([
+      {
+        user: {
+          id: 'admin-1',
+          email: 'admin@example.com',
+          notificationPreference: { teamInvites: true },
+        },
+      },
+    ] as any)
+    vi.mocked(sendTeamInviteEmail).mockRejectedValue(new Error('email down'))
+
+    const { POST } = await import('@/app/api/team/invite/route')
+    const response = await POST(makeRequest({ email: 'alice@example.com' }))
+
+    expect(response.status).toBe(200)
   })
 })

@@ -1,25 +1,44 @@
 import { Client } from "@upstash/qstash";
-import { Redis } from "@upstash/redis";
+import type { Redis } from "@upstash/redis";
 import crypto from "crypto";
+import { createRedisClient } from "../cache/redis-config";
 
-const qstash = new Client({
-  baseUrl: process.env.QSTASH_URL!,
-  token: process.env.QSTASH_TOKEN!,
-});
+let qstashClient: Client | null = null;
 
-// Redis-backed completed-jobs store (shared across instances)
-function getRedis(): Redis | null {
-  if (process.env.QSTASH_URL && process.env.QSTASH_TOKEN) {
-    try {
-      return new Redis({
-        url: process.env.QSTASH_URL,
-        token: process.env.QSTASH_TOKEN,
-      });
-    } catch {
-      return null;
-    }
+/**
+ * QStash is a production dependency for sync jobs. Callers must check this
+ * before creating a document/quota row so a misconfigured deployment fails
+ * fast instead of leaving orphaned records behind.
+ */
+export function isQueueConfigured(): boolean {
+  return Boolean(
+    process.env.QSTASH_URL &&
+    process.env.QSTASH_TOKEN &&
+    process.env.NEXTAUTH_URL,
+  );
+}
+
+function getQStash(): Client {
+  if (!isQueueConfigured()) {
+    throw new Error(
+      "Queue is not configured. Set QSTASH_URL, QSTASH_TOKEN and NEXTAUTH_URL.",
+    );
   }
-  return null;
+
+  if (!qstashClient) {
+    qstashClient = new Client({
+      baseUrl: process.env.QSTASH_URL!,
+      token: process.env.QSTASH_TOKEN!,
+    });
+  }
+
+  return qstashClient;
+}
+
+// Redis-backed completed-jobs store (shared across instances).
+// Uses dedicated Upstash Redis credentials, never QStash credentials.
+function getRedis(): Redis | null {
+  return createRedisClient();
 }
 
 const PROCESSED_JOBS_TTL = 24 * 60 * 60; // 24 hours (seconds for Redis)
@@ -251,6 +270,8 @@ export async function enqueueJob(
     idempotencyKey: key,
     ...job,
   });
+
+  const qstash = getQStash();
 
   if (delayInSeconds) {
     const scheduledTime = Math.floor(Date.now() / 1000) + delayInSeconds;

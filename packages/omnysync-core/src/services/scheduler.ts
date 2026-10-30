@@ -1,6 +1,32 @@
 import { prisma } from "../prisma";
 import { performSync } from "./sync";
 import { sanitizeErrorMessage } from "./sanitize";
+import {
+  checkAndIncrementQuota,
+  decrementQuotaOnFailure,
+  getPlanLimits,
+  getUserPlan,
+} from "../auth/subscription";
+
+type SyncFrequency = "DAILY" | "WEEKLY" | "MONTHLY";
+
+function normalizeFrequency(value: string | null): SyncFrequency {
+  return value === "WEEKLY" || value === "MONTHLY" ? value : "DAILY";
+}
+
+async function advanceNextSync(
+  documentId: string,
+  frequency: string | null,
+  clearError = false,
+): Promise<void> {
+  await prisma.document.update({
+    where: { id: documentId },
+    data: {
+      nextSyncAt: calculateNextSync(normalizeFrequency(frequency)),
+      ...(clearError ? { lastSyncError: null } : {}),
+    },
+  });
+}
 
 // Note: QStash scheduling requires the serverless SDK or direct HTTP calls
 // For now, we'll use a simpler approach with setTimeout for development
@@ -111,23 +137,15 @@ export async function runScheduledSyncs(): Promise<{
   failed: number;
   errors: string[];
 }> {
-  // ⚠️ Create independent Date objects — do NOT chain setHours() on the same instance,
-  // otherwise the second setHours() mutates the same underlying `now` and both
-  // startOfDay and endOfDay end up pointing at midnight.
   const now = new Date();
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(now);
-  endOfDay.setHours(23, 59, 59, 999);
 
-  // Trouver tous les documents avec sync programmé
+  // Only documents whose scheduled time has arrived. The previous version
+  // selected everything due "today", so an hourly cron would run the same
+  // document repeatedly from midnight onward.
   const scheduledDocs = await prisma.document.findMany({
     where: {
       autoSyncEnabled: true,
-      nextSyncAt: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
+      nextSyncAt: { lte: now },
       syncStatus: { not: "SYNCING" },
       status: "PUBLISHED",
     },
@@ -140,32 +158,90 @@ export async function runScheduledSyncs(): Promise<{
   const results = { executed: 0, failed: 0, errors: [] as string[] };
 
   for (const doc of scheduledDocs) {
+    if (!doc.sourceConnectorId || !doc.destConnectorId) {
+      const message = "Missing source or destination connector";
+      results.failed++;
+      results.errors.push(`Doc ${doc.id}: ${message}`);
+      await prisma.syncLog.create({
+        data: {
+          organizationId: doc.organizationId,
+          userId: doc.userId,
+          documentId: doc.id,
+          action: "scheduled_sync_failed",
+          status: "ERROR",
+          message,
+        },
+      });
+      await advanceNextSync(doc.id, doc.syncFrequency);
+      continue;
+    }
+
+    const limits = getPlanLimits(await getUserPlan(doc.userId));
+
+    // Scheduled sync is a paid feature. If the plan no longer includes it,
+    // skip this run and advance the date instead of retrying every hour.
+    if (!limits.scheduledSync) {
+      const message = "Scheduled sync is not included in the current plan";
+      results.failed++;
+      results.errors.push(`Doc ${doc.id}: ${message}`);
+      await prisma.syncLog.create({
+        data: {
+          organizationId: doc.organizationId,
+          userId: doc.userId,
+          documentId: doc.id,
+          action: "scheduled_sync_skipped",
+          status: "WARNING",
+          message,
+        },
+      });
+      await advanceNextSync(doc.id, doc.syncFrequency);
+      continue;
+    }
+
+    const quota = await checkAndIncrementQuota(doc.userId);
+    if (!quota.allowed) {
+      const message = "Monthly sync quota exceeded";
+      results.failed++;
+      results.errors.push(`Doc ${doc.id}: ${message}`);
+      await prisma.syncLog.create({
+        data: {
+          organizationId: doc.organizationId,
+          userId: doc.userId,
+          documentId: doc.id,
+          action: "scheduled_sync_skipped",
+          status: "WARNING",
+          message,
+        },
+      });
+      await advanceNextSync(doc.id, doc.syncFrequency);
+      continue;
+    }
+
     try {
-      if (doc.sourceConnectorId && doc.destConnectorId) {
-        await performSync(
-          doc.id,
-          doc.sourceConnectorId,
-          doc.destConnectorId,
-          doc.userId,
-        );
+      const result = await performSync(
+        doc.id,
+        doc.sourceConnectorId,
+        doc.destConnectorId,
+        doc.userId,
+        { ai: limits.aiFeatures },
+      );
 
-        // Planifier le prochain sync
-        const frequency = doc.syncFrequency as "DAILY" | "WEEKLY" | "MONTHLY";
-        const nextSync = calculateNextSync(frequency);
-
-        await prisma.document.update({
-          where: { id: doc.id },
-          data: { nextSyncAt: nextSync },
-        });
-
-        results.executed++;
+      if (!result.success) {
+        await decrementQuotaOnFailure(doc.userId);
+        results.failed++;
+        results.errors.push(`Doc ${doc.id}: ${result.error || "Sync failed"}`);
+        await advanceNextSync(doc.id, doc.syncFrequency);
+        continue;
       }
+
+      results.executed++;
+      await advanceNextSync(doc.id, doc.syncFrequency, true);
     } catch (error) {
       const safeMsg = sanitizeErrorMessage(error);
+      await decrementQuotaOnFailure(doc.userId);
       results.failed++;
       results.errors.push(`Doc ${doc.id}: ${safeMsg}`);
 
-      // Logger l'erreur
       await prisma.syncLog.create({
         data: {
           organizationId: doc.organizationId,
@@ -176,6 +252,8 @@ export async function runScheduledSyncs(): Promise<{
           message: safeMsg,
         },
       });
+
+      await advanceNextSync(doc.id, doc.syncFrequency);
     }
   }
 
@@ -231,22 +309,41 @@ export async function handleScheduledSyncRun(
     }
   }
 
+  const limits = getPlanLimits(await getUserPlan(doc.userId));
+
+  if (!limits.scheduledSync) {
+    await advanceNextSync(doc.id, doc.syncFrequency);
+    return {
+      success: false,
+      message: "Scheduled sync is not included in the current plan",
+    };
+  }
+
+  const quota = await checkAndIncrementQuota(doc.userId);
+  if (!quota.allowed) {
+    await advanceNextSync(doc.id, doc.syncFrequency);
+    return {
+      success: false,
+      message: "Monthly sync quota exceeded",
+    };
+  }
+
   try {
     const result = await performSync(
-      documentId,
+      doc.id,
       doc.sourceConnectorId,
       doc.destConnectorId,
       doc.userId,
+      { ai: limits.aiFeatures },
     );
 
-    // Planifier le prochain sync
-    const frequency = doc.syncFrequency as "DAILY" | "WEEKLY" | "MONTHLY";
-    const nextSync = calculateNextSync(frequency);
+    if (!result.success) {
+      await decrementQuotaOnFailure(doc.userId);
+    }
 
-    await prisma.document.update({
-      where: { id: documentId },
-      data: { nextSyncAt: nextSync, lastSyncError: null },
-    });
+    // Planifier le prochain sync, même en cas d'échec : sinon la date reste
+    // dans le passé et chaque tick du cron réessaie immédiatement.
+    await advanceNextSync(doc.id, doc.syncFrequency, result.success);
 
     return {
       success: result.success,
@@ -256,11 +353,14 @@ export async function handleScheduledSyncRun(
     };
   } catch (error) {
     const safeMsg = sanitizeErrorMessage(error);
-    // Logger l'erreur
+    await decrementQuotaOnFailure(doc.userId);
+
     await prisma.document.update({
-      where: { id: documentId },
+      where: { id: doc.id },
       data: { lastSyncError: safeMsg },
     });
+
+    await advanceNextSync(doc.id, doc.syncFrequency);
 
     return {
       success: false,

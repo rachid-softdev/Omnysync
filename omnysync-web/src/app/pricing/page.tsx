@@ -3,23 +3,37 @@ import { Button } from '@/components/ui/button'
 import { ProCheckoutButton } from '@/components/pro-checkout-button'
 import Link from 'next/link'
 import { getT } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/metadata'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = {
-  title: 'Pricing',
-  description: 'Free, Pro and Business plans for content routing. Start free, scale when you grow.',
+export function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    titleKey: 'META_PRICING_TITLE',
+    descriptionKey: 'META_PRICING_DESC',
+    path: '/pricing',
+  })
+}
+
+type PlanCard = {
+  nameKey: string
+  priceKey: string
+  periodKey?: string
+  descriptionKey: string
+  ctaKey: string
+  href: string
+  priceIsCustom?: boolean
 }
 
 export default async function PricingPage() {
   const t = await getT()
 
-  const plans = [
+  const plans: PlanCard[] = [
     {
       nameKey: 'plan_pro_name',
       priceKey: 'plan_pro_price',
       periodKey: 'plan_pro_period',
       descriptionKey: 'plan_pro_description',
-      ctaKey: 'cta_start_trial',
+      ctaKey: 'cta_upgrade_pro',
       href: '/api/stripe/checkout',
     },
     {
@@ -33,10 +47,10 @@ export default async function PricingPage() {
     {
       nameKey: 'plan_business_name',
       priceKey: 'plan_business_price',
-      periodKey: 'plan_business_period',
       descriptionKey: 'plan_business_description',
       ctaKey: 'cta_contact_sales',
       href: 'mailto:sales@omnysync.com',
+      priceIsCustom: true,
     },
   ]
 
@@ -50,45 +64,25 @@ export default async function PricingPage() {
       values: [t('plan_pro_feature_2'), t('plan_free_feature_2'), t('plan_business_feature_2')],
     },
     {
-      labelKey: 'compare_platforms',
-      values: [
-        t('plan_pro_feature_3'),
-        `${t('plan_free_feature_3')} · ${t('plan_free_feature_4')}`,
-        t('plan_pro_feature_3'),
-      ],
+      labelKey: 'compare_documents',
+      values: [t('plan_pro_feature_3'), t('plan_free_feature_3'), t('plan_business_feature_3')],
     },
     {
-      labelKey: 'compare_pro_features',
-      values: [t('value_included'), '—', t('plan_business_feature_3')],
-    },
-    {
-      labelKey: 'compare_ai',
+      labelKey: 'compare_scheduled',
       values: [t('plan_pro_feature_4'), '—', t('plan_pro_feature_4')],
     },
     {
-      labelKey: 'compare_linking',
-      values: [t('plan_pro_feature_5'), '—', t('plan_pro_feature_5')],
-    },
-    {
-      labelKey: 'compare_change',
-      values: [t('plan_pro_feature_6'), '—', t('plan_pro_feature_6')],
-    },
-    {
-      labelKey: 'compare_two_way',
+      labelKey: 'compare_team',
       values: ['—', '—', t('plan_business_feature_4')],
     },
     {
-      labelKey: 'compare_team_api',
-      values: ['—', '—', `${t('plan_business_feature_5')} · ${t('plan_business_feature_6')}`],
-    },
-    {
       labelKey: 'compare_support',
-      values: [t('plan_pro_feature_7'), t('plan_free_feature_5'), t('plan_business_feature_7')],
+      values: [t('plan_pro_feature_6'), t('plan_free_feature_4'), t('plan_business_feature_5')],
     },
   ]
 
   return (
-    <div className="min-h-screen bg-background">
+    <main id="main-content" className="min-h-screen bg-background">
       <div className="mx-auto max-w-[1200px] px-6 pb-20 pt-28">
         {/* Header */}
         <div className="animate-enter-up flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
@@ -200,15 +194,17 @@ export default async function PricingPage() {
                           <span className="text-4xl font-semibold tracking-[-0.04em] tabular-nums">
                             {t(plan.priceKey)}
                           </span>
-                          <span
-                            className={
-                              isPro
-                                ? 'text-[11px] text-sidebar-foreground/45'
-                                : 'text-[11px] text-muted-foreground'
-                            }
-                          >
-                            /{t(plan.periodKey)}
-                          </span>
+                          {!plan.priceIsCustom && plan.periodKey ? (
+                            <span
+                              className={
+                                isPro
+                                  ? 'text-[11px] text-sidebar-foreground/45'
+                                  : 'text-[11px] text-muted-foreground'
+                              }
+                            >
+                              /{t(plan.periodKey)}
+                            </span>
+                          ) : null}
                         </div>
                         {isPro && (
                           <p className="mt-1 font-mono text-[8px] uppercase tracking-[0.12em] text-sidebar-primary">
@@ -285,6 +281,6 @@ export default async function PricingPage() {
           </p>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

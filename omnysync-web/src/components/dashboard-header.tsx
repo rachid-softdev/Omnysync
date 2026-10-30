@@ -14,6 +14,7 @@ interface DashboardHeaderProps {
     email?: string | null
     image?: string | null
   }
+  locale?: string
 }
 
 /** Maps a route segment to its translation key. */
@@ -52,8 +53,8 @@ function useBreadcrumbs() {
   })
 }
 
-export function DashboardHeader({ user }: DashboardHeaderProps) {
-  const { t } = useTranslations()
+export function DashboardHeader({ user, locale }: DashboardHeaderProps) {
+  const { t } = useTranslations(locale)
   const crumbs = useBreadcrumbs()
 
   return (

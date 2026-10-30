@@ -80,6 +80,7 @@ vi.mock('@/lib/prisma', () => ({
     },
     userOrganization: {
       findFirst: vi.fn(),
+      findUnique: vi.fn(),
     },
   },
 }))
@@ -91,6 +92,7 @@ vi.mock('@/lib/auth/org', () => ({
 vi.mock('@/lib/auth/subscription', () => ({
   checkAndIncrementQuota: vi.fn(),
   checkDocumentLimit: vi.fn(),
+  checkPlanFeature: vi.fn(async () => ({ allowed: true, upgradeUrl: '/pricing' })),
 }))
 
 vi.mock('@/lib/validations', () => ({
@@ -114,6 +116,7 @@ vi.mock('@/lib/api-error', () => ({
 }))
 
 vi.mock('@omnysync/core/services/queue', () => ({
+  isQueueConfigured: vi.fn(() => true),
   enqueueSyncJob: vi.fn(),
   enqueueChangeDetection: vi.fn(),
 }))
@@ -143,6 +146,9 @@ describe('Sync Workflow API', () => {
     // Default: authenticated user
     vi.mocked(auth).mockResolvedValue(mockSession())
     vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+    vi.mocked(prisma.userOrganization.findUnique).mockResolvedValue({
+      role: 'OWNER',
+    } as any)
 
     // Default: quota OK
     vi.mocked(checkAndIncrementQuota).mockResolvedValue({ allowed: true })

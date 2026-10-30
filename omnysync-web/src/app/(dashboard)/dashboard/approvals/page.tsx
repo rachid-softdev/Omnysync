@@ -44,7 +44,7 @@ interface ApprovalRequest {
 }
 
 export default function ApprovalsPage() {
-  const { t } = useTranslations()
+  const { t, tf } = useTranslations()
   const locale = detectClientLocale()
   const [loading, setLoading] = useState(true)
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([])
@@ -85,15 +85,23 @@ export default function ApprovalsPage() {
       }
     }
     if (success === ids.length) {
-      toast.success(`${success} request(s) approved`)
+      toast.success(
+        tf(success === 1 ? 'APPROVALS_BATCH_APPROVED_ONE' : 'APPROVALS_BATCH_APPROVED_OTHER', {
+          count: success,
+        })
+      )
     } else {
       toast.warning(
-        `Approved ${success} of ${ids.length} request(s). ${ids.length - success} failed.`
+        tf('APPROVALS_BATCH_PARTIAL_APPROVED', {
+          success,
+          total: ids.length,
+          failed: ids.length - success,
+        })
       )
     }
     clearSelection()
     setBatchLoading(false)
-  }, [selectedIds, clearSelection])
+  }, [selectedIds, clearSelection, tf])
 
   const batchReject = useCallback(async () => {
     setBatchLoading(true)
@@ -117,15 +125,23 @@ export default function ApprovalsPage() {
       }
     }
     if (success === ids.length) {
-      toast.success(`${success} request(s) rejected`)
+      toast.success(
+        tf(success === 1 ? 'APPROVALS_BATCH_REJECTED_ONE' : 'APPROVALS_BATCH_REJECTED_OTHER', {
+          count: success,
+        })
+      )
     } else {
       toast.warning(
-        `Rejected ${success} of ${ids.length} request(s). ${ids.length - success} failed.`
+        tf('APPROVALS_BATCH_PARTIAL_REJECTED', {
+          success,
+          total: ids.length,
+          failed: ids.length - success,
+        })
       )
     }
     clearSelection()
     setBatchLoading(false)
-  }, [selectedIds, clearSelection])
+  }, [selectedIds, clearSelection, tf])
 
   const fetchApprovals = async () => {
     try {
@@ -142,11 +158,11 @@ export default function ApprovalsPage() {
           setPlanGate(payload.upgradeUrl || '/pricing')
           return
         }
-        toast.error(`Failed to load approvals (${res.status}). Refresh the page to try again.`)
+        toast.error(tf('APPROVALS_TOAST_LOAD_FAILED', { status: res.status }))
       }
     } catch (e) {
       console.error(e)
-      toast.error('Unable to load approvals. Check your connection and try again.')
+      toast.error(t('APPROVALS_TOAST_LOAD_ERROR'))
     } finally {
       setLoading(false)
     }
@@ -168,13 +184,13 @@ export default function ApprovalsPage() {
               : a
           )
         )
-        toast.success('Request approved')
+        toast.success(t('APPROVALS_TOAST_APPROVED'))
       } else {
-        toast.error(`Could not approve request (${res.status}). Try again.`)
+        toast.error(tf('APPROVALS_TOAST_APPROVE_FAILED', { status: res.status }))
       }
     } catch (e) {
       console.error(e)
-      toast.error('Could not approve request. Check your connection and try again.')
+      toast.error(t('APPROVALS_TOAST_APPROVE_ERROR'))
     } finally {
       setActionLoading(null)
     }
@@ -196,13 +212,13 @@ export default function ApprovalsPage() {
         )
         setRejectOpen(false)
         setRejectComment('')
-        toast.success('Request rejected')
+        toast.success(t('APPROVALS_TOAST_REJECTED'))
       } else {
-        toast.error(`Could not reject request (${res.status}). Try again.`)
+        toast.error(tf('APPROVALS_TOAST_REJECT_FAILED', { status: res.status }))
       }
     } catch (e) {
       console.error(e)
-      toast.error('Could not reject request. Check your connection and try again.')
+      toast.error(t('APPROVALS_TOAST_REJECT_ERROR'))
     } finally {
       setActionLoading(null)
     }
@@ -210,11 +226,19 @@ export default function ApprovalsPage() {
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; tone: string; dot: string }> = {
-      PENDING: { label: 'Pending', tone: 'text-warning', dot: 'bg-warning' },
-      APPROVED: { label: 'Approved', tone: 'text-success', dot: 'bg-success' },
-      REJECTED: { label: 'Rejected', tone: 'text-destructive', dot: 'bg-destructive' },
+      PENDING: { label: t('APPROVALS_PENDING'), tone: 'text-warning', dot: 'bg-warning' },
+      APPROVED: {
+        label: t('APPROVALS_STATUS_APPROVED'),
+        tone: 'text-success',
+        dot: 'bg-success',
+      },
+      REJECTED: {
+        label: t('APPROVALS_STATUS_REJECTED'),
+        tone: 'text-destructive',
+        dot: 'bg-destructive',
+      },
       EXPIRED: {
-        label: 'Expired',
+        label: t('APPROVALS_STATUS_EXPIRED'),
         tone: 'text-muted-foreground',
         dot: 'border border-border-strong',
       },
@@ -236,21 +260,26 @@ export default function ApprovalsPage() {
 
   const getResolution = (approval: ApprovalRequest) => {
     if (approval.status === 'APPROVED') {
-      return `Approved by ${approval.approvedBy} on ${
-        approval.approvedAt ? formatDateTime(approval.approvedAt, locale) : ''
-      }`
+      return tf('APPROVALS_APPROVED_BY', {
+        name: approval.approvedBy || '—',
+        date: approval.approvedAt ? formatDateTime(approval.approvedAt, locale) : '',
+      })
     }
     if (approval.status === 'REJECTED') {
-      return `Rejected${approval.comments ? `: ${approval.comments}` : ''}`
+      return approval.comments
+        ? tf('APPROVALS_REJECTED_WITH_REASON', { reason: approval.comments })
+        : t('APPROVALS_REJECTED')
     }
-    return `Expired on ${formatDateTime(approval.expiresAt, locale)}`
+    return tf('APPROVALS_EXPIRED_ON', {
+      date: formatDateTime(approval.expiresAt, locale),
+    })
   }
 
   if (loading) {
     return (
       <PageShell>
         <PageHeader
-          eyebrow="APPROVALS / QUEUE"
+          eyebrow={t('APPROVALS_EYEBROW_QUEUE')}
           title={t('APPROVALS_TITLE')}
           description={t('APPROVALS_SUBTITLE')}
         />
@@ -265,7 +294,9 @@ export default function ApprovalsPage() {
     return (
       <PageShell>
         <PageHeader
-          eyebrow={`APPROVALS / ${String(pendingApprovals.length).padStart(2, '0')} PENDING`}
+          eyebrow={tf('APPROVALS_EYEBROW_PENDING', {
+            count: String(pendingApprovals.length).padStart(2, '0'),
+          })}
           title={t('APPROVALS_TITLE')}
           description={t('APPROVALS_SUBTITLE')}
         />
@@ -282,7 +313,9 @@ export default function ApprovalsPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow={`APPROVALS / ${String(pendingApprovals.length).padStart(2, '0')} PENDING`}
+        eyebrow={tf('APPROVALS_EYEBROW_PENDING', {
+          count: String(pendingApprovals.length).padStart(2, '0'),
+        })}
         title={t('APPROVALS_TITLE')}
         description={t('APPROVALS_SUBTITLE')}
       />
@@ -297,14 +330,14 @@ export default function ApprovalsPage() {
             onClearSelection={clearSelection}
             actions={[
               {
-                label: 'Approve',
+                label: t('APPROVALS_APPROVE'),
                 icon: <CheckCircle className="size-4" />,
                 variant: 'default',
                 onClick: batchApprove,
                 loading: batchLoading,
               },
               {
-                label: 'Reject',
+                label: t('APPROVALS_REJECT'),
                 icon: <XCircle className="size-4" />,
                 variant: 'destructive',
                 onClick: batchReject,
@@ -317,7 +350,7 @@ export default function ApprovalsPage() {
         {pendingApprovals.length === 0 ? (
           <div className="border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-5 py-3 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-              <span>Approval queue</span>
+              <span>{t('APPROVALS_QUEUE')}</span>
               <span>00</span>
             </div>
             <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:p-8">
@@ -326,13 +359,13 @@ export default function ApprovalsPage() {
               </span>
               <div className="max-w-xl">
                 <p className="text-base font-semibold tracking-[-0.02em]">
-                  No pending approval requests
+                  {t('APPROVALS_EMPTY_TITLE')}
                 </p>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  Pending approvals will appear here when documents are submitted for review.
+                  {t('APPROVALS_EMPTY_DESC')}
                 </p>
                 <Button asChild className="mt-5">
-                  <Link href="/dashboard/documents">View documents</Link>
+                  <Link href="/dashboard/documents">{t('APPROVALS_VIEW_DOCUMENTS')}</Link>
                 </Button>
               </div>
             </div>
@@ -342,7 +375,7 @@ export default function ApprovalsPage() {
             <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border px-5 py-3">
               <div>
                 <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-                  Queue / pending
+                  {t('APPROVALS_QUEUE_PENDING')}
                 </p>
                 <h2 className="mt-1 text-sm font-semibold">
                   {t('APPROVALS_PENDING')}{' '}
@@ -352,7 +385,10 @@ export default function ApprovalsPage() {
                 </h2>
               </div>
               <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
-                {pendingApprovals.length} request{pendingApprovals.length === 1 ? '' : 's'}
+                {pendingApprovals.length}{' '}
+                {pendingApprovals.length === 1
+                  ? t('APPROVALS_REQUEST_ONE')
+                  : t('APPROVALS_REQUESTS_OTHER')}
               </span>
             </div>
 
@@ -362,7 +398,7 @@ export default function ApprovalsPage() {
                   <TableHead className="hidden h-9 w-10 px-2 pr-0 sm:table-cell sm:px-4">
                     <Checkbox
                       id="select-all-pending"
-                      aria-label="Select all pending approvals"
+                      aria-label={t('APPROVALS_SELECT_ALL')}
                       checked={isAllSelected}
                       onCheckedChange={(checked) => {
                         if (checked) selectAll()
@@ -371,17 +407,17 @@ export default function ApprovalsPage() {
                     />
                   </TableHead>
                   <TableHead className="h-9 px-2 font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
-                    Document
+                    {t('APPROVALS_DOCUMENT')}
                   </TableHead>
                   <TableHead className="hidden h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] sm:table-cell">
-                    Status
+                    {t('UI_STATUS')}
                   </TableHead>
                   <TableHead className="hidden h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] md:table-cell">
-                    Requested
+                    {t('APPROVALS_REQUESTED')}
                   </TableHead>
                   <TableHead className="h-9 px-2 text-right font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
-                    <span className="hidden sm:inline">Actions</span>
-                    <span className="sr-only sm:hidden">Actions</span>
+                    <span className="hidden sm:inline">{t('APPROVALS_ACTIONS')}</span>
+                    <span className="sr-only sm:hidden">{t('APPROVALS_ACTIONS')}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -392,7 +428,9 @@ export default function ApprovalsPage() {
                       <Checkbox
                         checked={selectedIds.has(approval.id)}
                         onCheckedChange={() => toggle(approval.id)}
-                        aria-label={`Select ${approval.documentTitle}`}
+                        aria-label={tf('APPROVALS_SELECT_ONE', {
+                          title: approval.documentTitle,
+                        })}
                       />
                     </TableCell>
                     <TableCell className="px-2 py-2.5 sm:px-4">
@@ -406,11 +444,15 @@ export default function ApprovalsPage() {
                           </Link>
                         </p>
                         <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                          Requested by {approval.requestedBy} ·{' '}
-                          {formatDateTime(approval.requestedAt, locale)}
+                          {tf('APPROVALS_REQUESTED_BY', {
+                            name: approval.requestedBy,
+                            date: formatDateTime(approval.requestedAt, locale),
+                          })}
                         </p>
                         <p className="mt-0.5 truncate font-mono text-[9px] uppercase tracking-[0.08em] text-muted-foreground/60">
-                          Expires {formatDateTime(approval.expiresAt, locale)}
+                          {tf('APPROVALS_EXPIRES', {
+                            date: formatDateTime(approval.expiresAt, locale),
+                          })}
                         </p>
                       </div>
                     </TableCell>
@@ -426,24 +468,28 @@ export default function ApprovalsPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => setSelectedApproval(approval)}
-                          aria-label={`View ${approval.documentTitle}`}
+                          aria-label={tf('APPROVALS_VIEW_ARIA', {
+                            title: approval.documentTitle,
+                          })}
                           className="hidden sm:inline-flex"
                         >
                           <Eye />
-                          <span className="hidden sm:inline">View</span>
+                          <span className="hidden sm:inline">{t('APPROVALS_VIEW')}</span>
                         </Button>
                         <Button
                           size="sm"
                           onClick={() => approveRequest(approval.id)}
                           disabled={actionLoading === approval.id}
-                          aria-label={`Approve ${approval.documentTitle}`}
+                          aria-label={tf('APPROVALS_APPROVE_ARIA', {
+                            title: approval.documentTitle,
+                          })}
                         >
                           {actionLoading === approval.id ? (
                             <Loader2 className="animate-spin" />
                           ) : (
                             <CheckCircle />
                           )}
-                          <span className="hidden sm:inline">Approve</span>
+                          <span className="hidden sm:inline">{t('APPROVALS_APPROVE')}</span>
                         </Button>
                         <Button
                           variant="destructive"
@@ -453,10 +499,12 @@ export default function ApprovalsPage() {
                             setRejectOpen(true)
                           }}
                           disabled={actionLoading === approval.id}
-                          aria-label={`Reject ${approval.documentTitle}`}
+                          aria-label={tf('APPROVALS_REJECT_ARIA', {
+                            title: approval.documentTitle,
+                          })}
                         >
                           <XCircle />
-                          <span className="hidden sm:inline">Reject</span>
+                          <span className="hidden sm:inline">{t('APPROVALS_REJECT')}</span>
                         </Button>
                       </div>
                     </TableCell>
@@ -466,8 +514,8 @@ export default function ApprovalsPage() {
             </Table>
 
             <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-2.5 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
-              <span>{pendingApprovals.length} pending</span>
-              <span>Review queue</span>
+              <span>{tf('APPROVALS_PENDING_COUNT', { count: pendingApprovals.length })}</span>
+              <span>{t('APPROVALS_REVIEW_QUEUE')}</span>
             </div>
           </div>
         )}
@@ -479,7 +527,7 @@ export default function ApprovalsPage() {
           <div className="flex items-end justify-between gap-3 border-b border-border pb-3">
             <div>
               <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-                Resolution log
+                {t('APPROVALS_RESOLUTION_LOG')}
               </p>
               <h2 className="mt-1 text-sm font-semibold">{t('APPROVALS_HISTORY')}</h2>
             </div>
@@ -493,25 +541,25 @@ export default function ApprovalsPage() {
               <TableHeader className="bg-muted/40">
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead className="h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em]">
-                    Document
+                    {t('APPROVALS_DOCUMENT')}
                   </TableHead>
                   <TableHead className="h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em]">
-                    Status
+                    {t('UI_STATUS')}
                   </TableHead>
                   <TableHead className="hidden h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] sm:table-cell">
-                    Resolution
+                    {t('APPROVALS_RESOLUTION')}
                   </TableHead>
                   <TableHead className="hidden h-9 px-4 text-right font-mono text-[9px] uppercase tracking-[0.14em] md:table-cell">
-                    Requested
+                    {t('APPROVALS_REQUESTED')}
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {historyApprovals.map((approval) => (
                   <TableRow key={approval.id} className="border-border hover:bg-muted/30">
-                    <TableCell className="max-w-[10rem] px-4 py-2.5 text-[13px] font-medium sm:max-w-[18rem]">
+                    <TableCell className="px-4 py-2.5 text-[13px] font-medium sm:max-w-[18rem]">
                       <p className="truncate">{approval.documentTitle}</p>
-                      <p className="mt-0.5 truncate text-[10px] font-normal text-muted-foreground sm:hidden">
+                      <p className="mt-0.5 text-[10px] font-normal leading-snug text-muted-foreground sm:hidden">
                         {getResolution(approval)}
                       </p>
                     </TableCell>
@@ -534,11 +582,11 @@ export default function ApprovalsPage() {
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject request</DialogTitle>
-            <DialogDescription>Please provide a reason for rejection.</DialogDescription>
+            <DialogTitle>{t('APPROVALS_REJECT_TITLE')}</DialogTitle>
+            <DialogDescription>{t('APPROVALS_REJECT_DESC')}</DialogDescription>
           </DialogHeader>
           <Textarea
-            placeholder="Reason for rejection (optional)"
+            placeholder={t('APPROVALS_REJECT_PLACEHOLDER')}
             value={rejectComment}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
               setRejectComment(e.target.value)
@@ -547,7 +595,7 @@ export default function ApprovalsPage() {
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setRejectOpen(false)}>
-              Cancel
+              {t('APPROVALS_CANCEL')}
             </Button>
             {selectedApproval && (
               <Button
@@ -556,7 +604,7 @@ export default function ApprovalsPage() {
                 disabled={actionLoading === selectedApproval.id}
               >
                 {actionLoading === selectedApproval.id && <Loader2 className="animate-spin" />}
-                Reject
+                {t('APPROVALS_REJECT')}
               </Button>
             )}
           </DialogFooter>

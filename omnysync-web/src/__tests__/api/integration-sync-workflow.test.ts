@@ -52,6 +52,7 @@ vi.mock('@/lib/prisma', () => ({
     },
     userOrganization: {
       findFirst: vi.fn(),
+      findUnique: vi.fn(),
     },
   },
 }))
@@ -88,6 +89,7 @@ vi.mock('@/lib/api-error', () => ({
 }))
 
 vi.mock('@omnysync/core/services/queue', () => ({
+  isQueueConfigured: vi.fn(() => true),
   enqueueSyncJob: vi.fn(),
   enqueueChangeDetection: vi.fn(),
 }))
@@ -158,6 +160,9 @@ describe('Integration Sync Workflow API', () => {
     // Default: authenticated user
     vi.mocked(auth).mockResolvedValue(mockSession())
     vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+    vi.mocked(prisma.userOrganization.findUnique).mockResolvedValue({
+      role: 'OWNER',
+    } as any)
 
     // Default: quota OK
     vi.mocked(checkAndIncrementQuota).mockResolvedValue({ allowed: true })
@@ -538,6 +543,8 @@ describe('Integration Sync Workflow API', () => {
         userId: 'test-user-1',
         organizationId: 'org-1',
         syncStatus: 'FAILED',
+        sourceConnectorId: 'connector-1',
+        destConnectorId: 'connector-2',
       } as any)
       vi.mocked(checkAndIncrementQuota).mockResolvedValue({
         allowed: false,

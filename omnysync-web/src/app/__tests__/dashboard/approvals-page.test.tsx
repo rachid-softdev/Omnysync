@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import ApprovalsPage from '../../(dashboard)/dashboard/approvals/page'
 import { toast } from '@/components/toast-provider'
@@ -11,31 +11,14 @@ vi.mock('@/components/toast-provider', () => ({
   },
 }))
 
-vi.mock('@/lib/i18n/useTranslations', () => ({
-  useTranslations: vi.fn(() => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        APPROVALS_TITLE: 'Approvals',
-        APPROVALS_SUBTITLE: 'Manage approval requests',
-        APPROVALS_PENDING: 'Pending',
-        APPROVALS_HISTORY: 'History',
-        plan_gate_eyebrow: 'PLAN / ACCESS',
-        plan_gate_badge: 'UPGRADE REQUIRED',
-        plan_gate_cta: 'View plans',
-        plan_gate_approvals_title: 'Approvals require the Business plan',
-        plan_gate_approvals_desc:
-          'Upgrade to Business to route documents through a review queue before publishing.',
-      }
-      return translations[key] || key
-    },
-    loading: false,
-    locale: 'en',
-  })),
-}))
-
 beforeEach(() => {
   vi.clearAllMocks()
   global.fetch = vi.fn()
+  document.documentElement.lang = 'en'
+})
+
+afterEach(() => {
+  document.documentElement.lang = 'en'
 })
 
 const pendingApprovals = [
@@ -186,5 +169,25 @@ describe('ApprovalsPage', () => {
 
     expect(screen.getByText('Reject request')).toBeInTheDocument()
     expect(screen.getByText('Please provide a reason for rejection.')).toBeInTheDocument()
+  })
+
+  it('renders pending and history metadata in French', async () => {
+    document.documentElement.lang = 'fr'
+    ;(global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ approvals: [...pendingApprovals, ...historyApprovals] }),
+    })
+
+    render(<ApprovalsPage />)
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Statut').length).toBeGreaterThan(0)
+      expect(screen.getByText('2 demandes')).toBeInTheDocument()
+      expect(screen.getByText('2 en attente')).toBeInTheDocument()
+      expect(screen.getByText(/Demandé par Alice/)).toBeInTheDocument()
+      expect(screen.getByText('Journal des décisions')).toBeInTheDocument()
+      expect(screen.getByText('Approuvée')).toBeInTheDocument()
+      expect(screen.getAllByText(/Approuvée par Admin le/).length).toBeGreaterThan(0)
+    })
   })
 })

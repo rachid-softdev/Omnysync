@@ -50,8 +50,13 @@ interface TeamMember {
 }
 
 export default function TeamSettingsPage() {
-  const { t } = useTranslations()
+  const { t, tf } = useTranslations()
   const locale = detectClientLocale()
+  const roleLabels: Record<string, string> = {
+    OWNER: t('admin_role_owner'),
+    ADMIN: t('admin_role_admin'),
+    MEMBER: t('admin_role_member'),
+  }
   const [members, setMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
@@ -89,14 +94,20 @@ export default function TeamSettingsPage() {
         body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
       })
 
+      const data = await res.json().catch(() => ({}))
+
       if (res.ok) {
         setInviteDialogOpen(false)
         setInviteEmail('')
         setInviteRole('MEMBER')
         fetchTeam()
+        toast.success(t('TEAM_ADD_SUCCESS'))
+      } else {
+        toast.error(typeof data?.error === 'string' ? data.error : t('TEAM_ADD_ERROR'))
       }
     } catch (e) {
       console.error(e)
+      toast.error(t('TEAM_ADD_ERROR'))
     } finally {
       setInviting(false)
     }
@@ -109,15 +120,17 @@ export default function TeamSettingsPage() {
         method: 'DELETE',
       })
 
+      const data = await res.json().catch(() => ({}))
+
       if (res.ok) {
         fetchTeam()
-        toast.success('Member removed')
+        toast.success(t('TEAM_REMOVE_SUCCESS'))
       } else {
-        toast.error('Error removing member')
+        toast.error(typeof data?.error === 'string' ? data.error : t('TEAM_REMOVE_ERROR'))
       }
     } catch (e) {
       console.error(e)
-      toast.error('Error removing member')
+      toast.error(t('TEAM_REMOVE_ERROR'))
     } finally {
       setDeleteTarget(null)
     }
@@ -131,11 +144,16 @@ export default function TeamSettingsPage() {
         body: JSON.stringify({ role: newRole }),
       })
 
+      const data = await res.json().catch(() => ({}))
+
       if (res.ok) {
         fetchTeam()
+      } else {
+        toast.error(typeof data?.error === 'string' ? data.error : t('TEAM_ROLE_UPDATE_ERROR'))
       }
     } catch (e) {
       console.error(e)
+      toast.error(t('TEAM_ROLE_UPDATE_ERROR'))
     }
   }
 
@@ -150,26 +168,15 @@ export default function TeamSettingsPage() {
     }
   }
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'OWNER':
-        return 'Owner'
-      case 'ADMIN':
-        return 'Admin'
-      case 'MEMBER':
-        return 'Member'
-      default:
-        return role
-    }
-  }
+  const getRoleLabel = (role: string) => roleLabels[role] ?? role
 
   if (loading) {
     return (
       <PageShell>
         <PageHeader
-          eyebrow="TEAM / LIVE"
-          title={t('TEAM_TITLE') || 'Team'}
-          description={t('TEAM_SUBTITLE') || 'Manage your organization members'}
+          eyebrow={t('TEAM_EYEBROW_LIVE')}
+          title={t('TEAM_TITLE')}
+          description={t('TEAM_SUBTITLE')}
         />
         <div className="mt-6 flex min-h-[320px] items-center justify-center border border-border bg-card">
           <Loader2 className="size-5 animate-spin text-muted-foreground" />
@@ -178,34 +185,42 @@ export default function TeamSettingsPage() {
     )
   }
 
+  const memberCountLabel = tf(
+    members.length === 1 ? 'TEAM_MEMBER_COUNT_ONE' : 'TEAM_MEMBER_COUNT_OTHER',
+    { count: members.length }
+  )
+  const seatCountLabel = tf(members.length === 1 ? 'TEAM_SEAT_ONE' : 'TEAM_SEAT_OTHER', {
+    count: members.length,
+  })
+
   return (
     <PageShell>
       <PageHeader
-        eyebrow={`TEAM / ${String(members.length).padStart(2, '0')}`}
-        title={t('TEAM_TITLE') || 'Team'}
-        description={t('TEAM_SUBTITLE') || 'Manage your organization members'}
+        eyebrow={tf('TEAM_EYEBROW_COUNT', {
+          count: String(members.length).padStart(2, '0'),
+        })}
+        title={t('TEAM_TITLE')}
+        description={t('TEAM_SUBTITLE')}
         actions={
           <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="size-4" />
-                Invite member
+                {t('TEAM_ADD_MEMBER')}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Invite member</DialogTitle>
-                <DialogDescription>
-                  Send an email invitation to join your organization.
-                </DialogDescription>
+                <DialogTitle>{t('TEAM_ADD_MEMBER')}</DialogTitle>
+                <DialogDescription>{t('TEAM_ADD_MEMBER_DESC')}</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('settings_email')}</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="email@example.com"
+                    placeholder={t('TEAM_EMAIL_PLACEHOLDER')}
                     value={inviteEmail}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setInviteEmail(e.target.value)
@@ -213,25 +228,25 @@ export default function TeamSettingsPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="role">Role</Label>
+                  <Label htmlFor="role">{t('TEAM_ROLE')}</Label>
                   <Select value={inviteRole} onValueChange={setInviteRole}>
                     <SelectTrigger id="role" className="w-full">
-                      <span>{inviteRole === 'ADMIN' ? 'Admin' : 'Member'}</span>
+                      <span>{getRoleLabel(inviteRole)}</span>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MEMBER">Member</SelectItem>
-                      <SelectItem value="ADMIN">Admin</SelectItem>
+                      <SelectItem value="MEMBER">{t('admin_role_member')}</SelectItem>
+                      <SelectItem value="ADMIN">{t('admin_role_admin')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
-                  Cancel
+                  {t('TEAM_CANCEL')}
                 </Button>
                 <Button onClick={handleInvite} disabled={inviting || !inviteEmail}>
                   {inviting ? <Loader2 className="size-4 animate-spin" /> : null}
-                  Send invitation
+                  {t('TEAM_ADD_MEMBER')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -243,15 +258,15 @@ export default function TeamSettingsPage() {
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border px-5 py-3">
           <div>
             <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-              Registry / members
+              {t('TEAM_REGISTRY')}
             </p>
             <h2 className="mt-1 flex items-center gap-2 text-sm font-semibold">
               <Users className="size-4 text-muted-foreground" />
-              Organization members
+              {t('TEAM_MEMBERS_TITLE')}
             </h2>
           </div>
           <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
-            {members.length} member{members.length !== 1 ? 's' : ''}
+            {memberCountLabel}
           </span>
         </div>
 
@@ -261,10 +276,8 @@ export default function TeamSettingsPage() {
               <Users className="size-5" />
             </span>
             <div>
-              <p className="text-base font-semibold tracking-[-0.02em]">No members found</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Invite a teammate to start collaborating.
-              </p>
+              <p className="text-base font-semibold tracking-[-0.02em]">{t('TEAM_EMPTY_TITLE')}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t('TEAM_EMPTY_DESC')}</p>
             </div>
           </div>
         ) : (
@@ -273,16 +286,16 @@ export default function TeamSettingsPage() {
               <TableHeader className="bg-muted/40">
                 <TableRow className="border-border hover:bg-transparent">
                   <TableHead className="h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em]">
-                    Member
+                    {t('TEAM_COL_MEMBER')}
                   </TableHead>
                   <TableHead className="h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em]">
-                    Role
+                    {t('TEAM_ROLE')}
                   </TableHead>
                   <TableHead className="hidden h-9 px-4 font-mono text-[9px] uppercase tracking-[0.14em] md:table-cell">
-                    Joined
+                    {t('TEAM_COL_JOINED')}
                   </TableHead>
                   <TableHead className="h-9 px-4 text-right font-mono text-[9px] uppercase tracking-[0.14em]">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">{t('TEAM_ACTIONS')}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -299,7 +312,7 @@ export default function TeamSettingsPage() {
                         </Avatar>
                         <div className="min-w-0">
                           <p className="max-w-[8rem] truncate text-[13px] font-medium sm:max-w-[20rem]">
-                            {member.name || 'No name'}
+                            {member.name || t('TEAM_NO_NAME')}
                           </p>
                           <p className="max-w-[8rem] truncate font-mono text-[10px] text-muted-foreground sm:max-w-[20rem]">
                             {member.email}
@@ -325,8 +338,8 @@ export default function TeamSettingsPage() {
                             </span>
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="MEMBER">Member</SelectItem>
-                            <SelectItem value="ADMIN">Admin</SelectItem>
+                            <SelectItem value="MEMBER">{t('admin_role_member')}</SelectItem>
+                            <SelectItem value="ADMIN">{t('admin_role_admin')}</SelectItem>
                           </SelectContent>
                         </Select>
                       )}
@@ -351,7 +364,7 @@ export default function TeamSettingsPage() {
                               variant="ghost"
                               size="icon-sm"
                               className="text-destructive hover:bg-destructive-soft"
-                              aria-label="Remove member"
+                              aria-label={t('TEAM_REMOVE_MEMBER')}
                               onClick={() => setDeleteTarget(member.id)}
                             >
                               <Trash2 className="size-4" />
@@ -359,18 +372,17 @@ export default function TeamSettingsPage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Remove member</AlertDialogTitle>
+                              <AlertDialogTitle>{t('TEAM_REMOVE_MEMBER')}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to remove this member? This action is
-                                irreversible.
+                                {t('TEAM_REMOVE_DESC')}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
-                                Cancel
+                                {t('TEAM_CANCEL')}
                               </AlertDialogCancel>
                               <AlertDialogAction onClick={confirmRemoveMember}>
-                                Remove
+                                {t('TEAM_REMOVE')}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -382,10 +394,8 @@ export default function TeamSettingsPage() {
               </TableBody>
             </Table>
             <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-2.5 font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
-              <span>
-                {members.length} seat{members.length !== 1 ? 's' : ''}
-              </span>
-              <span>Organization</span>
+              <span>{seatCountLabel}</span>
+              <span>{t('TEAM_ORGANIZATION')}</span>
             </div>
           </>
         )}

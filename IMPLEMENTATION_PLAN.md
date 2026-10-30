@@ -1,5 +1,7 @@
 # Omnysync — Plan d'Implémentation
 
+> **Statut (2026-10-26)** : document historique. Le périmètre livré est décrit dans `PRODUCT.md` et `omnysync-web/README.md`. La synchronisation bidirectionnelle, les webhooks sortants, le portail d'approbation et la génération d'images IA ne sont pas annoncés comme fonctionnalités disponibles.
+>
 > **Source**: `REVIEW.md` — Audit complet du codebase (2026-06-08)
 > **Projet**: Omnysync (monorepo — pnpm, turbo, Next.js 16.2.7, Prisma 7.8, TypeScript 5/6)
 > **Priorité**: 🔒 Sécurité > 🧪 Tests > 🏗️ Architecture > ⚡ Performance > ♿ Accessibilité

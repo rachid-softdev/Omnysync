@@ -4,6 +4,10 @@ import DashboardLayout from '../../(dashboard)/layout'
 
 const mockRedirect = vi.hoisted(() => vi.fn())
 
+vi.mock('next/headers', () => ({
+  headers: vi.fn(async () => new Headers({ 'Accept-Language': 'en' })),
+}))
+
 vi.mock('next/navigation', () => ({
   redirect: mockRedirect,
   usePathname: () => '/dashboard',
@@ -39,6 +43,7 @@ vi.mock('@/lib/i18n', () => {
     UI_APPROVALS: 'Approvals',
     UI_USAGE: 'Usage',
     UI_SETTINGS: 'Settings',
+    UI_TEAM: 'Team',
     UI_SKIP_TO_CONTENT: 'Skip to content',
     UI_LOGOUT: 'Logout',
   }
@@ -46,6 +51,7 @@ vi.mock('@/lib/i18n', () => {
   return {
     t: translate,
     getT: async () => translate,
+    getLocaleFromHeaders: () => 'en',
   }
 })
 
@@ -126,6 +132,7 @@ describe('DashboardLayout', () => {
     expect(screen.getByText('Approvals')).toBeInTheDocument()
     expect(screen.getByText('Usage')).toBeInTheDocument()
     expect(screen.getByText('Settings')).toBeInTheDocument()
+    expect(screen.getByText('Team')).toBeInTheDocument()
   })
 
   it('renders skip-to-content link', async () => {
@@ -161,7 +168,7 @@ describe('DashboardLayout', () => {
     const mobileNav = screen.getByTestId('mobile-nav')
     expect(mobileNav).toBeInTheDocument()
     expect(screen.getByTestId('mobile-nav-user')).toHaveTextContent('John Doe')
-    expect(screen.getByTestId('mobile-nav-count')).toHaveTextContent('9')
+    expect(screen.getByTestId('mobile-nav-count')).toHaveTextContent('10')
   })
 
   it('renders main content area', async () => {

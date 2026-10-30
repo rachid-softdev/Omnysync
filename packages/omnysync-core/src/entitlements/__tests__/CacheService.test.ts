@@ -86,6 +86,18 @@ function makeEntitlementMap(
   };
 }
 
+function setRedisEnv() {
+  process.env.UPSTASH_REDIS_REST_URL = "https://test.upstash.com";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "test-token";
+}
+
+function clearRedisEnv() {
+  delete process.env.UPSTASH_REDIS_REST_URL;
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  delete process.env.QSTASH_URL;
+  delete process.env.QSTASH_TOKEN;
+}
+
 // ============================================================================
 // TEST SUITE
 // ============================================================================
@@ -94,6 +106,7 @@ describe("CacheService", () => {
   let cache: CacheService;
 
   beforeEach(() => {
+    clearRedisEnv();
     resetCacheService();
     cache = new CacheService();
   });
@@ -101,6 +114,7 @@ describe("CacheService", () => {
   afterEach(() => {
     cache.destroy();
     resetCacheService();
+    clearRedisEnv();
   });
 
   // ============================================================================
@@ -497,11 +511,13 @@ describe("CacheService", () => {
       expect(cache.isRedisAvailable()).toBe(false);
     });
 
-    it("should return false when QSTASH_TOKEN is not set", () => {
-      // Ensure env vars are not set (default test env)
-      delete process.env.QSTASH_TOKEN;
-      delete process.env.QSTASH_URL;
-      expect(cache.isRedisAvailable()).toBe(false);
+    it("should ignore QStash credentials", () => {
+      process.env.QSTASH_URL = "https://qstash.upstash.io";
+      process.env.QSTASH_TOKEN = "qstash-token";
+
+      const qstashOnlyCache = new CacheService();
+      expect(qstashOnlyCache.isRedisAvailable()).toBe(false);
+      qstashOnlyCache.destroy();
     });
   });
 
@@ -638,8 +654,7 @@ describe("CacheService", () => {
     let redisCache: CacheService;
 
     beforeEach(() => {
-      process.env.QSTASH_TOKEN = "test-token";
-      process.env.QSTASH_URL = "https://test.upstash.com";
+      setRedisEnv();
 
       // Reset all call history and restore default behaviors
       mockRedis.get.mockReset();
@@ -680,8 +695,7 @@ describe("CacheService", () => {
 
     afterEach(() => {
       redisCache.destroy();
-      delete process.env.QSTASH_TOKEN;
-      delete process.env.QSTASH_URL;
+      clearRedisEnv();
     });
 
     // ========================================================================
@@ -809,11 +823,9 @@ describe("CacheService", () => {
 
       it("should write to memory cache only when Redis is not configured", async () => {
         // Create cache without Redis
-        delete process.env.QSTASH_TOKEN;
-        delete process.env.QSTASH_URL;
+        clearRedisEnv();
         const noRedisCache = new CacheService();
-        process.env.QSTASH_TOKEN = "test-token";
-        process.env.QSTASH_URL = "https://test.upstash.com";
+        setRedisEnv();
 
         const data = makeEntitlementMap({ planKey: "free" });
         await noRedisCache.set("org-mem-only", data);
@@ -1113,12 +1125,10 @@ describe("CacheService", () => {
 
       it("should not subscribe when Redis is not available", async () => {
         // Temporarily clear env vars to create a service without Redis
-        delete process.env.QSTASH_TOKEN;
-        delete process.env.QSTASH_URL;
+        clearRedisEnv();
         const noRedisCache = new CacheService();
         // Restore env vars so cleanup in afterEach still works
-        process.env.QSTASH_TOKEN = "test-token";
-        process.env.QSTASH_URL = "https://test.upstash.com";
+        setRedisEnv();
 
         await noRedisCache.subscribeToInvalidations(vi.fn());
 
@@ -1219,8 +1229,7 @@ describe("CacheService", () => {
 
       it("should handle Redis constructor throwing when env vars are set and still fallback to memory", async () => {
         // Ensure env vars are set
-        process.env.QSTASH_TOKEN = "test-token";
-        process.env.QSTASH_URL = "https://test.upstash.com";
+        setRedisEnv();
 
         mockRedis._constructorShouldThrow = true;
 

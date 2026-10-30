@@ -60,7 +60,7 @@ describe('createApprovalRequest', () => {
 
     expect(result.success).toBe(true)
     expect(result.token).toMatch(/^[a-f0-9]{64}$/)
-    expect(result.approvalUrl).toBe(`http://localhost:3000/public/approval/${result.token}`)
+    expect(result.approvalUrl).toBe('http://localhost:3000/dashboard/approvals')
     expect(result.expiresAt).toBeInstanceOf(Date)
     const sevenDays = 7 * 24 * 60 * 60 * 1000
     // The service adds 7 calendar days (`setDate`), so the elapsed duration can

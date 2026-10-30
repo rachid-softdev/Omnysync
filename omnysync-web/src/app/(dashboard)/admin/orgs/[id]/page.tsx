@@ -26,7 +26,8 @@ import {
   Shield,
   ToggleLeft,
 } from 'lucide-react'
-import { formatDate, detectClientLocale } from '@/lib/format-date'
+import { formatDate } from '@/lib/format-date'
+import { getLocaleFromHeaders, t as translate } from '@/lib/i18n'
 
 export const dynamic = 'force-dynamic'
 
@@ -88,7 +89,9 @@ const subscriptionStatusBadge: Record<
 }
 
 export default async function AdminOrgDetailPage({ params }: PageProps) {
-  const locale = detectClientLocale()
+  const requestHeaders = await headers()
+  const locale = getLocaleFromHeaders(requestHeaders)
+  const t = (key: string) => translate(key, locale)
   const session = await auth()
   if (!session?.user?.id) return null
   await requireAdmin()
@@ -111,7 +114,7 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
   }
 
   // Fetch entitlements data from internal API
-  const host = (await headers()).get('host') || 'localhost:3000'
+  const host = requestHeaders.get('host') || 'localhost:3000'
   const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https'
   let entitlementsData: EntitlementsResponse | null = null
   let entitlementsError: string | null = null
@@ -119,17 +122,17 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
   try {
     const res = await fetch(`${protocol}://${host}/api/admin/orgs/${orgId}/entitlements`, {
       headers: {
-        cookie: (await headers()).get('cookie') || '',
+        cookie: requestHeaders.get('cookie') || '',
       },
       cache: 'no-store',
     })
     if (res.ok) {
       entitlementsData = await res.json()
     } else {
-      entitlementsError = `Erreur ${res.status}`
+      entitlementsError = t('admin_org_detail_error_status').replace('{status}', String(res.status))
     }
   } catch {
-    entitlementsError = 'Impossible de charger les entitlements'
+    entitlementsError = t('admin_org_detail_entitlements_error')
   }
 
   const featureCount = entitlementsData
@@ -147,20 +150,23 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
         <Button variant="ghost" size="sm" className="-ml-2 text-muted-foreground" asChild>
           <Link href="/admin/orgs">
             <ArrowLeft className="size-3.5" />
-            Back to organizations
+            {t('admin_org_detail_back')}
           </Link>
         </Button>
       </div>
 
       <PageHeader
-        eyebrow={`WORKSPACE / ${(org.slug || 'RECORD').toUpperCase()}`}
+        eyebrow={t('admin_org_detail_eyebrow').replace(
+          '{slug}',
+          (org.slug || t('admin_org_detail_unknown')).toUpperCase()
+        )}
         title={org.name}
         description={org.slug ? `/${org.slug}` : undefined}
         actions={
           <Button variant="outline" size="sm" asChild>
             <Link href={`/admin/orgs/${orgId}/downgrade`}>
               <AlertTriangle className="size-3.5" />
-              Downgrade preview
+              {t('admin_org_detail_downgrade')}
             </Link>
           </Button>
         }
@@ -169,28 +175,37 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
       {/* Summary strip */}
       <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-[3px] border border-border bg-border sm:grid-cols-4">
         <div className="bg-card p-4">
-          <p className="text-xs font-medium text-muted-foreground">Current plan</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            {t('admin_org_detail_current_plan')}
+          </p>
           <p className="mt-1.5 text-xl font-semibold tracking-tight">{planLabel}</p>
         </div>
         <div className="bg-card p-4">
-          <p className="text-xs font-medium text-muted-foreground">Subscription</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            {t('admin_org_detail_subscription')}
+          </p>
           <div className="mt-2">
             {entitlementsData?.subscription ? (
               <AdminStatusBadge
                 status={subscriptionStatusBadge[entitlementsData.subscription.status]}
-                label={entitlementsData.subscription.status}
               />
             ) : (
-              <span className="text-sm text-muted-foreground">Aucun abonnement</span>
+              <span className="text-sm text-muted-foreground">
+                {t('admin_org_detail_no_subscription')}
+              </span>
             )}
           </div>
         </div>
         <div className="bg-card p-4">
-          <p className="text-xs font-medium text-muted-foreground">Entitlements</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            {t('admin_org_detail_entitlements')}
+          </p>
           <p className="mt-1.5 text-xl font-semibold tabular-nums">{featureCount}</p>
         </div>
         <div className="bg-card p-4">
-          <p className="text-xs font-medium text-muted-foreground">Active overrides</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            {t('admin_org_detail_active_overrides')}
+          </p>
           <p className="mt-1.5 text-xl font-semibold tabular-nums">{overrideCount}</p>
         </div>
       </div>
@@ -201,21 +216,21 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
           <CardHeader className="border-b border-border px-4 py-3">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <Building2 className="size-4 text-muted-foreground" />
-              Organisation
+              {t('admin_org_detail_organization')}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <dl className="divide-y divide-border">
               <div className="px-4 py-3">
-                <dt className="text-xs text-muted-foreground">Nom</dt>
+                <dt className="text-xs text-muted-foreground">{t('admin_org_detail_name')}</dt>
                 <dd className="mt-0.5 text-[13px] font-medium">{org.name}</dd>
               </div>
               <div className="px-4 py-3">
-                <dt className="text-xs text-muted-foreground">Slug</dt>
+                <dt className="text-xs text-muted-foreground">{t('admin_org_detail_slug')}</dt>
                 <dd className="mt-0.5 font-mono text-[13px]">{org.slug ? `/${org.slug}` : '—'}</dd>
               </div>
               <div className="px-4 py-3">
-                <dt className="text-xs text-muted-foreground">Créée le</dt>
+                <dt className="text-xs text-muted-foreground">{t('admin_org_detail_created')}</dt>
                 <dd className="mt-0.5 text-[13px]">
                   {formatDate(org.createdAt, locale, {
                     day: 'numeric',
@@ -233,14 +248,14 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
           <CardHeader className="border-b border-border px-4 py-3">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <CreditCard className="size-4 text-muted-foreground" />
-              Abonnement
+              {t('admin_org_detail_subscription')}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {entitlementsData?.subscription ? (
               <dl className="divide-y divide-border">
                 <div className="flex items-center justify-between px-4 py-3">
-                  <dt className="text-xs text-muted-foreground">Plan</dt>
+                  <dt className="text-xs text-muted-foreground">{t('admin_org_detail_plan')}</dt>
                   <dd>
                     <Badge variant="outline" className="font-medium">
                       {entitlementsData.subscription.planKey.charAt(0).toUpperCase() +
@@ -249,17 +264,18 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
                   </dd>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
-                  <dt className="text-xs text-muted-foreground">Statut</dt>
+                  <dt className="text-xs text-muted-foreground">{t('admin_org_detail_status')}</dt>
                   <dd>
                     <AdminStatusBadge
                       status={subscriptionStatusBadge[entitlementsData.subscription.status]}
-                      label={entitlementsData.subscription.status}
                     />
                   </dd>
                 </div>
                 {entitlementsData.subscription.currentPeriodEnd && (
                   <div className="px-4 py-3">
-                    <dt className="text-xs text-muted-foreground">Fin de période</dt>
+                    <dt className="text-xs text-muted-foreground">
+                      {t('admin_org_detail_period_end')}
+                    </dt>
                     <dd className="mt-0.5 text-[13px]">
                       {formatDate(entitlementsData.subscription.currentPeriodEnd, locale, {
                         day: 'numeric',
@@ -271,7 +287,9 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
                 )}
                 {entitlementsData.subscription.trialEnd && (
                   <div className="px-4 py-3">
-                    <dt className="text-xs text-muted-foreground">Fin d&apos;essai</dt>
+                    <dt className="text-xs text-muted-foreground">
+                      {t('admin_org_detail_trial_end')}
+                    </dt>
                     <dd className="mt-0.5 text-[13px]">
                       {formatDate(entitlementsData.subscription.trialEnd, locale, {
                         day: 'numeric',
@@ -284,7 +302,7 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
                 {entitlementsData.subscription.cancelAtPeriodEnd && (
                   <div className="flex items-center gap-2 bg-warning-soft px-4 py-3 text-xs text-warning">
                     <AlertTriangle className="size-3.5 shrink-0" />
-                    <span>Annulation à la fin de période</span>
+                    <span>{t('admin_org_detail_cancel_at_period_end')}</span>
                   </div>
                 )}
               </dl>
@@ -293,7 +311,7 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
                 {entitlementsError ? (
                   <span className="text-destructive">{entitlementsError}</span>
                 ) : (
-                  'Aucun abonnement'
+                  t('admin_org_detail_no_subscription')
                 )}
               </p>
             )}
@@ -305,14 +323,17 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
           <CardHeader className="border-b border-border px-4 py-3">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <Shield className="size-4 text-muted-foreground" />
-              Plan actuel
+              {t('admin_org_detail_current_plan')}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="px-4 py-4">
               <p className="text-xl font-semibold tracking-tight">{planLabel}</p>
               <p className="mt-1 font-mono text-xs text-muted-foreground">
-                key: {entitlementsData?.planKey || 'inconnue'}
+                {t('admin_org_detail_plan_key').replace(
+                  '{key}',
+                  entitlementsData?.planKey || t('admin_org_detail_unknown')
+                )}
               </p>
             </div>
           </CardContent>
@@ -324,7 +345,7 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border px-4 py-3">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold">
             <Puzzle className="size-4 text-muted-foreground" />
-            Feature entitlements
+            {t('admin_org_detail_feature_entitlements')}
           </CardTitle>
           <span className="text-xs tabular-nums text-muted-foreground">{featureCount}</span>
         </CardHeader>
@@ -333,9 +354,9 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
             <Table className="text-[13px]">
               <TableHeader className="bg-muted/50">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Feature</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Value</TableHead>
+                  <TableHead>{t('admin_org_detail_feature')}</TableHead>
+                  <TableHead>{t('admin_org_detail_type')}</TableHead>
+                  <TableHead>{t('admin_org_detail_value')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -348,7 +369,7 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
                     <TableCell>
                       <AdminStatusBadge
                         status={enabled ? 'active' : 'inactive'}
-                        label={enabled ? 'Activé' : 'Désactivé'}
+                        label={enabled ? t('admin_form_enabled') : t('admin_form_disabled')}
                       />
                     </TableCell>
                   </TableRow>
@@ -360,14 +381,14 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
                       <Badge variant="outline">LIMIT</Badge>
                     </TableCell>
                     <TableCell className="tabular-nums">
-                      {limit === null ? 'Illimité' : limit}
+                      {limit === null ? t('admin_form_unlimited') : limit}
                     </TableCell>
                   </TableRow>
                 ))}
                 {featureCount === 0 && (
                   <TableRow className="hover:bg-transparent">
                     <TableCell colSpan={3} className="py-10 text-center text-muted-foreground">
-                      Aucune feature configurée
+                      {t('admin_org_detail_no_features')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -375,7 +396,7 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
             </Table>
           ) : (
             <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-              {entitlementsError || 'Aucune donnée disponible'}
+              {entitlementsError || t('admin_org_detail_no_data')}
             </p>
           )}
         </CardContent>
@@ -386,7 +407,7 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border px-4 py-3">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold">
             <ToggleLeft className="size-4 text-muted-foreground" />
-            Overrides actifs
+            {t('admin_org_detail_active_overrides')}
           </CardTitle>
           <span className="text-xs tabular-nums text-muted-foreground">{overrideCount}</span>
         </CardHeader>
@@ -395,12 +416,12 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
             <Table className="text-[13px]">
               <TableHeader className="bg-muted/50">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Feature</TableHead>
-                  <TableHead>Scope</TableHead>
-                  <TableHead>Value</TableHead>
-                  <TableHead className="text-right">Limit</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Expires</TableHead>
+                  <TableHead>{t('admin_org_detail_feature')}</TableHead>
+                  <TableHead>{t('admin_overrides_col_scope')}</TableHead>
+                  <TableHead>{t('admin_org_detail_value')}</TableHead>
+                  <TableHead className="text-right">{t('admin_org_detail_limit')}</TableHead>
+                  <TableHead>{t('admin_org_detail_reason')}</TableHead>
+                  <TableHead>{t('admin_org_detail_expires')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -410,12 +431,18 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
                       {override.featureKey}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{override.scope}</Badge>
+                      <Badge variant="outline">
+                        {override.scope === 'ORG'
+                          ? t('admin_override_new_scope_org')
+                          : t('admin_override_new_scope_user')}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <AdminStatusBadge
                         status={override.enabled ? 'active' : 'inactive'}
-                        label={override.enabled ? 'Activé' : 'Désactivé'}
+                        label={
+                          override.enabled ? t('admin_form_enabled') : t('admin_form_disabled')
+                        }
                       />
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
@@ -437,7 +464,7 @@ export default async function AdminOrgDetailPage({ params }: PageProps) {
             </Table>
           ) : (
             <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-              Aucun override actif
+              {t('admin_org_detail_no_overrides')}
             </p>
           )}
         </CardContent>

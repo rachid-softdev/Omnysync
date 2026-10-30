@@ -1,6 +1,7 @@
 import { prisma } from "../prisma";
 import { encrypt } from "../crypto";
 import { fetchWithRetry } from "../http";
+import { assertSafeOutboundUrl } from "./outbound-url";
 
 export interface ShopifyArticle {
   title: string;
@@ -108,6 +109,10 @@ export async function testShopifyConnection(
   accessToken: string,
 ) {
   try {
+    if (!shopDomain) {
+      throw new Error("Shopify shop domain is required");
+    }
+    await assertSafeOutboundUrl(`https://${shopDomain}`);
     const client = createShopifyClient(shopDomain, accessToken);
     await client.getBlogs();
     return { success: true };

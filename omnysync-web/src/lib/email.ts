@@ -178,3 +178,57 @@ export async function sendSyncCompleteEmail(
     `,
   })
 }
+
+export async function sendTeamInviteEmail({
+  to,
+  memberName,
+  organizationName,
+  inviterName,
+}: {
+  to: string
+  memberName: string
+  organizationName: string
+  inviterName: string
+}) {
+  await sendEmail({
+    to,
+    subject: `${memberName} joined ${organizationName} on Omnysync`,
+    html: `
+      <h1>New team member</h1>
+      <p><strong>${escapeHtml(memberName)}</strong> was added to <strong>${escapeHtml(
+        organizationName
+      )}</strong> by ${escapeHtml(inviterName)}.</p>
+      <p>Review your team in the Omnysync dashboard.</p>
+    `,
+  })
+}
+
+export async function sendApprovalRequestEmail({
+  to,
+  documentTitle,
+  organizationName,
+  requesterName,
+  approvalUrl,
+  expiresAt,
+}: {
+  to: string
+  documentTitle: string
+  organizationName: string
+  requesterName: string
+  approvalUrl: string
+  expiresAt: Date
+}) {
+  await sendEmail({
+    to,
+    subject: `Approval requested: ${documentTitle.replace(/[\r\n]+/g, ' ')}`,
+    html: `
+      <h1>Approval requested</h1>
+      <p><strong>${escapeHtml(requesterName)}</strong> requested approval for <strong>${escapeHtml(
+        documentTitle
+      )}</strong> in ${escapeHtml(organizationName)}.</p>
+      <p>Review the document and approve or reject it in the Omnysync approvals dashboard.</p>
+      <p><a href="${escapeHtml(approvalUrl)}">Open approvals</a></p>
+      <p>This request expires on ${escapeHtml(expiresAt.toISOString())}.</p>
+    `,
+  })
+}

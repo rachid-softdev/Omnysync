@@ -18,6 +18,10 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     userOrganization: {
       findFirst: vi.fn(),
+      findMany: vi.fn(),
+    },
+    organization: {
+      findUnique: vi.fn(),
     },
     document: {
       findMany: vi.fn(),
@@ -31,6 +35,10 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
+vi.mock('@/lib/email', () => ({
+  sendApprovalRequestEmail: vi.fn(),
+}))
+
 // The approval portal is a Business-plan feature: default to allowed.
 vi.mock('@/lib/auth/subscription', () => ({
   checkPlanFeature: vi.fn(async () => ({ allowed: true, plan: 'business' })),
@@ -40,6 +48,7 @@ vi.mock('@/lib/auth/subscription', () => ({
 
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { sendApprovalRequestEmail } from '@/lib/email'
 
 // ============================================================================
 // GET /api/approvals
@@ -260,9 +269,14 @@ describe('POST /api/approvals', () => {
     vi.mocked(prisma.document.findFirst).mockResolvedValue({
       id: 'doc-1',
       organizationId: 'org-1',
+      title: 'Doc 1',
     } as any)
 
     vi.mocked(prisma.approvalRequest.findFirst).mockResolvedValue(null)
+
+    vi.mocked(prisma.organization.findUnique).mockResolvedValue({ name: 'Acme' } as any)
+    vi.mocked(prisma.userOrganization.findMany).mockResolvedValue([])
+    vi.mocked(sendApprovalRequestEmail).mockResolvedValue(undefined)
 
     vi.mocked(prisma.approvalRequest.create).mockResolvedValue({
       id: 'apr-new',
@@ -346,6 +360,51 @@ describe('POST /api/approvals', () => {
         }),
       })
     )
+  })
+
+  it('emails owners and admins who can review the request', async () => {
+    vi.mocked(prisma.userOrganization.findMany).mockResolvedValue([
+      { user: { email: 'owner@example.com' } },
+      { user: { email: 'admin@example.com' } },
+      { user: { email: null } },
+    ] as any)
+
+    const { POST } = await import('@/app/api/approvals/route')
+    const response = await POST(makeRequest({ documentId: 'doc-1' }))
+
+    expect(response.status).toBe(200)
+    expect(prisma.userOrganization.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          organizationId: 'org-1',
+          role: { in: ['OWNER', 'ADMIN'] },
+          userId: { not: 'user-1' },
+        }),
+      })
+    )
+    expect(sendApprovalRequestEmail).toHaveBeenCalledTimes(2)
+    expect(sendApprovalRequestEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'owner@example.com',
+        documentTitle: 'Doc 1',
+        organizationName: 'Acme',
+        requesterName: 'test@omnysync.com',
+        approvalUrl: 'http://localhost:3000/dashboard/approvals',
+      })
+    )
+  })
+
+  it('still creates the request when notification delivery fails', async () => {
+    vi.mocked(prisma.userOrganization.findMany).mockResolvedValue([
+      { user: { email: 'owner@example.com' } },
+    ] as any)
+    vi.mocked(sendApprovalRequestEmail).mockRejectedValue(new Error('email down'))
+
+    const { POST } = await import('@/app/api/approvals/route')
+    const response = await POST(makeRequest({ documentId: 'doc-1' }))
+
+    expect(response.status).toBe(200)
+    expect(prisma.approvalRequest.create).toHaveBeenCalled()
   })
 
   // ── Validation error (empty documentId) ─────────────────────────────────

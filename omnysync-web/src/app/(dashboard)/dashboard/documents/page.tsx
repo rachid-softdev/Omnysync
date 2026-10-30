@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth'
 import { getLocaleFromHeaders, getT } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/metadata'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { BatchDocumentList } from '@/components/batch-document-list'
@@ -10,6 +11,15 @@ import Link from 'next/link'
 import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
+
+export function generateMetadata() {
+  return pageMetadata({
+    titleKey: 'META_DOCUMENTS_TITLE',
+    descriptionKey: 'META_DOCUMENTS_DESC',
+    path: '/dashboard/documents',
+    index: false,
+  })
+}
 
 export default async function DocumentsPage() {
   const session = await auth()

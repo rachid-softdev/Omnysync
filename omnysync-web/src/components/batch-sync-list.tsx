@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table'
 import { useBatchSelect } from '@/hooks/use-batch-select'
 import { BatchActionBar } from '@/components/batch-action-bar'
-import { RefreshCw, Trash2 } from 'lucide-react'
+import { ArrowUpRight, RefreshCw, Trash2 } from 'lucide-react'
 import { useTranslations } from '@/lib/i18n/useTranslations'
 import { formatDateTime } from '@/lib/format-date'
 import {
@@ -35,7 +35,7 @@ interface BatchSyncLog {
   action: string
   message: string
   createdAt: string
-  document: { title: string } | null
+  document: { id: string; title: string } | null
 }
 
 interface BatchSyncListProps {
@@ -58,7 +58,7 @@ const statusTones: Record<string, string> = {
 }
 
 export function BatchSyncList({ syncLogs: initialLogs, locale }: BatchSyncListProps) {
-  const { t } = useTranslations()
+  const { t } = useTranslations(locale)
   const [logs, setLogs] = useState(initialLogs)
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
 
@@ -74,10 +74,15 @@ export function BatchSyncList({ syncLogs: initialLogs, locale }: BatchSyncListPr
 
   const handleBatchClear = useCallback(() => {
     setLogs((prev) => prev.filter((l) => !selectedIds.has(l.id)))
-    toast.success(`${selectedCount} log(s) cleared`)
+    toast.success(
+      t(selectedCount === 1 ? 'UI_CLEAR_LOGS_TOAST_ONE' : 'UI_CLEAR_LOGS_TOAST_OTHER').replace(
+        '{count}',
+        String(selectedCount)
+      )
+    )
     clearSelection()
     setClearConfirmOpen(false)
-  }, [selectedIds, selectedCount, clearSelection])
+  }, [selectedIds, selectedCount, clearSelection, t])
 
   if (logs.length === 0) {
     return (
@@ -112,9 +117,10 @@ export function BatchSyncList({ syncLogs: initialLogs, locale }: BatchSyncListPr
           isAllSelected={isAllSelected}
           onSelectAll={selectAll}
           onClearSelection={clearSelection}
+          locale={locale}
           actions={[
             {
-              label: 'Clear selected logs',
+              label: t('UI_CLEAR_SELECTED_LOGS'),
               icon: <Trash2 className="size-4" />,
               variant: 'destructive',
               onClick: () => setClearConfirmOpen(true),
@@ -132,7 +138,7 @@ export function BatchSyncList({ syncLogs: initialLogs, locale }: BatchSyncListPr
             <span className="hidden sm:inline">{t('UI_SELECT_ALL')}</span>
             <Checkbox
               id="select-all-syncs"
-              aria-label="Select all sync logs"
+              aria-label={t('UI_SELECT_ALL_SYNC_LOGS')}
               checked={isAllSelected}
               onCheckedChange={(checked) => {
                 if (checked) selectAll()
@@ -145,7 +151,7 @@ export function BatchSyncList({ syncLogs: initialLogs, locale }: BatchSyncListPr
           <TableHeader className="bg-muted/40">
             <TableRow className="border-border hover:bg-transparent">
               <TableHead className="w-10 px-2 pr-0 sm:px-4">
-                <span className="sr-only">Select</span>
+                <span className="sr-only">{t('UI_SELECT')}</span>
               </TableHead>
               <TableHead className="h-9 px-2 font-mono text-[9px] uppercase tracking-[0.14em] sm:px-4">
                 {t('UI_OPERATION')}
@@ -168,7 +174,7 @@ export function BatchSyncList({ syncLogs: initialLogs, locale }: BatchSyncListPr
                   <Checkbox
                     checked={selectedIds.has(log.id)}
                     onCheckedChange={() => toggle(log.id)}
-                    aria-label={`Select sync log ${log.action}`}
+                    aria-label={t('UI_SELECT_SYNC_LOG').replace('{action}', log.action)}
                   />
                 </TableCell>
                 <TableCell className="px-2 py-2.5 sm:px-4">
@@ -178,6 +184,15 @@ export function BatchSyncList({ syncLogs: initialLogs, locale }: BatchSyncListPr
                   <p className="mt-0.5 max-w-[12rem] truncate text-[13px] sm:max-w-[28rem]">
                     {log.message}
                   </p>
+                  {log.document && (
+                    <Link
+                      href={`/dashboard/sync/${log.document.id}`}
+                      className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                    >
+                      {t('UI_VIEW_DETAIL')}
+                      <ArrowUpRight className="size-3" aria-hidden="true" />
+                    </Link>
+                  )}
                   <p className="mt-0.5 font-mono text-[9px] tabular-nums text-muted-foreground sm:hidden">
                     {formatDateTime(log.createdAt, locale)}
                   </p>
@@ -218,19 +233,22 @@ export function BatchSyncList({ syncLogs: initialLogs, locale }: BatchSyncListPr
       <AlertDialog open={clearConfirmOpen} onOpenChange={setClearConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Clear sync logs</AlertDialogTitle>
+            <AlertDialogTitle>{t('UI_CLEAR_SYNC_LOGS_TITLE')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove {selectedCount} log(s) from this list? This action
-              cannot be undone.
+              {t(
+                selectedCount === 1
+                  ? 'UI_CLEAR_SYNC_LOGS_DESC_ONE'
+                  : 'UI_CLEAR_SYNC_LOGS_DESC_OTHER'
+              ).replace('{count}', String(selectedCount))}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('UI_CANCEL')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBatchClear}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Clear
+              {t('UI_CLEAR')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

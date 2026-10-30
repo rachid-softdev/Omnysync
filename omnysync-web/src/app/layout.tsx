@@ -3,7 +3,10 @@ import { IBM_Plex_Mono, Schibsted_Grotesk } from 'next/font/google'
 import { headers } from 'next/headers'
 import './globals.css'
 import { Providers } from '@/components/providers'
+import { PublicSkipLink } from '@/components/public-skip-link'
 import { Header } from '@/components/header'
+import { getLocaleFromHeaders, t } from '@/lib/i18n'
+import { getBaseUrl } from '@/lib/metadata'
 
 // One display/UI family plus a mono for technical metadata (see DESIGN.md).
 // The CSS variables are consumed by the `--font-sans` and `--font-mono` tokens.
@@ -21,34 +24,38 @@ const fontMono = IBM_Plex_Mono({
 })
 
 export async function generateMetadata(): Promise<Metadata> {
-  const headersList = await headers()
-  const acceptLanguage = headersList.get('accept-language') || ''
-  const locale = acceptLanguage.split(',')[0]?.split('-')[0] || 'en'
+  const locale = getLocaleFromHeaders(await headers())
+  const title = t('META_HOME_TITLE', locale)
+  const description = t('META_HOME_DESC', locale)
   const ogLocale = locale === 'fr' ? 'fr_FR' : 'en_US'
 
   return {
+    metadataBase: new URL(getBaseUrl()),
     title: {
-      default: 'Omnysync - Sync Your Content Everywhere',
+      default: title,
       template: '%s | Omnysync',
     },
-    description:
-      'Sync your content across all platforms automatically. Publish once, everywhere - WordPress, Ghost, Webflow, Shopify and more.',
+    description,
     keywords: [
-      'content sync',
-      'multi-platform publishing',
+      'content routing',
+      'publishing automation',
       'WordPress',
       'Ghost',
       'CMS',
-      'automation',
+      'scheduled sync',
     ],
     authors: [{ name: 'Omnysync' }],
     openGraph: {
       type: 'website',
       locale: ogLocale,
       siteName: 'Omnysync',
+      title,
+      description,
     },
     twitter: {
       card: 'summary_large_image',
+      title,
+      description,
     },
     robots: {
       index: true,
@@ -74,6 +81,7 @@ export default async function RootLayout({
     >
       <body className="min-h-screen bg-background">
         <Providers>
+          <PublicSkipLink />
           <Header />
           {children}
         </Providers>

@@ -279,7 +279,7 @@ describe('Subscription Service', () => {
       await decrementQuotaOnFailure('user-123')
 
       expect(prisma.quotaUsage.updateMany).toHaveBeenCalledWith({
-        where: { userId: 'user-123', month: expect.any(String) },
+        where: { userId: 'user-123', month: expect.any(String), syncCount: { gt: 0 } },
         data: { syncCount: { decrement: 1 } },
       })
     })
@@ -461,7 +461,7 @@ describe('Subscription Service', () => {
       await decrementQuotaOnFailure('user-123')
 
       expect(prisma.quotaUsage.updateMany).toHaveBeenCalledWith({
-        where: { userId: 'user-123', month: expect.any(String) },
+        where: { userId: 'user-123', month: expect.any(String), syncCount: { gt: 0 } },
         data: { syncCount: { decrement: 1 } },
       })
     })

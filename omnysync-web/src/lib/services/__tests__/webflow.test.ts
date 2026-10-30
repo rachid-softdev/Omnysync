@@ -86,7 +86,7 @@ describe('saveWebflowConnector', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('creates an ACTIVE WEBFLOW connector with encrypted credentials', async () => {
-    const res = await saveWebflowConnector('u-1', 'org-1', 'site-1', 'tok')
+    const res = await saveWebflowConnector('u-1', 'org-1', 'site-1', 'tok', 'collection-1')
 
     expect(mockEncrypt).toHaveBeenCalledWith('tok')
     expect(mockPrisma.connector.create).toHaveBeenCalledWith({
@@ -96,7 +96,7 @@ describe('saveWebflowConnector', () => {
         type: 'WEBFLOW',
         name: 'Webflow - site-1',
         status: 'ACTIVE',
-        config: { siteId: 'site-1' },
+        config: { siteId: 'site-1', collectionId: 'collection-1' },
         credentials: 'ENC:tok',
       },
     })

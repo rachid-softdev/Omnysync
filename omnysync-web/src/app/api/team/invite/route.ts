@@ -6,6 +6,7 @@ import { getUserOrgId } from '@/lib/auth/org'
 import { hasPermission } from '@/lib/auth/permissions'
 import { checkTeamMemberLimit } from '@/lib/auth/subscription'
 import { auditMember } from '@/lib/audit'
+import { sendTeamInviteEmail } from '@/lib/email'
 
 // NOTE: `@/lib/validations` resolves to `src/lib/validations.ts`, which shadows
 // the larger `src/lib/validations/index.ts` (where `inviteMemberSchema` lives).
@@ -112,6 +113,55 @@ export async function POST(req: NextRequest) {
     })
 
     await auditMember.invited(orgId, email, role)
+
+    // Notify existing owners/admins who kept team invite notifications on.
+    // Email delivery must never turn a successful membership into a 500.
+    try {
+      const [organization, recipients] = await Promise.all([
+        prisma.organization.findUnique({
+          where: { id: orgId },
+          select: { name: true },
+        }),
+        prisma.userOrganization.findMany({
+          where: {
+            organizationId: orgId,
+            role: { in: ['OWNER', 'ADMIN'] },
+            userId: { not: user.id },
+          },
+          select: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                notificationPreference: { select: { teamInvites: true } },
+              },
+            },
+          },
+        }),
+      ])
+
+      const organizationName = organization?.name || 'your organization'
+      const memberName = user.name || user.email || 'A new member'
+      const inviterName = session.user.name || 'A teammate'
+
+      await Promise.allSettled(
+        recipients
+          .filter(
+            ({ user: recipient }) =>
+              recipient.email && recipient.notificationPreference?.teamInvites !== false
+          )
+          .map(({ user: recipient }) =>
+            sendTeamInviteEmail({
+              to: recipient.email as string,
+              memberName,
+              organizationName,
+              inviterName,
+            })
+          )
+      )
+    } catch (error) {
+      console.error('Team invite notification failed:', error)
+    }
 
     return NextResponse.json({
       success: true,

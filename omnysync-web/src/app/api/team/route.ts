@@ -38,7 +38,10 @@ export async function GET() {
   })
 
   const members = memberships.map((m) => ({
-    id: (m.user as { id: string }).id,
+    // Membership id: PUT/DELETE /api/team/[memberId] operate on the
+    // UserOrganization row, not the user id. Returning the user id here made
+    // role changes and removals fail with 404 for every teammate.
+    id: m.id,
     name: (m.user as { name: string | null }).name,
     email: (m.user as { email: string }).email,
     image: (m.user as { image: string | null }).image,

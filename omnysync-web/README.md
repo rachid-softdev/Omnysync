@@ -1,7 +1,7 @@
 # Omnysync
 
-Plateforme SaaS d'automatisation et d'optimisation de contenu multi-plateformes.
-Synchronisez vos contenus de Google Docs et Notion vers WordPress, Ghost, Webflow et Shopify avec enrichissement IA.
+Plateforme SaaS de routage de contenu.
+Synchronisez un brouillon depuis Google Docs, Notion, Airtable ou Contentful vers une destination CMS : WordPress, Ghost, Webflow, Shopify, Contentful ou Medium.
 
 ## Stack technique
 
@@ -11,7 +11,7 @@ Synchronisez vos contenus de Google Docs et Notion vers WordPress, Ghost, Webflo
 - **Auth** : NextAuth.js v5 (Google OAuth)
 - **Base de données** : PostgreSQL + Prisma v7
 - **Queue** : Upstash QStash
-- **IA** : OpenAI (GPT-4o, DALL-E 3)
+- **IA** : OpenAI (métadonnées SEO optionnelles, en beta interne)
 - **Paiements** : Stripe
 - **Emails** : Resend
 - **Tests** : Vitest
@@ -52,6 +52,30 @@ Variables requises :
 | `GOOGLE_CLIENT_ID`     | Client ID Google OAuth                         |
 | `GOOGLE_CLIENT_SECRET` | Client Secret Google OAuth                     |
 | `ENCRYPTION_KEY`       | Clé de chiffrement AES-256 (32+ caractères)    |
+| `QSTASH_URL`           | URL QStash (requis en production)              |
+| `QSTASH_TOKEN`         | Jeton QStash (requis en production)            |
+| `CRON_SECRET`          | Secret du cron de synchronisation planifiée    |
+
+Variables optionnelles :
+
+| Variable                        | Description                                                               |
+| ------------------------------- | ------------------------------------------------------------------------- |
+| `OPENAI_API_KEY`                | Métadonnées SEO optionnelles                                              |
+| `STRIPE_SECRET_KEY`             | Paiements Stripe                                                          |
+| `STRIPE_WEBHOOK_SECRET`         | Signature des webhooks Stripe                                             |
+| `RESEND_API_KEY`                | Emails transactionnels                                                    |
+| `UPSTASH_REDIS_REST_URL`        | URL Upstash Redis (cache partagé, idempotence, rate limiting)             |
+| `UPSTASH_REDIS_REST_TOKEN`      | Jeton Upstash Redis (distinct du jeton QStash)                            |
+| `ALLOW_PRIVATE_CONNECTOR_HOSTS` | Liste d'hôtes privés autorisés pour les connecteurs (séparés par virgule) |
+
+En production, la file QStash et `CRON_SECRET` sont requis : la création d'une
+synchronisation échoue avant toute écriture si la file n'est pas configurée, et
+le cron refuse de s'exécuter sans secret.
+
+Redis est optionnel : sans `UPSTASH_REDIS_REST_URL` et
+`UPSTASH_REDIS_REST_TOKEN`, le cache, l'idempotence des jobs et le rate limiting
+Redis utilisent la mémoire locale de chaque instance. Les identifiants Redis
+sont distincts des identifiants QStash et ne doivent pas être réutilisés.
 
 ## Base de données
 
@@ -102,9 +126,15 @@ prisma/
 
 ## Fonctionnalités
 
-- **Sources** : Google Docs, Notion
-- **Destinations** : WordPress, Ghost, Webflow, Shopify
-- **Enrichissement IA** : SEO, images DALL-E, maillage interne
-- **Sync bidirectionnelle** : détection de changements et mise à jour
-- **Multi-tenant** : organisations pour les équipes
-- **Paiements** : abonnements Stripe (Free, Pro, Business)
+- **Sources** : Google Docs, Notion, Airtable, Contentful
+- **Destinations** : WordPress, Ghost, Webflow, Shopify, Contentful, Medium
+- **Routage** : une source vers une destination par document
+- **Synchronisation** : manuelle, à la demande, ou planifiée sur le plan Pro
+- **Journal** : statuts, erreurs et détection de changements
+- **IA optionnelle** : métadonnées SEO (beta interne, désactivée par défaut)
+- **Multi-tenant** : organisations, rôles et permissions
+- **Paiements** : Free, Pro via Stripe, Business sur devis
+
+La synchronisation bidirectionnelle, l'accès API public, le portail
+d'approbation et les webhooks sortants ne sont pas annoncés comme disponibles :
+ces fonctionnalités ne sont pas encore implémentées de bout en bout.

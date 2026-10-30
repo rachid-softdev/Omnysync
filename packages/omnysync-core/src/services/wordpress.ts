@@ -2,6 +2,7 @@ import { prisma } from "../prisma";
 import { ERR_UPLOAD_MEDIA } from "../errors";
 import { encrypt } from "../crypto";
 import { fetchWithRetry } from "../http";
+import { assertSafeOutboundUrl } from "./outbound-url";
 
 export interface WordPressPost {
   id?: number;
@@ -139,6 +140,7 @@ export async function testWordPressConnection(
   password: string,
 ) {
   try {
+    await assertSafeOutboundUrl(siteUrl);
     const client = createWordPressClient(siteUrl, username, password);
     await client.getCategories();
     return { success: true };

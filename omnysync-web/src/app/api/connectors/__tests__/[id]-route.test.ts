@@ -27,6 +27,10 @@ vi.mock('@/lib/auth/org', () => ({
   getUserOrgId: vi.fn(),
 }))
 
+vi.mock('@/lib/auth/permissions', () => ({
+  hasPermission: vi.fn(),
+}))
+
 vi.mock('@/lib/api-error', () => ({
   apiError: vi.fn((message: string, status: number, code?: string) => ({
     status,
@@ -55,6 +59,7 @@ vi.mock('@prisma/client', () => ({
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
+import { hasPermission } from '@/lib/auth/permissions'
 import { apiError } from '@/lib/api-error'
 import { Prisma } from '@prisma/client'
 
@@ -77,6 +82,7 @@ describe('DELETE /api/connectors/[id]', () => {
     } as any)
 
     vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+    vi.mocked(hasPermission).mockResolvedValue(true)
 
     // Default: connector exists and belongs to org
     vi.mocked(prisma.connector.findFirst).mockResolvedValue({
@@ -144,13 +150,13 @@ describe('DELETE /api/connectors/[id]', () => {
     expect(response.status).toBe(200)
     expect(data.success).toBe(true)
 
-    // Verify the connector belongs to the org AND the user before deleting
+    // Verify the connector belongs to the caller's organization before deleting.
+    // Do not filter by userId: admins can delete connectors created by teammates.
     expect(prisma.connector.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
           id: 'conn-to-delete',
           organizationId: 'org-1',
-          userId: 'user-1',
         },
       })
     )

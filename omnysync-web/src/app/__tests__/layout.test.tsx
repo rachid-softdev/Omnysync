@@ -23,6 +23,14 @@ vi.mock('@/components/header', () => ({
   Header: () => <div data-testid="header">Header</div>,
 }))
 
+vi.mock('@/components/public-skip-link', () => ({
+  PublicSkipLink: () => (
+    <a data-testid="public-skip-link" href="#main-content">
+      Skip to content
+    </a>
+  ),
+}))
+
 beforeEach(() => {
   vi.clearAllMocks()
 })
@@ -47,6 +55,13 @@ describe('RootLayout', () => {
     render(element)
 
     expect(screen.getByTestId('header')).toBeInTheDocument()
+  })
+
+  it('renders the public skip link before the header', async () => {
+    const element = await RootLayout({ children: <div>Content</div> })
+    render(element)
+
+    expect(screen.getByTestId('public-skip-link')).toHaveAttribute('href', '#main-content')
   })
 
   it('renders children content', async () => {

@@ -11,6 +11,8 @@ const envSchema = z.object({
   QSTASH_TOKEN: z.string().optional(),
   QSTASH_CURRENT_SIGNING_KEY: z.string().optional(),
   QSTASH_NEXT_SIGNING_KEY: z.string().optional(),
+  UPSTASH_REDIS_REST_URL: z.string().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   ENCRYPTION_KEY: z.string().min(32, 'ENCRYPTION_KEY must be at least 32 characters'),
   ENCRYPTION_SALT: z.string().min(16, 'ENCRYPTION_SALT must be at least 16 characters'),
   STRIPE_SECRET_KEY: z.string().optional(),

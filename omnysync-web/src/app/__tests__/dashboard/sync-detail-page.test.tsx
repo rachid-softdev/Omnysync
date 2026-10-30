@@ -3,9 +3,15 @@ import { render, screen } from '@testing-library/react'
 import SyncDetailPage from '../../(dashboard)/dashboard/sync/[id]/page'
 
 const mockNotFound = vi.hoisted(() => vi.fn())
+const localeState = vi.hoisted(() => ({ lang: 'en' }))
+
+vi.mock('next/headers', () => ({
+  headers: vi.fn(async () => new Headers({ 'Accept-Language': localeState.lang })),
+}))
 
 vi.mock('next/navigation', () => ({
   notFound: mockNotFound,
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
 }))
 
 vi.mock('next/link', () => ({
@@ -71,6 +77,7 @@ vi.mock('@/components/connector-icon', () => ({
 beforeEach(() => {
   vi.clearAllMocks()
   mockNotFound.mockReset()
+  localeState.lang = 'en'
 })
 
 const mockDocument = {
@@ -93,6 +100,44 @@ const mockDocument = {
   createdAt: new Date() as Date,
 }
 
+const completedSyncLogs = [
+  {
+    id: 'log-start',
+    status: 'INFO',
+    action: 'sync_started',
+    message: 'Sync started',
+    createdAt: new Date('2026-06-01T10:00:00Z'),
+  },
+  {
+    id: 'log-fetch',
+    status: 'INFO',
+    action: 'fetch_content_completed',
+    message: 'Content fetched',
+    createdAt: new Date('2026-06-01T10:00:01Z'),
+  },
+  {
+    id: 'log-parse',
+    status: 'INFO',
+    action: 'parsing_html_completed',
+    message: 'HTML generated',
+    createdAt: new Date('2026-06-01T10:00:02Z'),
+  },
+  {
+    id: 'log-ai',
+    status: 'INFO',
+    action: 'ai_enrichment_skipped',
+    message: 'AI enrichment is disabled for this run',
+    createdAt: new Date('2026-06-01T10:00:03Z'),
+  },
+  {
+    id: 'log-publish',
+    status: 'SUCCESS',
+    action: 'sync_completed',
+    message: 'Sync completed',
+    createdAt: new Date('2026-06-01T10:00:04Z'),
+  },
+]
+
 describe('SyncDetailPage', () => {
   it('renders header with document title and back button', async () => {
     const { prisma } = await import('@/lib/prisma')
@@ -107,9 +152,9 @@ describe('SyncDetailPage', () => {
     expect(screen.getByText('Back')).toBeInTheDocument()
   })
 
-  it('renders status card with progress', async () => {
+  it('derives progress from the latest sync logs', async () => {
     const { prisma } = await import('@/lib/prisma')
-    ;(prisma.syncLog.findMany as any).mockResolvedValueOnce([])
+    ;(prisma.syncLog.findMany as any).mockResolvedValueOnce(completedSyncLogs)
     ;(prisma.document.findUnique as any).mockResolvedValueOnce(mockDocument)
 
     const element = await SyncDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
@@ -120,9 +165,9 @@ describe('SyncDetailPage', () => {
     expect(screen.getByText('Progress')).toBeInTheDocument()
   })
 
-  it('renders sync steps with all completed status', async () => {
+  it('renders only real sync steps and marks skipped AI explicitly', async () => {
     const { prisma } = await import('@/lib/prisma')
-    ;(prisma.syncLog.findMany as any).mockResolvedValueOnce([])
+    ;(prisma.syncLog.findMany as any).mockResolvedValueOnce(completedSyncLogs)
     ;(prisma.document.findUnique as any).mockResolvedValueOnce(mockDocument)
 
     const element = await SyncDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
@@ -132,8 +177,9 @@ describe('SyncDetailPage', () => {
     expect(screen.getByText('Content Retrieval')).toBeInTheDocument()
     expect(screen.getByText('HTML Parsing')).toBeInTheDocument()
     expect(screen.getByText('AI Enrichment')).toBeInTheDocument()
-    expect(screen.getByText('Image Upload')).toBeInTheDocument()
+    expect(screen.getByText('Skipped — AI enrichment disabled')).toBeInTheDocument()
     expect(screen.getByText('Publishing')).toBeInTheDocument()
+    expect(screen.queryByText('Image Upload')).not.toBeInTheDocument()
   })
 
   it('renders source and destination connector info', async () => {
@@ -184,6 +230,126 @@ describe('SyncDetailPage', () => {
 
     expect(screen.getByText('Log Console')).toBeInTheDocument()
     expect(screen.getByText(/Sync started/)).toBeInTheDocument()
+    // Legacy logs without a `sync_started` marker cannot be attributed to a
+    // run, so the empty state must not claim that no logs exist.
+    expect(
+      screen.getAllByText('No run start recorded in the available logs.').length
+    ).toBeGreaterThanOrEqual(1)
+    expect(
+      screen.queryByText('No execution logs available for this document.')
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows an honest empty state instead of a fake 0% progress when no run logs exist', async () => {
+    const { prisma } = await import('@/lib/prisma')
+    ;(prisma.syncLog.findMany as any).mockResolvedValueOnce([])
+    ;(prisma.document.findUnique as any).mockResolvedValueOnce({
+      ...mockDocument,
+      syncStatus: 'SYNCED',
+    })
+
+    const element = await SyncDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
+    render(element)
+
+    expect(
+      screen.getAllByText('No execution logs available for this document.').length
+    ).toBeGreaterThanOrEqual(1)
+    expect(screen.queryByText('Progress')).not.toBeInTheDocument()
+    expect(screen.queryByText('0%')).not.toBeInTheDocument()
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+  })
+
+  it('uses the latest run over an older completed run', async () => {
+    const { prisma } = await import('@/lib/prisma')
+    ;(prisma.syncLog.findMany as any).mockResolvedValueOnce([
+      {
+        id: 'log-new-start',
+        status: 'INFO',
+        action: 'sync_started',
+        message: 'Sync started',
+        createdAt: new Date('2026-06-02T10:00:00Z'),
+      },
+      {
+        id: 'log-old-complete',
+        status: 'SUCCESS',
+        action: 'sync_completed',
+        message: 'Sync completed',
+        createdAt: new Date('2026-06-01T10:00:00Z'),
+      },
+    ])
+    ;(prisma.document.findUnique as any).mockResolvedValueOnce(mockDocument)
+
+    const element = await SyncDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
+    render(element)
+
+    expect(screen.getByText('Syncing')).toBeInTheDocument()
+    expect(screen.queryByText('Synced')).not.toBeInTheDocument()
+    expect(screen.getByText('0%')).toBeInTheDocument()
+  })
+
+  it('marks the latest failed run as failed even if the document was previously synced', async () => {
+    const { prisma } = await import('@/lib/prisma')
+    ;(prisma.syncLog.findMany as any).mockResolvedValueOnce([
+      {
+        id: 'log-new-start',
+        status: 'INFO',
+        action: 'sync_started',
+        message: 'Sync started',
+        createdAt: new Date('2026-06-02T10:00:00Z'),
+      },
+      {
+        id: 'log-new-fail',
+        status: 'ERROR',
+        action: 'sync_failed',
+        message: 'Publish failed',
+        createdAt: new Date('2026-06-02T10:00:05Z'),
+      },
+      {
+        id: 'log-old-complete',
+        status: 'SUCCESS',
+        action: 'sync_completed',
+        message: 'Sync completed',
+        createdAt: new Date('2026-06-01T10:00:00Z'),
+      },
+    ])
+    ;(prisma.document.findUnique as any).mockResolvedValueOnce({
+      ...mockDocument,
+      lastSyncError: 'Publish failed',
+    })
+
+    const element = await SyncDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
+    render(element)
+
+    expect(screen.getByText('Failed')).toBeInTheDocument()
+    expect(screen.queryByText('Synced')).not.toBeInTheDocument()
+    expect(screen.getByText('Sync Error')).toBeInTheDocument()
+    expect(screen.getAllByText(/Publish failed/).length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryByText('100%')).not.toBeInTheDocument()
+    // The run failed before any step started, so no step should be marked as
+    // errored just because the document status is FAILED.
+    expect(screen.getAllByText('Pending')).toHaveLength(4)
+    expect(screen.queryByText('Error occurred')).not.toBeInTheDocument()
+  })
+
+  it('renders French copy when Accept-Language is French', async () => {
+    localeState.lang = 'fr'
+    const { prisma } = await import('@/lib/prisma')
+    ;(prisma.syncLog.findMany as any).mockResolvedValueOnce(completedSyncLogs)
+    ;(prisma.document.findUnique as any).mockResolvedValueOnce(mockDocument)
+
+    const element = await SyncDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
+    render(element)
+
+    expect(screen.getByText('Détails de la synchronisation')).toBeInTheDocument()
+    expect(screen.getByText('Retour')).toBeInTheDocument()
+    expect(screen.getByText('Lancer la synchronisation')).toBeInTheDocument()
+    expect(screen.getByText('Progression')).toBeInTheDocument()
+    expect(screen.getByText('Étapes de la synchronisation')).toBeInTheDocument()
+    expect(screen.getByText('Récupération du contenu')).toBeInTheDocument()
+    expect(screen.getByText('Analyse HTML')).toBeInTheDocument()
+    expect(screen.getByText('Enrichissement IA')).toBeInTheDocument()
+    expect(screen.getByText('Ignoré — enrichissement IA désactivé')).toBeInTheDocument()
+    expect(screen.getByText('Publication')).toBeInTheDocument()
   })
 
   it('calls notFound when document is missing', async () => {

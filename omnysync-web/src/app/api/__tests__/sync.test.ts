@@ -30,6 +30,9 @@ vi.mock('@/lib/prisma', () => ({
     syncLog: {
       create: vi.fn(),
     },
+    userOrganization: {
+      findUnique: vi.fn(),
+    },
   },
 }))
 
@@ -63,6 +66,7 @@ vi.mock('@/lib/api-error', () => ({
 }))
 
 vi.mock('@omnysync/core/services/queue', () => ({
+  isQueueConfigured: vi.fn(() => true),
   enqueueSyncJob: vi.fn(),
   enqueueChangeDetection: vi.fn(),
 }))
@@ -91,13 +95,23 @@ import {
 } from '@/lib/auth/subscription'
 import { createSyncSchema } from '@/lib/validations'
 import { apiError } from '@/lib/api-error'
-import { enqueueSyncJob, enqueueChangeDetection } from '@omnysync/core/services/queue'
+import {
+  enqueueSyncJob,
+  enqueueChangeDetection,
+  isQueueConfigured,
+} from '@omnysync/core/services/queue'
 import {
   handleScheduledSyncRun,
   scheduleSync,
   disableScheduledSync,
 } from '@omnysync/core/services/scheduler'
 import { performSync } from '@omnysync/core/services/sync'
+
+beforeEach(() => {
+  vi.mocked(prisma.userOrganization.findUnique).mockResolvedValue({
+    role: 'OWNER',
+  } as any)
+})
 
 // ============================================================================
 // GET /api/sync
@@ -612,6 +626,10 @@ describe('POST /api/sync/[id]/check', () => {
     } as any)
 
     vi.mocked(getUserOrgId).mockResolvedValue('org-1')
+    vi.mocked(checkPlanFeature).mockResolvedValue({
+      allowed: true,
+      upgradeUrl: '/pricing',
+    } as any)
   })
 
   // ── Non authentifié ──────────────────────────────────────────────────────
@@ -650,6 +668,49 @@ describe('POST /api/sync/[id]/check', () => {
     expect(data.success).toBe(true)
     expect(data.message).toBe('Change detection queued')
     expect(enqueueChangeDetection).toHaveBeenCalledWith('doc-1', 'user-1')
+  })
+
+  it('should return 403 when the plan does not include change detection', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({
+      id: 'doc-1',
+      organizationId: 'org-1',
+      title: 'Mon document',
+    } as any)
+    vi.mocked(checkPlanFeature).mockResolvedValue({
+      allowed: false,
+      upgradeUrl: '/pricing',
+    } as any)
+
+    const { POST } = await import('@/app/api/sync/[id]/check/route')
+    const req = new NextRequest('http://localhost:3000/api/sync/doc-1/check', {
+      method: 'POST',
+    })
+    const response = await POST(req, { params: Promise.resolve({ id: 'doc-1' }) })
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.code).toBe('PLAN_FEATURE_REQUIRED')
+    expect(enqueueChangeDetection).not.toHaveBeenCalled()
+  })
+
+  it('should return 503 when the queue is not configured', async () => {
+    vi.mocked(prisma.document.findUnique).mockResolvedValue({
+      id: 'doc-1',
+      organizationId: 'org-1',
+      title: 'Mon document',
+    } as any)
+    vi.mocked(isQueueConfigured).mockReturnValueOnce(false)
+
+    const { POST } = await import('@/app/api/sync/[id]/check/route')
+    const req = new NextRequest('http://localhost:3000/api/sync/doc-1/check', {
+      method: 'POST',
+    })
+    const response = await POST(req, { params: Promise.resolve({ id: 'doc-1' }) })
+    const data = await response.json()
+
+    expect(response.status).toBe(503)
+    expect(data.code).toBe('QUEUE_NOT_CONFIGURED')
+    expect(enqueueChangeDetection).not.toHaveBeenCalled()
   })
 
   // ── Document inexistant ─────────────────────────────────────────────────

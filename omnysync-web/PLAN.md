@@ -1,10 +1,12 @@
 # Plan de Développement : OmniSync (Alternative Augmentée à Docswrite)
 
-Ce document sert de guide de référence pour l'implémentation complète du SaaS **OmniSync**, une plateforme d'automatisation et d'optimisation de contenu multi-plateformes.
+> **Statut (2026-10-26)** : document historique. Le périmètre livré est décrit dans `PRODUCT.md` et `README.md`. La synchronisation bidirectionnelle, les webhooks sortants, le portail d'approbation et la génération d'images IA ne sont pas annoncés comme fonctionnalités disponibles.
+
+Ce document sert de guide de référence pour l'implémentation complète du SaaS **OmniSync**, une plateforme de routage de contenu vers un CMS de destination.
 
 ## 1. Vision du Produit
 
-OmniSync n'est pas qu'un simple outil de transfert. C'est un orchestrateur qui récupère le contenu depuis des sources (Google Docs, Notion, Markdown), l'enrichit via IA (SEO, Maillage, Images), et le déploie sur diverses destinations (WordPress, Ghost, Webflow, Shopify) avec une synchronisation bidirectionnelle.
+OmniSync est un routeur de contenu : il récupère un document depuis une source (Google Docs, Notion, Airtable, Contentful) et le publie vers une destination (WordPress, Ghost, Webflow, Shopify, Contentful, Medium). Chaque synchronisation traite une source et une destination ; les synchronisations planifiées sont disponibles sur les plans Pro et Business.
 
 ## 2. Stack Technique Recommandée
 

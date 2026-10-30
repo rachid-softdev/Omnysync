@@ -13,8 +13,8 @@ const nextConfig: NextConfig = {
       '@prisma/client': './prisma/generated/client/index.js',
     },
   },
-  // Le typecheck se fait via \	sc --noEmit\ séparé
-  typescript: { ignoreBuildErrors: true },
+  // Type checking runs during `next build`; keep it enabled so type errors
+  // fail the production build.
   output: 'standalone',
   async headers() {
     return [

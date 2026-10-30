@@ -41,5 +41,22 @@ export function useTranslations(locale?: string) {
     [dictionary]
   )
 
-  return { t, loading: false, locale: resolvedLocale }
+  /**
+   * Translate a template containing `{placeholders}`.
+   *
+   * Keeps word order in the dictionary instead of composing sentences in JSX,
+   * which is required for French versus English phrasing.
+   */
+  const tf = useCallback(
+    (key: string, values: Record<string, string | number>): string => {
+      const template = dictionary[key] || english[key] || key
+      return template.replace(/\{(\w+)\}/g, (match, token: string) => {
+        const value = values[token]
+        return value === undefined ? match : String(value)
+      })
+    },
+    [dictionary]
+  )
+
+  return { t, tf, loading: false, locale: resolvedLocale }
 }

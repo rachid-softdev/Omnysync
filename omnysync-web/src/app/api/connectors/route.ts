@@ -76,6 +76,10 @@ export async function POST(req: NextRequest) {
 
   const { type, config, credentials } = parsed.data
 
+  if (type === 'WEBFLOW' && !config.collectionId) {
+    return apiError('Webflow collection ID is required', 400)
+  }
+
   // Check connector limit based on plan
   // checkConnectorLimit() returns a result object — testing the object itself
   // for truthiness made the limit impossible to reach (every object is truthy).
@@ -102,7 +106,11 @@ export async function POST(req: NextRequest) {
       testResult = await testGhostConnection(config.siteUrl, credentials.adminApiKey)
       break
     case 'WEBFLOW':
-      testResult = await testWebflowConnection(credentials.accessToken, config.siteId)
+      testResult = await testWebflowConnection(
+        credentials.accessToken,
+        config.siteId,
+        config.collectionId
+      )
       break
     case 'SHOPIFY':
       testResult = await testShopifyConnection(config.shopDomain, credentials.accessToken)
@@ -165,7 +173,8 @@ export async function POST(req: NextRequest) {
         session.user.id,
         orgId,
         config.siteId,
-        credentials.accessToken
+        credentials.accessToken,
+        config.collectionId
       )
       break
     }

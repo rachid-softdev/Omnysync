@@ -3,9 +3,15 @@ import { render, screen } from '@testing-library/react'
 import DocumentDetailPage from '../../(dashboard)/dashboard/documents/[id]/page'
 
 const mockNotFound = vi.hoisted(() => vi.fn())
+const localeState = vi.hoisted(() => ({ lang: 'en' }))
+
+vi.mock('next/headers', () => ({
+  headers: vi.fn(async () => new Headers({ 'Accept-Language': localeState.lang })),
+}))
 
 vi.mock('next/navigation', () => ({
   notFound: mockNotFound,
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
 }))
 
 vi.mock('next/link', () => ({
@@ -27,6 +33,9 @@ vi.mock('@/lib/prisma', () => ({
     document: {
       findUnique: vi.fn(),
     },
+    userOrganization: {
+      findFirst: vi.fn(),
+    },
   },
 }))
 
@@ -41,6 +50,8 @@ vi.mock('lucide-react', () => {
     CheckCircle: () => <svg data-testid="icon-checkcircle" />,
     AlertCircle: () => <svg data-testid="icon-alertcircle" />,
     Info: () => <svg data-testid="icon-info" />,
+    Sparkles: () => <svg data-testid="icon-sparkles" />,
+    Loader2: () => <svg data-testid="icon-loader" />,
   }
   // Fallback so any other lucide icon (e.g. used by shared components like
   // HelpTooltip) renders a generic SVG instead of throwing "No X export".
@@ -60,6 +71,16 @@ vi.mock('lucide-react', () => {
 beforeEach(() => {
   vi.clearAllMocks()
   mockNotFound.mockReset()
+  localeState.lang = 'en'
+})
+
+beforeEach(async () => {
+  const { prisma } = await import('@/lib/prisma')
+  ;(prisma.userOrganization.findFirst as any).mockResolvedValue({
+    organization: {
+      subscriptions: [{ status: 'ACTIVE', planKey: 'pro' }],
+    },
+  })
 })
 
 const mockDocument = {
@@ -114,17 +135,17 @@ describe('DocumentDetailPage', () => {
     expect(screen.getAllByText('WordPress').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders Edit, Sync and Delete buttons', async () => {
+  it('renders working Sync and Delete actions without a dead Edit control', async () => {
     const { prisma } = await import('@/lib/prisma')
     ;(prisma.document.findUnique as any).mockResolvedValueOnce(mockDocument)
 
     const element = await DocumentDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
     render(element)
 
-    expect(screen.getByText('Edit')).toBeInTheDocument()
     const syncButtons = screen.getAllByText('Sync')
     expect(syncButtons.length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Delete')).toBeInTheDocument()
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument()
   })
 
   it('renders status cards', async () => {
@@ -151,6 +172,81 @@ describe('DocumentDetailPage', () => {
     expect(screen.getByText('SEO')).toBeInTheDocument()
     expect(screen.getByText('History')).toBeInTheDocument()
     expect(screen.getByText('Settings')).toBeInTheDocument()
+  })
+
+  it('renders French copy and passes the locale to client actions', async () => {
+    localeState.lang = 'fr'
+    const { prisma } = await import('@/lib/prisma')
+    ;(prisma.document.findUnique as any).mockResolvedValueOnce(mockDocument)
+
+    const element = await DocumentDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
+    render(element)
+
+    expect(screen.getByText('Retour')).toBeInTheDocument()
+    expect(screen.getByText('Synchroniser')).toBeInTheDocument()
+    expect(screen.getByText('Supprimer')).toBeInTheDocument()
+    expect(screen.getByText('Vérifier les modifications')).toBeInTheDocument()
+    expect(screen.getByText('Statut')).toBeInTheDocument()
+    expect(screen.getAllByText('Publié').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Synchronisé').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('Aperçu')).toBeInTheDocument()
+    expect(screen.getByText('SEO')).toBeInTheDocument()
+    expect(screen.getByText('Historique')).toBeInTheDocument()
+    expect(screen.getByText('Paramètres')).toBeInTheDocument()
+    expect(screen.getByText('Contenu')).toBeInTheDocument()
+    expect(screen.getByText('Aperçu du contenu synchronisé')).toBeInTheDocument()
+    expect(screen.getByText('Métadonnées')).toBeInTheDocument()
+    expect(screen.getByText('Informations du document')).toBeInTheDocument()
+    expect(screen.getByText('Dernière synchronisation')).toBeInTheDocument()
+    expect(screen.getByText('Version')).toBeInTheDocument()
+    expect(screen.getAllByText('Synchronisation auto').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('Progression de la synchronisation')).toBeInTheDocument()
+    expect(screen.getByText(/Créé le/)).toBeInTheDocument()
+  })
+
+  it('explains an empty preview without contradicting a successful sync', async () => {
+    const { prisma } = await import('@/lib/prisma')
+    ;(prisma.document.findUnique as any).mockResolvedValueOnce({
+      ...mockDocument,
+      htmlContent: null,
+      content: null,
+    })
+
+    const element = await DocumentDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
+    render(element)
+
+    expect(screen.getByText('No stored preview')).toBeInTheDocument()
+    expect(screen.getByText(/sync status reflects delivery/i)).toBeInTheDocument()
+  })
+
+  it('renders plain content when no HTML preview exists', async () => {
+    const { prisma } = await import('@/lib/prisma')
+    ;(prisma.document.findUnique as any).mockResolvedValueOnce({
+      ...mockDocument,
+      htmlContent: null,
+      content: 'Plain text body',
+    })
+
+    const element = await DocumentDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
+    render(element)
+
+    expect(screen.getByText('Plain text body')).toBeInTheDocument()
+  })
+
+  it('localizes the empty preview explanation', async () => {
+    localeState.lang = 'fr'
+    const { prisma } = await import('@/lib/prisma')
+    ;(prisma.document.findUnique as any).mockResolvedValueOnce({
+      ...mockDocument,
+      htmlContent: null,
+      content: null,
+    })
+
+    const element = await DocumentDetailPage({ params: Promise.resolve({ id: 'doc-1' }) })
+    render(element)
+
+    expect(screen.getByText('Aucun aperçu conservé')).toBeInTheDocument()
+    expect(screen.getByText(/statut de synchronisation reflète la livraison/i)).toBeInTheDocument()
   })
 
   it('calls notFound when document is not found', async () => {

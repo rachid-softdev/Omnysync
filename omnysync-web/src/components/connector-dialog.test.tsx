@@ -33,6 +33,31 @@ describe('ConnectorDialog', () => {
       expect(screen.getByLabelText('Application Password')).toBeInTheDocument()
     })
 
+    it('renders French labels when the document locale is French', () => {
+      const previousLang = document.documentElement.lang
+      document.documentElement.lang = 'fr'
+
+      try {
+        render(
+          <ConnectorDialog
+            type="WORDPRESS"
+            open={true}
+            onClose={mockOnClose}
+            onSuccess={mockOnSuccess}
+          />
+        )
+
+        expect(screen.getByText('Connecter WordPress')).toBeInTheDocument()
+        expect(screen.getByLabelText('URL du site')).toBeInTheDocument()
+        expect(screen.getByLabelText('Nom d’utilisateur')).toBeInTheDocument()
+        expect(screen.getByLabelText('Mot de passe d’application')).toBeInTheDocument()
+        expect(screen.getByText('Annuler')).toBeInTheDocument()
+        expect(screen.getByText('Connecter')).toBeInTheDocument()
+      } finally {
+        document.documentElement.lang = previousLang
+      }
+    })
+
     it('renders dialog for GHOST connector', () => {
       render(
         <ConnectorDialog type="GHOST" open={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />

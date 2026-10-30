@@ -113,6 +113,13 @@ describe("Shopify Connector", () => {
       expect(result.error).toBeDefined();
     });
 
+    it("should reject a private shop domain", async () => {
+      const result = await testShopifyConnection("127.0.0.1", accessToken);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("public host");
+    });
+
     it("should handle rate limit error (429 Too Many Requests)", async () => {
       vi.mocked(fetchWithRetry).mockRejectedValue(
         new Error("429 Too Many Requests - Rate limit exceeded"),

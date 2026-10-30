@@ -23,23 +23,44 @@ async function getCache() {
   return mod.cache;
 }
 
+function setRedisEnv() {
+  process.env.UPSTASH_REDIS_REST_URL = "https://test.upstash.io";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "test-token";
+}
+
+function clearRedisEnv() {
+  delete process.env.UPSTASH_REDIS_REST_URL;
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  delete process.env.QSTASH_URL;
+  delete process.env.QSTASH_TOKEN;
+}
+
 describe("Cache module", () => {
   let consoleErrorSpy: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    clearRedisEnv();
     vi.resetModules();
   });
 
   afterEach(() => {
     consoleErrorSpy?.mockRestore();
-    delete process.env.QSTASH_TOKEN;
+    clearRedisEnv();
   });
 
   // ---- Redis UNAVAILABLE ----
-  describe("when QSTASH_TOKEN is not set (Redis unavailable)", () => {
+  describe("when Redis env vars are not set (Redis unavailable)", () => {
     it("isAvailable() returns false", async () => {
+      const cache = await getCache();
+      expect(cache.isAvailable()).toBe(false);
+    });
+
+    it("ignores QStash credentials", async () => {
+      process.env.QSTASH_URL = "https://qstash.upstash.io";
+      process.env.QSTASH_TOKEN = "qstash-token";
+
       const cache = await getCache();
       expect(cache.isAvailable()).toBe(false);
     });
@@ -78,9 +99,9 @@ describe("Cache module", () => {
   });
 
   // ---- Redis AVAILABLE ----
-  describe("when QSTASH_TOKEN is set (Redis available)", () => {
+  describe("when Redis env vars are set (Redis available)", () => {
     beforeEach(() => {
-      process.env.QSTASH_TOKEN = "test-token";
+      setRedisEnv();
     });
 
     it("isAvailable() returns true", async () => {
@@ -416,7 +437,7 @@ describe("Cache module", () => {
   // ---- withCache decorator ----
   describe("withCache()", () => {
     it("returns cached result on repeated calls", async () => {
-      process.env.QSTASH_TOKEN = "test-token";
+      setRedisEnv();
       mockRedisGet.mockResolvedValueOnce(null); // first call: miss
       mockRedisSet.mockResolvedValueOnce("OK");
       const mod = await getCache().then(() => import("../index"));
@@ -434,7 +455,7 @@ describe("Cache module", () => {
     });
 
     it("uses default ttl and prefix when options omitted", async () => {
-      process.env.QSTASH_TOKEN = "test-token";
+      setRedisEnv();
       mockRedisGet.mockResolvedValueOnce(null);
       mockRedisSet.mockResolvedValueOnce("OK");
       const mod = await getCache().then(() => import("../index"));
@@ -467,7 +488,7 @@ describe("Cache module", () => {
     });
 
     it("handles different arguments as different cache keys", async () => {
-      process.env.QSTASH_TOKEN = "test-token";
+      setRedisEnv();
       mockRedisGet.mockResolvedValueOnce(null); // miss for "a"
       mockRedisSet.mockResolvedValueOnce("OK");
       mockRedisGet.mockResolvedValueOnce(null); // miss for "b"
@@ -482,7 +503,7 @@ describe("Cache module", () => {
     });
 
     it("propagates error when wrapped function throws", async () => {
-      process.env.QSTASH_TOKEN = "test-token";
+      setRedisEnv();
       mockRedisGet.mockResolvedValueOnce(null); // miss
       const mod = await getCache().then(() => import("../index"));
       const fn = vi.fn().mockRejectedValue(new Error("Function failed"));
@@ -495,7 +516,7 @@ describe("Cache module", () => {
     });
 
     it("handles cached result being null (falsy but valid cache value)", async () => {
-      process.env.QSTASH_TOKEN = "test-token";
+      setRedisEnv();
       mockRedisGet.mockResolvedValueOnce(null); // first call: miss
       mockRedisSet.mockResolvedValueOnce("OK");
       const mod = await getCache().then(() => import("../index"));
@@ -515,7 +536,7 @@ describe("Cache module", () => {
     });
 
     it("handles cached result being 0 (falsy but valid)", async () => {
-      process.env.QSTASH_TOKEN = "test-token";
+      setRedisEnv();
       mockRedisGet.mockResolvedValueOnce(null); // miss
       mockRedisSet.mockResolvedValueOnce("OK");
       const mod = await getCache().then(() => import("../index"));
@@ -534,7 +555,7 @@ describe("Cache module", () => {
     });
 
     it("handles cached result being false (falsy but valid)", async () => {
-      process.env.QSTASH_TOKEN = "test-token";
+      setRedisEnv();
       mockRedisGet.mockResolvedValueOnce(null);
       mockRedisSet.mockResolvedValueOnce("OK");
       const mod = await getCache().then(() => import("../index"));

@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -115,8 +114,8 @@ export default function NewSyncPage() {
     },
     {
       id: 4,
-      title: t('UI_STEP_IA'),
-      description: t('UI_STEP_IA_DESC'),
+      title: t('UI_REVIEW_STEP'),
+      description: t('UI_REVIEW_DESC'),
       status: currentStep === 3 ? 'current' : currentStep > 3 ? 'completed' : 'pending',
     },
     {
@@ -140,7 +139,7 @@ export default function NewSyncPage() {
       const res = await fetch(`/api/connectors/${source}/documents`)
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Failed to fetch documents')
+        throw new Error(data.error || t('UI_FETCH_DOCS_ERROR'))
       }
       const docs = await res.json()
       setSourceDocuments(docs)
@@ -183,7 +182,7 @@ export default function NewSyncPage() {
 
   const handleSync = async () => {
     if (!source || !sourceDocId || !destination) {
-      setError('All fields are required')
+      setError(t('UI_ALL_FIELDS_REQUIRED'))
       return
     }
 
@@ -203,18 +202,18 @@ export default function NewSyncPage() {
           sourceConnectorId: source,
           destConnectorId: destination,
           sourceDocumentId: sourceDocId,
-          title: selectedDoc?.title || 'New Document',
+          title: selectedDoc?.title || t('UI_NEW_DOCUMENT_TITLE'),
         }),
       })
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Sync failed')
+        throw new Error(data.error || t('SYNC_RUN_FAILED'))
       }
 
       const document = await res.json()
 
-      addLog('Sync started, tracking progress...', 'info')
+      addLog(t('UI_SYNC_STARTED_TRACKING'), 'info')
 
       // Poll for completion
       pollIntervalRef.current = setInterval(async () => {
@@ -239,11 +238,11 @@ export default function NewSyncPage() {
 
           if (status.syncStatus === 'SYNCED') {
             clearInterval(pollIntervalRef.current!)
-            addLog('Sync completed successfully!', 'success')
+            addLog(t('UI_SYNC_COMPLETED_SUCCESS'), 'success')
             setIsSyncing(false)
           } else if (status.syncStatus === 'FAILED') {
             clearInterval(pollIntervalRef.current!)
-            addLog('Sync failed', 'error')
+            addLog(t('SYNC_RUN_FAILED'), 'error')
             setIsSyncing(false)
           }
         } catch {
@@ -259,7 +258,7 @@ export default function NewSyncPage() {
         // Use a callback to access latest isSyncing state
         setIsSyncing((prev) => {
           if (prev) {
-            addLog('Timeout - synchronization is taking longer than expected', 'warning')
+            addLog(t('UI_SYNC_TIMEOUT_WARNING'), 'warning')
             return false
           }
           return prev
@@ -278,7 +277,7 @@ export default function NewSyncPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="NEW RUN / ROUTE SETUP"
+        eyebrow={t('UI_NEW_RUN_EYEBROW')}
         title={t('UI_NEW_SYNC')}
         description={t('sync_new_desc')}
       />
@@ -356,7 +355,7 @@ export default function NewSyncPage() {
                     <SelectContent>
                       {sourceConnectors.length === 0 && (
                         <div className="p-3 text-center text-sm text-muted-foreground">
-                          No source connector found. Add one in the Connectors page.
+                          {t('UI_NO_SOURCE_CONNECTOR')}
                         </div>
                       )}
                       {sourceConnectors.map((c) => (
@@ -402,7 +401,7 @@ export default function NewSyncPage() {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setCurrentStep(0)} className="flex-1">
-                    Back
+                    {t('UI_BACK')}
                   </Button>
                   {sourceDocId && (
                     <Button onClick={handleDocSelect} className="flex-1">
@@ -432,7 +431,7 @@ export default function NewSyncPage() {
                     <SelectContent>
                       {destConnectors.length === 0 && (
                         <div className="p-3 text-center text-sm text-muted-foreground">
-                          No destination connector found. Add one in the Connectors page.
+                          {t('UI_NO_DEST_CONNECTOR')}
                         </div>
                       )}
                       {destConnectors.map((c) => (
@@ -445,7 +444,7 @@ export default function NewSyncPage() {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setCurrentStep(1)} className="flex-1">
-                    Back
+                    {t('UI_BACK')}
                   </Button>
                   {destination && (
                     <Button onClick={handleDestinationSelect} className="flex-1">
@@ -458,19 +457,19 @@ export default function NewSyncPage() {
             </Card>
           )}
 
-          {/* Step 3: AI Enrichment */}
+          {/* Step 3: Review */}
           {currentStep === 3 && (
             <Card>
               <CardHeader>
-                <CardTitle>{t('UI_AI_ENRICHMENT')}</CardTitle>
-                <CardDescription>{t('UI_AI_OPTIONS')}</CardDescription>
+                <CardTitle>{t('UI_REVIEW_STEP')}</CardTitle>
+                <CardDescription>{t('UI_REVIEW_DESC')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2.5 rounded-[3px] bg-muted p-4">
-                  <p className="text-[13px] font-medium">Summary</p>
+                  <p className="text-[13px] font-medium">{t('UI_SUMMARY')}</p>
                   <dl className="space-y-1.5 text-[13px] text-muted-foreground">
                     <div className="flex items-center justify-between gap-3">
-                      <dt>Source:</dt>
+                      <dt>{t('UI_SUMMARY_SOURCE')}</dt>
                       <dd>
                         <Badge variant="outline">
                           {selectedSource ? connectorNames[selectedSource.type] : '—'}
@@ -478,13 +477,13 @@ export default function NewSyncPage() {
                       </dd>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <dt>Document:</dt>
+                      <dt>{t('UI_SUMMARY_DOCUMENT')}</dt>
                       <dd className="max-w-[150px] truncate">
                         {sourceDocuments.find((d) => d.id === sourceDocId)?.title || '—'}
                       </dd>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <dt>Destination:</dt>
+                      <dt>{t('UI_SUMMARY_DESTINATION')}</dt>
                       <dd>
                         <Badge variant="outline">
                           {selectedDest ? connectorNames[selectedDest.type] : '—'}
@@ -493,23 +492,9 @@ export default function NewSyncPage() {
                     </div>
                   </dl>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="seo" defaultChecked />
-                    <Label htmlFor="seo">{t('LABEL_SEO')}</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="images" />
-                    <Label htmlFor="images">{t('LABEL_IA_IMAGES')}</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="links" defaultChecked />
-                    <Label htmlFor="links">{t('LABEL_INTERNAL_LINKS')}</Label>
-                  </div>
-                </div>
                 <div className="flex gap-2 border-t border-border pt-4">
                   <Button variant="outline" onClick={() => setCurrentStep(2)} className="flex-1">
-                    Back
+                    {t('UI_BACK')}
                   </Button>
                   <Button onClick={handleSync} className="flex-1" disabled={isSyncing}>
                     <Zap />
@@ -531,19 +516,19 @@ export default function NewSyncPage() {
                 {isSyncing ? (
                   <>
                     <Loader2 className="size-8 animate-spin text-primary" />
-                    <p className="text-sm text-muted-foreground">Syncing via QStash...</p>
+                    <p className="text-sm text-muted-foreground">{t('UI_SYNCING_QSTASH')}</p>
                   </>
                 ) : (
                   <>
                     <span className="grid size-12 place-items-center rounded-[3px] bg-success-soft text-success">
                       <Check className="size-6" />
                     </span>
-                    <p className="text-sm text-muted-foreground">Sync complete!</p>
+                    <p className="text-sm text-muted-foreground">{t('UI_SYNC_COMPLETE')}</p>
                     <Button
                       variant="outline"
                       onClick={() => (window.location.href = '/dashboard/sync')}
                     >
-                      View history
+                      {t('UI_VIEW_HISTORY')}
                     </Button>
                   </>
                 )}

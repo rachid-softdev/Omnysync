@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { createHmac } from 'node:crypto'
 import { NextRequest } from 'next/server'
 
 const mockAuth = vi.hoisted(() => vi.fn())
@@ -17,10 +18,20 @@ vi.mock('@/lib/auth/subscription', () => ({
   checkPlanFeature: mockCheckPlanFeature,
 }))
 
-const mockLookup = vi.hoisted(() => vi.fn())
-vi.mock('node:dns/promises', () => ({
-  lookup: mockLookup,
-  default: { lookup: mockLookup },
+const { mockPostJson, UnsafeOutboundUrlError } = vi.hoisted(() => {
+  class UnsafeOutboundUrlError extends Error {
+    constructor(message: string) {
+      super(message)
+      this.name = 'UnsafeOutboundUrlError'
+    }
+  }
+
+  return { mockPostJson: vi.fn(), UnsafeOutboundUrlError }
+})
+
+vi.mock('@omnysync/core/services/safe-fetch', () => ({
+  postJsonWithPinnedDns: mockPostJson,
+  UnsafeOutboundUrlError,
 }))
 
 import { prisma } from '@/lib/prisma'
@@ -37,8 +48,6 @@ async function callRoute() {
 }
 
 describe('POST /api/webhook-endpoints/[id]/test', () => {
-  let fetchMock: ReturnType<typeof vi.fn>
-
   beforeEach(() => {
     vi.clearAllMocks()
 
@@ -53,15 +62,7 @@ describe('POST /api/webhook-endpoints/[id]/test', () => {
       isActive: true,
     } as any)
     vi.mocked(prisma.syncLog.create).mockResolvedValue({} as any)
-
-    mockLookup.mockResolvedValue([{ address: '93.184.216.34' }])
-
-    fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 })
-    vi.stubGlobal('fetch', fetchMock)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
+    mockPostJson.mockResolvedValue({ ok: true, status: 200, body: '', headers: {} })
   })
 
   it('returns 401 when unauthenticated', async () => {
@@ -88,7 +89,7 @@ describe('POST /api/webhook-endpoints/[id]/test', () => {
     const response = await callRoute()
 
     expect(response.status).toBe(404)
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(mockPostJson).not.toHaveBeenCalled()
   })
 
   it('returns 400 when the webhook is disabled', async () => {
@@ -101,7 +102,7 @@ describe('POST /api/webhook-endpoints/[id]/test', () => {
     const response = await callRoute()
 
     expect(response.status).toBe(400)
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(mockPostJson).not.toHaveBeenCalled()
   })
 
   it('returns 400 for an invalid URL', async () => {
@@ -114,56 +115,119 @@ describe('POST /api/webhook-endpoints/[id]/test', () => {
     const response = await callRoute()
 
     expect(response.status).toBe(400)
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(mockPostJson).not.toHaveBeenCalled()
   })
 
-  it('blocks SSRF to a literal private address', async () => {
+  it('returns 400 when the safe fetch rejects a private target', async () => {
     vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
       id: 'wh-1',
       url: 'http://127.0.0.1:5432/hook',
       isActive: true,
     } as any)
+    mockPostJson.mockRejectedValue(
+      new UnsafeOutboundUrlError('Webhook URL must point to a public host')
+    )
 
     const response = await callRoute()
 
     expect(response.status).toBe(400)
-    expect(fetchMock).not.toHaveBeenCalled()
-    expect(mockLookup).not.toHaveBeenCalled()
+    expect(mockPostJson).toHaveBeenCalledTimes(1)
+    expect(prisma.syncLog.create).not.toHaveBeenCalled()
   })
 
-  it('blocks SSRF when a public hostname resolves to an internal address', async () => {
-    mockLookup.mockResolvedValue([{ address: '10.0.0.5' }])
+  it('returns 400 when a public hostname resolves to an internal address', async () => {
+    mockPostJson.mockRejectedValue(
+      new UnsafeOutboundUrlError('Webhook URL must point to a public host')
+    )
 
     const response = await callRoute()
 
     expect(response.status).toBe(400)
-    expect(fetchMock).not.toHaveBeenCalled()
-    expect(mockLookup).toHaveBeenCalledWith('example.com', { all: true })
+    expect(mockPostJson).toHaveBeenCalledTimes(1)
   })
 
-  it('sends the test request without following redirects', async () => {
+  it('sends the test request through the pinned-DNS helper', async () => {
     const response = await callRoute()
     const data = await response.json()
 
     expect(response.status).toBe(200)
     expect(data.success).toBe(true)
-    expect(fetchMock).toHaveBeenCalledWith(
+    expect(mockPostJson).toHaveBeenCalledWith(
       'https://example.com/hooks/omnysync',
+      expect.any(String),
       expect.objectContaining({
-        method: 'POST',
-        redirect: 'manual',
+        'User-Agent': 'Omnysync-Webhook/1.0',
+        'X-Webhook-Test': 'true',
+        'X-Omnysync-Event': 'test',
       })
     )
+
+    const body = JSON.parse(mockPostJson.mock.calls[0][1])
+    expect(body.event).toBe('test')
     expect(prisma.syncLog.create).toHaveBeenCalled()
   })
 
+  it('signs the test payload when the endpoint has a secret', async () => {
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
+      id: 'wh-1',
+      url: 'https://example.com/hooks/omnysync',
+      isActive: true,
+      secret: 'test-secret',
+    } as any)
+
+    await callRoute()
+
+    const [, body, headers] = mockPostJson.mock.calls[0]
+    const expected = `sha256=${createHmac('sha256', 'test-secret')
+      .update(`${headers['X-Omnysync-Timestamp']}.${body}`)
+      .digest('hex')}`
+
+    expect(headers['X-Omnysync-Signature']).toBe(expected)
+  })
+
   it('reports failure when the outbound request fails', async () => {
-    fetchMock.mockRejectedValue(new Error('connection refused'))
+    mockPostJson.mockRejectedValue(new Error('connection refused'))
 
     const response = await callRoute()
     const data = await response.json()
 
     expect(response.status).toBe(200)
     expect(data.success).toBe(false)
+  })
+
+  it('returns 404 when the user has no organization', async () => {
+    vi.mocked(prisma.userOrganization.findFirst).mockResolvedValue(null)
+
+    const response = await callRoute()
+
+    expect(response.status).toBe(404)
+    expect(mockPostJson).not.toHaveBeenCalled()
+  })
+
+  it('reports a non-ok response and logs it as an error', async () => {
+    mockPostJson.mockResolvedValue({ ok: false, status: 404, body: '', headers: {} })
+
+    const response = await callRoute()
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.success).toBe(false)
+    expect(data.statusCode).toBe(404)
+    expect(prisma.syncLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'webhook_test',
+          status: 'ERROR',
+        }),
+      })
+    )
+  })
+
+  it('returns 500 when logging the result fails unexpectedly', async () => {
+    vi.mocked(prisma.syncLog.create).mockRejectedValue(new Error('Unexpected'))
+
+    const response = await callRoute()
+
+    expect(response.status).toBe(500)
   })
 })

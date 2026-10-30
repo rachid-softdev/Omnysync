@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader, PageShell } from '@/components/page-header'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 import { toast } from '@/components/toast-provider'
 
 type ApiError = {
@@ -31,6 +32,7 @@ type ApiError = {
 
 export default function NewOverridePage() {
   const router = useRouter()
+  const { t } = useTranslations()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Form state
@@ -52,13 +54,13 @@ export default function NewOverridePage() {
   function validate(): boolean {
     const newErrors: Record<string, string> = {}
 
-    if (!scope) newErrors.scope = 'Scope is required'
-    if (!scopeId.trim()) newErrors.scopeId = 'Scope ID is required'
-    if (!featureKey.trim()) newErrors.featureKey = 'Feature key is required'
-    if (!reason.trim()) newErrors.reason = 'Reason is required (for audit trail)'
+    if (!scope) newErrors.scope = t('admin_validation_scope_required')
+    if (!scopeId.trim()) newErrors.scopeId = t('admin_validation_scope_id_required')
+    if (!featureKey.trim()) newErrors.featureKey = t('admin_validation_feature_key_required')
+    if (!reason.trim()) newErrors.reason = t('admin_validation_reason_required')
 
     if (limitValue && isNaN(parseInt(limitValue, 10))) {
-      newErrors.limitValue = 'Must be a valid integer'
+      newErrors.limitValue = t('admin_validation_valid_integer')
     }
 
     setErrors(newErrors)
@@ -94,17 +96,17 @@ export default function NewOverridePage() {
       })
 
       if (res.ok) {
-        toast.success('Override created successfully')
+        toast.success(t('admin_override_new_success'))
         router.push('/admin/overrides')
       } else {
         const err: ApiError = await res.json().catch(() => ({
           error: 'UNKNOWN',
-          message: 'An error occurred',
+          message: t('admin_error_generic'),
         }))
         toast.error(err.message)
       }
     } catch (err) {
-      toast.error('Failed to create override')
+      toast.error(t('admin_override_new_error'))
       console.error(err)
     } finally {
       setIsSubmitting(false)
@@ -118,13 +120,13 @@ export default function NewOverridePage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="OVERRIDES / NEW"
-        title="New Override"
-        description="Override feature entitlements for an organization or user"
+        eyebrow={t('admin_override_new_eyebrow')}
+        title={t('admin_override_new_title')}
+        description={t('admin_override_new_desc')}
         actions={
           <Button variant="outline" size="sm" onClick={() => router.push('/admin/overrides')}>
             <ArrowLeft className="size-3.5" />
-            Back
+            {t('admin_action_back')}
           </Button>
         }
       />
@@ -134,24 +136,25 @@ export default function NewOverridePage() {
           <CardContent className="p-0">
             {/* Scope */}
             <div className="border-b border-border p-5">
-              <p className="text-[13px] font-semibold">Scope</p>
+              <p className="text-[13px] font-semibold">{t('admin_override_new_scope_section')}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Choose whether this override applies to a whole organization or a single user.
+                {t('admin_override_new_scope_desc')}
               </p>
               <div className="mt-4 space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="scope">
-                    Scope <span className="text-destructive">*</span>
+                    {t('admin_override_new_scope_section')}{' '}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Select value={scope} onValueChange={setScope}>
                     <SelectTrigger
                       className={`max-w-[220px] ${errors.scope ? 'border-destructive' : ''}`}
                     >
-                      <SelectValue placeholder="Select scope" />
+                      <SelectValue placeholder={t('admin_override_new_scope_placeholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ORG">Organization</SelectItem>
-                      <SelectItem value="USER">User</SelectItem>
+                      <SelectItem value="ORG">{t('admin_override_new_scope_org')}</SelectItem>
+                      <SelectItem value="USER">{t('admin_override_new_scope_user')}</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.scope && <p className="text-xs text-destructive">{errors.scope}</p>}
@@ -159,7 +162,9 @@ export default function NewOverridePage() {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="scopeId">
-                    {scope === 'ORG' ? 'Organization ID' : 'User ID'}{' '}
+                    {scope === 'ORG'
+                      ? t('admin_override_new_scope_id_org')
+                      : t('admin_override_new_scope_id_user')}{' '}
                     <span className="text-destructive">*</span>
                   </Label>
                   <Input
@@ -179,13 +184,13 @@ export default function NewOverridePage() {
 
             {/* Feature */}
             <div className="border-b border-border p-5">
-              <p className="text-[13px] font-semibold">Feature</p>
+              <p className="text-[13px] font-semibold">{t('admin_override_new_feature_section')}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                The feature key to override. It must already exist.
+                {t('admin_override_new_feature_desc')}
               </p>
               <div className="mt-4 space-y-1.5">
                 <Label htmlFor="featureKey">
-                  Feature Key <span className="text-destructive">*</span>
+                  {t('admin_override_new_feature_key')} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="featureKey"
@@ -207,16 +212,16 @@ export default function NewOverridePage() {
             <div className="space-y-4 border-b border-border p-5">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <Label htmlFor="enabled">Enabled</Label>
+                  <Label htmlFor="enabled">{t('admin_form_enabled')}</Label>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Toggle to grant or restrict access to this feature.
+                    {t('admin_override_new_enabled_desc')}
                   </p>
                 </div>
                 <Switch id="enabled" checked={enabled} onCheckedChange={setEnabled} />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="limitValue">Limit Value</Label>
+                <Label htmlFor="limitValue">{t('admin_override_new_limit_value')}</Label>
                 <Input
                   id="limitValue"
                   type="number"
@@ -233,13 +238,13 @@ export default function NewOverridePage() {
                   <p className="text-xs text-destructive">{errors.limitValue}</p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    Optional numeric limit for LIMIT-type features. Leave empty for unlimited.
+                    {t('admin_override_new_limit_help')}
                   </p>
                 )}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="expiresAt">Expires At</Label>
+                <Label htmlFor="expiresAt">{t('admin_override_new_expires_at')}</Label>
                 <Input
                   id="expiresAt"
                   type="datetime-local"
@@ -250,24 +255,24 @@ export default function NewOverridePage() {
                   className="max-w-[260px]"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Optional expiration date. Leave empty for a permanent override.
+                  {t('admin_override_new_expires_help')}
                 </p>
               </div>
             </div>
 
             {/* Audit */}
             <div className="border-b border-border p-5">
-              <p className="text-[13px] font-semibold">Audit</p>
+              <p className="text-[13px] font-semibold">{t('admin_override_new_audit')}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                All overrides are logged for audit purposes.
+                {t('admin_override_new_audit_desc')}
               </p>
               <div className="mt-4 space-y-1.5">
                 <Label htmlFor="reason">
-                  Reason <span className="text-destructive">*</span>
+                  {t('admin_override_new_reason')} <span className="text-destructive">*</span>
                 </Label>
                 <Textarea
                   id="reason"
-                  placeholder="Why is this override being created? (required for audit)"
+                  placeholder={t('admin_override_new_reason_placeholder')}
                   value={reason}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                     setReason(e.target.value)
@@ -284,7 +289,7 @@ export default function NewOverridePage() {
             <div className="flex items-center gap-2 p-5">
               <Button type="submit" size="sm" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="size-3.5 animate-spin" />}
-                Create Override
+                {t('admin_override_new_submit')}
               </Button>
               <Button
                 type="button"
@@ -292,7 +297,7 @@ export default function NewOverridePage() {
                 size="sm"
                 onClick={() => router.push('/admin/overrides')}
               >
-                Cancel
+                {t('admin_action_cancel')}
               </Button>
             </div>
           </CardContent>

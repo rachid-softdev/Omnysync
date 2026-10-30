@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth'
 import { getLocaleFromHeaders, getT } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/metadata'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
 import { Button } from '@/components/ui/button'
@@ -18,9 +19,13 @@ import { headers } from 'next/headers'
 import type { Metadata } from 'next'
 import { formatDate } from '@/lib/format-date'
 
-export const metadata: Metadata = {
-  title: 'Dashboard',
-  description: 'Manage your content sync, connectors, and monitor your synchronization status.',
+export function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    titleKey: 'META_DASHBOARD_TITLE',
+    descriptionKey: 'META_DASHBOARD_DESC',
+    path: '/dashboard',
+    index: false,
+  })
 }
 
 const blueprintGrid = {
@@ -274,9 +279,15 @@ export default async function DashboardPage() {
                   <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
                     {t('UI_RUN_LOG_META')}
                   </p>
-                  <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em]">
-                    {t('UI_RUN_LOG')}
-                  </h2>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <h2 className="text-lg font-semibold tracking-[-0.02em]">{t('UI_RUN_LOG')}</h2>
+                    <span
+                      className="border border-border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-muted-foreground"
+                      title={t('UI_RAW_LOG_HINT')}
+                    >
+                      {t('UI_RAW_LOG')}
+                    </span>
+                  </div>
                 </div>
                 <Link
                   href="/dashboard/sync"

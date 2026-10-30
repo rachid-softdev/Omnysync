@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
+import { useTranslations } from '@/lib/i18n/useTranslations'
 
 interface BatchAction {
   label: string
@@ -17,6 +18,7 @@ interface BatchActionBarProps {
   onSelectAll: () => void
   onClearSelection: () => void
   actions: BatchAction[]
+  locale?: string
 }
 
 /**
@@ -29,7 +31,10 @@ export function BatchActionBar({
   onSelectAll,
   onClearSelection,
   actions,
+  locale,
 }: BatchActionBarProps) {
+  const { t } = useTranslations(locale)
+
   if (selectedCount === 0) return null
 
   return (
@@ -40,19 +45,19 @@ export function BatchActionBar({
             variant="ghost"
             size="icon-sm"
             onClick={onClearSelection}
-            aria-label="Clear selection"
+            aria-label={t('UI_CLEAR_SELECTION')}
           >
             <X />
           </Button>
           <span className="text-[13px] font-medium">
-            {selectedCount} selected
+            {selectedCount} {t(selectedCount === 1 ? 'UI_SELECTED_ONE' : 'UI_SELECTED_OTHER')}
             {!isAllSelected && (
               <button
                 type="button"
                 onClick={onSelectAll}
                 className="ml-2 text-xs font-normal text-primary hover:underline"
               >
-                Select all
+                {t('UI_SELECT_ALL')}
               </button>
             )}
           </span>

@@ -112,7 +112,12 @@ export async function saveWebflowConnector(
   organizationId: string,
   siteId: string,
   accessToken: string,
+  collectionId: string,
 ) {
+  if (!collectionId) {
+    throw new Error("Webflow collection ID is required");
+  }
+
   return prisma.connector.create({
     data: {
       userId,
@@ -120,7 +125,7 @@ export async function saveWebflowConnector(
       type: "WEBFLOW",
       name: `Webflow - ${siteId}`,
       status: "ACTIVE",
-      config: { siteId },
+      config: { siteId, collectionId },
       credentials: encrypt(accessToken),
     },
   });
@@ -129,10 +134,20 @@ export async function saveWebflowConnector(
 export async function testWebflowConnection(
   accessToken: string,
   siteId: string,
+  collectionId?: string,
 ) {
   try {
     const client = createWebflowClient(accessToken, siteId);
-    await client.getCollections();
+    const { collections } = await client.getCollections();
+    if (
+      collectionId &&
+      !collections.some((collection) => collection.id === collectionId)
+    ) {
+      return {
+        success: false,
+        error: "The selected collection does not belong to this Webflow site",
+      };
+    }
     return { success: true };
   } catch (error) {
     return { success: false, error: (error as Error).message };

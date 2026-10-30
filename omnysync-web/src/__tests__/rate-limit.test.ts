@@ -200,7 +200,7 @@ describe('rateLimitRedis (global middleware)', () => {
   describe('quand la configuration Redis est partielle (URL sans token)', () => {
     beforeEach(() => {
       vi.stubEnv('UPSTASH_REDIS_REST_URL', 'https://test.upstash.io')
-      // Ne PAS stuber UPSTASH_REDIS_REST_TOKEN — il reste undefined
+      vi.stubEnv('UPSTASH_REDIS_REST_TOKEN', '')
       vi.resetModules()
     })
 
@@ -208,21 +208,22 @@ describe('rateLimitRedis (global middleware)', () => {
       vi.unstubAllEnvs()
     })
 
-    it('initialise Redis quand URL est défini même sans token (comportement actuel)', async () => {
-      mockRedisIncr.mockResolvedValue(1)
+    it('tombe en fallback in-memory quand le token est absent', async () => {
+      mockInMemRateLimit.mockReturnValue({ allowed: true })
       const { rateLimitRedis } = await importRateLimitModule()
 
       const result = await rateLimitRedis(createMockRequest())
 
-      // Le code ne vérifie que UPSTASH_REDIS_REST_URL, pas le token
-      // Donc Redis est initialisé et utilisé malgré l'absence de token
       expect(result.allowed).toBe(true)
-      expect(mockRedisIncr).toHaveBeenCalled()
-      expect(mockInMemRateLimit).not.toHaveBeenCalled()
+      expect(mockRedisIncr).not.toHaveBeenCalled()
+      expect(mockInMemRateLimit).toHaveBeenCalled()
     })
 
-    it('tombe en fallback in-memory si Redis lève une erreur (token manquant)', async () => {
-      mockRedisIncr.mockRejectedValue(new Error('Unauthorized — token manquant'))
+    it('tombe en fallback in-memory si Redis lève une erreur', async () => {
+      vi.stubEnv('UPSTASH_REDIS_REST_TOKEN', 'test-token')
+      vi.resetModules()
+
+      mockRedisIncr.mockRejectedValue(new Error('Unauthorized'))
       mockInMemRateLimit.mockReturnValue({ allowed: true })
       const { rateLimitRedis } = await importRateLimitModule()
 

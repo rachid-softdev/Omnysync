@@ -53,7 +53,7 @@ export default function TwoFactorVerifyPage() {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[1fr_minmax(0,520px)]">
-      <div className="flex flex-col px-6 py-8 sm:px-10 lg:px-16">
+      <main id="main-content" className="flex flex-col px-6 py-8 sm:px-10 lg:px-16">
         <div className="animate-enter-fade flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2" aria-label={t('auth_home')}>
             <span className="grid size-7 place-items-center rounded-[3px] bg-primary text-[13px] font-bold text-primary-foreground">
@@ -169,7 +169,7 @@ export default function TwoFactorVerifyPage() {
         <p className="animate-enter-fade font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground/50">
           {t('auth_2fa_secure_session')}
         </p>
-      </div>
+      </main>
 
       {/* Context panel — the login is a checkpoint, not a marketing page. */}
       <aside className="relative hidden overflow-hidden bg-[#06101b] lg:block">

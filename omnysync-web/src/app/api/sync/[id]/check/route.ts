@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getUserOrgId } from '@/lib/auth/org'
-import { enqueueChangeDetection } from '@omnysync/core/services/queue'
+import { checkPlanFeature } from '@/lib/auth/subscription'
+import { enqueueChangeDetection, isQueueConfigured } from '@omnysync/core/services/queue'
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -25,6 +26,28 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
   if (!document || document.organizationId !== orgId) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  // Change detection runs an AI comparison before deciding whether to sync.
+  // Gate it behind the existing AI entitlement so a Free account cannot spend
+  // AI credits through this route.
+  const aiAccess = await checkPlanFeature(session.user.id, 'aiFeatures')
+  if (!aiAccess.allowed) {
+    return NextResponse.json(
+      {
+        error: 'AI-powered change detection is not included in your plan',
+        code: 'PLAN_FEATURE_REQUIRED',
+        upgradeUrl: aiAccess.upgradeUrl,
+      },
+      { status: 403 }
+    )
+  }
+
+  if (!isQueueConfigured()) {
+    return NextResponse.json(
+      { error: 'Sync queue is not configured', code: 'QUEUE_NOT_CONFIGURED' },
+      { status: 503 }
+    )
   }
 
   await enqueueChangeDetection(id, session.user.id)

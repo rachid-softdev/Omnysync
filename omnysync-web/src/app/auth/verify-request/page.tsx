@@ -1,12 +1,25 @@
 import Link from 'next/link'
 import { MailCheck } from 'lucide-react'
 import { getT } from '@/lib/i18n'
+import { pageMetadata } from '@/lib/metadata'
+
+export function generateMetadata() {
+  return pageMetadata({
+    titleKey: 'META_VERIFY_TITLE',
+    descriptionKey: 'META_VERIFY_DESC',
+    path: '/auth/verify-request',
+    index: false,
+  })
+}
 
 export default async function VerifyRequestPage() {
   const t = await getT()
 
   return (
-    <div className="grid min-h-screen place-items-center bg-background px-6 py-16">
+    <main
+      id="main-content"
+      className="grid min-h-screen place-items-center bg-background px-6 py-16"
+    >
       <div className="w-full max-w-md border border-border bg-card p-8">
         <div className="grid size-9 place-items-center rounded-[2px] border border-success/30 bg-success-soft text-success">
           <MailCheck className="size-4" />
@@ -27,6 +40,6 @@ export default async function VerifyRequestPage() {
           {t('auth_use_another_email')}
         </Link>
       </div>
-    </div>
+    </main>
   )
 }

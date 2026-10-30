@@ -28,21 +28,65 @@ export async function GET(req: NextRequest) {
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - period)
 
-  // Get sync logs for the period
+  // A sync writes several progress logs (fetch, parse, AI, publish). Counting
+  // every row inflates the dashboard and makes the success rate meaningless, so
+  // only the terminal outcome rows represent one completed sync attempt.
+  const terminalActions = ['sync_completed', 'sync_failed'] as const
+
+  // Fetch a little before the reporting window so a sync that started just
+  // before midnight can still contribute a real duration.
+  const durationWindowStart = new Date(startDate)
+  durationWindowStart.setDate(durationWindowStart.getDate() - 1)
+
   const syncLogs = await prisma.syncLog.findMany({
     where: {
       organizationId: orgId,
-      createdAt: { gte: startDate },
-      action: { contains: 'sync' },
+      createdAt: { gte: durationWindowStart },
+      action: { in: ['sync_started', ...terminalActions] },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: 'asc' },
   })
 
-  // Calculate stats
-  const totalSyncs = syncLogs.length
-  const successCount = syncLogs.filter((l) => l.status === 'SUCCESS').length
-  const failedCount = syncLogs.filter((l) => l.status === 'ERROR').length
+  const terminalLogs = syncLogs.filter(
+    (log) =>
+      log.createdAt >= startDate && (terminalActions as readonly string[]).includes(log.action)
+  )
+
+  // Pair each terminal outcome with the closest preceding start for the same
+  // document. Runs without a measurable start are excluded instead of being
+  // assigned an invented duration.
+  const openStarts = new Map<string, Date>()
+  const durationsMs: number[] = []
+
+  for (const log of syncLogs) {
+    if (!log.documentId) continue
+
+    if (log.action === 'sync_started') {
+      openStarts.set(log.documentId, log.createdAt)
+      continue
+    }
+
+    if (!(terminalActions as readonly string[]).includes(log.action)) continue
+
+    const startedAt = openStarts.get(log.documentId)
+    if (startedAt && log.createdAt >= startedAt) {
+      durationsMs.push(log.createdAt.getTime() - startedAt.getTime())
+    }
+    openStarts.delete(log.documentId)
+  }
+
+  // Calculate stats from terminal outcomes only
+  const totalSyncs = terminalLogs.length
+  const successCount = terminalLogs.filter((l) => l.action === 'sync_completed').length
+  const failedCount = terminalLogs.filter((l) => l.action === 'sync_failed').length
   const successRate = totalSyncs > 0 ? Math.round((successCount / totalSyncs) * 100) : 0
+
+  const avgDuration =
+    durationsMs.length > 0
+      ? Math.round(
+          (durationsMs.reduce((sum, value) => sum + value, 0) / durationsMs.length / 1000) * 10
+        ) / 10
+      : null
 
   // Get documents count
   const totalDocuments = await prisma.document.count({
@@ -54,9 +98,9 @@ export async function GET(req: NextRequest) {
     where: { organizationId: orgId, status: 'ACTIVE' },
   })
 
-  // Group by day
+  // Group terminal outcomes by day
   const syncByDay: Record<string, number> = {}
-  syncLogs.forEach((log) => {
+  terminalLogs.forEach((log) => {
     const date = log.createdAt.toISOString().slice(0, 10)
     syncByDay[date] = (syncByDay[date] ?? 0) + 1
   })
@@ -87,17 +131,20 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     totalSyncs,
     successRate,
-    avgDuration: 12, // Would calculate from actual duration
+    avgDuration,
     failedSyncs: failedCount,
     totalDocuments,
     activeConnectors,
     syncByDay: syncByDayArray,
     connectorsUsage: connectorsUsageArray,
-    recentActivity: syncLogs.slice(0, 10).map((log) => ({
-      id: log.id,
-      action: log.action,
-      status: log.status,
-      createdAt: log.createdAt.toISOString(),
-    })),
+    recentActivity: [...terminalLogs]
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, 10)
+      .map((log) => ({
+        id: log.id,
+        action: log.action,
+        status: log.status,
+        createdAt: log.createdAt.toISOString(),
+      })),
   })
 }

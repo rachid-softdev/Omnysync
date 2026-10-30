@@ -255,7 +255,9 @@ export async function decrementQuotaOnFailure(userId: string): Promise<void> {
 
   await prisma.quotaUsage
     .updateMany({
-      where: { userId, month },
+      // Never let a refund push the counter below zero (e.g. a duplicate
+      // failure callback after the quota row was already refunded).
+      where: { userId, month, syncCount: { gt: 0 } },
       data: { syncCount: { decrement: 1 } },
     })
     .catch(() => {
