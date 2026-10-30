@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { createHmac } from 'node:crypto'
 import { NextRequest } from 'next/server'
 
 const mockAuth = vi.hoisted(() => vi.fn())
@@ -154,12 +155,34 @@ describe('POST /api/webhook-endpoints/[id]/test', () => {
     expect(mockPostJson).toHaveBeenCalledWith(
       'https://example.com/hooks/omnysync',
       expect.any(String),
-      { 'X-Webhook-Test': 'true' }
+      expect.objectContaining({
+        'User-Agent': 'Omnysync-Webhook/1.0',
+        'X-Webhook-Test': 'true',
+        'X-Omnysync-Event': 'test',
+      })
     )
 
     const body = JSON.parse(mockPostJson.mock.calls[0][1])
     expect(body.event).toBe('test')
     expect(prisma.syncLog.create).toHaveBeenCalled()
+  })
+
+  it('signs the test payload when the endpoint has a secret', async () => {
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
+      id: 'wh-1',
+      url: 'https://example.com/hooks/omnysync',
+      isActive: true,
+      secret: 'test-secret',
+    } as any)
+
+    await callRoute()
+
+    const [, body, headers] = mockPostJson.mock.calls[0]
+    const expected = `sha256=${createHmac('sha256', 'test-secret')
+      .update(`${headers['X-Omnysync-Timestamp']}.${body}`)
+      .digest('hex')}`
+
+    expect(headers['X-Omnysync-Signature']).toBe(expected)
   })
 
   it('reports failure when the outbound request fails', async () => {

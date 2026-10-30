@@ -3,6 +3,7 @@
  * POST /api/webhook-endpoints/[id]/test
  */
 import { NextRequest, NextResponse } from 'next/server'
+import { createHmac, randomUUID } from 'node:crypto'
 import { postJsonWithPinnedDns, UnsafeOutboundUrlError } from '@omnysync/core/services/safe-fetch'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -70,16 +71,31 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
     // Envoyer une requête de test. postJsonWithPinnedDns validates the target,
     // pins the resolved DNS address, and never follows redirects.
+    const timestamp = new Date().toISOString()
+    const deliveryId = randomUUID()
     const testPayload = {
       event: 'test',
-      timestamp: new Date().toISOString(),
+      timestamp,
+      deliveryId,
       message: 'This is a test webhook from Omnysync',
+    }
+    const body = JSON.stringify(testPayload)
+    const headers: Record<string, string> = {
+      'User-Agent': 'Omnysync-Webhook/1.0',
+      'X-Webhook-Test': 'true',
+      'X-Omnysync-Event': 'test',
+      'X-Omnysync-Delivery': deliveryId,
+      'X-Omnysync-Timestamp': timestamp,
+    }
+
+    if (webhook.secret) {
+      headers['X-Omnysync-Signature'] = `sha256=${createHmac('sha256', webhook.secret)
+        .update(`${timestamp}.${body}`)
+        .digest('hex')}`
     }
 
     try {
-      const response = await postJsonWithPinnedDns(webhook.url, JSON.stringify(testPayload), {
-        'X-Webhook-Test': 'true',
-      })
+      const response = await postJsonWithPinnedDns(webhook.url, body, headers)
 
       // Enregistrer le test dans les logs
       await prisma.syncLog.create({
